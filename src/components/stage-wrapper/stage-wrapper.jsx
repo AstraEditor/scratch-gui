@@ -11,16 +11,20 @@ import styles from './stage-wrapper.css';
 
 const StageWrapperComponent = function (props) {
     const {
+        isFullScreen,
         isRendererSupported,
         stageSize,
         vm
     } = props;
 
     return (
-        <Box className={styles.stageCanvasWrapper}>
+        <Box className={classNames(styles.stageCanvasWrapper, {
+            [styles.fullScreen]: isFullScreen
+        })}>
             {
                 isRendererSupported ?
                     <Stage
+                        isFullScreen={isFullScreen}
                         stageSize={stageSize}
                         vm={vm}
                     /> :

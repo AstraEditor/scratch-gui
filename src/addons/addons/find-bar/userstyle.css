@@ -96,6 +96,7 @@
   font-weight: bold;
   text-overflow: ellipsis;
   overflow: hidden;
+  background-color: transparent !important; /* 强制移除背景颜色 */
 }
 
 .sa-find-dropdown > li > b {
@@ -108,6 +109,8 @@
 .sa-find-dropdown > li.sel {
   color: var(--sa-block-text-on-bright-background);
   cursor: pointer;
+  background-color: transparent !important; /* 强制移除悬停和选中时的背景颜色 */
+  filter: brightness(0.9); /* 使用亮度变化 */
 }
 
 .sa-find-dropdown > li::before {
@@ -126,10 +129,12 @@
 
 .sa-find-dropdown .sa-block-color {
   color: var(--sa-block-colored-text);
+  background-color: transparent; /* 确保没有背景颜色 */
 }
 .sa-find-dropdown .sa-block-color:hover,
 .sa-find-dropdown .sa-block-color.sel {
-  background-color: var(--sa-block-bright-background);
+  background-color: transparent; /* 悬停和选中时也没有背景颜色 */
+  filter: brightness(0.9); /* 使用亮度变化代替背景色 */
 }
 
 .sa-find-carousel {

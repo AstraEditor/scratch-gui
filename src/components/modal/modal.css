@@ -17,6 +17,7 @@
 }
 
 .modal-content {
+    background-color:$menu-bar-background;
     resize: both;
     outline: none;
     border: 4px solid $ui-white-transparent;
@@ -25,7 +26,8 @@
     user-select: none;
 
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    overflow: hidden;
+    overflow: auto;
+    
 }
 
 .modal-content.full-screen {

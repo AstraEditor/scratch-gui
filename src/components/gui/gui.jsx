@@ -171,12 +171,13 @@ const GUIComponent = props => {
     }
 
 
-    const [stageIndex, setStageIndex] = useState(489);
+    const [stageIndex, setStageIndex] = useState(480);
     const [costumeIndex, setCostumesIndex] = useState(490);
     // 添加拖动状态管理
     const [isStageDragging, setStageIsDragging] = useState(false);
     const [isCostumesDragging, setCostumesIsDragging] = useState(false);
 
+    const [stageMode, setStageMode] = useState(false);
     const stageRef = useRef(null);
     const [stagePosition, setStagePosition] = useState(() => {
         try {
@@ -337,7 +338,6 @@ const GUIComponent = props => {
         resizeObserver.observe(stageContainer);
         return () => resizeObserver.disconnect();
     }, []);
-
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -366,7 +366,10 @@ const GUIComponent = props => {
             setIsFullScreen(true);
         }
     }, []);
-
+    useEffect(() => {
+        // 当 stageMode 变化时触发 resize 事件
+        window.dispatchEvent(new Event('resize'));
+    }, [stageMode]);
     return (
         <MediaQuery minWidth={unconstrainedWidth}>
             {isUnconstrained => {
@@ -488,7 +491,9 @@ const GUIComponent = props => {
                             canRemix={canRemix}
                             canSave={canSave}
                             canShare={canShare}
-                            className={styles.menuBarPosition}
+                            className={classNames(styles.menuBarPosition, {
+                                [styles.menuBarHidden]: isFullScreen
+                            })}
                             enableCommunity={enableCommunity}
                             isShared={isShared}
                             isTotallyNormal={isTotallyNormal}
@@ -620,26 +625,41 @@ const GUIComponent = props => {
                                         <StageHeader
                                             stageSize={stageSize}
                                             vm={vm}
+                                            stageMode={stageMode}
+                                            SetStageMode={setStageMode}
+                                            isFullScreen={isFullScreen}
                                         />
                                     </Box>
                                     {backpackVisible ? (
                                         <Backpack host={backpackHost} />
                                     ) : null}
                                 </Box>
-                                {backpackVisible ? (
+                                {stageMode && backpackVisible && (
                                     <div
                                         className={isFullScreen ? classNames(styles.stageFull) : classNames(styles.stage)}
                                         ref={stageRef}
                                         style={{
                                             userSelect: 'none',
                                             transform: isFullScreen ? `translate(0px, 0px)` : `translate(${stagePosition.x}px, ${stagePosition.y}px)`,
-                                            resize: isFullScreen ? 'none' : 'both',
+
                                             width: isFullScreen ? '100vw' : '',
                                             height: isFullScreen ? '100vh' : '',
-                                            overflow: isFullScreen ? 'hidden' : 'auto',
+
                                             zIndex: `${stageIndex}`
                                         }}
                                     >
+                                        {/* StageHeader for stage mode */}
+                                        {isFullScreen && (
+                                            <Box className={styles.stageMenuWrapper}>
+                                                <StageHeader
+                                                    stageSize={stageSize}
+                                                    vm={vm}
+                                                    stageMode={stageMode}
+                                                    SetStageMode={setStageMode}
+                                                    isFullScreen={isFullScreen}
+                                                />
+                                            </Box>
+                                        )}
                                         {/* 舞台标题栏（仅非全屏显示） */}
                                         {!isFullScreen && (
                                             <div
@@ -670,32 +690,9 @@ const GUIComponent = props => {
                                                 display: 'flex',
                                                 justifyContent: 'center',
                                                 alignItems: 'center',
-                                                overflow: 'hidden',
                                                 pointerEvents: 'none'
                                             }}>
                                                 <div style={{
-                                                    transform: `scale(${(() => {
-                                                        try {
-                                                            const rect = stageRef.current.getBoundingClientRect();
-                                                            const baseWidth = vm.runtime.stageWidth;
-                                                            const baseHeight = vm.runtime.stageHeight;
-
-                                                            if (rect && rect.width > 0 && rect.height > 0) {
-                                                                const scaleX = rect.width / baseWidth;
-                                                                const scaleY = rect.height / baseHeight;
-                                                                const uniformScale = Math.min(scaleX, scaleY);
-
-                                                                const minScale = 0.1;
-                                                                const maxScale = 5;
-                                                                const clampedScale = Math.max(minScale, Math.min(uniformScale, maxScale));
-
-                                                                return `${clampedScale}, ${clampedScale}`;
-                                                            }
-                                                            return "1, 1";
-                                                        } catch (error) {
-                                                            return "1, 1";
-                                                        }
-                                                    })()})`,
                                                     transformOrigin: 'center center',
                                                     pointerEvents: 'auto'
                                                 }}>
@@ -716,7 +713,7 @@ const GUIComponent = props => {
                                                 display: 'flex',
                                                 justifyContent: 'center',
                                                 alignItems: 'center',
-                                                overflow: 'hidden'
+                                                overflow: 'hidden',
                                             }}>
                                                 <div>
                                                     <StageWrapper
@@ -730,10 +727,11 @@ const GUIComponent = props => {
                                             </div>
                                         )}
                                     </div>
-                                ) : null}
-                                
+                                )}
+
                                 {/* 角色组件 */}
-                                {!isFullScreen||backpackVisible ?
+                                {/* 窗口模式 */}
+                                {stageMode && (!isFullScreen && backpackVisible) && (
                                     <div
                                         className={classNames(styles.stage)}
                                         ref={costumesRef}
@@ -745,16 +743,57 @@ const GUIComponent = props => {
                                     >
                                         <div
                                             className={classNames(styles.stageBar)}
-                                            onMouseDown={(e) => { handleCostumesMouseDown(e); setCostumesIndex(stageIndex + 1) }}
+                                            onMouseDown={(e) => {
+                                                handleCostumesMouseDown(e);
+                                                setCostumesIndex(stageIndex + 1);
+                                            }}
                                             style={{ cursor: isCostumesDragging ? 'grabbing' : 'grab' }}
                                         >
                                             角色
                                         </div>
-                                        <Box className={styles.targetWrapper}>
+                                        <Box className={styles.targetWrapper} style={{ resize: "both" }}>
                                             <TargetPane stageSize={stageSize} vm={vm} />
                                         </Box>
                                     </div>
-                                    : ""}
+                                )}
+
+                                {/* 停靠模式 */}
+                                {!stageMode && (
+                                    <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
+                                        {isFullScreen ?
+                                            <div style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                overflow: 'hidden',
+                                            }}>
+                                                <StageWrapper
+                                                    isFullScreen={isFullScreen}
+                                                    isRendererSupported={isRendererSupported()}
+                                                    isRtl={isRtl}
+                                                    stageSize={stageSize}
+                                                    vm={vm}
+                                                />
+                                            </div> :
+                                            <StageWrapper
+                                                isFullScreen={isFullScreen}
+                                                isRendererSupported={isRendererSupported()}
+                                                isRtl={isRtl}
+                                                stageSize={stageSize}
+                                                vm={vm}
+                                            />}
+
+                                        <Box className={styles.targetWrapperOld}>
+                                            <TargetPane
+                                                stageSize={stageSize}
+                                                vm={vm}
+                                            />
+                                        </Box>
+                                    </Box>
+                                )}
+
 
                             </Box>
                         </Box>

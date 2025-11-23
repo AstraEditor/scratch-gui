@@ -2,8 +2,10 @@
 @import "../../css/colors.css";
 @import "../../css/z-index.css";
 
+/* Fix: Ensure solid background in windowed mode to prevent transparency issues */
 .stage-wrapper {
     position: relative;
+    background-color: $ui-white; /* Fix: Added solid background to prevent transparency */
 }
 
 .stage-wrapper * {
@@ -19,7 +21,8 @@
     padding-top: 44px;
 }
 
-.stage-wrapper.full-screen {
+/* Fix: Ensure proper background and layering in fullscreen mode */
+.stage-canvas-wrapper.full-screen {
     position: fixed;
     top: $stage-menu-height;
     left: 0;
@@ -35,6 +38,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    
+    /* Fix: Ensure proper stacking context to prevent transparency issues */
+    isolation: isolate;
 }
 
 .stage-wrapper.embedded {

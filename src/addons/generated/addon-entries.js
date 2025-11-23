@@ -73,7 +73,6 @@ export default {
   "expanded-backpack": () => import(/* webpackChunkName: "addon-entry-expanded-backpack" */ "../addons/expanded-backpack/_runtime_entry.js"),
   "script-snap": () => import(/* webpackChunkName: "addon-entry-script-snap" */ "../addons/script-snap/_runtime_entry.js"),
   "fullscreen": () => import(/* webpackChunkName: "addon-entry-fullscreen" */ "../addons/fullscreen/_runtime_entry.js"),
-  "hide-stage": () => import(/* webpackChunkName: "addon-entry-hide-stage" */ "../addons/hide-stage/_runtime_entry.js"),
   "tw-straighten-comments": () => import(/* webpackChunkName: "addon-entry-tw-straighten-comments" */ "../addons/tw-straighten-comments/_runtime_entry.js"),
   "tw-remove-backpack": () => import(/* webpackChunkName: "addon-entry-tw-remove-backpack" */ "../addons/tw-remove-backpack/_runtime_entry.js"),
   "tw-remove-feedback": () => import(/* webpackChunkName: "addon-entry-tw-remove-feedback" */ "../addons/tw-remove-feedback/_runtime_entry.js"),

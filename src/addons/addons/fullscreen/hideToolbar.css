@@ -16,7 +16,7 @@
   right: 0px;
   height: 8px;
   display: block;
-  z-index: 5000;
+  z-index: 486; /* Below stage (487) to avoid interference */
 }
 
 .stage-header-hover {

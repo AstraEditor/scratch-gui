@@ -1,5 +1,5 @@
 export default class BlockItem {
-  constructor(cls, procCode, labelID, y) {
+  constructor(cls, procCode, labelID, y, colour) {
     this.cls = cls;
     this.procCode = procCode;
     this.labelID = labelID;
@@ -11,6 +11,7 @@ export default class BlockItem {
      */
     this.clones = null;
     this.eventName = null;
+    this.colour_ = colour; // 积木颜色
   }
 
   /**

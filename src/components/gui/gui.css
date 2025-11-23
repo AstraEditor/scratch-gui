@@ -5,7 +5,10 @@
 body {
     overflow: hidden;
 }
-
+*{
+    transition: background-color 0.15s ease-in-out;
+    transition: color 0.15s ease-in-out;
+}
 .page-wrapper {
     height: 100%;
     display: flex;
@@ -22,7 +25,7 @@ body {
     height: 100%;
     background-color: $ui-primary;
     overflow: hidden;
-    resize: none;
+    
 
 }
 
@@ -220,15 +223,15 @@ body {
 
 .stageFull {
     width: 100vw;
-    height: calc(100vh - 30px);
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 0 auto;
-    top: 30px;
+    top: 0;
     background-color: $assets-background;
     z-index: $z-index-stage;
-    position: absolute;
+    position: fixed;
 
 }
 
@@ -261,11 +264,11 @@ body {
     /* pad entire wrapper to the left and right; allow children to fill width */
     padding-left: $space;
     padding-right: $space;
-    /* this will only ever be as wide as the stage */
-    flex-basis: 0;
-    min-width: 50px;
-    min-height: 50px;
-    resize: both;
+    /* Fix: Changed from flex-basis: 0 to allow proper width calculation */
+    flex-basis: auto;
+    min-width: 480px;
+    min-height: 360px;
+    /* Fix: Removed resize for docked mode - only window mode should be resizable */
     overflow: auto;
     min-height: 0;
 }
@@ -289,6 +292,43 @@ body {
     /* TODO this also breaks the thermometer menu */
     /* overflow: hidden; */
 }
+.stage-and-target-wrapper-old {
+    /*
+        Makes rows for children:
+          1) stage menu
+          2) stage
+          3) sprite/stage selectors
+        Only reason we need this, is so .targetWrapper, which holds the selectors,
+        goes to full vertical height of the window
+    */
+    display: flex;
+    flex-direction: column;
+    /* pad entire wrapper to the left and right; allow children to fill width */
+    padding-left: $space;
+    padding-right: $space;
+
+    /* Fix: Changed from flex-basis: 0 to allow proper width calculation */
+    flex-basis: auto;
+    min-width: 480px;
+    min-height: 360px;
+}
+
+.target-wrapper-old {
+    display: flex;
+    flex-grow: 1;
+    flex-basis: 0;
+
+    padding-top: $space;
+    min-height: 0;
+    /* this makes it work in Firefox */
+
+    /*
+        For making the sprite-selector a scrollable pane
+        @todo: Not working in Safari
+    */
+    /* TODO this also breaks the thermometer menu */
+    /* overflow: hidden; */
+}
 
 .extension-button-container {
     width: 3.75rem;
@@ -304,6 +344,14 @@ body {
     box-sizing: content-box;
     /* To match scratch-block vertical toolbox borders */
 }
+
+.stage-menu-wrapper {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: $z-index-stage-header;
+}
+
 
 $fade-out-distance: 15px;
 
@@ -361,6 +409,10 @@ $fade-out-distance: 15px;
 .menu-bar-position {
     position: relative;
     z-index: $z-index-menu-bar;
+}
+
+.menu-bar-hidden {
+    display: none !important;
 }
 
 /* Alerts */

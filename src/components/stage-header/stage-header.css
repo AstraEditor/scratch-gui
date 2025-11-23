@@ -3,6 +3,10 @@
 @import "../../css/z-index.css";
 @import "../../css/filters.css";
 
+
+.control-button{
+    width:auto
+}
 .stage-header-wrapper {
     position: absolute;
     top: 0;
@@ -32,12 +36,11 @@
 .stage-menu-wrapper {
     display: flex;
     margin: auto;
-    justify-content: space-between;
+    justify-content: RIGHT;
     flex-shrink: 0;
     align-items: center;
     height: $stage-menu-height;
-    padding-top: $space;
-    padding-bottom: $space;
+
 }
 
 .stage-size-row {
