@@ -1,3 +1,0 @@
-# 我在开发时的总结：
-
-1. addons（index.js）的 addBlock 无法定义形状...
