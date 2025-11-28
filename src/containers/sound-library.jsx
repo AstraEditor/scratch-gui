@@ -56,7 +56,7 @@ class SoundLibrary extends React.PureComponent {
         /**
          * A promise for the sound queued to play as soon as it loads and
          * decodes.
-         * @type {Promise<SoundPlayer>}
+         * @type {Promise}
          */
         this.playingSoundPromise = null;
 
