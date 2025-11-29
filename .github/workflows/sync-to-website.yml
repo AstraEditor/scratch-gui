@@ -19,18 +19,37 @@ jobs:
       with:
         persist-credentials: false
         token: ${{ secrets.PAT }}
+        path: scratch-gui
+
+    - name: Checkout dependencies
+      run: |
+        cd scratch-gui
+        # Checkout all dependencies
+        git clone https://github.com/AstraEditor/scratch-audio.git ../scratch-audio
+        git clone https://github.com/AstraEditor/scratch-blocks.git ../scratch-blocks
+        git clone https://github.com/AstraEditor/scratch-paint.git ../scratch-paint
+        git clone https://github.com/AstraEditor/scratch-render.git ../scratch-render
+        git clone https://github.com/AstraEditor/scratch-vm.git ../scratch-vm
+        cd ..
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 22
         cache: npm
+        cache-dependency-path: scratch-gui/package-lock.json
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+        cd scratch-gui
+        npm ci
+        cd ..
 
     - name: Build
-      run: npm run build
+      run: |
+        cd scratch-gui
+        npm run build
+        cd ..
       env:
         NODE_ENV: production
 
@@ -49,7 +68,7 @@ jobs:
 
     - name: Copy new build files
       run: |
-        cp -r build/* website/
+        cp -r scratch-gui/build/* website/
         cd website
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"

@@ -15,22 +15,41 @@ jobs:
       id-token: write
 
     steps:
-    - name: Checkout
+    - name: Checkout scratch-gui
       uses: actions/checkout@v4
       with:
         persist-credentials: false
+        path: scratch-gui
+
+    - name: Checkout dependencies
+      run: |
+        cd scratch-gui
+        # Checkout all dependencies
+        git clone https://github.com/AstraEditor/scratch-audio.git ../scratch-audio
+        git clone https://github.com/AstraEditor/scratch-blocks.git ../scratch-blocks
+        git clone https://github.com/AstraEditor/scratch-paint.git ../scratch-paint
+        git clone https://github.com/AstraEditor/scratch-render.git ../scratch-render
+        git clone https://github.com/AstraEditor/scratch-vm.git ../scratch-vm
+        cd ..
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 22
         cache: npm
+        cache-dependency-path: scratch-gui/package-lock.json
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+        cd scratch-gui
+        npm ci
+        cd ..
 
     - name: Build
-      run: npm run build
+      run: |
+        cd scratch-gui
+        npm run build
+        cd ..
       env:
         NODE_ENV: production
 
@@ -40,7 +59,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./build
+        path: ./scratch-gui/build
 
     - name: Deploy to GitHub Pages
       id: deployment
