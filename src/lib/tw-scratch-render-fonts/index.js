@@ -26,26 +26,50 @@ const fontData = {};
 const fetchFonts = () => {
     const promises = [];
     for (const fontName of Object.keys(fontSource)) {
-        promises.push(fetch(fontSource[fontName])
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`Cannot load font: ${fontName} (invalid HTTP response)`);
-                }
-                return res.blob();
-            })
-            .then(blob => new Promise((resolve, reject) => {
-                const fr = new FileReader();
-                fr.onload = () => resolve(fr.result);
-                fr.onerror = () => reject(new Error(`Cannot load font: ${fontName} (could not read)`));
-                fr.readAsDataURL(blob);
-            }))
-            .then(url => {
-                fontData[fontName] = `@font-face{font-family:"${fontName}";src:url("${url}");}`;
-            })
-            .catch(err => {
-                log.error(err);
-            })
-        );
+        const fontPath = fontSource[fontName];
+        
+        // 检查是否是字符串路径（在Desktop环境下）
+        if (typeof fontPath === 'string') {
+            promises.push(fetch(fontPath)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Cannot load font: ${fontName} (invalid HTTP response)`);
+                    }
+                    return res.blob();
+                })
+                .then(blob => new Promise((resolve, reject) => {
+                    const fr = new FileReader();
+                    fr.onload = () => resolve(fr.result);
+                    fr.onerror = () => reject(new Error(`Cannot load font: ${fontName} (could not read)`));
+                    fr.readAsDataURL(blob);
+                }))
+                .then(url => {
+                    fontData[fontName] = `@font-face{font-family:"${fontName}";src:url("${url}");}`;
+                })
+                .catch(err => {
+                    log.error(err);
+                })
+            );
+        } else {
+            // 处理webpack打包后的buffer数据
+            promises.push(Promise.resolve()
+                .then(() => {
+                    const blob = new Blob([fontPath], { type: 'font/woff2' });
+                    return new Promise((resolve, reject) => {
+                        const fr = new FileReader();
+                        fr.onload = () => resolve(fr.result);
+                        fr.onerror = () => reject(new Error(`Cannot load font: ${fontName} (could not read)`));
+                        fr.readAsDataURL(blob);
+                    });
+                })
+                .then(url => {
+                    fontData[fontName] = `@font-face{font-family:"${fontName}";src:url("${url}");}`;
+                })
+                .catch(err => {
+                    log.error(err);
+                })
+            );
+        }
     }
     return Promise.all(promises);
 };

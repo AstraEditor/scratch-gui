@@ -20,7 +20,7 @@ $z-index-stage-question: 490;
 /* "ask" block text input goes above monitors */
 
 $z-index-loader: 520; /* above modal (510) and menu-bar (491) */
-$z-index-modal: 510;
+$z-index-modal: 530;
 
 
 $z-index-drag-layer: 1000;
