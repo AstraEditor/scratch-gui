@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'package.json'
       - 'webpack.config.js'
+      - '.github/workflows/sync-to-website.yml'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
