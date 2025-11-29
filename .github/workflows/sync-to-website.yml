@@ -67,15 +67,20 @@ jobs:
         token: ${{ secrets.PAT }}
         path: website
 
-    - name: Clear old build files
+    - name: Clear old build directory
       run: |
         cd website
-        find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name 'README.md' ! -name 'CNAME' -exec rm -rf {} + || true
+        # Remove existing build directory if it exists
+        if [ -d "build" ]; then
+          rm -rf build
+        fi
         cd ..
 
     - name: Copy new build files
       run: |
-        cp -r scratch-gui/build/* website/
+        # Create build directory and copy files
+        mkdir -p website/build
+        cp -r scratch-gui/build/* website/build/
         cd website
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -83,6 +88,6 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Auto-update from scratch-gui build"
+          git commit -m "Auto-update build directory from scratch-gui"
           git push
         fi
