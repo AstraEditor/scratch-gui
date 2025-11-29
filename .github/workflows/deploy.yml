@@ -41,9 +41,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd scratch-gui
-        npm ci
-        cd ..
+        # Install dependencies for each module
+        cd scratch-audio && npm ci && cd ..
+        cd scratch-blocks && npm ci && cd ..
+        cd scratch-paint && npm ci && cd ..
+        cd scratch-render && npm ci && cd ..
+        cd scratch-vm && npm ci && cd ..
+        # Install scratch-gui dependencies
+        cd scratch-gui && npm ci && cd ..
 
     - name: Build
       run: |
