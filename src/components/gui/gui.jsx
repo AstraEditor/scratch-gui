@@ -749,7 +749,7 @@ const GUIComponent = props => {
                                             }}
                                             style={{ cursor: isCostumesDragging ? 'grabbing' : 'grab' }}
                                         >
-                                            角色
+                                            角色123
                                         </div>
                                         <Box className={styles.targetWrapper} style={{ resize: "both" }}>
                                             <TargetPane stageSize={stageSize} vm={vm} />
