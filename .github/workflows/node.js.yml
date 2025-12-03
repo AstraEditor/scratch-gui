@@ -12,11 +12,45 @@ jobs:
     - uses: actions/checkout@v4
       with:
         persist-credentials: false
+        path: scratch-gui
+    - name: Checkout scratch-vm
+      uses: actions/checkout@v4
+      with:
+        repository: AstraEditor/scratch-vm
+        path: scratch-vm
+    - name: Checkout scratch-blocks
+      uses: actions/checkout@v4
+      with:
+        repository: AstraEditor/scratch-blocks
+        path: scratch-blocks
+    - name: Checkout scratch-render
+      uses: actions/checkout@v4
+      with:
+        repository: AstraEditor/scratch-render
+        path: scratch-render
+    - name: Checkout scratch-paint
+      uses: actions/checkout@v4
+      with:
+        repository: AstraEditor/scratch-paint
+        path: scratch-paint
     - name: Install Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 22
         cache: npm
-    - run: npm ci
-    - run: npm run build
-    - run: npm run test:unit
+        cache-dependency-path: scratch-gui/package-lock.json
+    - name: Build dependencies
+      run: |
+        cd scratch-vm && npm ci
+        cd ../scratch-blocks && npm ci
+        cd ../scratch-render && npm ci
+        cd ../scratch-paint && npm ci
+    - name: Build scratch-gui
+      run: |
+        cd scratch-gui
+        npm ci
+        npm run build
+    - name: Test scratch-gui
+      run: |
+        cd scratch-gui
+        npm run test:unit
