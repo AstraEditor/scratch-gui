@@ -385,7 +385,7 @@ export default [
     {
         name: (
             <FormattedMessage
-                defaultMessage="{APP_NAME} Blocks"
+                defaultMessage="TurboWarp Blocks"
                 description="Name of the strange 'TurboWarp Blocks' extension"
                 id="tw.twExtension.name"
                 values={{
@@ -432,7 +432,7 @@ export default [
 export const galleryLoading = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{
@@ -458,7 +458,7 @@ export const galleryLoading = {
 export const galleryMore = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{
@@ -484,7 +484,7 @@ export const galleryMore = {
 export const galleryError = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{

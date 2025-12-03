@@ -910,6 +910,11 @@ class AddonRunner {
             await untilInEditor();
         }
 
+        if (!addonEntries[this.id]) {
+            console.error(`Addon ${this.id} not found in addonEntries`);
+            return;
+        }
+
         const mod = await addonEntries[this.id]();
         this.resources = mod.resources;
 

@@ -8,8 +8,15 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: $z-index-modal;
+    z-index: 509; /* 低于loader (520) 和 modal content (510) */
     color: $ui-modal-foreground;
+    pointer-events: none;
+}
+
+/* 置顶状态的overlay */
+.modal-overlay.top-most-overlay {
+    z-index: 509; /* 保持低于loader，但高于其他元素 */
+    /* 确保overlay在modal内容之下但高于其他元素 */
 }
 
 .modal-content * {
@@ -17,18 +24,165 @@
 }
 
 .modal-content {
-    background-color:$menu-bar-background;
+    background-color: $ui-modal-background;
     resize: both;
     outline: none;
-    border: 4px solid $ui-white-transparent;
+    border: 4px solid $ui-white-transparent !important;
     padding: 0;
     border-radius: $space;
     user-select: none;
 
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    overflow: auto;
-    
+    overflow: hidden;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    max-height: 100vh;
+    max-width: 100vw;
+    pointer-events: auto;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    /* z-index由JavaScript控制 */
 }
+
+/* 置顶状态不再有特殊视觉反馈 */
+
+/* 特殊modal的z-index由JavaScript控制 */
+
+/* 特殊modal的z-index由JavaScript的style属性控制 */
+
+/* 确保边框始终显示 */
+.modal-content.modal-content {
+    border: 4px solid $ui-white-transparent !important;
+}
+
+.modal-content.minimized {
+    height: 40px !important;
+    min-height: 40px !important;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content.minimized .header {
+    height: 40px !important;
+    padding: 0;
+}
+
+.modal-content.minimized .header {
+    height: 40px !important;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.modal-content.minimized .header-item-title {
+    font-size: 0.9rem;
+    padding: 0 0.5rem;
+    white-space: nowrap;
+    flex: 1;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    order: 0;
+    margin-right: 80px;
+}
+
+.modal-content.minimized .minimizedTitle {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    margin-right: 80px !important;
+}
+
+.modal-content.minimized .header-item-help {
+    display: none;
+}
+
+.modal-content.minimized .window-controls {
+    margin-left: auto;
+    order: 1;
+    flex-shrink: 0;
+}
+
+.modal-content.minimized .header-item-help {
+    display: none;
+    order: 2;
+}
+
+.modal-content.maximized {
+    border: none;
+    border-radius: 0;
+}
+
+.modalBody {
+    padding: 0;
+    height: calc(100% - 50px);
+    box-sizing: border-box;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+/* 窗口控制按钮样式 - 与关闭按钮一致 */
+.window-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 0.25rem;
+}
+
+.windowControlButton {
+    display: flex;
+    margin: 0;
+    margin-right: 2px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: $ui-black-transparent;
+    box-shadow: 0 0 0 2px $ui-black-transparent;
+    border-radius: 50%;
+    user-select: none;
+    cursor: pointer;
+    transition: all 0.15s ease-out;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    flex-shrink: 0;
+}
+
+.windowControlButton:hover {
+    transform: scale(1.1, 1.1);
+    box-shadow: 0 0 0 4px $ui-black-transparent;
+}
+
+.windowControlIcon {
+    width: 0.725rem;
+    height: 0.725rem;
+    filter: brightness(0) invert(1);
+    position: relative;
+    user-select: none;
+}
+
+/* 确保关闭按钮与窗口控制按钮对齐 */
+.header-item-close {
+    display: flex;
+    align-items: center;
+    padding-right: 0.5rem;
+}
+
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    z-index: 10;
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%);
+}
+
+
 
 .modal-content.full-screen {
     position: absolute;
@@ -74,7 +228,10 @@ $sides: 20rem;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 1rem;
     font-weight: normal;
+    transition: background-color,filter 0.2s ease;
 }
+
+/* 标题栏不再有置顶高亮 */
 
 .header-item {
     display: flex;

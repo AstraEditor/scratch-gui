@@ -213,10 +213,18 @@ const StageHeaderComponent = function (props) {
                 style={{ minWidth: `${stageDimensions.width + 2}px` }}
             >
                 <Box className={styles.stageMenuWrapper}>
-                    <Controls
-                        vm={vm}
-                        isSmall={stageSizeMode === STAGE_SIZE_MODES.small}
-                    />
+                    {(() => {
+                        const bodyWrapper = document.querySelector("[class*='gui_body-wrapper_']") || 
+                                          document.querySelector("[class*='body-wrapper_']") ||
+                                          document.querySelector(".body-wrapper") ||
+                                          document.querySelector(".gui_body-wrapper_1T2l7");
+                        return bodyWrapper && bodyWrapper.classList.contains('sa-stage-hidden') ? null : (
+                            <Controls
+                                vm={vm}
+                                isSmall={stageSizeMode === STAGE_SIZE_MODES.small}
+                            />
+                        );
+                    })()}
                     <div
                         className={styles.stageSizeRow}
                         key="editor" // addons require the HTML element to be not be re-used by in-editor buttons

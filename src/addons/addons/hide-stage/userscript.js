@@ -64,21 +64,57 @@ export default async function ({ addon, console, msg }) {
   });
 
   while (true) {
-    const stageControls = await addon.tab.waitForElement(
+    // 尝试找到舞台控制按钮的容器 - 适配当前GUI结构
+    let stageControls = await addon.tab.waitForElement(
       "[class*='stage-header_stage-size-toggle-group_'] > [class*='toggle-buttons_row_']",
       {
         markAsSeen: true,
         reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
       }
-    );
-    bodyWrapper = document.querySelector("[class*='gui_body-wrapper_']");
+    ).catch(() => null);
+    
+    // 如果找不到，尝试当前GUI的结构
+    if (!stageControls) {
+      stageControls = await addon.tab.waitForElement(
+        "[class*='stage-size-toggle-group']",
+        {
+          markAsSeen: true,
+          reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
+        }
+      ).catch(() => null);
+    }
+    
+    // 最后尝试找到stage-size-row
+    if (!stageControls) {
+      stageControls = await addon.tab.waitForElement(
+        "[class*='stage-size-row']",
+        {
+          markAsSeen: true,
+          reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
+        }
+      );
+    }
+    
+    bodyWrapper = document.querySelector("[class*='gui_body-wrapper_']") || 
+                  document.querySelector("[class*='body-wrapper_']") ||
+                  document.querySelector(".body-wrapper") ||
+                  document.querySelector(".gui_body-wrapper_1T2l7");
 
     const stageButtons = Array.from(stageControls.querySelectorAll("button"));
     smallStageButton = stageButtons[0];
     largeStageButton = stageButtons.length === 3 ? stageButtons[1] : null;
     fullStageButton = stageButtons[stageButtons.length - 1];
 
-    if (!addon.self.disabled) stageControls.insertBefore(hideStageButton, smallStageButton);
+    if (!addon.self.disabled) {
+      // 尝试在第一个按钮前插入隐藏按钮
+      if (smallStageButton) {
+        smallStageButton.parentNode.insertBefore(hideStageButton, smallStageButton);
+      } else {
+        // 如果找不到小舞台按钮，直接添加到容器末尾
+        stageControls.appendChild(hideStageButton);
+      }
+    }
+    
     if (stageHidden) hideStage();
     else unhideStage();
 

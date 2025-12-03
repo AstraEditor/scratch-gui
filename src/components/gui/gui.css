@@ -266,23 +266,48 @@ body {
     padding-right: $space;
     /* Fix: Changed from flex-basis: 0 to allow proper width calculation */
     flex-basis: auto;
-    min-width: 480px;
-    min-height: 360px;
+    min-width: 240px; /* 缩小舞台时的最小宽度，为原来的480px的一半 */
+    min-height: 180px; /* 缩小舞台时的最小高度，为原来的360px的一半 */
     /* Fix: Removed resize for docked mode - only window mode should be resizable */
-    overflow: auto;
+    overflow: hidden;
     min-height: 0;
+    /* 移除margin-left，因为现在使用flex布局的justify-content */
+}
+
+/* 缩小舞台模式下的特殊样式 */
+.stageAndTargetWrapper.small {
+    min-width: 120px; /* 最小宽度，适应极窄的自定义分辨率 */
+    min-height: 90px; /* 最小高度，适应极矮的自定义分辨率 */
+    flex-shrink: 0; /* 防止进一步缩小 */
+    /* 容器大小将由JavaScript动态设置 */
+}
+
+/* 大舞台模式下的样式 */
+.stageAndTargetWrapper.large {
+    min-width: 240px; /* 最小宽度，适应自定义分辨率 */
+    min-height: 180px; /* 最小高度，适应自定义分辨率 */
+    /* 容器大小将由JavaScript动态设置 */
+}
+
+/* 全屏模式下的样式 */
+.stageAndTargetWrapper.full {
+    min-width: 240px; /* 最小宽度，适应自定义分辨率 */
+    min-height: 180px; /* 最小高度，适应自定义分辨率 */
+    /* 容器大小将由JavaScript动态设置 */
 }
 
 .target-wrapper {
     display: flex;
     flex-grow: 1;
     flex-basis: 0;
-    min-width: 450px;
+    /* 移除固定的最小宽度限制，让角色区跟随舞台大小 */
+    min-width: 200px;
     min-height: 250px;
     padding-top: $space;
     width: 200px;
     overflow: hidden;
-    resize: both;
+    /* 移除resize以禁用滚动条 */
+    /* resize: both; */
 
 
     /*
@@ -291,6 +316,24 @@ body {
     */
     /* TODO this also breaks the thermometer menu */
     /* overflow: hidden; */
+}
+
+/* 缩小舞台模式下的目标区域样式 */
+.stageAndTargetWrapper.small .target-wrapper {
+    min-width: 100px; /* 缩小舞台时角色区的最小宽度 */
+    width: 100px; /* 缩小舞台时角色区的固定宽度 */
+}
+
+/* 大舞台模式下的目标区域样式 */
+.stageAndTargetWrapper.large .target-wrapper {
+    min-width: 200px;
+    width: 200px;
+}
+
+/* 全屏模式下的目标区域样式 */
+.stageAndTargetWrapper.full .target-wrapper {
+    min-width: 200px;
+    width: 200px;
 }
 .stage-and-target-wrapper-old {
     /*
@@ -311,6 +354,7 @@ body {
     flex-basis: auto;
     min-width: 480px;
     min-height: 360px;
+    /* 移除margin-left，因为现在使用flex布局的justify-content */
 }
 
 .target-wrapper-old {
@@ -320,6 +364,8 @@ body {
 
     padding-top: $space;
     min-height: 0;
+    /* 移除固定的最小宽度限制，让角色区跟随舞台大小 */
+    min-width: 200px;
     /* this makes it work in Firefox */
 
     /*

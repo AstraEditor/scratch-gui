@@ -22,7 +22,9 @@ import {
     closeCostumeLibrary,
     closeBackdropLibrary,
     closeTelemetryModal,
-    openExtensionLibrary
+    closeCustomThemeModal,
+    openExtensionLibrary,
+    openCustomThemeModal
 } from '../reducers/modals';
 
 import FontLoaderHOC from '../lib/font-loader-hoc.jsx';
@@ -125,6 +127,7 @@ GUI.propTypes = {
     isTotallyNormal: PropTypes.bool,
     loadingStateVisible: PropTypes.bool,
     onProjectLoaded: PropTypes.func,
+    onProjectTelemetryEvent: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onStorageInit: PropTypes.func,
     onUpdateProjectId: PropTypes.func,
@@ -140,6 +143,7 @@ GUI.defaultProps = {
     isTotallyNormal: false,
     onStorageInit: storageInstance => storageInstance.addOfficialScratchWebStores(),
     onProjectLoaded: () => {},
+    onProjectTelemetryEvent: () => {},
     onUpdateProjectId: () => {},
     onVmInit: (/* vm */) => {}
 };
@@ -177,6 +181,7 @@ const mapStateToProps = state => {
         fontsModalVisible: state.scratchGui.modals.fontsModal,
         unknownPlatformModalVisible: state.scratchGui.modals.unknownPlatformModal,
         invalidProjectModalVisible: state.scratchGui.modals.invalidProjectModal,
+        customThemeModalVisible: state.scratchGui.modals.customTheme,
         vm: state.scratchGui.vm
     };
 };
@@ -188,7 +193,9 @@ const mapDispatchToProps = dispatch => ({
     onActivateSoundsTab: () => dispatch(activateTab(SOUNDS_TAB_INDEX)),
     onRequestCloseBackdropLibrary: () => dispatch(closeBackdropLibrary()),
     onRequestCloseCostumeLibrary: () => dispatch(closeCostumeLibrary()),
-    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal())
+    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal()),
+    onRequestCloseCustomThemeModal: () => dispatch(closeCustomThemeModal()),
+    onOpenCustomTheme: () => dispatch(openCustomThemeModal())
 });
 
 const ConnectedGUI = injectIntl(connect(

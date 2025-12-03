@@ -237,7 +237,6 @@ class LibraryComponent extends React.Component {
                     .includes(this.state.filterQuery.toLowerCase());
             });
         }
-
         return filteredItems;
     }
     scrollToTop () {
@@ -275,7 +274,8 @@ class LibraryComponent extends React.Component {
                         )}
                         {this.props.tags &&
                             <div className={styles.tagWrapper}>
-                                {tagListPrefix.concat(this.props.tags).map((tagProps, id) => (
+                                {tagListPrefix.concat(this.props.tags).map((tagProps, id) => {
+                                    return(
                                     <TagButton
                                         active={this.state.selectedTag === tagProps.tag.toLowerCase()}
                                         className={classNames(
@@ -286,8 +286,8 @@ class LibraryComponent extends React.Component {
                                         key={`tag-button-${id}`}
                                         onClick={this.handleTagClick}
                                         {...tagProps}
-                                    />
-                                ))}
+                                />)
+    })}
                             </div>
                         }
                     </div>

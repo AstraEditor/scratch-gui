@@ -73,16 +73,22 @@ const getStageDimensions = (stageSize, customStageSize, isFullScreen) => {
         stageDimensions.scale = stageDimensions.width / stageDimensions.widthDefault;
     } else {
         const metadata = STAGE_DISPLAY_SCALE_METADATA[stageSize];
+        
+        // 修复：对于自定义舞台分辨率，需要基于标准分辨率进行缩放
+        const standardWidth = 480; // 标准舞台宽度
+        const standardHeight = 360; // 标准舞台高度
+        
         if (metadata.width) {
-            // Uses a fixed width.
-            stageDimensions.width = metadata.width;
-            stageDimensions.scale = stageDimensions.width / stageDimensions.widthDefault;
-            stageDimensions.height = stageDimensions.scale * stageDimensions.heightDefault;
+            // 对于small和large模式，使用相对于标准分辨率的缩放
+            const scaleFactor = metadata.width / standardWidth;
+            stageDimensions.scale = scaleFactor;
+            stageDimensions.width = customStageSize.width * scaleFactor;
+            stageDimensions.height = customStageSize.height * scaleFactor;
         } else {
-            // Uses a width relative to the current size.
+            // 对于full和constrained模式，使用比例缩放
             stageDimensions.scale = metadata.scale;
-            stageDimensions.height = stageDimensions.scale * stageDimensions.heightDefault;
-            stageDimensions.width = stageDimensions.scale * stageDimensions.widthDefault;
+            stageDimensions.height = customStageSize.height * metadata.scale;
+            stageDimensions.width = customStageSize.width * metadata.scale;
         }
     }
 

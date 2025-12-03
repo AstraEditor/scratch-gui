@@ -1,4 +1,4 @@
-import {BLOCKS_CUSTOM, Theme} from '.';
+import {BLOCKS_CUSTOM, ACCENT_CUSTOM, Theme, updateCustomColors} from '.';
 
 const matchMedia = query => (window.matchMedia ? window.matchMedia(query) : null);
 const PREFERS_HIGH_CONTRAST_QUERY = matchMedia('(prefers-contrast: more)');
@@ -61,6 +61,19 @@ const detectTheme = () => {
         }
 
         const parsed = JSON.parse(local);
+        
+        // Load custom colors if custom accent is selected
+        if (parsed.accent === ACCENT_CUSTOM) {
+            try {
+                const customColors = localStorage.getItem('tw:custom-theme-colors');
+                if (customColors) {
+                    updateCustomColors(JSON.parse(customColors));
+                }
+            } catch (e) {
+                // ignore errors loading custom colors
+            }
+        }
+        
         // Any invalid values in storage will be handled by Theme itself
         return new Theme(
             parsed.accent || systemPreferences.accent,
@@ -101,6 +114,15 @@ const persistTheme = theme => {
     } else {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(nonDefaultSettings));
+        } catch (e) {
+            // ignore
+        }
+    }
+    
+    // If custom accent is being removed, clean up custom colors
+    if (theme.accent !== ACCENT_CUSTOM) {
+        try {
+            localStorage.removeItem('tw:custom-theme-colors');
         } catch (e) {
             // ignore
         }

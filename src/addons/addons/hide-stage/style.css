@@ -12,6 +12,10 @@
 /* [class*="gui_flex-wrapper_"] is for specificity over hide-flyout */
 .sa-stage-hidden [class*="gui_flex-wrapper_"] [class*="gui_stage-and-target-wrapper_"],
 .sa-stage-hidden [class*="stage-wrapper_stage-wrapper_"]:not([class*="stage-wrapper_full-screen_"]),
+.sa-stage-hidden [class*="gui_target-wrapper_"],
+.sa-stage-hidden [class*="stageAndTargetWrapper"],
+.sa-stage-hidden [class*="target-wrapper"],
+.sa-stage-hidden [class*="gui_stageAndTargetWrapper_"],
 .sa-stage-hidden [class*="gui_target-wrapper_"] {
   padding: 0;
 }
@@ -19,8 +23,15 @@
 .sa-stage-hidden
   [class*="stage-wrapper_stage-wrapper_"]:not([class*="stage-wrapper_full-screen_"])
   [class*="controls_controls-container_"],
+.sa-stage-hidden [class*="gui_target-wrapper_"],
+.sa-stage-hidden [class*="target-wrapper"],
 .sa-stage-hidden [class*="gui_target-wrapper_"] {
   display: none;
+}
+
+/* 隐藏舞台时隐藏控制按钮，避免与窗口控制图标重合 */
+.sa-stage-hidden [class*="controls_controls-container_"] {
+  display: none !important;
 }
 .sa-stage-hidden
   [class*="stage-wrapper_stage-wrapper_"]:not([class*="stage-wrapper_full-screen_"])
@@ -56,5 +67,24 @@
 }
 
 .sa-stage-hidden-outer .scratchEyedropper {
+  display: none;
+}
+
+/* 针对当前GUI的特定类名 */
+.sa-stage-hidden .stage_stage_DTWo5 {
+  display: none !important;
+}
+
+.sa-stage-hidden .gui_stageAndTargetWrapper_2iWbZ {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  flex-basis: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+.sa-stage-hidden .gui_target-wrapper_2YpM2 {
   display: none;
 }

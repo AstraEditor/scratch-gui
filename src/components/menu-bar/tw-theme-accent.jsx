@@ -7,10 +7,11 @@ import {connect} from 'react-redux';
 import check from './check.svg';
 import dropdownCaret from './dropdown-caret.svg';
 import {MenuItem, Submenu} from '../menu/menu.jsx';
-import {ACCENT_BLUE, ACCENT_MAP, ACCENT_PURPLE, ACCENT_RED, ACCENT_RAINBOW, Theme} from '../../lib/themes/index.js';
+import {ACCENT_BLUE, ACCENT_MAP, ACCENT_PURPLE, ACCENT_RED, ACCENT_RAINBOW, ACCENT_CUSTOM, Theme, getCustomColors} from '../../lib/themes/index.js';
 import {openAccentMenu, accentMenuOpen, closeSettingsMenu} from '../../reducers/menus.js';
 import {setTheme} from '../../reducers/theme.js';
 import {persistTheme} from '../../lib/themes/themePersistance.js';
+import {openCustomThemeModal} from '../../reducers/modals.js';
 import rainbowIcon from './tw-accent-rainbow.svg';
 import styles from './settings-menu.css';
 
@@ -34,6 +35,11 @@ const options = defineMessages({
         defaultMessage: 'Rainbow',
         description: 'Name of color scheme that uses a rainbow.',
         id: 'tw.accent.rainbow'
+    },
+    [ACCENT_CUSTOM]: {
+        defaultMessage: 'Custom',
+        description: 'Name of custom color scheme.',
+        id: 'tw.accent.custom'
     }
 });
 
@@ -55,8 +61,12 @@ const ColorIcon = props => (
             className={styles.accentIconOuter}
             style={{
                 // menu-bar-background is var(...), don't want to evaluate with the current values
-                backgroundColor: ACCENT_MAP[props.id].guiColors['looks-secondary'],
-                backgroundImage: ACCENT_MAP[props.id].guiColors['menu-bar-background-image']
+                backgroundColor: props.id === ACCENT_CUSTOM ? 
+                    getCustomColors().primary : 
+                    ACCENT_MAP[props.id].guiColors['looks-secondary'],
+                backgroundImage: props.id === ACCENT_CUSTOM ? 
+                    'none' : 
+                    ACCENT_MAP[props.id].guiColors['menu-bar-background-image']
             }}
         />
     )
@@ -93,6 +103,7 @@ const AccentThemeMenu = ({
     isRtl,
     onChangeTheme,
     onOpen,
+    onOpenCustomTheme,
     theme
 }) => (
     <MenuItem expanded={isOpen}>
@@ -121,7 +132,13 @@ const AccentThemeMenu = ({
                     id={item}
                     isSelected={theme.accent === item}
                     // eslint-disable-next-line react/jsx-no-bind
-                    onClick={() => onChangeTheme(theme.set('accent', item))}
+                    onClick={() => {
+                        if (item === ACCENT_CUSTOM) {
+                            onOpenCustomTheme();
+                        } else {
+                            onChangeTheme(theme.set('accent', item));
+                        }
+                    }}
                 />
             ))}
         </Submenu>
@@ -133,6 +150,7 @@ AccentThemeMenu.propTypes = {
     isRtl: PropTypes.bool,
     onChangeTheme: PropTypes.func,
     onOpen: PropTypes.func,
+    onOpenCustomTheme: PropTypes.func,
     theme: PropTypes.instanceOf(Theme)
 };
 
@@ -148,7 +166,11 @@ const mapDispatchToProps = dispatch => ({
         dispatch(closeSettingsMenu());
         persistTheme(theme);
     },
-    onOpen: () => dispatch(openAccentMenu())
+    onOpen: () => dispatch(openAccentMenu()),
+    onOpenCustomTheme: () => {
+        dispatch(openCustomThemeModal());
+        dispatch(closeSettingsMenu());
+    }
 });
 
 export default connect(

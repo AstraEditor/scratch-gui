@@ -8,6 +8,7 @@ import MediaQuery from 'react-responsive';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import tabStyles from 'react-tabs/style/react-tabs.css';
 import VM from 'scratch-vm';
+import { getStageDimensions } from '../../lib/screen-utils.js';
 
 import StageHeader from '../../containers/stage-header.jsx';
 
@@ -40,6 +41,9 @@ import TWFontsModal from '../../containers/tw-fonts-modal.jsx';
 import TWUnknownPlatformModal from '../../containers/tw-unknown-platform-modal.jsx';
 import TWInvalidProjectModal from '../../containers/tw-invalid-project-modal.jsx';
 import TWWindChimeSubmitter from '../../containers/tw-windchime-submitter.jsx';
+import TWCustomThemeModal from '../../containers/tw-custom-theme-modal.jsx';
+import StageModal from '../stage-modal/stage-modal.jsx';
+import SpriteModal from '../sprite-modal/sprite-modal.jsx';
 
 import { STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH } from '../../lib/layout-constants';
 import { resolveStageSize } from '../../lib/screen-utils';
@@ -135,10 +139,12 @@ const GUIComponent = props => {
         onClickLogo,
         onExtensionButtonClick,
         onOpenCustomExtensionModal,
+        onOpenCustomTheme,
         onProjectTelemetryEvent,
         onRequestCloseBackdropLibrary,
         onRequestCloseCostumeLibrary,
         onRequestCloseTelemetryModal,
+        onRequestCloseCustomThemeModal,
         onSeeCommunity,
         onShare,
         onShowPrivacyPolicy,
@@ -162,7 +168,33 @@ const GUIComponent = props => {
         fontsModalVisible,
         unknownPlatformModalVisible,
         invalidProjectModalVisible,
+        customThemeModalVisible,
         vm,
+        editingTarget,
+        hoveredTarget,
+        spriteLibraryVisible,
+        stage,
+        sprites,
+        onActivateBlocksTab,
+        onChangeSpriteDirection,
+        onChangeSpriteName,
+        onChangeSpriteRotationStyle,
+        onChangeSpriteSize,
+        onChangeSpriteVisibility,
+        onChangeSpriteX,
+        onChangeSpriteY,
+        onDeleteSprite,
+        onDrop,
+        onDuplicateSprite,
+        onExportSprite,
+        onFileUploadClick,
+        onNewSpriteClick,
+        onPaintSpriteClick,
+        onRequestCloseSpriteLibrary,
+        onSelectSprite,
+        onSpriteUpload,
+        onSurpriseSpriteClick,
+        raiseSprites,
         ...componentProps
     } = omit(props, 'dispatch');
 
@@ -178,6 +210,20 @@ const GUIComponent = props => {
     const [isCostumesDragging, setCostumesIsDragging] = useState(false);
 
     const [stageMode, setStageMode] = useState(false);
+    
+    // 当stageMode变化时控制Modal的显示
+    const handleStageModeChange = useCallback((newMode) => {
+        setStageMode(newMode);
+        if (newMode && !isFullScreen) {
+            // 切换到分离模式时自动打开Modal
+            setIsStageModalOpen(true);
+            setIsSpriteModalOpen(true);
+        } else {
+            // 切换回停靠模式时关闭Modal
+            setIsStageModalOpen(false);
+            setIsSpriteModalOpen(false);
+        }
+    }, [isFullScreen]);
     const stageRef = useRef(null);
     const [stagePosition, setStagePosition] = useState(() => {
         try {
@@ -188,6 +234,10 @@ const GUIComponent = props => {
         }
     });
     const [containerSize, setContainerSize] = useState({ width: 480, height: 360 }); //调整舞台大小
+    
+    // Modal状态管理
+    const [isStageModalOpen, setIsStageModalOpen] = useState(false);
+    const [isSpriteModalOpen, setIsSpriteModalOpen] = useState(false);
 
 
     const [costumesPosition, setCostumesPosition] = useState(() => {
@@ -374,18 +424,22 @@ const GUIComponent = props => {
         <MediaQuery minWidth={unconstrainedWidth}>
             {isUnconstrained => {
                 const stageSize = resolveStageSize(stageSizeMode, isUnconstrained);
+                const stageDimensions = getStageDimensions(stageSize, customStageSize, isFullScreen);
 
                 const alwaysEnabledModals = (
                     <React.Fragment>
                         <TWSecurityManager securityManager={securityManager} />
                         <TWRestorePointManager />
-                        <TWWindChimeSubmitter isEmbedded={isEmbedded} />
+                        <TWWindChimeSubmitter 
+                    isEmbedded={isEmbedded} 
+                />
                         {usernameModalVisible && <TWUsernameModal />}
                         {settingsModalVisible && <TWSettingsModal />}
                         {customExtensionModalVisible && <TWCustomExtensionModal />}
                         {fontsModalVisible && <TWFontsModal />}
                         {unknownPlatformModalVisible && <TWUnknownPlatformModal />}
                         {invalidProjectModalVisible && <TWInvalidProjectModal />}
+                        {customThemeModalVisible && <TWCustomThemeModal />}
                     </React.Fragment>
                 );
 
@@ -507,6 +561,8 @@ const GUIComponent = props => {
                             onClickAddonSettings={onClickAddonSettings}
                             onClickDesktopSettings={onClickDesktopSettings}
                             onClickNewWindow={onClickNewWindow}
+                            onOpenCustomTheme={onOpenCustomTheme}
+                            onRequestCloseCustomThemeModal={onRequestCloseCustomThemeModal}
                             onClickPackager={onClickPackager}
                             onClickLogo={onClickLogo}
                             onCloseAccountNav={onCloseAccountNav}
@@ -626,7 +682,7 @@ const GUIComponent = props => {
                                             stageSize={stageSize}
                                             vm={vm}
                                             stageMode={stageMode}
-                                            SetStageMode={setStageMode}
+                                            SetStageMode={handleStageModeChange}
                                             isFullScreen={isFullScreen}
                                         />
                                     </Box>
@@ -634,132 +690,110 @@ const GUIComponent = props => {
                                         <Backpack host={backpackHost} />
                                     ) : null}
                                 </Box>
-                                {stageMode && backpackVisible && (
+                                {/* 舞台Modal */}
+                                {stageMode && !isFullScreen && (
+                                    <StageModal
+                                        isOpen={isStageModalOpen}
+                                        isFullScreen={isFullScreen}
+                                        isRendererSupported={isRendererSupported()}
+                                        isRtl={isRtl}
+                                        loading={loading}
+                                        stageSize={stageSize}
+                                        vm={vm}
+                                        alertsVisible={alertsVisible}
+                                        onRequestClose={() => setIsStageModalOpen(false)}
+                                        customStageSize={customStageSize}
+                                    />
+                                )}
+                                
+                                {/* 全屏模式保持原有实现 */}
+                                {stageMode && isFullScreen && (
                                     <div
-                                        className={isFullScreen ? classNames(styles.stageFull) : classNames(styles.stage)}
-                                        ref={stageRef}
+                                        className={classNames(styles.stageFull)}
                                         style={{
-                                            userSelect: 'none',
-                                            transform: isFullScreen ? `translate(0px, 0px)` : `translate(${stagePosition.x}px, ${stagePosition.y}px)`,
-
-                                            width: isFullScreen ? '100vw' : '',
-                                            height: isFullScreen ? '100vh' : '',
-
+                                            width: '100vw',
+                                            height: '100vh',
                                             zIndex: `${stageIndex}`
                                         }}
                                     >
-                                        {/* StageHeader for stage mode */}
-                                        {isFullScreen && (
-                                            <Box className={styles.stageMenuWrapper}>
-                                                <StageHeader
+                                        <Box className={styles.stageMenuWrapper}>
+                                            <StageHeader
+                                                stageSize={stageSize}
+                                                vm={vm}
+                                                stageMode={stageMode}
+                                                SetStageMode={handleStageModeChange}
+                                                isFullScreen={isFullScreen}
+                                            />
+                                        </Box>
+                                        <div style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                        }}>
+                                            <div>
+                                                <StageWrapper
+                                                    isFullScreen={isFullScreen}
+                                                    isRendererSupported={isRendererSupported()}
+                                                    isRtl={isRtl}
                                                     stageSize={stageSize}
                                                     vm={vm}
-                                                    stageMode={stageMode}
-                                                    SetStageMode={setStageMode}
-                                                    isFullScreen={isFullScreen}
                                                 />
-                                            </Box>
-                                        )}
-                                        {/* 舞台标题栏（仅非全屏显示） */}
-                                        {!isFullScreen && (
-                                            <div
-                                                className={classNames(styles.stageBar)}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    handleStageMouseDown(e);
-                                                    setStageIndex(costumeIndex + 1)
-                                                }}
-                                                style={{
-                                                    cursor: isStageDragging ? 'grabbing' : 'grab',
-                                                    position: 'relative',
-                                                    zIndex: 10,
-                                                    userSelect: 'none'
-                                                }}
-                                            >
-                                                舞台
                                             </div>
-                                        )}
-
-                                        {/* 内容区域 */}
-                                        {!isFullScreen ? (
-                                            // 非全屏模式：使用容器尺寸计算缩放
-                                            <div style={{
-                                                width: '100%',
-                                                height: 'calc(100% - 30px)',
-                                                display: 'flex',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                pointerEvents: 'none'
-                                            }}>
-                                                <div style={{
-                                                    transformOrigin: 'center center',
-                                                    pointerEvents: 'auto'
-                                                }}>
-                                                    <StageWrapper
-                                                        isFullScreen={isFullScreen}
-                                                        isRendererSupported={isRendererSupported()}
-                                                        isRtl={isRtl}
-                                                        stageSize={stageSize}
-                                                        vm={vm}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            // 全屏模式：使用窗口尺寸计算缩放
-                                            <div style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                display: 'flex',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                overflow: 'hidden',
-                                            }}>
-                                                <div>
-                                                    <StageWrapper
-                                                        isFullScreen={isFullScreen}
-                                                        isRendererSupported={isRendererSupported()}
-                                                        isRtl={isRtl}
-                                                        stageSize={stageSize}
-                                                        vm={vm}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* 角色组件 */}
-                                {/* 窗口模式 */}
-                                {stageMode && (!isFullScreen && backpackVisible) && (
-                                    <div
-                                        className={classNames(styles.stage)}
-                                        ref={costumesRef}
-                                        style={{
-                                            userSelect: 'none',
-                                            transform: `translate(${costumesPosition.x}px, ${costumesPosition.y}px)`,
-                                            zIndex: `${costumeIndex}`
-                                        }}
-                                    >
-                                        <div
-                                            className={classNames(styles.stageBar)}
-                                            onMouseDown={(e) => {
-                                                handleCostumesMouseDown(e);
-                                                setCostumesIndex(stageIndex + 1);
-                                            }}
-                                            style={{ cursor: isCostumesDragging ? 'grabbing' : 'grab' }}
-                                        >
-                                            角色123
-                                        </div>
-                                        <Box className={styles.targetWrapper} style={{ resize: "both" }}>
-                                            <TargetPane stageSize={stageSize} vm={vm} />
-                                        </Box>
-                                    </div>
+                                {/* Modal模式 */}
+                                {stageMode && !isFullScreen && (
+                                    <SpriteModal
+                                        isOpen={isSpriteModalOpen}
+                                        stageSize={stageSize}
+                                        vm={vm}
+                                        onRequestClose={() => setIsSpriteModalOpen(false)}
+                                        // 传递所有TargetPane需要的props
+                                        editingTarget={editingTarget}
+                                        hoveredTarget={hoveredTarget}
+                                        spriteLibraryVisible={spriteLibraryVisible}
+                                        stage={stage}
+                                        sprites={sprites}
+                                        onActivateBlocksTab={onActivateBlocksTab}
+                                        onChangeSpriteDirection={onChangeSpriteDirection}
+                                        onChangeSpriteName={onChangeSpriteName}
+                                        onChangeSpriteRotationStyle={onChangeSpriteRotationStyle}
+                                        onChangeSpriteSize={onChangeSpriteSize}
+                                        onChangeSpriteVisibility={onChangeSpriteVisibility}
+                                        onChangeSpriteX={onChangeSpriteX}
+                                        onChangeSpriteY={onChangeSpriteY}
+                                        onDeleteSprite={onDeleteSprite}
+                                        onDrop={onDrop}
+                                        onDuplicateSprite={onDuplicateSprite}
+                                        onExportSprite={onExportSprite}
+                                        onFileUploadClick={onFileUploadClick}
+                                        onNewSpriteClick={onNewSpriteClick}
+                                        onPaintSpriteClick={onPaintSpriteClick}
+                                        onRequestCloseSpriteLibrary={onRequestCloseSpriteLibrary}
+                                        onSelectSprite={onSelectSprite}
+                                        onSpriteUpload={onSpriteUpload}
+                                        onSurpriseSpriteClick={onSurpriseSpriteClick}
+                                        raiseSprites={raiseSprites}
+                                        customStageSize={customStageSize}
+                                    />
                                 )}
 
                                 {/* 停靠模式 */}
                                 {!stageMode && (
-                                    <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
+                                    <Box 
+                                        className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
+                                        style={{
+                                            // 动态设置容器大小以适应自定义舞台分辨率
+                                            minWidth: `${Math.max(120, stageDimensions.width + 20)}px`, // 添加padding
+                                            minHeight: `${Math.max(90, stageDimensions.height + 70)}px`, // 添加padding和控件高度
+                                        }}
+                                    >
                                         {isFullScreen ?
                                             <div style={{
                                                 width: '100%',
@@ -890,6 +924,10 @@ GUIComponent.propTypes = {
     fontsModalVisible: PropTypes.bool,
     unknownPlatformModalVisible: PropTypes.bool,
     invalidProjectModalVisible: PropTypes.bool,
+    customThemeModalVisible: PropTypes.bool,
+    onOpenCustomTheme: PropTypes.func,
+    onProjectTelemetryEvent: PropTypes.func,
+    onRequestCloseCustomThemeModal: PropTypes.func,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 GUIComponent.defaultProps = {

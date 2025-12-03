@@ -7,7 +7,9 @@ import DataURL from './data-url.jsx';
 import FancyCheckbox from '../tw-fancy-checkbox/checkbox.jsx';
 import {APP_NAME} from '../../lib/brand';
 
-const LoadExtensionModal = props => (
+
+const LoadExtensionModal = props => {
+    return(
     <div>
         {props.url.startsWith('data:') ? (
             <React.Fragment>
@@ -16,6 +18,7 @@ const LoadExtensionModal = props => (
                     description="Part of modal asking for permission to automatically load custom extension"
                     id="tw.loadExtension.embedded"
                 />
+                
                 <DataURL url={props.url} />
             </React.Fragment>
         ) : (
@@ -68,8 +71,8 @@ const LoadExtensionModal = props => (
                 />
             </div>
         )}
-    </div>
-);
+    </div>)
+};
 
 LoadExtensionModal.propTypes = {
     url: PropTypes.string.isRequired,

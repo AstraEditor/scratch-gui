@@ -3,6 +3,7 @@
 .modal-content {
     max-width: 550px;
     margin-top: 50px;
+    border: 4px solid $ui-white-transparent !important; /* 强制显示边框 */
 }
 
 .body {

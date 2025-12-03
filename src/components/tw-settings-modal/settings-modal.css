@@ -4,14 +4,16 @@
 
 .modal-content {
     max-width: 750px;
+    border: 4px solid $ui-white-transparent !important;
 }
 
 .body {
     background: $ui-modal-background;
-    padding: 1.5rem 2.25rem;
+    padding: 0.5rem 1rem;
     min-height: 150px;
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
+    height: 100%;
+    overflow: visible;
+    box-sizing: border-box;
 }
 
 /* For small screens, such as in the embed */

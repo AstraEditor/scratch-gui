@@ -558,6 +558,7 @@ class MenuBar extends React.Component {
                                 this.props.onClickAddonSettings &&
                                 this.props.onClickAddonSettings.bind(null, 'editor-theme3')
                             }
+                            onOpenCustomTheme={this.props.onOpenCustomTheme}
                             onRequestClose={this.props.onRequestCloseSettings}
                             onRequestOpen={this.props.onClickSettings}
                             settingsMenuOpen={this.props.settingsMenuOpen}
@@ -1118,6 +1119,7 @@ MenuBar.propTypes = {
     onClickAccount: PropTypes.func,
     onClickAddonSettings: PropTypes.func,
     onClickDesktopSettings: PropTypes.func,
+    onOpenCustomTheme: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickRestorePoints: PropTypes.func,
     onClickEdit: PropTypes.func,

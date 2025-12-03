@@ -4,6 +4,8 @@ import * as accentPurple from './accent/purple';
 import * as accentBlue from './accent/blue';
 import * as accentRed from './accent/red';
 import * as accentRainbow from './accent/rainbow';
+import * as accentCustom from './accent/custom';
+import { updateCustomColors, getCustomColors, getResolvedGuiColors, getResolvedBlockColors } from './accent/custom';
 
 import * as guiLight from './gui/light';
 import * as guiDark from './gui/dark';
@@ -16,11 +18,13 @@ const ACCENT_PURPLE = 'purple';
 const ACCENT_BLUE = 'blue';
 const ACCENT_RED = 'red';
 const ACCENT_RAINBOW = 'rainbow';
+const ACCENT_CUSTOM = 'custom';
 const ACCENT_MAP = {
     [ACCENT_PURPLE]: accentPurple,
     [ACCENT_BLUE]: accentBlue,
     [ACCENT_RED]: accentRed,
     [ACCENT_RAINBOW]: accentRainbow,
+    [ACCENT_CUSTOM]: accentCustom,
 };
 const ACCENT_DEFAULT = ACCENT_BLUE;
 
@@ -105,18 +109,32 @@ class Theme {
     }
 
     getGuiColors () {
+        let accentColors;
+        if (this.accent === ACCENT_CUSTOM) {
+            accentColors = getResolvedGuiColors();
+        } else {
+            accentColors = ACCENT_MAP[this.accent].guiColors;
+        }
+        
         return defaultsDeep(
             {},
-            ACCENT_MAP[this.accent].guiColors,
+            accentColors,
             GUI_MAP[this.gui].guiColors,
             guiLight.guiColors
         );
     }
 
     getBlockColors () {
+        let accentColors;
+        if (this.accent === ACCENT_CUSTOM) {
+            accentColors = getResolvedBlockColors();
+        } else {
+            accentColors = ACCENT_MAP[this.accent].blockColors;
+        }
+        
         return defaultsDeep(
             {},
-            ACCENT_MAP[this.accent].blockColors,
+            accentColors,
             GUI_MAP[this.gui].blockColors,
             BLOCKS_MAP[this.blocks].colors
         );
@@ -150,6 +168,7 @@ export {
     ACCENT_PURPLE,
     ACCENT_BLUE,
     ACCENT_RAINBOW,
+    ACCENT_CUSTOM,
     ACCENT_MAP,
 
     GUI_LIGHT,
@@ -160,5 +179,8 @@ export {
     BLOCKS_DARK,
     BLOCKS_HIGH_CONTRAST,
     BLOCKS_CUSTOM,
-    BLOCKS_MAP
+    BLOCKS_MAP,
+    
+    updateCustomColors,
+    getCustomColors
 };

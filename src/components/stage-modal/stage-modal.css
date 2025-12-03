@@ -1,0 +1,104 @@
+@import "../../css/colors.css";
+
+.stage-modal {
+    /* 继承默认的modal样式 */
+}
+
+.stage-container {
+    background-color: $ui-modal-background;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.alerts-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+}
+
+/* 确保stage在modal中正确显示 */
+.stage-modal .stage-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 全屏模式下的样式 */
+.stage-modal.full-screen .stage-container {
+    padding: 0;
+    background-color: #111;
+}
+
+/* 禁用调整大小的样式 */
+.stage-modal .resize-handle {
+    display: none !important;
+}
+
+.stage-modal.minimized .resize-handle {
+    display: none !important;
+}
+
+/* 确保modal内容不能调整大小 */
+.stage-modal .modal-content {
+    resize: none !important;
+    min-width: auto !important;
+    min-height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    user-select: none !important;
+}
+
+/* 隐藏所有可能的resize控件 */
+.stage-modal .modal-content::-webkit-resizer {
+    display: none !important;
+}
+
+.stage-modal .modal-content::-moz-resizer {
+    display: none !important;
+}
+
+.stage-modal .modal-content::-ms-resizer {
+    display: none !important;
+}
+
+/* 更强制的resize禁用 */
+.stage-modal .modal-content * {
+    resize: none !important;
+}
+
+/* 禁用任何可能的大小变化 */
+.stage-modal[style*="resize"] .modal-content {
+    resize: none !important;
+}
+
+/* 确保ReactModal的样式也被覆盖 */
+.ReactModal__Content.stage-modal {
+    resize: none !important;
+    overflow: hidden !important;
+}
+
+/* 防止任何子元素影响大小 */
+.stage-modal * {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+.stage-modal.full-screen .stage-wrapper {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 移除modal的默认内边距以适应stage */
+.stage-modal .modal-body {
+    padding: 0;
+}
+
+/* 调整stage在modal中的尺寸 */
+.stage-modal .stage {
+    max-width: 100%;
+    max-height: 100%;
+}

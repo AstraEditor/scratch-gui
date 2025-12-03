@@ -10,6 +10,7 @@ export default {
   "data-category-tweaks-v2": () => import(/* webpackChunkName: "addon-entry-data-category-tweaks-v2" */ "../addons/data-category-tweaks-v2/_runtime_entry.js"),
   "block-palette-icons": () => import(/* webpackChunkName: "addon-entry-block-palette-icons" */ "../addons/block-palette-icons/_runtime_entry.js"),
   "hide-flyout": () => import(/* webpackChunkName: "addon-entry-hide-flyout" */ "../addons/hide-flyout/_runtime_entry.js"),
+  
   "mediarecorder": () => import(/* webpackChunkName: "addon-entry-mediarecorder" */ "../addons/mediarecorder/_runtime_entry.js"),
   "drag-drop": () => require("../addons/drag-drop/_runtime_entry.js"),
   "debugger": () => import(/* webpackChunkName: "addon-entry-debugger" */ "../addons/debugger/_runtime_entry.js"),
@@ -73,6 +74,7 @@ export default {
   "expanded-backpack": () => import(/* webpackChunkName: "addon-entry-expanded-backpack" */ "../addons/expanded-backpack/_runtime_entry.js"),
   "script-snap": () => import(/* webpackChunkName: "addon-entry-script-snap" */ "../addons/script-snap/_runtime_entry.js"),
   "fullscreen": () => import(/* webpackChunkName: "addon-entry-fullscreen" */ "../addons/fullscreen/_runtime_entry.js"),
+  "hide-stage": () => import(/* webpackChunkName: "addon-default-entry" */ "../addons/hide-stage/_runtime_entry.js"),
   "tw-straighten-comments": () => import(/* webpackChunkName: "addon-entry-tw-straighten-comments" */ "../addons/tw-straighten-comments/_runtime_entry.js"),
   "tw-remove-backpack": () => import(/* webpackChunkName: "addon-entry-tw-remove-backpack" */ "../addons/tw-remove-backpack/_runtime_entry.js"),
   "tw-remove-feedback": () => import(/* webpackChunkName: "addon-entry-tw-remove-feedback" */ "../addons/tw-remove-feedback/_runtime_entry.js"),
