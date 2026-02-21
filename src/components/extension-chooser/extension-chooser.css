@@ -1,0 +1,143 @@
+@import "../../css/colors.css";
+
+.modal-content.full-screen {
+    overflow-y: hidden !important;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.openLibraryButton, .openCustomExtension {
+    justify-content: center;
+    background-color: $looks-secondary;
+    border: none;
+    border-radius: 2000px;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: filter 0.2s ease-in-out;
+    position: absolute;
+    bottom: 30px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+}
+
+.openCustomExtension {
+    bottom: 100px;
+    font-size: 16px;
+}
+
+.openLibraryButton:hover, .openCustomExtension:hover {
+    filter: brightness(1.2);
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    overflow-y: auto;
+    max-height: calc(100vh - 115px);   
+    width: 100%;
+}
+
+.ExtTitle {
+    font-size: x-large;
+    font-weight: bold;
+    margin-left: 10px;
+    color: white
+}
+
+.ExtId {
+    margin-left: 10px;
+    color: white
+}
+
+.Extbg {
+    margin: 10px auto;
+    width: 90%;
+    min-height: 105px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.manages {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+}
+
+.button {
+    font-family: inherit;
+    font-size: 14px;
+    background-color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+}
+
+.button:active,
+.button:focus-within {
+    box-shadow: 0 0 0 3px $looks-transparent;
+}
+
+.openLibraryButtonIcon {
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 768px) {
+    .openLibraryButton, .openCustomExtension {
+        position: fixed;
+        left: 20px;
+        width: 65px;
+        height: 65px;
+        z-index: 1000;
+    }
+    
+    .openLibraryButton {
+        bottom: 100px;
+    }
+    
+    .openCustomExtension {
+        bottom: 20px;
+    }
+    
+    .openLibraryButtonIcon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .content {
+        padding-bottom: 180px;
+    }
+    /*koshino我喜欢你喵~*/
+}

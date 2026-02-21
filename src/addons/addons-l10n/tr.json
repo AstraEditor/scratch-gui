@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "saat yönünün tersine",
     "_general/blocks/clockwise": "saat yönünde",
     "_general/blocks/green-flag": "bayrak",
@@ -81,7 +81,12 @@
     "debugger/tab-logs": "Günlükler",
     "debugger/tab-performance": "Performans",
     "debugger/tab-threads": "Dizeler",
+    "debugger/tab-variables": "Değişkenler",
     "debugger/thread": "{id} numaralı blok dizesi",
+    "debugger/search": "Ara",
+    "debugger/too-big": "Çok büyük değeri görüntülemek için tıklayın.",
+    "debugger/for-all-sprites": "Tüm kuklalar için değişkenler",
+    "debugger/for-this-sprite": "Bu kukla için değişkenler",
     "debugger/unknown-sprite": "(bilinmeyen kukla)",
     "debugger/unpause": "Devam Et",
     "pause/pause": "Duraklat",

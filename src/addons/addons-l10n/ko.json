@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "블럭 정리하기 +",
     "editor-devtools/copy-all": "모두 복사하기",
     "editor-devtools/copy-block": "블럭 복사하기",
@@ -76,7 +76,12 @@
     "debugger/tab-logs": "기록",
     "debugger/tab-performance": "성능",
     "debugger/tab-threads": "실행 중인 작업",
+    "debugger/tab-variables": "변수",
     "debugger/thread": "작업 {id}",
+    "debugger/search": "검색",
+    "debugger/too-big": "클릭하여 매우 큰 값을 표시합니다.",
+    "debugger/for-all-sprites": "모든 스프라이트의 변수",
+    "debugger/for-this-sprite": "이 스프라이트의 변수",
     "debugger/unknown-sprite": "(알 수 없는 스프라이트)",
     "debugger/unpause": "재개하기",
     "pause/pause": "일시정지",

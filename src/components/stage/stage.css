@@ -27,8 +27,12 @@
     position: relative;
 
     /* reset dark styles inherited from dark mode */
+    /*
+    *  不知道为什么官方不让他适配暗色模式，这可能是因为“变量”是作品的一部分？
+    *  不论如何，我先加入了这个功能，具体等未来再说嘻嘻
+    */
     color-scheme: light;
-    color: $text-primary-default;
+    color: $text-primary;
 }
 
 .stage.full-screen {

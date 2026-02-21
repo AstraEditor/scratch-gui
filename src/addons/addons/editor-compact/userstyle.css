@@ -23,11 +23,11 @@
 }
 
 /* Menu bar */
-[class*="menu-bar_file-group_"] [class*="menu-bar_hoverable_"] > img,
+/* [class*="menu-bar_file-group_"] [class*="menu-bar_hoverable_"] > img,
 [class*="menu-bar_divider"],
 [class*="menu-bar_help-icon"] {
   display: none;
-}
+} */
 [class*="menu-bar_collapsible-label_"],
 [dir="rtl"] [class*="menu-bar_collapsible-label_"],
 [class*="settings-menu_dropdown-label_"],
@@ -265,9 +265,9 @@ button[class*="action-menu_more-button"] {
   padding-right: 1rem;
   border-radius: 0.5rem 0.5rem 0 0;
 }
-[class*="gui_tab_"] > img {
+/* [class*="gui_tab_"] > img {
   display: none;
-}
+} */
 
 .sa-find-bar {
   align-self: center;
@@ -499,7 +499,7 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 }
 
 [class*="custom-procedures_modal-content"] {
-  width: 500px;
+  width: 640px;
 }
 [class*="custom-procedures_workspace"] {
   min-height: 100px;
@@ -509,4 +509,27 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 }
 [class*="custom-procedures_body"] [role="button"] {
   padding: 0.5rem;
+}
+[class*="extension-chooser_openLibraryButton"]{
+  width: 35px;
+  height: 35px;
+}
+[class*="extension-chooser_openCustomExtension"]{
+  width: 35px;
+  height: 35px;
+  font-size: 13px;
+  bottom: 80px;
+}
+[class*="extension-chooser_openLibraryButtonIcon"] {
+  width: 13px;
+  height: 13px;
+}
+[class*="extension-chooser_Extbg"] {
+  min-height: 75px;
+}
+[class*="Modaltab"]{
+  height: 25px;
+}
+[class*=tab-button]{
+  line-height: 0.6;
 }

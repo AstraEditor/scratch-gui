@@ -32,7 +32,8 @@ const productId = 0x0204;
  * @throws {Error} If the device is not a recognized micro:bit.
  */
 const getDeviceVersion = device => {
-    const microBitBoardId = device?.serialNumber?.substring(0, 4) ?? '';
+    const serialNumber = device && device.serialNumber;
+    const microBitBoardId = serialNumber && serialNumber.substring(0, 4) !== undefined && serialNumber.substring(0, 4) !== null ? serialNumber.substring(0, 4) : '';
     switch (microBitBoardId) {
     case '9900':
     case '9901':

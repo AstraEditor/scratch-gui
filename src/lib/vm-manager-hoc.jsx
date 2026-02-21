@@ -13,6 +13,8 @@ import {
     onLoadedProject,
     projectError
 } from '../reducers/project-state';
+import {defaultStageSize} from '../reducers/custom-stage-size';
+import {twInitialState} from '../reducers/tw';
 import log from './log';
 
 /**
@@ -69,6 +71,14 @@ const vmManagerHOC = function (WrappedComponent) {
             }
         }
         loadProject () {
+            // Reset advanced runtime options before loading another project.
+            this.props.vm.setFramerate(twInitialState.framerate);
+            this.props.vm.setInterpolation(twInitialState.interpolation);
+            this.props.vm.setCompilerOptions(twInitialState.compilerOptions);
+            this.props.vm.setRuntimeOptions(twInitialState.runtimeOptions);
+            this.props.vm.renderer.setUseHighQualityRender(twInitialState.highQualityPen);
+            this.props.vm.setStageSize(defaultStageSize.width, defaultStageSize.height);
+
             // tw: stop when loading new project
             this.props.vm.quit();
             return this.props.vm.loadProject(this.props.projectData)

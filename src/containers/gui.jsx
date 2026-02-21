@@ -22,7 +22,10 @@ import {
     closeCostumeLibrary,
     closeBackdropLibrary,
     closeTelemetryModal,
-    openExtensionLibrary
+    openExtensionLibrary,
+    openExtensionManager,
+    closeExtensionManager,
+    openCustomExtensionModal
 } from '../reducers/modals';
 
 import FontLoaderHOC from '../lib/font-loader-hoc.jsx';
@@ -177,18 +180,22 @@ const mapStateToProps = state => {
         fontsModalVisible: state.scratchGui.modals.fontsModal,
         unknownPlatformModalVisible: state.scratchGui.modals.unknownPlatformModal,
         invalidProjectModalVisible: state.scratchGui.modals.invalidProjectModal,
+        extensionManagerVisible: state.scratchGui.modals.extensionManager,
         vm: state.scratchGui.vm
     };
 };
 
 const mapDispatchToProps = dispatch => ({
-    onExtensionButtonClick: () => dispatch(openExtensionLibrary()),
+    onExtensionButtonClick: () => dispatch(openExtensionManager()),
     onActivateTab: tab => dispatch(activateTab(tab)),
     onActivateCostumesTab: () => dispatch(activateTab(COSTUMES_TAB_INDEX)),
     onActivateSoundsTab: () => dispatch(activateTab(SOUNDS_TAB_INDEX)),
     onRequestCloseBackdropLibrary: () => dispatch(closeBackdropLibrary()),
     onRequestCloseCostumeLibrary: () => dispatch(closeCostumeLibrary()),
-    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal())
+    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal()),
+    onRequestCloseExtensionManager: () => dispatch(closeExtensionManager()),
+    onOpenExtensionLibrary: () => dispatch(openExtensionLibrary()),
+    onOpenCustomExtensionModal: () => dispatch(openCustomExtensionModal()),
 });
 
 const ConnectedGUI = injectIntl(connect(

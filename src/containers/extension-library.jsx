@@ -2,7 +2,7 @@ import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
 import VM from 'scratch-vm';
-import {defineMessages, injectIntl, intlShape} from 'react-intl';
+import { defineMessages, injectIntl, intlShape } from 'react-intl';
 import log from '../lib/log';
 
 import extensionLibraryContent, {
@@ -14,7 +14,10 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
-
+const extensionsLibs = [
+    { id: "tw", url: "https://extensions.turbowarp.org/" },
+    { id: "ae", url: "https://editor.astras.top/extensions/" }
+]
 const messages = defineMessages({
     extensionTitle: {
         defaultMessage: 'Choose an Extension',
@@ -42,50 +45,78 @@ const translateGalleryItem = (extension, locale) => ({
 let cachedGallery = null;
 
 const fetchLibrary = async () => {
-    const res = await fetch('https://extensions.turbowarp.org/generated-metadata/extensions-v0.json');
-    if (!res.ok) {
-        throw new Error(`HTTP status ${res.status}`);
+    const getExtLists = extensionsLibs.map(async (item) => {
+        const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
+        if (!res.ok) {
+            throw new Error(`HTTP status ${res.status}`);
+        }
+        return await res.json();
+    });
+
+    const results = await Promise.all(getExtLists);
+    let extensionsData = {
+        "extensions": []
     }
-    const data = await res.json();
-    return data.extensions.map(extension => ({
-        name: extension.name,
-        nameTranslations: extension.nameTranslations || {},
-        description: extension.description,
-        descriptionTranslations: extension.descriptionTranslations || {},
-        extensionId: extension.id,
-        extensionURL: `https://extensions.turbowarp.org/${extension.slug}.js`,
-        iconURL: `https://extensions.turbowarp.org/${extension.image || 'images/unknown.svg'}`,
-        tags: ['tw'],
-        credits: [
-            ...(extension.original || []),
-            ...(extension.by || [])
-        ].map(credit => {
-            if (credit.link) {
-                return (
-                    <a
-                        href={credit.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        key={credit.name}
-                    >
-                        {credit.name}
-                    </a>
-                );
-            }
-            return credit.name;
-        }),
-        docsURI: extension.docs ? `https://extensions.turbowarp.org/${extension.slug}` : null,
-        samples: extension.samples ? extension.samples.map(sample => ({
-            href: `${process.env.ROOT}editor?project_url=https://extensions.turbowarp.org/samples/${encodeURIComponent(sample)}.sb3`,
-            text: sample
-        })) : null,
-        incompatibleWithScratch: !extension.scratchCompatible,
-        featured: true
-    }));
+    results.forEach((item, index) => {
+        extensionsData.extensions.push(extensionsLibs[index])
+        item.extensions.forEach(extension => {
+            extensionsData.extensions.push(extension)
+        })
+    })
+
+
+    const returnData = []
+    let tag = "";
+    let link = "";
+    extensionsData.extensions.forEach((extension, index) => {
+        if (extension.id !== undefined && extension.url !== undefined) {
+            tag = extension.id; //平台
+            link = extension.url //链接
+        } else { //扩展
+            returnData.push({
+                name: extension.name,
+                nameTranslations: extension.nameTranslations || {},
+                description: extension.description,
+                descriptionTranslations: extension.descriptionTranslations || {},
+                extensionId: extension.id,
+                extensionURL: `${link}/${extension.slug}.js`,
+                iconURL: extension.image ? `${link}/${extension.image}` : 'https://extensions.turbowarp.org/images/unknown.svg',
+                tags: [tag],
+                credits: [
+                    ...(extension.original || []),
+                    ...(extension.by || [])
+                ]
+                    .filter(credit => credit && typeof credit === 'object')
+                    .map(credit => {
+                        if (credit.link) {
+                            return (
+                                <a
+                                    href={credit.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    key={credit.name}
+                                >
+                                    {credit.name}
+                                </a>
+                            );
+                        }
+                        return credit.name;
+                    }),
+                docsURI: extension.docs ? `${link}/${extension.slug}` : null,
+                samples: extension.samples ? extension.samples.map(sample => ({
+                    href: `${process.env.ROOT}editor?project_url=${link}/samples/${encodeURIComponent(sample)}.sb3`,
+                    text: sample
+                })) : null,
+                incompatibleWithScratch: !extension.scratchCompatible,
+                featured: true
+            })
+        }
+    })
+    return returnData
 };
 
 class ExtensionLibrary extends React.PureComponent {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'handleItemSelect'
@@ -96,7 +127,7 @@ class ExtensionLibrary extends React.PureComponent {
             galleryTimedOut: false
         };
     }
-    componentDidMount () {
+    componentDidMount() {
         if (!this.state.gallery) {
             const timeout = setTimeout(() => {
                 this.setState({
@@ -121,7 +152,12 @@ class ExtensionLibrary extends React.PureComponent {
                 });
         }
     }
-    handleItemSelect (item) {
+    handleItemSelect(item) {
+        if (!item) {
+            log.error('handleItemSelect received undefined item');
+            return;
+        }
+
         if (item.href) {
             return;
         }
@@ -130,6 +166,11 @@ class ExtensionLibrary extends React.PureComponent {
 
         if (extensionId === 'custom_extension') {
             this.props.onOpenCustomExtensionModal();
+            return;
+        }
+
+        if (extensionId === 'upload_extension') {
+            window.open("./upload.html", "_blank");
             return;
         }
 
@@ -156,7 +197,7 @@ class ExtensionLibrary extends React.PureComponent {
             }
         }
     }
-    render () {
+    render() {
         let library = null;
         if (this.state.gallery || this.state.galleryError || this.state.galleryTimedOut) {
             library = extensionLibraryContent.map(toLibraryItem);

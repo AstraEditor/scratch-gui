@@ -49,6 +49,8 @@ import gdxforInsetIconURL from './gdxfor/gdxfor-small.svg';
 import gdxforConnectionIconURL from './gdxfor/gdxfor-illustration.svg';
 import gdxforConnectionSmallIconURL from './gdxfor/gdxfor-small.svg';
 
+import uploadURL from './upload/upload_extension.png'
+
 import twIcon from './tw/tw.svg';
 import customExtensionIcon from './custom/custom.svg';
 import returnIcon from './custom/return.svg';
@@ -385,12 +387,9 @@ export default [
     {
         name: (
             <FormattedMessage
-                defaultMessage="{APP_NAME} Blocks"
+                defaultMessage="TurboWarp Blocks"
                 description="Name of the strange 'TurboWarp Blocks' extension"
                 id="tw.twExtension.name"
-                values={{
-                    APP_NAME
-                }}
             />
         ),
         extensionId: 'tw',
@@ -426,13 +425,33 @@ export default [
         tags: ['tw'],
         featured: true
         // Not marked as incompatible with Scratch so that clicking on it doesn't show a prompt
+    },
+    {
+        name: (
+            <FormattedMessage
+                defaultMessage="Upload Your Extension"
+                description="Name of library item to let user add extension"
+                id="tw.addTourExtension.name"
+            />
+        ),
+                extensionId: 'upload_extension',
+        iconURL: uploadURL,
+        description: (
+            <FormattedMessage
+                defaultMessage="Upload your own extension to the AstraEditor extension library!"
+                description="Description of library item to let user add extension"
+                id="tw.addTourExtension.description"
+            />
+        ),
+        tags: ['ae'],
+        featured: true
     }
 ];
 
 export const galleryLoading = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{
@@ -458,12 +477,9 @@ export const galleryLoading = {
 export const galleryMore = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
-            values={{
-                APP_NAME
-            }}
         />
     ),
     href: 'https://extensions.turbowarp.org/',
@@ -484,7 +500,7 @@ export const galleryMore = {
 export const galleryError = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{

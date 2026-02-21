@@ -17,6 +17,49 @@
     box-sizing: border-box;
 }
 
+.readmeButton {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight:bold;
+    background-color: $ui-modal-background;
+    border-width: 1px;
+    border-style: solid;
+    color: $text-primary;
+    border-color: $ui-black-transparent;
+    padding: 0.2rem 0.5rem;
+    margin: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s ease
+}
+
+
+/* VSCode layout: README button as icon */
+.tab-list.vscode .readmeButton {
+    width: 40px;
+    height: 30px;
+    font-size: 0;
+    background-color: #00000000;
+    border: 0;
+    border-radius: 0px !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+}
+
+.tab-list.vscode .readmeButton svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+.tab-list.vscode .readmeButton:hover {
+    background-color: $ui-white;
+    box-shadow: inset 3px 0px 0px 0px $looks-secondary
+}
+
 .flex-wrapper {
     display: flex;
 
@@ -25,7 +68,7 @@
         a) for the blocks + workspace panes, and
         b) for combined stage menu + stage + sprite/stage selectors
     */
-    flex-direction: row;
+    /* flex-direction: row; Move to JSX */
     height: 100%;
 
     /*
@@ -33,7 +76,7 @@
         https://github.com/LLK/scratch-gui/issues/318
         TW: and also fix double horizontal scrollbar at some screen sizes in paint editor
     */
-    overflow: hidden;
+    /* overflow: hidden; Move to JSX */
 }
 
 .editor-wrapper {
@@ -56,9 +99,16 @@
     flex-direction: column;
 }
 
+.editor-wrapper-full {
+    flex-basis: auto !important;
+    flex-grow: 1 !important;
+    width: 100% !important;
+}
+
 .tab-list {
     height: $stage-menu-height;
-    width: 250px; /* Match width of the toolbox */
+    width: 250px;
+    /* Match width of the toolbox */
     display: flex;
     align-items: flex-end;
     flex-shrink: 0;
@@ -116,22 +166,25 @@
 .tab:nth-of-type(1) {
     z-index: 3;
 }
+
 .tab:nth-of-type(2) {
     z-index: 2;
 }
+
 .tab:nth-of-type(3) {
     z-index: 1;
 }
 
 .tab:hover {
-  background-color: $ui-primary;
+    background-color: $ui-primary;
 }
 
 .tab.is-selected {
     height: 90%;
     color: $looks-secondary;
     background-color: $ui-white;
-    z-index: 4; /* Make sure selected is always above */
+    z-index: 4;
+    /* Make sure selected is always above */
 }
 
 .tab img {
@@ -183,6 +236,61 @@
     flex-direction: column;
 }
 
+.vscode {
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
+.vscodeList {
+    flex-direction: row !important;
+}
+
+.tab-list.vscode {
+    height: 100% !important;
+    width: 41px;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: flex-start;
+    border-bottom: none;
+}
+
+.vscode .tab {
+    width: 40px;
+    height: 30px;
+    flex-grow: 0;
+    border-radius: 0px !important;
+    margin: 0 !important;
+    padding: 20px 0 !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 0 !important;
+    background-color: #00000000;
+    border: 0;
+}
+
+.vscode .tab img {
+    width: 2rem;
+    height: 2rem;
+    margin: 0 !important;
+}
+
+[dir="rtl"] .vscode .tab img {
+    margin: 0 0 0.25rem 0 !important;
+    transform: none;
+}
+
+.vscode .tab.is-selected {
+    background-color: $ui-white;
+    box-shadow: inset 3px 0px 0px 0px $looks-secondary
+}
+
+/* 重置 RTL 下的镜像效果 */
+.vscode .tab:nth-of-type(1) img,
+.vscode .tab:nth-of-type(3) img {
+    transform: none;
+}
+
 .tab-panel {
     position: relative;
     flex-grow: 1;
@@ -208,7 +316,7 @@
         goes to full vertical height of the window
     */
     display: flex;
-    flex-direction: column;
+    /* flex-direction: column; Move to JSX*/
     /* pad entire wrapper to the left and right; allow children to fill width */
     padding-left: $space;
     padding-right: $space;
@@ -217,13 +325,18 @@
     flex-basis: 0;
 }
 
+.stage-and-target-wrapper.hidden {
+    display: none;
+}
+
 .target-wrapper {
     display: flex;
     flex-grow: 1;
     flex-basis: 0;
 
     padding-top: $space;
-    min-height: 0; /* this makes it work in Firefox */
+    min-height: 0;
+    /* this makes it work in Firefox */
 
     /*
         For making the sprite-selector a scrollable pane
@@ -244,7 +357,8 @@
     background: $looks-secondary;
 
     border: 1px solid $looks-secondary;
-    box-sizing: content-box; /* To match scratch-block vertical toolbox borders */
+    box-sizing: content-box;
+    /* To match scratch-block vertical toolbox borders */
 }
 
 $fade-out-distance: 15px;
@@ -254,7 +368,7 @@ $fade-out-distance: 15px;
     position: absolute;
     top: calc(calc(-1 * $fade-out-distance) - 1px);
     left: -1px;
-    background: linear-gradient(rgba(0, 0, 0, 0),rgba(0, 0, 0, 0.15));
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
     height: $fade-out-distance;
     width: calc(100% + 0.5px);
 }
@@ -279,7 +393,7 @@ $fade-out-distance: 15px;
     transform: scaleX(-1);
 }
 
-.extension-button > div {
+.extension-button>div {
     margin-top: 0;
 }
 
@@ -303,7 +417,9 @@ $fade-out-distance: 15px;
 .menu-bar-position {
     position: relative;
     z-index: $z-index-menu-bar;
+    min-width: 1024px /*保证开插件时显示正确*/
 }
+
 /* Alerts */
 
 .alerts-container {

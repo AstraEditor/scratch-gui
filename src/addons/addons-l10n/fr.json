@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "sens inverse des aiguilles d'une montre",
     "_general/blocks/clockwise": "sens des aiguilles d'une montre",
     "_general/blocks/green-flag": "drapeau",
@@ -74,7 +74,12 @@
     "debugger/step-desc": "Exécute un seul bloc.",
     "debugger/tab-logs": "Activités",
     "debugger/tab-threads": "Processus",
+    "debugger/tab-variables": "Variables",
     "debugger/unknown-sprite": "(sprite inconnu)",
+    "debugger/search": "Rechercher",
+    "debugger/too-big": "Cliquez pour afficher une très grande valeur.",
+    "debugger/for-all-sprites": "Variables pour tous les sprites",
+    "debugger/for-this-sprite": "Variables pour ce sprite",
     "debugger/unpause": "Reprendre",
     "pause/play": "Reprendre",
     "clones/clones": "clones : {cloneCount}",

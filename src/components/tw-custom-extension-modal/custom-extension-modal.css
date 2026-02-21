@@ -1,6 +1,10 @@
 @import "../../css/colors.css";
 
 .modal-content {
+    max-width: 990px;
+    margin-top: 50px;
+}
+.modal-content-min {
     max-width: 550px;
     margin-top: 50px;
 }
@@ -8,6 +12,28 @@
 .body {
     background: $ui-white;
     padding: 1.5rem 2.25rem;
+    display: flex;
+    flex-direction: row;
+}
+
+.loadUI {
+    flex: 1;
+    min-width: 300px;
+}
+
+.viewUI {
+    flex: 1;
+    min-width: 300px;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.svgList {
+    display: flex;
+    flex-direction: column;
+}
+.svgItem{
+    margin-bottom: -75px;
 }
 
 .body p,
@@ -38,6 +64,13 @@
 }
 .type-selector-button:active {
     border-color: $looks-transparent;
+}
+
+.split {
+    min-height: 100%;
+    min-width: 4px;
+    background-color: $ui-secondary;
+    margin: 0 15px;
 }
 
 .url-input,

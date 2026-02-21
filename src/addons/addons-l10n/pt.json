@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "Limpar Blocos +",
     "editor-devtools/copy-all": "Copiar Pilha",
     "editor-devtools/copy-block": "Copiar Bloco",
@@ -69,7 +69,12 @@
     "debugger/step-desc": "Executa um bloco.",
     "debugger/tab-logs": "Registros",
     "debugger/tab-threads": "Linhas de execução",
+    "debugger/tab-variables": "Variáveis",
     "debugger/thread": "Linha de execução {id}",
+    "debugger/search": "Pesquisar",
+    "debugger/too-big": "Clique para exibir um valor muito grande.",
+    "debugger/for-all-sprites": "Variáveis para todos os atores",
+    "debugger/for-this-sprite": "Variáveis para este ator",
     "debugger/unknown-sprite": "(ator desconhecido)",
     "debugger/unpause": "Continuar",
     "pause/pause": "Pausar",

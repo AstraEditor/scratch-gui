@@ -1,0 +1,44 @@
+.hide-text{
+        --rotate: 0deg
+}
+.hide-text{
+        transform: rotate(var(--rotate));
+        width: 10px;
+}
+.hide-area{
+        background-color: #00000000;
+        z-index: 9999; /*置于顶层*/
+        width: 100%;
+        height: 40px;
+        position: absolute;;
+}
+.hide-switch{
+        --traslate: 40px
+}
+.hide-switch {
+        position: absolute;
+        left: 0;
+        width: 30px;
+        height: 30px;
+        background-color: var(--editor-menu-background);
+        transform: translateY(var(--traslate));
+        transition: transform 0.25s ease, opacity 0.25s ease;
+        border-radius: 10px;
+        border: 0;
+        z-index: 480;
+        touch-action: manipulation;
+}
+.hide-switch:hover{
+        filter:brightness(1.2);
+}
+
+@media (pointer: coarse) {
+        .hide-switch {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+        }
+        .hide-text {
+                width: 14px;
+        }
+}

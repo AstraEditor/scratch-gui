@@ -339,6 +339,11 @@ class Tab extends EventTargetShim {
                 // Element used in find-bar addon
                 until: () => [q('.sa-find-bar')]
             },
+            afterTabs: {
+                element: () => q("[class^='react-tabs_react-tabs__tab-list']"),
+                from: () => [q("[class^='react-tabs_react-tabs__tab-list']").children[0]],
+                until: () => [q('.findBar')]
+            },
             assetContextMenuAfterExport: {
                 element: () => scope,
                 from: () => Array.prototype.filter.call(

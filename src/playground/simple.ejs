@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <% const extEditorBase = (htmlWebpackPlugin.options.root && htmlWebpackPlugin.options.root.length) ? htmlWebpackPlugin.options.root : ''; %>
+    <script>
+      // Used by scratch-extension-editor to locate its workers/chunks in builds and dev server.
+      window.__SCRATCH_EXTENSION_EDITOR_PUBLIC_PATH__ = "<%= extEditorBase %>extension-editor/";
+    </script>
     <style>
       body[data-splash-theme="dark"] {
         background: #111;

@@ -105,6 +105,13 @@ const persistTheme = theme => {
             // ignore
         }
     }
+
+    // 触发自定义事件，通知组件主题已更改
+    try {
+        window.dispatchEvent(new Event('tw:theme-changed'));
+    } catch (e) {
+        // ignore
+    }
 };
 
 export {

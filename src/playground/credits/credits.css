@@ -29,8 +29,15 @@ a {
     text-align: center;
     margin-bottom: 30px;
 }
-.header-text {
 
+.header-text {}
+
+.headerContainerTurboWarp {
+    color: white;
+    background-color: #ff4c4c;
+    padding: 20px 0;
+    text-align: center;
+    margin-bottom: 30px;
 }
 
 .users {
@@ -38,9 +45,11 @@ a {
     flex-direction: row;
     flex-wrap: wrap;
 }
+
 .user-image {
     margin-right: 12px;
 }
+
 .user {
     display: flex;
     align-items: center;
@@ -52,6 +61,7 @@ a {
     text-decoration: none;
     transition: background .2s;
 }
+
 .user:link:hover {
     background: $ui-black-transparent;
 }

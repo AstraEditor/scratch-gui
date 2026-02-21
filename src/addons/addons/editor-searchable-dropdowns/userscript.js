@@ -306,6 +306,6 @@ export default async function ({ addon, console, msg }) {
   function getMenuItemMessage(message) {
     // Format used internally by Scratch:
     // [human readable name, internal name]
-    return [msg(message, { name: searchBar?.value.trim() || "" }), message];
+    return [msg(message, { name: searchBar && searchBar.value.trim() || "" }), message];
   }
 }

@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "im Gegenuhrzeigersinn",
     "_general/blocks/clockwise": "im Uhrzeigersinn",
     "_general/blocks/green-flag": "Flagge",
@@ -76,8 +76,15 @@
     "debugger/performance-clonecount-title": "Klone",
     "debugger/step": "Schritt",
     "debugger/step-desc": "Führt einen Block aus.",
+    "debugger/tab-logs": "Logs",
     "debugger/tab-performance": "Leistung",
+    "debugger/tab-threads": "Threads",
+    "debugger/tab-variables": "Variablen",
     "debugger/unknown-sprite": "(unbekannte Figur)",
+    "debugger/search": "Suchen",
+    "debugger/too-big": "Klicken, um einen sehr großen Wert anzuzeigen.",
+    "debugger/for-all-sprites": "Variablen für alle Figuren",
+    "debugger/for-this-sprite": "Variablen für diese Figur",
     "debugger/unpause": "Fortsetzen",
     "pause/play": "Fortfahren",
     "clones/clones": "Klone: {cloneCount}",

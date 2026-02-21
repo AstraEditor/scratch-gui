@@ -1,25 +1,25 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 import bindAll from 'lodash.bindall';
 import ReactTooltip from 'react-tooltip';
-import {defineMessages, injectIntl, intlShape} from 'react-intl';
-import {defaultProjectId} from '../../reducers/project-state';
+import { defineMessages, injectIntl, intlShape } from 'react-intl';
+import { defaultProjectId } from '../../reducers/project-state';
 import styles from './project-input.css';
-import {setProjectId} from '../../lib/tw-navigation-utils';
+import { setProjectId } from '../../lib/tw-navigation-utils';
 
 const PROJECT_BASE = 'https://scratch.mit.edu/projects/';
 
 const messages = defineMessages({
     tooltip: {
-        defaultMessage: 'Copy and paste a Scratch project link here!',
+        defaultMessage: 'Copy and paste a link here!',
         description: 'Project ID input tooltip',
         id: 'tw.input.tooltip'
     }
 });
 
 class ProjectInput extends React.Component {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'handleKeyDown',
@@ -33,7 +33,7 @@ class ProjectInput extends React.Component {
             projectId: this.props.projectId
         };
     }
-    componentDidUpdate (prevProps) {
+    componentDidUpdate(prevProps) {
         if (this.props.projectId !== prevProps.projectId) {
             if (this.props.projectId === defaultProjectId) {
                 this.input.focus();
@@ -47,43 +47,37 @@ class ProjectInput extends React.Component {
             });
         }
     }
-    extractProjectId (text) {
-        const numberMatch = text.match(/\d+/);
-        return numberMatch ? numberMatch[0] : null;
-    }
-    readProjectId (e) {
-        const id = this.extractProjectId(e.target.value);
+    readProjectId(e) {
+        const id = e.target.value;
         return id || defaultProjectId;
     }
-    handleKeyDown (e) {
+    handleKeyDown(e) {
         if (e.key === 'Enter' && this.state.projectId) {
             this.input.blur();
         }
     }
-    handleChange (e) {
+    handleChange(e) {
         this.setState({
             projectId: this.readProjectId(e) || defaultProjectId
         });
     }
-    handleBlur () {
+    handleBlur() {
         if (this.state.projectId && this.state.projectId !== this.props.projectId) {
             this.props.setProjectId(this.state.projectId);
         }
         ReactTooltip.hide(this.tooltip);
     }
-    handleFocus (e) {
-        if (this.extractProjectId(e.target.value)) {
-            e.target.select();
-        }
+    handleFocus(e) {
+        e.target.select();
         ReactTooltip.show(this.tooltip);
     }
-    inputRef (el) {
+    inputRef(el) {
         this.input = el;
     }
-    tooltipRef (el) {
+    tooltipRef(el) {
         this.tooltip = el;
     }
-    render () {
+    render() {
         const projectId = this.state.projectId === defaultProjectId ? '' : this.state.projectId || '';
         return (
             <div
@@ -98,7 +92,7 @@ class ProjectInput extends React.Component {
                     ref={this.inputRef}
                     spellCheck="false"
                     type="text"
-                    value={`${PROJECT_BASE}${projectId}`}
+                    value={`${projectId}`}
                     className={styles.input}
                     onKeyDown={this.handleKeyDown}
                     onChange={this.handleChange}

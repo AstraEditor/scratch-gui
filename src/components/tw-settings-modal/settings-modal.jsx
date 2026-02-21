@@ -1,6 +1,6 @@
-import {defineMessages, FormattedMessage, intlShape, injectIntl} from 'react-intl';
+import { defineMessages, FormattedMessage, intlShape, injectIntl } from 'react-intl';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { useState } from 'react';
 import classNames from 'classnames';
 import bindAll from 'lodash.bindall';
 import Box from '../box/box.jsx';
@@ -11,7 +11,8 @@ import BufferedInputHOC from '../forms/buffered-input-hoc.jsx';
 import DocumentationLink from '../tw-documentation-link/documentation-link.jsx';
 import styles from './settings-modal.css';
 import helpIcon from './help-icon.svg';
-import {APP_NAME} from '../../lib/brand.js';
+import { APP_NAME } from '../../lib/brand.js';
+import { AESettings } from '../../lib/settings.js'
 
 /* eslint-disable react/no-multi-comp */
 
@@ -43,7 +44,7 @@ const LearnMore = props => (
 );
 
 class UnwrappedSetting extends React.Component {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'handleClickHelp'
@@ -52,7 +53,7 @@ class UnwrappedSetting extends React.Component {
             helpVisible: false
         };
     }
-    componentDidUpdate (prevProps) {
+    componentDidUpdate(prevProps) {
         if (this.props.active && !prevProps.active) {
             // eslint-disable-next-line react/no-did-update-set-state
             this.setState({
@@ -60,12 +61,12 @@ class UnwrappedSetting extends React.Component {
             });
         }
     }
-    handleClickHelp () {
+    handleClickHelp() {
         this.setState(prevState => ({
             helpVisible: !prevState.helpVisible
         }));
     }
-    render () {
+    render() {
         return (
             <div
                 className={classNames(styles.setting, {
@@ -106,7 +107,7 @@ UnwrappedSetting.propTypes = {
 };
 const Setting = injectIntl(UnwrappedSetting);
 
-const BooleanSetting = ({value, onChange, label, ...props}) => (
+const BooleanSetting = ({ value, onChange, label, ...props }) => (
     <Setting
         {...props}
         active={value}
@@ -394,7 +395,7 @@ CustomStageSize.propTypes = {
     onStageHeightChange: PropTypes.func
 };
 
-const StoreProjectOptions = ({onStoreProjectOptions}) => (
+const StoreProjectOptions = ({ onStoreProjectOptions }) => (
     <div className={styles.setting}>
         <div>
             <button
@@ -431,82 +432,266 @@ const Header = props => (
 Header.propTypes = {
     children: PropTypes.node
 };
-
-const SettingsModalComponent = props => (
-    <Modal
-        className={styles.modalContent}
-        onRequestClose={props.onClose}
-        contentLabel={props.intl.formatMessage(messages.title)}
-        id="settingsModal"
-    >
-        <Box className={styles.body}>
-            <Header>
-                <FormattedMessage
-                    defaultMessage="Featured"
-                    description="Settings modal section"
-                    id="tw.settingsModal.featured"
-                />
-            </Header>
-            <CustomFPS
-                framerate={props.framerate}
-                onChange={props.onFramerateChange}
-                onCustomizeFramerate={props.onCustomizeFramerate}
+const AutoDisplayREADME = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Automatically Display README"
+                description="Auto Displat Readme label"
+                id="tw.settingsModal.autodisplayreadme"
             />
-            <Interpolation
-                value={props.interpolation}
-                onChange={props.onInterpolationChange}
+        }
+        help={
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="After the project is opened, if there is a Sprite named 'README', the README inside the Sprite will be automatically displayed."
+                description="Auto Displat Readme label help"
+                id="tw.settingsModal.autodisplayreadmeHelp"
             />
-            <HighQualityPen
-                value={props.highQualityPen}
-                onChange={props.onHighQualityPenChange}
-            />
-            <WarpTimer
-                value={props.warpTimer}
-                onChange={props.onWarpTimerChange}
-            />
-            <Header>
-                <FormattedMessage
-                    defaultMessage="Remove Limits"
-                    description="Settings modal section"
-                    id="tw.settingsModal.removeLimits"
-                />
-            </Header>
-            <InfiniteClones
-                value={props.infiniteClones}
-                onChange={props.onInfiniteClonesChange}
-            />
-            <RemoveFencing
-                value={props.removeFencing}
-                onChange={props.onRemoveFencingChange}
-            />
-            <RemoveMiscLimits
-                value={props.removeLimits}
-                onChange={props.onRemoveLimitsChange}
-            />
-            <Header>
-                <FormattedMessage
-                    defaultMessage="Danger Zone"
-                    description="Settings modal section"
-                    id="tw.settingsModal.dangerZone"
-                />
-            </Header>
-            {!props.isEmbedded && (
-                <CustomStageSize
-                    {...props}
-                />
-            )}
-            <DisableCompiler
-                value={props.disableCompiler}
-                onChange={props.onDisableCompilerChange}
-            />
-            {!props.isEmbedded && (
-                <StoreProjectOptions
-                    {...props}
-                />
-            )}
-        </Box>
-    </Modal>
+        }
+    />
 );
+const SkipCustomExtWarn = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Skip custom extension warning"
+                description="Skip custom extension warning label"
+                id="tw.settingsModal.skipcustomextwarn"
+            />
+        }
+        help={
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="When the project loads, you do not need to agree to each custom extension request sequentially. You only need to click 'Agree All' once."
+                description="Skip custom extension warning help"
+                id="tw.settingsModal.skipcustomextwarnhelp"
+            />
+        }
+    />
+);
+const EnableExtensionPreview = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Enable extension preview when load extension (Deprecated)"
+                description="extension preview label"
+                id="tw.settingsModal.enableextensionpreview"
+            />
+        }
+        help={
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="Before loading custom extensions, you can preview the extensions you want to load."
+                description="extension preview help"
+                id="tw.settingsModal.enableextensionpreviewhelp"
+            />
+        }
+    />
+);
+const EnableVSCodeLayout = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Enable VSCode Layout (Need Refresh)"
+                description="EnableVSCodeLayout label"
+                id="tw.settingsModal.enablevscodelayout"
+            />
+        }
+        help={
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="Change the interface layout to a style similar to VSCode."
+                description="EnableVSCodeLayout help"
+                id="tw.settingsModal.enablevscodelayouthelp"
+            />
+        }
+    />
+);
+const EnableMobileLayout = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Enable Mobile Layout (Need Refresh)"
+                description="EnableMobileLayout label"
+                id="tw.settingsModal.enablecoblielayout"
+            />
+        }
+        help={
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="Adjust the stage and sprite area positions to make them slightly more suitable for Mobile editing."
+                description="EnableMobileLayout help"
+                id="tw.settingsModal.enablecoblielayouthelp"
+            />
+        }
+    />
+);
+const AEsettings = new AESettings();
+
+const SettingsModalComponent = props => {
+    const [settingsTab, setSettingsTab] = useState(1)
+    const [settingsUpdate, onUpdate] = useState(false);
+    const update = () => {
+        onUpdate(!settingsUpdate)
+    }
+    return (
+        <Modal
+            className={styles.modalContent}
+            onRequestClose={props.onClose}
+            contentLabel={props.intl.formatMessage(messages.title)}
+            id="settingsModal"
+        >
+            <div className={styles.Modaltab} style={{
+                margin: "0"
+            }}>
+                <button
+                    className={
+                        settingsTab == 1 ?
+                            styles.tabButtonEnable : styles.tabButtonUnable
+                    }
+                    style={{
+                        display: "inline-block",
+                        width: `50%`,
+                        height: '100%',
+                    }}
+                    onClick={() => setSettingsTab(1)}
+                ><FormattedMessage
+                        defaultMessage="Project"
+                        description="Settings modal tab"
+                        id="tw.settingsModal.project"
+                    /></button>
+                <button
+                    className={
+                        settingsTab == 2 ?
+                            styles.tabButtonEnable : styles.tabButtonUnable
+                    }
+                    style={{
+                        display: "inline-block",
+                        width: `50%`,
+                        height: '100%'
+                    }}
+                    onClick={() => setSettingsTab(2)}
+                >AstraEditor</button>
+            </div>
+
+            <Box className={styles.body}>
+                {settingsTab == 1 && <>
+                    <Header>
+                        <FormattedMessage
+                            defaultMessage="Featured"
+                            description="Settings modal section"
+                            id="tw.settingsModal.featured"
+                        />
+                    </Header>
+                    <CustomFPS
+                        framerate={props.framerate}
+                        onChange={props.onFramerateChange}
+                        onCustomizeFramerate={props.onCustomizeFramerate}
+                    />
+                    <Interpolation
+                        value={props.interpolation}
+                        onChange={props.onInterpolationChange}
+                    />
+                    <HighQualityPen
+                        value={props.highQualityPen}
+                        onChange={props.onHighQualityPenChange}
+                    />
+                    <WarpTimer
+                        value={props.warpTimer}
+                        onChange={props.onWarpTimerChange}
+                    />
+                    <Header>
+                        <FormattedMessage
+                            defaultMessage="Remove Limits"
+                            description="Settings modal section"
+                            id="tw.settingsModal.removeLimits"
+                        />
+                    </Header>
+                    <InfiniteClones
+                        value={props.infiniteClones}
+                        onChange={props.onInfiniteClonesChange}
+                    />
+                    <RemoveFencing
+                        value={props.removeFencing}
+                        onChange={props.onRemoveFencingChange}
+                    />
+                    <RemoveMiscLimits
+                        value={props.removeLimits}
+                        onChange={props.onRemoveLimitsChange}
+                    />
+                    <Header>
+                        <FormattedMessage
+                            defaultMessage="Danger Zone"
+                            description="Settings modal section"
+                            id="tw.settingsModal.dangerZone"
+                        />
+                    </Header>
+                    {!props.isEmbedded && (
+                        <CustomStageSize
+                            {...props}
+                        />
+                    )}
+                    <DisableCompiler
+                        value={props.disableCompiler}
+                        onChange={props.onDisableCompilerChange}
+                    />
+                    {!props.isEmbedded && (
+                        <StoreProjectOptions
+                            {...props}
+                        />
+                    )}
+                </>}
+                {settingsTab == 2 &&
+                    <>
+                        <Header>
+                            README
+                        </Header>
+                        <AutoDisplayREADME
+                            value={AEsettings.get('enableREADMEAutoDisplay')}
+                            onChange={(e) => { AEsettings.set("enableREADMEAutoDisplay", e.target.checked); update() }}
+                        />
+                        <Header>
+                            <FormattedMessage
+                                defaultMessage="Safe Settings"
+                                description="Settings modal safe settings"
+                                id="tw.settingsModal.safeSetings"
+                            />
+                        </Header>
+                        <SkipCustomExtWarn
+                            value={AEsettings.get('skipExtWarn')}
+                            onChange={(e) => { AEsettings.set("skipExtWarn", e.target.checked); update() }}
+                        />
+                        <EnableExtensionPreview
+                            value={AEsettings.get('EnableExtensionPreview')}
+                            onChange={(e) => { AEsettings.set("EnableExtensionPreview", e.target.checked); update() }}
+                        />
+                        <Header>
+                            <FormattedMessage
+                                defaultMessage="Interface Settings"
+                                description="Settings modal interface. settings"
+                                id="tw.settingsModal.interfaceSettings"
+                            />
+                        </Header>
+                        <EnableVSCodeLayout
+                            value={AEsettings.get('EnableVSCodeLayout')}
+                            onChange={(e) => { AEsettings.set("EnableVSCodeLayout", e.target.checked); location.reload(); update() }}
+                        />
+                        <EnableMobileLayout
+                            value={AEsettings.get('EnableMobileLayout')}
+                            onChange={(e) => { AEsettings.set("EnableMobileLayout", e.target.checked); location.reload(); update() }}
+                        />
+                    </>}
+
+            </Box>
+        </Modal>
+    )
+}
 
 SettingsModalComponent.propTypes = {
     intl: intlShape,

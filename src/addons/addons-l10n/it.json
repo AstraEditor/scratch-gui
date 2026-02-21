@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "antiorario",
     "_general/blocks/clockwise": "orario",
     "_general/blocks/green-flag": "bandiera",
@@ -74,7 +74,12 @@
     "debugger/step-desc": "Esegue un blocco.",
     "debugger/tab-logs": "Log",
     "debugger/tab-threads": "Thread",
+    "debugger/tab-variables": "Variabili",
     "debugger/unknown-sprite": "(sprite sconosciuto)",
+    "debugger/search": "Cerca",
+    "debugger/too-big": "Fai clic per visualizzare un valore molto grande.",
+    "debugger/for-all-sprites": "Variabili per tutti gli sprite",
+    "debugger/for-this-sprite": "Variabili per questo sprite",
     "debugger/unpause": "Riprendi",
     "pause/pause": "Pausa",
     "pause/play": "Riprendi",

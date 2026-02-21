@@ -30,6 +30,9 @@ import customStageSizeReducer, {customStageSizeInitialState} from './custom-stag
 import vmReducer, {vmInitialState} from './vm';
 import vmStatusReducer, {vmStatusInitialState} from './vm-status';
 import workspaceMetricsReducer, {workspaceMetricsInitialState} from './workspace-metrics';
+import aePreviewExtReducer, {aePreviewExtDataInitialState} from './ae-preview-ext-data';
+import extensionEditorReducer, {extensionEditorInitialState} from './extension-editor';
+import extensionEditorTabsReducer, {extensionEditorTabsInitialState} from './extension-editor-tabs';
 import throttle from 'redux-throttle';
 
 import decks from '../lib/libraries/decks/index.jsx';
@@ -67,7 +70,10 @@ const guiInitialState = {
     tw: twInitialState,
     vm: vmInitialState,
     vmStatus: vmStatusInitialState,
-    workspaceMetrics: workspaceMetricsInitialState
+    workspaceMetrics: workspaceMetricsInitialState,
+    aePreviewExtData: aePreviewExtDataInitialState,
+    extensionEditor: extensionEditorInitialState,
+    extensionEditorTabs: extensionEditorTabsInitialState
 };
 
 const initPlayer = function (currentState) {
@@ -173,7 +179,10 @@ const guiReducer = combineReducers({
     tw: twReducer,
     vm: vmReducer,
     vmStatus: vmStatusReducer,
-    workspaceMetrics: workspaceMetricsReducer
+    workspaceMetrics: workspaceMetricsReducer,
+    aePreviewExtData: aePreviewExtReducer,
+    extensionEditor: extensionEditorReducer,
+    extensionEditorTabs: extensionEditorTabsReducer
 });
 
 export {

@@ -81,4 +81,14 @@ export default {
   "tw-disable-cloud-variables": () => import(/* webpackChunkName: "addon-entry-tw-disable-cloud-variables" */ "../addons/tw-disable-cloud-variables/_runtime_entry.js"),
   "tw-disable-compiler": () => import(/* webpackChunkName: "addon-entry-tw-disable-compiler" */ "../addons/tw-disable-compiler/_runtime_entry.js"),
   "editor-stepping": () => import(/* webpackChunkName: "addon-entry-editor-stepping" */ "../addons/editor-stepping/_runtime_entry.js"),
+  "tw-comment-markdown-editor": () => import(/* webpackChunkName: "addon-entry-tw-comment-markdown-editor" */ "../addons/tw-comment-markdown-editor/_runtime_entry.js"),
+  "simple-project-analyzer": () => import(/* webpackChunkName: "addon-entry-simple-project-analyzer" */ "../addons/simple-project-analyzer/_runtime_entry.js"),
+  "hide-menubar": () => import(/* webpackChunkName: "addon-entry-tw-hide-menubar" */ "../addons/hide-menubar/_runtime_entry.js"),
+  "show-fps": () => import(/* webpackChunkName: "addon-entry-tw-show-fps" */ "../addons/show-fps/_runtime_entry.js"),
+  "toolbox-category-drag": () => import(/* webpackChunkName: "addon-entry-toolbox-category-drag" */ "../addons/toolbox-category-drag/_runtime_entry.js"),
+  "block-pins": () => import(/* webpackChunkName: "addon-entry-block-pins" */ "../addons/block-pins/_runtime_entry.js"),
+  "bookmark": () => import(/* webpackChunkName: "addon-entry-block-pins" */ "../addons/bookmark/_runtime_entry.js"),
+  "Terminal": () => import(/* webpackChunkName: "addon-entry-terminal" */ "../addons/Terminal/_runtime_entry.js"),
+  "my-blocks-plus": () => import(/* webpackChunkName: "addon-entry-my-blocks-plus" */ "../addons/my-blocks-plus/_runtime_entry.js"),
+  "astras-copilot": () => import(/* webpackChunkName: "addon-entry-astras-copilot" */ "../addons/astras-copilot/_runtime_entry.js")
 };

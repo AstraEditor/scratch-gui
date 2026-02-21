@@ -80,8 +80,7 @@ SettingsMenu.propTypes = {
     onClickDesktopSettings: PropTypes.func,
     onOpenCustomSettings: PropTypes.func,
     onRequestClose: PropTypes.func,
-    onRequestOpen: PropTypes.func,
-    settingsMenuOpen: PropTypes.bool
+    onRequestOpen: PropTypes.func
 };
 
 export default SettingsMenu;

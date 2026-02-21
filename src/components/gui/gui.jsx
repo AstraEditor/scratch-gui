@@ -1,11 +1,11 @@
 import classNames from 'classnames';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
-import React from 'react';
-import {defineMessages, FormattedMessage, injectIntl, intlShape} from 'react-intl';
-import {connect} from 'react-redux';
+import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
+import { defineMessages, FormattedMessage, injectIntl, intlShape } from 'react-intl';
+import { connect, dispatch } from 'react-redux';
 import MediaQuery from 'react-responsive';
-import {Tab, Tabs, TabList, TabPanel} from 'react-tabs';
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import tabStyles from 'react-tabs/style/react-tabs.css';
 import VM from 'scratch-vm';
 
@@ -38,26 +38,43 @@ import TWFontsModal from '../../containers/tw-fonts-modal.jsx';
 import TWUnknownPlatformModal from '../../containers/tw-unknown-platform-modal.jsx';
 import TWInvalidProjectModal from '../../containers/tw-invalid-project-modal.jsx';
 import TWWindChimeSubmitter from '../../containers/tw-windchime-submitter.jsx';
+import CustomThemeModal from '../../containers/tw-custom-theme-modal.jsx';
+import AEReadMe from '../../containers/ae-readme.jsx'
+import ExtensionEditorSettings from '../extension-editor-settings';
+import ExtensionEditorTabs from '../../components/extension-editor-tabs/extension-editor-tabs.jsx';
+import { loadData } from '../ae-readme/ae-readme.jsx'
 
-import {STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH} from '../../lib/layout-constants';
-import {resolveStageSize} from '../../lib/screen-utils';
-import {Theme} from '../../lib/themes';
+import { openExtensionEditorSettings } from '../../reducers/modals.js';
+import { updateFontSize } from '../../reducers/extension-editor.js';
+import { setDimensions } from '../../reducers/tw.js';
 
-import {isRendererSupported, isBrowserSupported} from '../../lib/tw-environment-support-prober';
+import ExtensionManager from '../extension-chooser/extension-chooser.jsx';
+import PreviewExt from '../../containers/ae-preview-ext.jsx';
+
+import { STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH } from '../../lib/layout-constants';
+import { resolveStageSize } from '../../lib/screen-utils';
+import { Theme } from '../../lib/themes';
+
+import { isRendererSupported, isBrowserSupported } from '../../lib/tw-environment-support-prober';
 
 import styles from './gui.css';
 import addExtensionIcon from './icon--extensions.svg';
 import codeIcon from '!../../lib/tw-recolor/build!./icon--code.svg';
 import costumesIcon from '!../../lib/tw-recolor/build!./icon--costumes.svg';
 import soundsIcon from '!../../lib/tw-recolor/build!./icon--sounds.svg';
+import extensionIcon from '!../../lib/tw-recolor/build!./icon--extension.svg'
+import readmeIcon from '!../../lib/tw-recolor/build!./readme.svg'
+import { openReadme } from '../../reducers/modals.js';
 
-const messages = defineMessages({
-    addExtension: {
-        id: 'gui.gui.addExtension',
-        description: 'Button to add an extension in the target pane',
-        defaultMessage: 'Add Extension'
-    }
-});
+import { AESettings } from '../../lib/settings.js'
+const Settings = new AESettings();
+const storedSettings = localStorage.getItem('AESettings');
+let vscodeLayoutRef = false;
+try {
+    vscodeLayoutRef = JSON.parse(storedSettings).EnableVSCodeLayout;
+} catch (e) {
+    vscodeLayoutRef = false;
+}
 
 const getFullscreenBackgroundColor = () => {
     const params = new URLSearchParams(location.search);
@@ -132,6 +149,7 @@ const GUIComponent = props => {
         onClickLogo,
         onExtensionButtonClick,
         onOpenCustomExtensionModal,
+        onOpenExtensionEditorSettings,
         onProjectTelemetryEvent,
         onRequestCloseBackdropLibrary,
         onRequestCloseCostumeLibrary,
@@ -160,8 +178,122 @@ const GUIComponent = props => {
         unknownPlatformModalVisible,
         invalidProjectModalVisible,
         vm,
+        customThemeVisible,
+        readmeModalVisible,
+        onOpenReadme,
+        extensionManagerVisible,
+        onRequestCloseExtensionManager,
+        onOpenExtensionLibrary,
+        previewExtVisible,
+        extensionEditorSettingsVisible,
+        extensionEditorFontSize,
+        onExtensionEditorFontSizeChange,
+        dispatch,
         ...componentProps
-    } = omit(props, 'dispatch');
+    } = omit(props, '');
+    const updateCanShowReadme = () => {
+        if (!vm.editingTarget || !vm.editingTarget.comments) {
+            setCanShowReadme(false);
+            return;
+        }
+        const comments = Object.values(vm.editingTarget.comments);
+        const readMe = [];
+        comments.forEach(comment => {
+            if (comment.text && comment.text.slice(0, 7) === "#README") {
+                readMe.push(comment.text.slice(8, comment.text.length));
+            }
+        });
+        return readMe.length != 0;
+    };
+
+
+    const [canShowReadme, setCanShowReadme] = useState(() => { updateCanShowReadme })
+    const [onOpenExtensionEditor, setOpenExtensionEditor] = useState(false)
+    const [loaderExiting, setLoaderExiting] = useState(false)
+    useEffect(() => {
+        if (!vm) return;
+
+        const handleCommentEvent = (e) => {
+            setCanShowReadme(updateCanShowReadme)
+        };
+        const showReadmeDefault = (e) => {
+            if (!Settings.get('enableREADMEAutoDisplay')) return
+            for (const target of vm.runtime.targets) {
+                if (target.sprite.name == "README") {
+                    loadData(target.comments);
+                    onOpenReadme()
+                    break
+                }
+            }
+        }
+
+        vm.runtime.on('PROJECT_CHANGED', handleCommentEvent);
+        vm.runtime.on('PROJECT_LOADED', handleCommentEvent);
+        vm.runtime.on('PROJECT_LOADED', showReadmeDefault);
+        return () => {
+            vm.runtime.off('PROJECT_CHANGED', handleCommentEvent);
+            vm.runtime.off('PROJECT_LOADED', handleCommentEvent);
+            vm.runtime.off('PROJECT_LOADED', showReadmeDefault);
+        };
+    }, [vm]);
+
+    useEffect(() => {
+        // 当切换标签时，检查是否是扩展编辑器标签
+        // 扩展编辑器是第4个标签（索引3）
+        console.log('activeTabIndex:', activeTabIndex);
+        const wasExtensionEditor = onOpenExtensionEditor;
+        if (activeTabIndex === 3) {
+            setOpenExtensionEditor(true);
+        } else {
+            setOpenExtensionEditor(false);
+            // StageWrapper uses `display: none` while extension editor is open.
+            // Force a stage re-measure after it becomes visible again to avoid a 0x0 canvas (white stage).
+            if (wasExtensionEditor) {
+                requestAnimationFrame(() => {
+                    if (dispatch) dispatch(setDimensions([window.innerWidth, window.innerHeight]));
+                });
+            }
+        }
+    }, [activeTabIndex]);
+
+    const prevLoadingRef = useRef(Boolean(loading));
+    const loaderExitTimeoutRef = useRef(null);
+
+    // Use a layout effect so we don't "unmount then remount" the loader for one frame.
+    useLayoutEffect(() => {
+        const isLoadingNow = Boolean(loading);
+        const wasLoading = prevLoadingRef.current;
+        prevLoadingRef.current = isLoadingNow;
+
+        // When loading starts again, cancel any pending fade-out.
+        if (isLoadingNow) {
+            if (loaderExitTimeoutRef.current) {
+                clearTimeout(loaderExitTimeoutRef.current);
+                loaderExitTimeoutRef.current = null;
+            }
+            if (loaderExiting) setLoaderExiting(false);
+            return;
+        }
+
+        // Trigger fade-out only on the true -> false transition.
+        if (wasLoading && !isLoadingNow) {
+            setLoaderExiting(true);
+            if (loaderExitTimeoutRef.current) clearTimeout(loaderExitTimeoutRef.current);
+            // 500ms matches loader.css animation-duration
+            loaderExitTimeoutRef.current = setTimeout(() => {
+                setLoaderExiting(false);
+                loaderExitTimeoutRef.current = null;
+            }, 500);
+        }
+    }, [loading, loaderExiting]);
+
+    useEffect(() => () => {
+        if (loaderExitTimeoutRef.current) {
+            clearTimeout(loaderExitTimeoutRef.current);
+            loaderExitTimeoutRef.current = null;
+        }
+    }, []);
+
     if (children) {
         return <Box {...componentProps}>{children}</Box>;
     }
@@ -172,7 +304,9 @@ const GUIComponent = props => {
         tabList: classNames(tabStyles.reactTabsTabList, styles.tabList),
         tabPanel: classNames(tabStyles.reactTabsTabPanel, styles.tabPanel),
         tabPanelSelected: classNames(tabStyles.reactTabsTabPanelSelected, styles.isSelected),
-        tabSelected: classNames(tabStyles.reactTabsTabSelected, styles.isSelected)
+        tabSelected: classNames(tabStyles.reactTabsTabSelected, styles.isSelected),
+        vscode: styles.vscode,
+        vscodeList: styles.vscodeList
     };
 
     const unconstrainedWidth = (
@@ -180,6 +314,24 @@ const GUIComponent = props => {
         FIXED_WIDTH +
         Math.max(0, customStageSize.width - FIXED_WIDTH)
     );
+
+    const editorTheme = () => {
+        let theme = 'dark'
+        switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
+            case undefined:
+                theme = 'dark';
+                break
+            case 'dark':
+                theme = 'dark';
+                break
+            case 'light':
+                theme = 'light';
+                break
+            default:
+                theme = 'dark'
+        }
+        return theme
+    }
     return (<MediaQuery minWidth={unconstrainedWidth}>{isUnconstrained => {
         const stageSize = resolveStageSize(stageSizeMode, isUnconstrained);
 
@@ -194,6 +346,19 @@ const GUIComponent = props => {
                 {fontsModalVisible && <TWFontsModal />}
                 {unknownPlatformModalVisible && <TWUnknownPlatformModal />}
                 {invalidProjectModalVisible && <TWInvalidProjectModal />}
+                {customThemeVisible && <CustomThemeModal />}
+                {readmeModalVisible && <AEReadMe />}
+                {extensionManagerVisible && (
+                    <ExtensionManager
+                        vm={vm}
+                        onRequestClose={onRequestCloseExtensionManager}
+                        onOpenExtensionLibrary={onOpenExtensionLibrary}
+                        onOpenCustomExtensionModal={onOpenCustomExtensionModal}
+                        dispatch={dispatch}
+                    />
+                )}
+                {previewExtVisible && <PreviewExt />}
+                {extensionEditorSettingsVisible && <ExtensionEditorSettings />}
             </React.Fragment>
         );
 
@@ -247,10 +412,9 @@ const GUIComponent = props => {
                         onShowPrivacyPolicy={onShowPrivacyPolicy}
                     />
                 ) : null}
-                {loading ? (
-                    <Loader isFullScreen />
-                ) : null}
-                {isCreating ? (
+                {(loading || loaderExiting) ? (
+                    <Loader isFullScreen isExiting={loaderExiting} />
+                ) : isCreating ? (
                     <Loader
                         isFullScreen
                         messageId="gui.loader.creating"
@@ -328,17 +492,34 @@ const GUIComponent = props => {
                     onToggleLoginOpen={onToggleLoginOpen}
                 />
                 <Box className={styles.bodyWrapper}>
-                    <Box className={styles.flexWrapper}>
-                        <Box className={styles.editorWrapper}>
+                    <Box className={styles.flexWrapper} style={Settings.get('EnableMobileLayout') ? {
+                        flexDirection: 'column-reverse',
+                        overflow: 'visible'
+                    } : {
+                        flexDirection: 'row',
+                        overflow: 'hidden'
+                    }}>
+                        <Box className={classNames(styles.editorWrapper, onOpenExtensionEditor && styles.editorWrapperFull)}>
                             <Tabs
                                 forceRenderTabPanel
-                                className={tabClassNames.tabs}
+                                className={
+                                    vscodeLayoutRef
+                                        ? `${tabClassNames.tabs} ${tabClassNames.vscodeList}`
+                                        : tabClassNames.tabs
+                                }
                                 selectedIndex={activeTabIndex}
                                 selectedTabClassName={tabClassNames.tabSelected}
                                 selectedTabPanelClassName={tabClassNames.tabPanelSelected}
                                 onSelect={onActivateTab}
                             >
-                                <TabList className={tabClassNames.tabList}>
+                                <TabList className={
+                                    vscodeLayoutRef
+                                        ? `${tabClassNames.tabList} ${tabClassNames.vscode}`
+                                        : tabClassNames.tabList
+                                }>
+                                    <div className='HindToolBar'>
+                                        {/*这里是隐藏工具栏时提供的边距*/}
+                                    </div>
                                     <Tab className={tabClassNames.tab}>
                                         <img
                                             draggable={false}
@@ -352,7 +533,6 @@ const GUIComponent = props => {
                                     </Tab>
                                     <Tab
                                         className={tabClassNames.tab}
-                                        onClick={onActivateCostumesTab}
                                     >
                                         <img
                                             draggable={false}
@@ -374,7 +554,6 @@ const GUIComponent = props => {
                                     </Tab>
                                     <Tab
                                         className={tabClassNames.tab}
-                                        onClick={onActivateSoundsTab}
                                     >
                                         <img
                                             draggable={false}
@@ -386,10 +565,51 @@ const GUIComponent = props => {
                                             id="gui.gui.soundsTab"
                                         />
                                     </Tab>
+                                    <Tab
+                                        className={tabClassNames.tab}
+                                    >
+                                        <img
+                                            draggable={false}
+                                            src={extensionIcon()}
+                                        />
+                                        <FormattedMessage
+                                            id='gui.gui.extensionEditorTab'
+                                            description='Button to get to the extension editor panel'
+                                            defaultMessage='Extension Editor'
+                                        />
+                                    </Tab>
+                                    <div className='varM'>
+                                        {/*这里是变量Tab*/}
+                                    </div>
+                                    <div className='findBar' style={!vscodeLayoutRef ? {
+                                        marginTop: "auto",
+                                        marginBottom: "auto",
+                                    } : {}}>
+                                        {/*这里是搜索栏*/}
+                                    </div>
+                                    {canShowReadme &&
+                                        <button
+                                            className={styles.readmeButton}
+                                            style={{
+                                                margin: "auto",
+                                                marginLeft: "20px"
+                                            }}
+                                            onClick={onOpenReadme}
+                                        >
+                                            {vscodeLayoutRef ? (
+                                                <img src={readmeIcon()} draggable={false} alt="readme" style={{
+                                                    width: "30px",
+                                                    filter: 'grayscale(100%)'
+                                                }} />
+                                            ) : (
+                                                "README"
+                                            )}
+                                        </button>}
+
                                 </TabList>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     <Box className={styles.blocksWrapper}>
-                                        <Blocks
+                                        {!isFullScreen && <Blocks
                                             key={`${blocksId}/${theme.id}`}
                                             canUseCloud={canUseCloud}
                                             grow={1}
@@ -401,12 +621,11 @@ const GUIComponent = props => {
                                             onOpenCustomExtensionModal={onOpenCustomExtensionModal}
                                             theme={theme}
                                             vm={vm}
-                                        />
+                                        />}
                                     </Box>
                                     <Box className={styles.extensionButtonContainer}>
                                         <button
                                             className={styles.extensionButton}
-                                            title={intl.formatMessage(messages.addExtension)}
                                             onClick={onExtensionButtonClick}
                                         >
                                             <img
@@ -428,13 +647,27 @@ const GUIComponent = props => {
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     {soundsTabVisible ? <SoundTab vm={vm} /> : null}
                                 </TabPanel>
+                                <TabPanel className={tabClassNames.tabPanel}>
+                                    <ExtensionEditorTabs
+                                        vm={vm}
+                                        onOpenExtensionEditorSettings={onOpenExtensionEditorSettings}
+                                        onFontSizeChange={onExtensionEditorFontSizeChange}
+                                        blocksMediaPath={`${basePath}static/${theme.getBlocksMediaFolder()}/`}
+                                    />
+                                </TabPanel>
                             </Tabs>
-                            {backpackVisible ? (
+                            {backpackVisible && !onOpenExtensionEditor ? (
                                 <Backpack host={backpackHost} />
                             ) : null}
                         </Box>
 
-                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
+                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize], onOpenExtensionEditor && styles.hidden)}
+                            style={Settings.get('EnableMobileLayout') ? {
+                                flexDirection: 'row'
+                            } : {
+                                flexDirection: 'column'
+                            }}
+                        >
                             <StageWrapper
                                 isFullScreen={isFullScreen}
                                 isRendererSupported={isRendererSupported()}
@@ -449,6 +682,8 @@ const GUIComponent = props => {
                                 />
                             </Box>
                         </Box>
+
+
                     </Box>
                 </Box>
                 <DragLayer />
@@ -456,7 +691,12 @@ const GUIComponent = props => {
         );
     }}</MediaQuery>);
 };
-
+const mapDispatchToProps = dispatch => ({
+    onOpenReadme: () => dispatch(openReadme()),
+    onOpenExtensionEditorSettings: () => dispatch(openExtensionEditorSettings()),
+    onExtensionEditorFontSizeChange: (fontSize) => dispatch(updateFontSize(fontSize)),
+    dispatch
+})
 GUIComponent.propTypes = {
     accountNavOpen: PropTypes.bool,
     activeTabIndex: PropTypes.number,
@@ -542,7 +782,17 @@ GUIComponent.propTypes = {
     fontsModalVisible: PropTypes.bool,
     unknownPlatformModalVisible: PropTypes.bool,
     invalidProjectModalVisible: PropTypes.bool,
-    vm: PropTypes.instanceOf(VM).isRequired
+    vm: PropTypes.instanceOf(VM).isRequired,
+    customThemeVisible: PropTypes.bool,
+    readmeModalVisible: PropTypes.bool,
+    onOpenReadme: PropTypes.func,
+    extensionManagerVisible: PropTypes.bool,
+    onRequestCloseExtensionManager: PropTypes.func,
+    onOpenExtensionLibrary: PropTypes.func,
+    previewExtVisible: PropTypes.bool,
+    extensionEditorSettingsVisible: PropTypes.bool,
+    extensionEditorFontSize: PropTypes.number,
+    onExtensionEditorFontSizeChange: PropTypes.func
 };
 GUIComponent.defaultProps = {
     backpackHost: null,
@@ -574,9 +824,15 @@ const mapStateToProps = state => ({
     // This is the button's mode, as opposed to the actual current state
     blocksId: state.scratchGui.timeTravel.year.toString(),
     stageSizeMode: state.scratchGui.stageSize.stageSize,
-    theme: state.scratchGui.theme.theme
+    theme: state.scratchGui.theme.theme,
+    customThemeVisible: state.scratchGui.modals.customtheme,
+    readmeModalVisible: state.scratchGui.modals.readme,
+    previewExtVisible: state.scratchGui.modals.previewExt,
+    extensionEditorSettingsVisible: state.scratchGui.modals.extensionEditorSettings,
+    extensionEditorFontSize: state.scratchGui.extensionEditor.fontSize
 });
 
 export default injectIntl(connect(
-    mapStateToProps
+    mapStateToProps,
+    mapDispatchToProps
 )(GUIComponent));

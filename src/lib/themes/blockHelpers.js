@@ -15,7 +15,7 @@ const getCategoryIconURI = extensionIcons => {
 // scratch-blocks colours has a pen property that scratch-gui uses for all extensions
 const getExtensionColors = theme => theme.getBlockColors().pen;
 
-const DEFAULT_EXTENSION_PRIMARY = '#0fbd8c';
+const DEFAULT_EXTENSION_PRIMARY = '#0099ff';
 
 /**
  * Applies extension color theme to categories.

@@ -19,8 +19,14 @@
   display: block;
   padding: 18px;
   /* weird hack to fix scrolling??? */
-  height: 50px;
+  height: 50px; /*lol, it's strange*/
   overflow-y: auto;
+}
+
+/* VSCode layout: allow variable manager to use full height */
+[class*="tabs"][class*="vscodeList"] .sa-var-manager,
+.tab-panel .sa-var-manager {
+  height: 100% !important;
 }
 
 .sa-var-manager-searchbox {

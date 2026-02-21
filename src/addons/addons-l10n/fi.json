@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "vastapäivään",
     "_general/blocks/clockwise": "myötäpäivään",
     "_general/blocks/green-flag": "lippu",
@@ -82,7 +82,12 @@
     "debugger/tab-logs": "Lokimerkinnät",
     "debugger/tab-performance": "Suorituskyky",
     "debugger/tab-threads": "Säikeet",
+    "debugger/tab-variables": "Muuttujat",
     "debugger/thread": "Säie {id}",
+    "debugger/search": "Etsi",
+    "debugger/too-big": "Näytä erittäin suuri arvo napsauttamalla.",
+    "debugger/for-all-sprites": "Muuttujat kaikille hahmoille",
+    "debugger/for-this-sprite": "Muuttujat tälle hahmolle",
     "debugger/unknown-sprite": "(tuntematon hahmo)",
     "debugger/unpause": "Jatka",
     "pause/pause": "Keskeytä",

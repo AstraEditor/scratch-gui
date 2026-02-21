@@ -7,7 +7,7 @@ export default async function ({ addon }) {
       stringify = true;
     if (typeof input === "object") [spriteObj, stringify] = [input, false];
     else spriteObj = JSON.parse(input);
-    const isEmpty = spriteObj.costumes?.[0]?.baseLayerMD5 === "cd21514d0531fdffb22204e0ec5ed84a.svg";
+    const isEmpty = spriteObj.costumes && spriteObj.costumes[0] && spriteObj.costumes[0].baseLayerMD5 === "cd21514d0531fdffb22204e0ec5ed84a.svg";
     if (!addon.self.disabled && (isEmpty || !spriteObj.tags || !addon.settings.get("library"))) {
       if (spriteObj.scratchX) {
         spriteObj.scratchX = addon.settings.get("x");

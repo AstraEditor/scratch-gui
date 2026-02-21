@@ -2,7 +2,9 @@
 @import "../../css/z-index.css";
 
 .input {
-    border: none;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 2px;
     width: 100%;
     font-size: 23px;
     line-height: 32px;

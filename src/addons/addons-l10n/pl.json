@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "Wyczyść bloki +",
     "editor-devtools/copy-all": "Kopiuj wszystko",
     "editor-devtools/copy-block": "Kopiuj Blok",
@@ -70,7 +70,12 @@
     "debugger/tab-logs": "Logi",
     "debugger/tab-performance": "Wydajność",
     "debugger/tab-threads": "Wątki",
+    "debugger/tab-variables": "Zmienne",
     "debugger/thread": "Wątek {id}",
+    "debugger/search": "Szukaj",
+    "debugger/too-big": "Kliknij, aby wyświetlić bardzo dużą wartość.",
+    "debugger/for-all-sprites": "Zmienne dla wszystkich duszków",
+    "debugger/for-this-sprite": "Zmienne dla tego duszka",
     "debugger/unknown-sprite": "(nieznany duszek)",
     "debugger/unpause": "Wznów",
     "pause/pause": "Zatrzymaj",

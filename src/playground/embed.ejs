@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google" value="notranslate">
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <link rel="icon" href="<%= htmlWebpackPlugin.options.root %>favicon.ico">
+    <% const extEditorBase = (htmlWebpackPlugin.options.root && htmlWebpackPlugin.options.root.length) ? htmlWebpackPlugin.options.root : ''; %>
+    <script>
+      // Used by scratch-extension-editor to locate its workers/chunks in builds and dev server.
+      window.__SCRATCH_EXTENSION_EDITOR_PUBLIC_PATH__ = "<%= extEditorBase %>extension-editor/";
+    </script>
     <style>
       .splash-screen {
         position: absolute;

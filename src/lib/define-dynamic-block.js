@@ -55,7 +55,14 @@ const defineDynamicBlock = (ScratchBlocks, categoryInfo, staticBlockInfo, extend
         }
         delete this.needsBlockInfoUpdate;
         this.blockInfoText = blockInfoText;
-        const blockInfo = JSON.parse(blockInfoText);
+        
+        let blockInfo;
+        try {
+            blockInfo = JSON.parse(blockInfoText);
+        } catch (e) {
+            console.warn('Failed to parse blockInfo:', e);
+            return;
+        }
 
         switch (blockInfo.blockType) {
         case BlockType.COMMAND:

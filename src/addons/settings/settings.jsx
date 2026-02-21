@@ -107,6 +107,11 @@ const groupAddons = () => {
             label: settingsTranslations.groupDanger,
             open: false,
             addons: []
+        },
+        notCompatible: {
+            label: settingsTranslations.groupNotCompatible,
+            open: false,
+            addons: []
         }
     };
     const manifests = Object.values(supportedAddons);
@@ -116,6 +121,8 @@ const groupAddons = () => {
             groups.new.addons.push(index);
         } else if (manifest.tags.includes('danger') || manifest.noCompiler) {
             groups.danger.addons.push(index);
+        } else if (manifest.tags.includes('not_compatible')) {
+            groups.notCompatible.addons.push(index);
         } else {
             groups.others.addons.push(index);
         }
@@ -244,6 +251,11 @@ const Tags = ({manifest}) => (
         {manifest.tags.includes('new') && (
             <span className={classNames(styles.tag, styles.tagNew)}>
                 {settingsTranslations.tagNew}
+            </span>
+        )}
+        {manifest.tags.includes('not_compatible') && (
+            <span className={classNames(styles.tag, styles.tagNotCompatible)}>
+                {settingsTranslations.tagNotCompatible}
             </span>
         )}
         {manifest.tags.includes('danger') && (
@@ -572,6 +584,7 @@ const Addon = ({
                         }}
                     />
                 </div>
+                
                 {manifest.tags.includes('theme') ? (
                     <img
                         className={styles.extensionImage}
@@ -589,19 +602,20 @@ const Addon = ({
                 )}
                 <div className={styles.addonTitleText}>
                     {addonTranslations[`${id}/@name`] || manifest.name}
-                </div>
-                {extended && (
-                    <div className={styles.addonId}>
-                        {`(${id})`}
-                    </div>
-                )}
+                </div> 
+                <span style={{
+                    color: "#888888",
+                    margin: "0 5px"
+                }}>{`${id} `}</span>
             </label>
             <Tags manifest={manifest} />
+            
             {!settings.enabled && (
                 <div className={styles.inlineDescription}>
                     {addonTranslations[`${id}/@description`] || manifest.description}
                 </div>
             )}
+            
             <div className={styles.addonOperations}>
                 {settings.enabled && manifest.settings && (
                     <button
@@ -877,7 +891,7 @@ class AddonList extends React.Component {
         }
         return (
             <div>
-                {Object.entries(groupedAddons).map(([id, {label, addons, open}]) => (
+                {Object.entries(groupedAddons).map(([id, {label, addons, open}]) => (   
                     <AddonGroup
                         key={id}
                         label={label}

@@ -74,15 +74,27 @@ const SortableHOC = function (WrappedComponent) {
             // the dragging object. Obviously only exists if there is a drag (i.e. currentOffset).
             // Return null if outside the container, zero if there are no boxes.
             let mouseOverIndex = null;
-            if (this.props.dragInfo.currentOffset) {
+            if (this.props.dragInfo.currentOffset && this.ref) {
                 const {x, y} = this.props.dragInfo.currentOffset;
                 const {top, left, bottom, right} = this.containerBox;
+
                 if (x >= left && x <= right && y >= top && y <= bottom) {
-                    if (this.boxes.length === 0) {
+                    // 在拖拽过程中重新获取元素的当前位置，以处理滚动后的位置变化
+                    const currentBoxes = this.sortableRefs
+                        .map(el => el && el.getBoundingClientRect())
+                        .filter(Boolean);
+
+                    if (currentBoxes.length === 0) {
                         mouseOverIndex = 0;
                     } else {
+                        // 按照拖拽开始时的顺序重新排序 boxes
+                        currentBoxes.sort((a, b) => {
+                            if (a.top === b.top) return (a.left - b.left) * (this.props.isRtl ? -1 : 1);
+                            return a.top - b.top;
+                        });
+
                         mouseOverIndex = indexForPositionOnList(
-                            this.props.dragInfo.currentOffset, this.boxes, this.props.isRtl);
+                            this.props.dragInfo.currentOffset, currentBoxes, this.props.isRtl);
                     }
                 }
             }

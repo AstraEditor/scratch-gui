@@ -710,10 +710,14 @@ const readInterval = () => {
         // TODO: this is temporary, remove it after enough has passed for people that care to have migrated
         const addonSettings = localStorage.getItem('tw:addons');
         if (addonSettings) {
-            const parsedAddonSettings = JSON.parse(addonSettings);
-            const addonObject = parsedAddonSettings['tw-disable-restore-points'];
-            if (addonObject && addonObject.enabled) {
-                return -1;
+            try {
+                const parsedAddonSettings = JSON.parse(addonSettings);
+                const addonObject = parsedAddonSettings['tw-disable-restore-points'];
+                if (addonObject && addonObject.enabled) {
+                    return -1;
+                }
+            } catch (e) {
+                console.warn('Failed to parse addon settings:', e);
             }
         }
     } catch (e) {

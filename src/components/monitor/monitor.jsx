@@ -17,6 +17,7 @@ import styles from './monitor.css';
 // Map category name to color name used in scratch-blocks Blockly.Colours
 const categoryColorMap = {
     data: 'data',
+    control: 'control',
     sensing: 'sensing',
     sound: 'sounds',
     looks: 'looks',

@@ -1,0 +1,25 @@
+/* Terminal 按钮样式 - 与 Scratch 菜单栏按钮风格一致 */
+.sa-terminal-button {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0 10px;
+  height: 32px;
+  background: transparent;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.sa-terminal-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sa-terminal-button:active {
+  background: rgba(255, 255, 255, 0.2);
+}
