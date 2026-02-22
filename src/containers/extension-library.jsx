@@ -16,7 +16,7 @@ import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
 const extensionsLibs = [
     { id: "tw", url: "https://extensions.turbowarp.org/" },
-    { id: "ae", url: "https://astraeditor.github.io/extensions/" }, // 修改链接，这样尽管链接改变也不会影响github.io的访问
+    { id: "ae", url: "https://editors.astras.top/extensions" },
 ]
 const messages = defineMessages({
     extensionTitle: {
