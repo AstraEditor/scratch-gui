@@ -96,7 +96,7 @@
         "scratch-blocks": "github:AstraEditor/scratch-blocks#develop-builds",
         "scratch-paint": "github:AstraEditor/scratch-paint#develop",
         "scratch-render": "github:AstraEditor/scratch-render#develop",
-        "scratch-vm": "https://github.com/AstraEditor/scratch-vm.git#master",
+        "scratch-vm": "github:AstraEditor/scratch-vm.git#master",
         "scratch-extension-editor": "github:AstraEditor/scratch-extension-editor#main",
         "style-loader": "^0.23.0",
         "text-encoding": "0.7.0",
