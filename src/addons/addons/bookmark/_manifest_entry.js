@@ -24,6 +24,6 @@ const manifest = {
     "new",
     "recommended"
   ],
-  "enabledByDefault": false
+  "enabledByDefault": true
 };
 export default manifest;

@@ -28,6 +28,6 @@ const manifest = {
       url: "userstyle.css"
     }
   ],
-  "enabledByDefault": false
+  "enabledByDefault": true
 };
 export default manifest;
