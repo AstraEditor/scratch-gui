@@ -33,8 +33,7 @@ const base = {
     devtool: process.env.SOURCEMAP || (process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map'),
     devServer: {
         contentBase: [
-            path.resolve(__dirname, 'build'),
-            path.resolve(__dirname, 'node_modules/scratch-extension-editor/dist')
+            path.resolve(__dirname, 'build')
         ],
         host: '0.0.0.0',
         disableHostCheck: true,
@@ -68,8 +67,6 @@ const base = {
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts'),
 
             // Ensure there is exactly one React instance in the bundle.
-            // scratch-extension-editor is often symlinked during development which can otherwise
-            // cause it to resolve a second copy of React from its own node_modules -> invalid hook call.
             'react$': path.resolve(__dirname, 'node_modules/react'),
             'react-dom$': path.resolve(__dirname, 'node_modules/react-dom')
         }
@@ -248,17 +245,6 @@ module.exports = [
                     {
                         from: 'static',
                         to: ''
-                    }
-                ]
-            }),
-            // scratch-extension-editor ships code-split chunks/workers in its own dist/ directory.
-            // In dev, CopyWebpackPlugin also makes them available from the dev server output.
-            // In a production build, we copy them into build/extension-editor/ to match that URL.
-            new CopyWebpackPlugin({
-                patterns: [
-                    {
-                        from: path.resolve(__dirname, 'node_modules/scratch-extension-editor/dist'),
-                        to: 'extension-editor'
                     }
                 ]
             }),

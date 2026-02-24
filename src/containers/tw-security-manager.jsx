@@ -29,7 +29,7 @@ const isTrustedExtension = url => (
     url.startsWith('https://extensions.turbowarp.org/') ||
 
     // AstraEditor
-    url.startsWith('https://editor.astras.top/extensions/') ||
+    url.startsWith('https://editors.astras.top/extensions/') ||
 
 
     // For development.

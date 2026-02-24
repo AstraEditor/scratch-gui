@@ -10,7 +10,7 @@ const manifest = {
       "link": "https://github.com/KOSHINOawa"
     }
   ],
-  "enabledByDefault": true,
+  "enabledByDefault": false,
   "userscripts": [
     {
       "url": "userscript.js"

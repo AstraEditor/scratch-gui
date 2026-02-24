@@ -5,9 +5,10 @@ export class AESettings {
                 this.init();
                 this.initset = {
                         enableREADMEAutoDisplay: true,
+                        enableHTMLSupportInREADME: false,
                         skipExtWarn: false,
                         EnableExtensionPreview: false,
-                        EnableVSCodeLayout: false,
+                        EnableVSCodeLayout: true,
                         EnableMobileLayout: false
                 };
         }
@@ -50,8 +51,6 @@ export class AESettings {
                 localStorage.setItem(this.storageKey, JSON.stringify(settings));
         }
         reset() {
-                const defaultSettings = this.initset;
-                this.save(defaultSettings);
-                return defaultSettings;
+                this.save(this.initset);
         }
 }
