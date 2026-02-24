@@ -8,7 +8,9 @@ import FancyCheckbox from '../tw-fancy-checkbox/checkbox.jsx';
 import { APP_NAME } from '../../lib/brand';
 
 const LoadExtensionModal = props => (
-    <div>
+    <div style={{
+        marginBottom: "10px"
+    }}>
         {props.extensions && Object.keys(props.extensions).length > 0 ? (
             <React.Fragment>
                 <FormattedMessage
@@ -16,7 +18,10 @@ const LoadExtensionModal = props => (
                     description="Part of modal asking for permission to load multiple extensions"
                     id="tw.loadExtension.multiple"
                 />
-                <ul>
+                <ul style={{
+                    maxHeight: "200px",
+                    overflow: "auto"
+                }}>
                     {Object.entries(props.extensions).map(([id, url]) => (
                         <li key={id}>
                             <strong>{id}</strong>
@@ -90,7 +95,6 @@ const LoadExtensionModal = props => (
                 />
             </div>
         )}
-        <br />
     </div>
 );
 

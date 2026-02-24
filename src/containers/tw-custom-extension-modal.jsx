@@ -178,8 +178,8 @@ class CustomExtensionModal extends React.Component {
                     const mirrorHint = originalUrl.startsWith(rawGitHubPrefix) ?
                         `\nTip: Your network may block raw.githubusercontent.com. Try:\n${toTrampolineProxy(originalUrl)}` :
                         '';
-                    alert(`Failed to load extension: ${originalUrl}\n${String(lastError || '')}${mirrorHint}`);
-                    console.error('Failed to load extension:', originalUrl, lastError);
+                    alert(`Failed to load extension: ${String(lastError || '')}`);
+                    console.error('Failed to load extension:', lastError);
                 }
             }
         } catch (err) {
