@@ -31,5 +31,8 @@
         "Wrong Answer!",
         "Presentation Error!",
         "Memory Limit Exceeded!",
-        "欢迎投稿TIPS！"
+        "欢迎投稿TIPS！",
+        "扣式咯我草泥马！"
+        ,"我在没拉取的情况下使用了push -f！",
+        "你这个Commit Message怎么写的"
 ]
