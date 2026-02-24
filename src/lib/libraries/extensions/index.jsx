@@ -54,7 +54,8 @@ import uploadURL from './upload/upload_extension.png'
 import twIcon from './tw/tw.svg';
 import customExtensionIcon from './custom/custom.svg';
 import returnIcon from './custom/return.svg';
-import galleryIcon from './gallery/gallery.svg';
+import galleryIcon from './gallery/twgallery.svg';
+import aeGalleryIcon from './gallery/aegallery.png';
 import {APP_NAME} from '../../brand';
 
 export default [
@@ -520,5 +521,55 @@ export const galleryError = {
         />
     ),
     tags: ['tw'],
+    featured: true
+};
+
+
+export const aeGalleryMore = {
+    name: (
+        <FormattedMessage
+            defaultMessage="AstraEditor Extension Gallery"
+            description="Name of editors.astras.top/extensions in extension library"
+            id="tw.extensionGallery.aename"
+        />
+    ),
+    href: 'https://editors.astras.top/extensions',
+    extensionId: 'gallery',
+    iconURL: aeGalleryIcon,
+    description: (
+        <FormattedMessage
+            // eslint-disable-next-line max-len
+            defaultMessage="Learn more about extensions at editors.astras.top/extensions."
+            description="Appears after the extension list from the gallery was loaded successfully"
+            id="tw.extensionGallery.aemore"
+        />
+    ),
+    tags: ['ae'],
+    featured: true
+};
+
+export const aeGalleryError = {
+    name: (
+        <FormattedMessage
+            defaultMessage="AstraEditor Extension Gallery"
+            description="Name of editors.astras.top/extensions in extension library"
+            id="tw.extensionGallery.aename"
+            values={{
+                APP_NAME
+            }}
+        />
+    ),
+    href: 'https://editors.astras.top/extensions',
+    extensionId: 'gallery',
+    iconURL: aeGalleryIcon,
+    description: (
+        <FormattedMessage
+            // eslint-disable-next-line max-len
+            defaultMessage="Error loading extension gallery. Visit editors.astras.top/extensions to find more extensions."
+            description="Appears when an error occurred loading extension list from the custom extension gallery"
+            id="tw.extensionGallery.aeerror"
+        />
+    ),
+    tags: ['ae'],
     featured: true
 };

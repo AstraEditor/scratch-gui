@@ -41,8 +41,8 @@ export default async function ({ addon, msg, Window }) {
                 (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) ||
                 (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches);
 
-        const SHOW_EDGE = isTouchDevice ? 24 : 10;
-        const HIDE_EDGE = isTouchDevice ? 100 : 60;
+        const SHOW_EDGE = isTouchDevice ? 24 : 5;
+        const HIDE_EDGE = isTouchDevice ? 100 : 50;
         const IDLE_HIDE_DELAY = isTouchDevice ? 1400 : 1000;
 
         const button = document.createElement('button');

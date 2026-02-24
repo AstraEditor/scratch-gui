@@ -22,8 +22,7 @@ const MODAL_INVALID_PROJECT = 'invalidProjectModal';
 const MODAL_CUSTOM_THEME = 'customtheme';
 const MODAL_README = 'readme';
 const MODAL_PREVIEW_EXT = 'previewExt';
-const MODAL_EXTENSION_EDITOR_SETTINGS = 'extensionEditorSettings';
-const MODAL_EXTENSION_EDITOR_CREATE = 'extensionEditorCreate'
+const MODAL_AE_FEATURES = 'aeFeaturesModal';
 
 const initialState = {
     [MODAL_BACKDROP_LIBRARY]: false,
@@ -46,8 +45,7 @@ const initialState = {
     [MODAL_INVALID_PROJECT]: false,
     [MODAL_README]: false,
     [MODAL_PREVIEW_EXT]: false,
-    [MODAL_EXTENSION_EDITOR_SETTINGS]: false,
-    [MODAL_EXTENSION_EDITOR_CREATE]: false
+    [MODAL_AE_FEATURES]: false
 };
 
 const reducer = function (state, action) {
@@ -149,14 +147,11 @@ const openUnknownPlatformModal = function () {
 const openInvalidProjectModal = function () {
     return openModal(MODAL_INVALID_PROJECT);
 };
-const openExtensionEditorSettings = function () {
-    return openModal(MODAL_EXTENSION_EDITOR_SETTINGS);
+const openAeFeaturesModal = function () {
+    return openModal(MODAL_AE_FEATURES);
 };
-const openExtensionEditorCreate = function () {
-    return openModal(MODAL_EXTENSION_EDITOR_CREATE);
-};
-const closeExtensionEditorCreate = function () {
-    return closeModal(MODAL_EXTENSION_EDITOR_CREATE);
+const closeAeFeaturesModal = function () {
+    return closeModal(MODAL_AE_FEATURES);
 };
 const closeBackdropLibrary = function () {
     return closeModal(MODAL_BACKDROP_LIBRARY);
@@ -212,9 +207,6 @@ const closeUnknownPlatformModal = function () {
 const closeInvalidProjectModal = function () {
     return closeModal(MODAL_INVALID_PROJECT);
 };
-const closeExtensionEditorSettings = function () {
-    return closeModal(MODAL_EXTENSION_EDITOR_SETTINGS);
-};
 export {
     reducer as default,
     initialState as modalsInitialState,
@@ -239,7 +231,8 @@ export {
     openInvalidProjectModal,
     openReadme,
     openPreviewExt,
-    openExtensionEditorSettings,
+    openAeFeaturesModal,
+    closeAeFeaturesModal,
     closePreviewExt,
     closeReadme,
     closeBackdropLibrary,
@@ -260,8 +253,5 @@ export {
     closeFontsModal,
     closeUnknownPlatformModal,
     closeInvalidProjectModal,
-    closeCustomTheme,
-    closeExtensionEditorSettings,
-    openExtensionEditorCreate,
-    closeExtensionEditorCreate
+    closeCustomTheme
 };

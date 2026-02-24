@@ -40,13 +40,11 @@ import TWInvalidProjectModal from '../../containers/tw-invalid-project-modal.jsx
 import TWWindChimeSubmitter from '../../containers/tw-windchime-submitter.jsx';
 import CustomThemeModal from '../../containers/tw-custom-theme-modal.jsx';
 import AEReadMe from '../../containers/ae-readme.jsx'
-import ExtensionEditorSettings from '../extension-editor-settings';
-import ExtensionEditorTabs from '../../components/extension-editor-tabs/extension-editor-tabs.jsx';
+import AeFeaturesModal from '../../containers/ae-features-modal.jsx';
+import version from '../../lib/ae-version.js';
 import { loadData } from '../ae-readme/ae-readme.jsx'
 
-import { openExtensionEditorSettings } from '../../reducers/modals.js';
-import { updateFontSize } from '../../reducers/extension-editor.js';
-import { setDimensions } from '../../reducers/tw.js';
+import { openAeFeaturesModal } from '../../reducers/modals.js';
 
 import ExtensionManager from '../extension-chooser/extension-chooser.jsx';
 import PreviewExt from '../../containers/ae-preview-ext.jsx';
@@ -62,12 +60,16 @@ import addExtensionIcon from './icon--extensions.svg';
 import codeIcon from '!../../lib/tw-recolor/build!./icon--code.svg';
 import costumesIcon from '!../../lib/tw-recolor/build!./icon--costumes.svg';
 import soundsIcon from '!../../lib/tw-recolor/build!./icon--sounds.svg';
-import extensionIcon from '!../../lib/tw-recolor/build!./icon--extension.svg'
 import readmeIcon from '!../../lib/tw-recolor/build!./readme.svg'
 import { openReadme } from '../../reducers/modals.js';
 
 import { AESettings } from '../../lib/settings.js'
 const Settings = new AESettings();
+/* 检测设置 */
+
+if (localStorage.getItem('AESettings') === "undefined" || localStorage.getItem('AESettings') === undefined) {
+    Settings.reset()
+}
 const storedSettings = localStorage.getItem('AESettings');
 let vscodeLayoutRef = false;
 try {
@@ -149,7 +151,6 @@ const GUIComponent = props => {
         onClickLogo,
         onExtensionButtonClick,
         onOpenCustomExtensionModal,
-        onOpenExtensionEditorSettings,
         onProjectTelemetryEvent,
         onRequestCloseBackdropLibrary,
         onRequestCloseCostumeLibrary,
@@ -185,10 +186,8 @@ const GUIComponent = props => {
         onRequestCloseExtensionManager,
         onOpenExtensionLibrary,
         previewExtVisible,
-        extensionEditorSettingsVisible,
-        extensionEditorFontSize,
-        onExtensionEditorFontSizeChange,
         dispatch,
+        aeFeaturesModalVisible,
         ...componentProps
     } = omit(props, '');
     const updateCanShowReadme = () => {
@@ -208,7 +207,6 @@ const GUIComponent = props => {
 
 
     const [canShowReadme, setCanShowReadme] = useState(() => { updateCanShowReadme })
-    const [onOpenExtensionEditor, setOpenExtensionEditor] = useState(false)
     const [loaderExiting, setLoaderExiting] = useState(false)
     useEffect(() => {
         if (!vm) return;
@@ -236,25 +234,6 @@ const GUIComponent = props => {
             vm.runtime.off('PROJECT_LOADED', showReadmeDefault);
         };
     }, [vm]);
-
-    useEffect(() => {
-        // 当切换标签时，检查是否是扩展编辑器标签
-        // 扩展编辑器是第4个标签（索引3）
-        console.log('activeTabIndex:', activeTabIndex);
-        const wasExtensionEditor = onOpenExtensionEditor;
-        if (activeTabIndex === 3) {
-            setOpenExtensionEditor(true);
-        } else {
-            setOpenExtensionEditor(false);
-            // StageWrapper uses `display: none` while extension editor is open.
-            // Force a stage re-measure after it becomes visible again to avoid a 0x0 canvas (white stage).
-            if (wasExtensionEditor) {
-                requestAnimationFrame(() => {
-                    if (dispatch) dispatch(setDimensions([window.innerWidth, window.innerHeight]));
-                });
-            }
-        }
-    }, [activeTabIndex]);
 
     const prevLoadingRef = useRef(Boolean(loading));
     const loaderExitTimeoutRef = useRef(null);
@@ -298,6 +277,16 @@ const GUIComponent = props => {
         return <Box {...componentProps}>{children}</Box>;
     }
 
+    // 显示AE特性MODAL
+    useEffect(() => {
+        if (!localStorage.getItem('ae:firstEnter') || localStorage.getItem('ae:lastVersion') !== version.version) {
+            try {
+                dispatch(openAeFeaturesModal());
+            } catch (e) {
+                // ingore
+            }
+        }
+    },[])
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -358,7 +347,7 @@ const GUIComponent = props => {
                     />
                 )}
                 {previewExtVisible && <PreviewExt />}
-                {extensionEditorSettingsVisible && <ExtensionEditorSettings />}
+                {aeFeaturesModalVisible && <AeFeaturesModal />}
             </React.Fragment>
         );
 
@@ -499,7 +488,7 @@ const GUIComponent = props => {
                         flexDirection: 'row',
                         overflow: 'hidden'
                     }}>
-                        <Box className={classNames(styles.editorWrapper, onOpenExtensionEditor && styles.editorWrapperFull)}>
+                        <Box className={styles.editorWrapper}>
                             <Tabs
                                 forceRenderTabPanel
                                 className={
@@ -563,19 +552,6 @@ const GUIComponent = props => {
                                             defaultMessage="Sounds"
                                             description="Button to get to the sounds panel"
                                             id="gui.gui.soundsTab"
-                                        />
-                                    </Tab>
-                                    <Tab
-                                        className={tabClassNames.tab}
-                                    >
-                                        <img
-                                            draggable={false}
-                                            src={extensionIcon()}
-                                        />
-                                        <FormattedMessage
-                                            id='gui.gui.extensionEditorTab'
-                                            description='Button to get to the extension editor panel'
-                                            defaultMessage='Extension Editor'
                                         />
                                     </Tab>
                                     <div className='varM'>
@@ -647,21 +623,13 @@ const GUIComponent = props => {
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     {soundsTabVisible ? <SoundTab vm={vm} /> : null}
                                 </TabPanel>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    <ExtensionEditorTabs
-                                        vm={vm}
-                                        onOpenExtensionEditorSettings={onOpenExtensionEditorSettings}
-                                        onFontSizeChange={onExtensionEditorFontSizeChange}
-                                        blocksMediaPath={`${basePath}static/${theme.getBlocksMediaFolder()}/`}
-                                    />
-                                </TabPanel>
                             </Tabs>
-                            {backpackVisible && !onOpenExtensionEditor ? (
+                            {backpackVisible ? (
                                 <Backpack host={backpackHost} />
                             ) : null}
                         </Box>
 
-                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize], onOpenExtensionEditor && styles.hidden)}
+                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
                             style={Settings.get('EnableMobileLayout') ? {
                                 flexDirection: 'row'
                             } : {
@@ -693,8 +661,6 @@ const GUIComponent = props => {
 };
 const mapDispatchToProps = dispatch => ({
     onOpenReadme: () => dispatch(openReadme()),
-    onOpenExtensionEditorSettings: () => dispatch(openExtensionEditorSettings()),
-    onExtensionEditorFontSizeChange: (fontSize) => dispatch(updateFontSize(fontSize)),
     dispatch
 })
 GUIComponent.propTypes = {
@@ -790,9 +756,7 @@ GUIComponent.propTypes = {
     onRequestCloseExtensionManager: PropTypes.func,
     onOpenExtensionLibrary: PropTypes.func,
     previewExtVisible: PropTypes.bool,
-    extensionEditorSettingsVisible: PropTypes.bool,
-    extensionEditorFontSize: PropTypes.number,
-    onExtensionEditorFontSizeChange: PropTypes.func
+    aeFeaturesModalVisible: PropTypes.bool
 };
 GUIComponent.defaultProps = {
     backpackHost: null,
@@ -828,8 +792,7 @@ const mapStateToProps = state => ({
     customThemeVisible: state.scratchGui.modals.customtheme,
     readmeModalVisible: state.scratchGui.modals.readme,
     previewExtVisible: state.scratchGui.modals.previewExt,
-    extensionEditorSettingsVisible: state.scratchGui.modals.extensionEditorSettings,
-    extensionEditorFontSize: state.scratchGui.extensionEditor.fontSize
+    aeFeaturesModalVisible: state.scratchGui.modals.aeFeaturesModal
 });
 
 export default injectIntl(connect(

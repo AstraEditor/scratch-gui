@@ -6,7 +6,11 @@ import PropTypes from 'prop-types';
 import Box from '../box/box.jsx';
 import styles from './ae-readme.css';
 import classNames from 'classnames';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from 'react-markdown/with-html';
+import {AESettings} from '../../lib/settings.js';
+
+const settings = new AESettings();
+
 var data = null;
 
 export function loadData(loadData) {
@@ -95,7 +99,7 @@ const CustomModalComponent = (props) => {
                             ))}
                         </div>
                     }
-                    <ReactMarkdown className={styles.body}>
+                    <ReactMarkdown className={styles.body} escapeHtml={settings.get('enableHTMLSupportInREADME') ? false : true}>
                         {readMe[nowTab].text.replaceAll('\n', '\n\n')}
                     </ReactMarkdown>
                 </Box>
@@ -104,7 +108,7 @@ const CustomModalComponent = (props) => {
         )
     } catch (e) {
         console.log(e)
-        return (<>Hey!There is an ERROR by README Modal. Check the Error in the console and report it on Github</>)
+        return (<>Hey!There is an ERROR from README Modal. Check the Error in the console and report it on Github</>)
     }
 };
 

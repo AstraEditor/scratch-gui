@@ -1,20 +1,20 @@
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 
 import VM from 'scratch-vm';
 import AudioEngine from 'scratch-audio';
 
-import {setProjectUnchanged} from '../reducers/project-changed';
+import { setProjectUnchanged } from '../reducers/project-changed';
 import {
     LoadingStates,
     getIsLoadingWithId,
     onLoadedProject,
     projectError
 } from '../reducers/project-state';
-import {defaultStageSize} from '../reducers/custom-stage-size';
-import {twInitialState} from '../reducers/tw';
+import { defaultStageSize } from '../reducers/custom-stage-size';
+import { twInitialState } from '../reducers/tw';
 import log from './log';
 
 /**
@@ -33,13 +33,13 @@ const SECURITY_CRITICAL_FONTS = [
  */
 const vmManagerHOC = function (WrappedComponent) {
     class VMManager extends React.Component {
-        constructor (props) {
+        constructor(props) {
             super(props);
             bindAll(this, [
                 'loadProject'
             ]);
         }
-        componentDidMount () {
+        componentDidMount() {
             if (!this.props.vm.initialized) {
                 window.vm = this.props.vm;
                 try {
@@ -58,7 +58,7 @@ const vmManagerHOC = function (WrappedComponent) {
                 this.props.vm.start();
             }
         }
-        componentDidUpdate (prevProps) {
+        componentDidUpdate(prevProps) {
             // if project is in loading state, AND fonts are loaded,
             // and they weren't both that way until now... load project!
             if (this.props.isLoadingWithId && this.props.fontsLoaded &&
@@ -70,11 +70,14 @@ const vmManagerHOC = function (WrappedComponent) {
                 this.props.vm.start();
             }
         }
-        loadProject () {
-            // Reset advanced runtime options before loading another project.
+        loadProject() {
+            // 重置高级设置
             this.props.vm.setFramerate(twInitialState.framerate);
             this.props.vm.setInterpolation(twInitialState.interpolation);
             this.props.vm.setCompilerOptions(twInitialState.compilerOptions);
+            this.props.vm.setCompilerOptions({
+                warpTimer: true
+            }); //循环计时器默认启用，但是他几把是在blocks.jsx内设置的，所以会导致冲突（默认设置是false）
             this.props.vm.setRuntimeOptions(twInitialState.runtimeOptions);
             this.props.vm.renderer.setUseHighQualityRender(twInitialState.highQualityPen);
             this.props.vm.setStageSize(defaultStageSize.width, defaultStageSize.height);
@@ -103,7 +106,7 @@ const vmManagerHOC = function (WrappedComponent) {
                     this.props.onError(e);
                 });
         }
-        render () {
+        render() {
             const {
                 /* eslint-disable no-unused-vars */
                 fontsLoaded,

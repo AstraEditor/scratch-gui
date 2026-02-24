@@ -448,7 +448,35 @@ const AutoDisplayREADME = props => (
                 defaultMessage="After the project is opened, if there is a Sprite named 'README', the README inside the Sprite will be automatically displayed."
                 description="Auto Displat Readme label help"
                 id="tw.settingsModal.autodisplayreadmeHelp"
+            />}
+    />
+);
+const EnableHTMLSupportREADME = props => (
+    <BooleanSetting
+        {...props}
+        label={
+            <FormattedMessage
+                defaultMessage="Enable HTML Support"
+                description="Enable HTML Support in README label"
+                id="tw.settingsModal.enablehtmlsupportreadme"
             />
+        }
+        help={<>
+            <FormattedMessage
+                // eslint-disable-next-line max-len
+                defaultMessage="Allows you to use HTML tags in the README."
+                description="Enable HTML Support in README help"
+                id="tw.settingsModal.enablehtmlsupportreadmeHelp"
+            />
+            <WarningTip>
+                <FormattedMessage
+                    // eslint-disable-next-line max-len
+                    defaultMessage="Some malicious READMEs can write dangerous HTML content, and we hope to add detection to avoid it, but this is very difficult. So please only enable this setting if you trust the project you are opening and understand the risks."
+                    description="Enable HTML Support in README warning help"
+                    id="tw.settingsModal.enablehtmlsupportreadmeWarn"
+                />
+            </WarningTip>
+        </>
         }
     />
 );
@@ -533,7 +561,13 @@ const EnableMobileLayout = props => (
     />
 );
 const AEsettings = new AESettings();
-
+const WarningTip = props => {
+    return (
+        <div className={styles.warning}>
+            {props.children}
+        </div>
+    )
+}
 const SettingsModalComponent = props => {
     const [settingsTab, setSettingsTab] = useState(1)
     const [settingsUpdate, onUpdate] = useState(false);
@@ -655,6 +689,10 @@ const SettingsModalComponent = props => {
                         <AutoDisplayREADME
                             value={AEsettings.get('enableREADMEAutoDisplay')}
                             onChange={(e) => { AEsettings.set("enableREADMEAutoDisplay", e.target.checked); update() }}
+                        />
+                        <EnableHTMLSupportREADME
+                            value={AEsettings.get('enableHTMLSupportInREADME')}
+                            onChange={(e) => { AEsettings.set("enableHTMLSupportInREADME", e.target.checked); update() }}
                         />
                         <Header>
                             <FormattedMessage

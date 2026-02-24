@@ -15,12 +15,12 @@ const theme = (() => {
     try {
         const themeStr = localStorage.getItem('tw:theme');
         if (!themeStr || themeStr === 'undefined' || themeStr === 'null') {
-            return { gui: 'light', accent: 'astraeditor' };
+            return { gui: 'dark', accent: 'astraeditor' };
         }
         return JSON.parse(themeStr);
     } catch (e) {
         console.warn('Failed to parse theme from localStorage:', e);
-        return { gui: 'light', accent: 'astraeditor' };
+        return { gui: 'dark', accent: 'astraeditor' };
     }
 })();
 
@@ -59,18 +59,18 @@ const getBG = () => {
     try {
         if (theme.gui == 'light') return '#fff'
         if (theme.gui == 'dark') return '#000'
-        else return '#fff'
+        else return '#000'
     } catch {
-        return '#fff'
+        return '#000'
     }
 }
 const getTextBG = () => {
     try {
         if (theme.gui == 'light') return '#000'
         if (theme.gui == 'dark') return '#fff'
-        else return '#000'
+        else return '#fff'
     } catch {
-        return '#000'
+        return '#fff'
     }
 }
 const costume = `
@@ -177,7 +177,7 @@ const costume = `
 						d="M462.84508,304.38464h0.38752v8.62035h-0.58129c-4.56784,0 -7.99371,0.87399 -10.27763,2.62403c-2.28392,1.75004 -3.42588,4.1597 -3.42588,7.22691v19.25046h-8.59561v-36.81478h8.59561v6.80641h0.32362c1.37901,-2.46325 3.19913,-4.36377 5.46244,-5.70361c2.26124,-1.33984 4.96567,-2.00977 8.11121,-2.00977z"
 						fill="url(#color-11)" />
 					<path d="M358.1064,306.65207h8.65745v35.45433h-8.65745z" fill="url(#color-12)" />
-				</g><text transform="translate(531.03003,280.99507)" font-size="30" xml:space="preserve" fill="${getTextBG()}" fill-rule="nonzero" font-family="Arial, Helvetica, sans-serif" font-weight="400" text-anchor="end">
+				</g><text transform="translate(521.03003,280.99507)" font-size="20" xml:space="preserve" fill="${getTextBG()}" fill-rule="nonzero" font-family="Arial, Helvetica, sans-serif" font-weight="400" text-anchor="end">
 					<tspan x="-30" dy="0">${returnRandomText()}</tspan>
 				</text>
 			</g>

@@ -6,18 +6,22 @@ import { defineMessages, injectIntl, intlShape } from 'react-intl';
 import log from '../lib/log';
 
 import extensionLibraryContent, {
-    galleryError,
-    galleryLoading,
-    galleryMore
+    galleryError as galleryTwError,
+    galleryLoading as galleryTwLoading,
+    galleryMore as galleryTwMore,
+    aeGalleryError as galleryAeError,
+    aeGalleryMore as galleryAeMore
 } from '../lib/libraries/extensions/index.jsx';
 import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
+
 const extensionsLibs = [
     { id: "tw", url: "https://extensions.turbowarp.org/" },
     { id: "ae", url: "https://editors.astras.top/extensions" },
 ]
+
 const messages = defineMessages({
     extensionTitle: {
         defaultMessage: 'Choose an Extension',
@@ -43,25 +47,45 @@ const translateGalleryItem = (extension, locale) => ({
 });
 
 let cachedGallery = null;
+let cachedTwError = false;
+let cachedAeError = false;
 
 const fetchLibrary = async () => {
     const getExtLists = extensionsLibs.map(async (item) => {
-        const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
-        if (!res.ok) {
-            throw new Error(`HTTP status ${res.status}`);
+        try {
+            const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
+            if (!res.ok) {
+                return { id: item.id, error: true };
+            }
+            const data = await res.json();
+            return { id: item.id, data, error: false };
+        } catch (e) {
+            return { id: item.id, error: true };
         }
-        return await res.json();
     });
 
     const results = await Promise.all(getExtLists);
+    console.log(results);
+    
     let extensionsData = {
         "extensions": []
-    }
-    results.forEach((item, index) => {
-        extensionsData.extensions.push(extensionsLibs[index])
-        item.extensions.forEach(extension => {
-            extensionsData.extensions.push(extension)
-        })
+    };
+    
+    results.forEach((result, index) => {
+        if (result.error) {
+            // 记录错误但不添加扩展
+            if (result.id === 'tw') {
+                cachedTwError = true;
+            } else if (result.id === 'ae') {
+                cachedAeError = true;
+            }
+            return;
+        }
+        
+        extensionsData.extensions.push(extensionsLibs[index]);
+        result.data.extensions.forEach(extension => {
+            extensionsData.extensions.push(extension);
+        });
     })
 
 
@@ -112,7 +136,11 @@ const fetchLibrary = async () => {
             })
         }
     })
-    return returnData
+    return {
+        gallery: returnData,
+        twError: cachedTwError,
+        aeError: cachedAeError
+    };
 };
 
 class ExtensionLibrary extends React.PureComponent {
@@ -123,7 +151,8 @@ class ExtensionLibrary extends React.PureComponent {
         ]);
         this.state = {
             gallery: cachedGallery,
-            galleryError: null,
+            twGalleryError: null,
+            aeGalleryError: null,
             galleryTimedOut: false
         };
     }
@@ -136,17 +165,20 @@ class ExtensionLibrary extends React.PureComponent {
             }, 750);
 
             fetchLibrary()
-                .then(gallery => {
-                    cachedGallery = gallery;
+                .then(result => {
+                    cachedGallery = result.gallery;
                     this.setState({
-                        gallery
+                        gallery: result.gallery,
+                        twGalleryError: result.twError ? galleryTwError : null,
+                        aeGalleryError: result.aeError ? galleryAeError : null
                     });
                     clearTimeout(timeout);
                 })
                 .catch(error => {
                     log.error(error);
                     this.setState({
-                        galleryError: error
+                        twGalleryError: galleryTwError,
+                        aeGalleryError: galleryAeError
                     });
                     clearTimeout(timeout);
                 });
@@ -199,22 +231,40 @@ class ExtensionLibrary extends React.PureComponent {
     }
     render() {
         let library = null;
-        if (this.state.gallery || this.state.galleryError || this.state.galleryTimedOut) {
+        if (this.state.gallery || this.state.twGalleryError || this.state.aeGalleryError || this.state.galleryTimedOut) {
             library = extensionLibraryContent.map(toLibraryItem);
             library.push('---');
-            if (this.state.gallery) {
-                library.push(toLibraryItem(galleryMore));
-                const locale = this.props.intl.locale;
+            
+            const locale = this.props.intl.locale;
+            
+            // TW 扩展区
+            if (this.state.twGalleryError) {
+                library.push(toLibraryItem(galleryTwError));
+            } else if (this.state.gallery) {
+                library.push(toLibraryItem(galleryTwMore));
                 library.push(
                     ...this.state.gallery
-                        .filter(i => i.extensionId !== 'faceSensing')
+                        .filter(i => i.tags.includes('tw') && i.extensionId !== 'faceSensing')
                         .map(i => translateGalleryItem(i, locale))
                         .map(toLibraryItem)
                 );
-            } else if (this.state.galleryError) {
-                library.push(toLibraryItem(galleryError));
             } else {
-                library.push(toLibraryItem(galleryLoading));
+                library.push(toLibraryItem(galleryTwLoading));
+            }
+            
+            // AE 扩展区
+            if (this.state.aeGalleryError) {
+                library.push(toLibraryItem(galleryAeError));
+            } else if (this.state.gallery) {
+                library.push(toLibraryItem(galleryAeMore));
+                library.push(
+                    ...this.state.gallery
+                        .filter(i => i.tags.includes('ae'))
+                        .map(i => translateGalleryItem(i, locale))
+                        .map(toLibraryItem)
+                );
+            } else {
+                library.push(toLibraryItem(galleryAeMore));
             }
         }
 
