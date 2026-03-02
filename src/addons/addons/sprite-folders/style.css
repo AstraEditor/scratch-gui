@@ -1,0 +1,218 @@
+.sa-file-list-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.sa-file-list-toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sa-toolbar-button {
+    padding: 8px;
+    color: #cccccc;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sa-toolbar-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.sa-toolbar-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: #cccccc;
+}
+
+.sa-toolbar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sa-toolbar-button:active {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.sa-folder-context-menu {
+    position: fixed;
+    min-width: 120px;
+    background: #252526;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px 0;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sa-context-menu-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #cccccc;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.sa-context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sa-context-menu-danger {
+    color: #ff5f5f;
+}
+
+.sa-context-menu-danger:hover {
+    background: rgba(255, 0, 0, 0.2);
+}
+
+.sa-file-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sa-folder-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: #cccccc;
+    transition: background 0.1s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sa-folder-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sa-folder-item.expanded {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sa-folder-item.expanded:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sa-folder-item.drag-over {
+    background: rgba(0, 122, 255, 0.2);
+    border-color: rgba(0, 122, 255, 0.4);
+}
+
+.sa-folder-icon {
+    margin-right: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #858585;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.sa-folder-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.sa-folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Hide original sprite items when our list is active */
+[class*="sprite-selector_items-wrapper"] {
+    position: relative;
+}
+
+[class*="sprite-selector_items-wrapper"] > [class*="sprite-selector_sprite-wrapper"] {
+    display: none !important;
+}
+
+.sa-file-list-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: #cccccc;
+    transition: background 0.1s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sa-file-list-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sa-file-list-item.selected {
+    background: rgba(0, 122, 255, 0.2);
+}
+
+.sa-file-list-item.selected:hover {
+    background: rgba(0, 122, 255, 0.25);
+}
+
+.sa-file-list-item.dragging {
+    opacity: 0.5;
+}
+
+.sa-file-icon-container {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sa-file-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sa-file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sa-file-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sa-file-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sa-file-list::-webkit-scrollbar-thumb {
+    background: rgba(124, 124, 124, 0.3);
+    border-radius: 4px;
+}
+
+.sa-file-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 124, 124, 0.5);
+}
