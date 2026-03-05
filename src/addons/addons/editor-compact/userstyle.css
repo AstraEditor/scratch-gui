@@ -1,7 +1,7 @@
 /* Full page */
-[class*="gui_body-wrapper"] {
+/* [class*="gui_body-wrapper"] {
   height: calc(100% - 2rem);
-}
+} 这个会导致显示问题*/
 .sa-body-editor,
 .sa-body-editor * {
   scrollbar-width: thin;
@@ -532,4 +532,8 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 }
 [class*=tab-button]{
   line-height: 0.6;
+}
+
+[class*=stage-wrapper_stage-canvas-wrapper]{
+  padding-top: 34px !important;
 }

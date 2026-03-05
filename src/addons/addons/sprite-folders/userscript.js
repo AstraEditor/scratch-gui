@@ -1,20 +1,20 @@
-export default async ({addon, console, msg}) => {
+export default async ({ addon, console, msg }) => {
     const DIVIDER = '//';
-    
+
     function getFolderFromName(name) {
         if (!name || typeof name !== 'string') return null;
         const idx = name.indexOf(DIVIDER);
         if (idx === -1 || idx === 0) return null;
         return name.substr(0, idx);
     }
-    
+
     function getNameWithoutFolder(name) {
         if (!name || typeof name !== 'string') return name;
         const idx = name.indexOf(DIVIDER);
         if (idx === -1 || idx === 0) return name;
         return name.substr(idx + DIVIDER.length);
     }
-    
+
     function setFolderOfName(name, folder) {
         const basename = getNameWithoutFolder(name);
         if (folder) {
@@ -22,21 +22,21 @@ export default async ({addon, console, msg}) => {
         }
         return basename;
     }
-    
+
     let vm;
     let expandedFolders = new Set();
     let emptyFolders = new Set();
     let draggedSprite = null;
     let draggedOverFolder = null;
-    
+
     // Cache for loaded SVGs
     const svgCache = new Map();
-    
+
     async function loadSVG(name) {
         if (svgCache.has(name)) {
             return svgCache.get(name);
         }
-        
+
         try {
             const svgContent = await addon.self.getResource(`/assets/${name}.svg`);
             if (svgContent) {
@@ -46,7 +46,7 @@ export default async ({addon, console, msg}) => {
         } catch (e) {
             console.warn(`Failed to load SVG ${name}:`, e);
         }
-        
+
         return '';
     }
 
@@ -64,27 +64,27 @@ export default async ({addon, console, msg}) => {
 
         return toolbar;
     }
-    
+
     function createToolbarButton(iconName, title, onClick) {
         const btn = document.createElement('button');
         btn.className = 'sa-toolbar-button';
         btn.title = title;
         btn.addEventListener('click', onClick);
-        
+
         const icon = document.createElement('span');
         icon.className = 'sa-toolbar-icon';
-        
+
         loadSVG(iconName).then(svgContent => {
             if (svgContent) {
                 icon.innerHTML = svgContent;
                 icon.style.display = 'inline-block';
             }
         });
-        
+
         btn.appendChild(icon);
         return btn;
     }
-    
+
     function expandAllFolders() {
         const currentFolders = new Set();
         vm.runtime.targets.forEach(t => {
@@ -97,12 +97,12 @@ export default async ({addon, console, msg}) => {
         expandedFolders = currentFolders;
         renderFileList();
     }
-    
+
     function collapseAllFolders() {
         expandedFolders.clear();
         renderFileList();
     }
-    
+
     function createNewFolder() {
         const folderName = prompt(msg('folder-name-prompt'));
         if (!folderName) return;
@@ -122,16 +122,16 @@ export default async ({addon, console, msg}) => {
         expandedFolders.add(folderName);
         renderFileList();
     }
-    
+
     function renameFolder(oldFolderName) {
-        const newFolderName = prompt(msg('rename-folder-prompt', {name: oldFolderName}), oldFolderName);
+        const newFolderName = prompt(msg('rename-folder-prompt', { name: oldFolderName }), oldFolderName);
         if (!newFolderName || newFolderName === oldFolderName) return;
-        
+
         const hasSprites = vm.runtime.targets.some(t => {
             const name = t.name || t.sprite?.name;
             return name && getFolderFromName(name) === oldFolderName;
         });
-        
+
         // Handle empty folders (UI-only)
         if (!hasSprites && emptyFolders.has(oldFolderName)) {
             emptyFolders.delete(oldFolderName);
@@ -143,23 +143,23 @@ export default async ({addon, console, msg}) => {
             renderFileList();
             return;
         }
-        
+
         // Handle folders with sprites
         const targets = vm.runtime.targets.filter(t => {
             const name = t.name || t.sprite?.name;
             if (!name) return false;
             return getFolderFromName(name) === oldFolderName;
         });
-        
+
         targets.forEach(target => {
             const oldName = target.name || target.sprite?.name;
             const newName = setFolderOfName(oldName, newFolderName);
             vm.renameSprite(target.id, newName);
         });
-        
+
         renderFileList();
     }
-    
+
     function deleteFolder(folderName) {
         const hasSprites = vm.runtime.targets.some(t => {
             const name = t.name || t.sprite?.name;
@@ -167,22 +167,22 @@ export default async ({addon, console, msg}) => {
         });
 
         if (hasSprites) {
-            if (!confirm(msg('delete-folder-with-sprites', {name: folderName}))) return;
-            
+            if (!confirm(msg('delete-folder-with-sprites', { name: folderName }))) return;
+
             const targets = vm.runtime.targets.filter(t => {
                 const name = t.name || t.sprite?.name;
                 if (!name) return false;
                 return getFolderFromName(name) === folderName;
             });
-            
+
             targets.forEach(target => {
                 vm.deleteSprite(target.id);
             });
         } else {
-            if (!confirm(msg('remove-empty-folder', {name: folderName}))) return;
+            if (!confirm(msg('remove-empty-folder', { name: folderName }))) return;
             emptyFolders.delete(folderName);
         }
-        
+
         expandedFolders.delete(folderName);
         renderFileList();
     }
@@ -190,21 +190,21 @@ export default async ({addon, console, msg}) => {
     async function getSpriteImage(sprite) {
         // Runtime targets have a .sprite property that contains the costume info
         const actualSprite = sprite.sprite || sprite;
-        
+
         // Get the current costume from the sprite's costume array
         const costumes = actualSprite.costumes;
         if (costumes && costumes.length > 0) {
             // Use currentCostumeIndex if available
             const index = actualSprite.currentCostumeIndex || 0;
             const costume = costumes[Math.min(index, costumes.length - 1)];
-            
+
             if (costume && costume.asset) {
                 try {
                     const dataUri = await costume.asset.encodeDataURI();
                     if (dataUri) return dataUri;
                 } catch (e) {
                 }
-                
+
                 // Fallback to asset URL
                 if (costume.asset.assetId) {
                     const url = `https://assets.scratch.mit.edu/internalapi/asset/${costume.asset.assetId}.${costume.dataFormat || 'png'}/get/`;
@@ -215,7 +215,7 @@ export default async ({addon, console, msg}) => {
                 }
             }
         }
-        
+
         return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     }
 
@@ -224,7 +224,7 @@ export default async ({addon, console, msg}) => {
         const folder = getFolderFromName(spriteName);
         return folder ? getNameWithoutFolder(spriteName) : spriteName;
     }
-    
+
     function sortSpritesAlphabetically(sprites) {
         return sprites.sort((a, b) => {
             const nameA = getSpriteDisplayName(a).toLowerCase();
@@ -232,20 +232,20 @@ export default async ({addon, console, msg}) => {
             return nameA.localeCompare(nameB);
         });
     }
-    
+
     let spriteItemIcons = new Map();
 
     function updateSpriteIcon(sprite) {
         const icon = spriteItemIcons.get(sprite.id);
         if (!icon) return;
-        
+
         const actualSprite = sprite.sprite || sprite;
         const costumes = actualSprite.costumes;
-        
+
         if (costumes && costumes.length > 0) {
             const index = actualSprite.currentCostumeIndex || 0;
             const costume = costumes[Math.min(index, costumes.length - 1)];
-            
+
             if (costume && costume.asset) {
                 costume.asset.encodeDataURI().then(dataUri => {
                     if (dataUri && icon.parentNode) {
@@ -264,31 +264,31 @@ export default async ({addon, console, msg}) => {
     function renderFileList() {
         const container = document.querySelector('[class*="sprite-selector_items-wrapper"]');
         if (!container || !vm || !vm.runtime || !vm.runtime.targets) return;
-        
+
         const existingContainer = container.querySelector('.sa-file-list-container');
         if (existingContainer) {
             existingContainer.remove();
         }
-        
+
         spriteItemIcons.clear();
-        
+
         const listContainer = document.createElement('div');
         listContainer.className = 'sa-file-list-container';
-        
+
         const toolbar = createToolbar();
         listContainer.appendChild(toolbar);
-        
+
         const fileList = document.createElement('div');
         fileList.className = 'sa-file-list';
-        
+
         const sprites = vm.runtime.targets.filter(t => !t.isStage && t.id);
-        
+
         // Group sprites by folder
         const grouped = {};
         sprites.forEach(sprite => {
             const spriteName = sprite.name || sprite.sprite?.name;
             if (!spriteName) return;
-            
+
             const folder = getFolderFromName(spriteName);
             if (folder) {
                 if (!grouped[folder]) {
@@ -297,27 +297,27 @@ export default async ({addon, console, msg}) => {
                 grouped[folder].push(sprite);
             }
         });
-        
+
         // Sprites without folders
         const nonFolderSprites = sprites.filter(sprite => {
             const spriteName = sprite.name || sprite.sprite?.name;
             return !spriteName || !getFolderFromName(spriteName);
         });
-        
+
         // Get all folder folders (both with sprites and empty)
         const allFolders = new Set([
             ...Object.keys(grouped),
             ...emptyFolders
         ]);
-        
+
         // Sort folders alphabetically
         const sortedFolders = Array.from(allFolders).sort();
-        
+
         // Render folders first
         sortedFolders.forEach(folder => {
             const folderItem = createFolderItem(folder, 0);
             fileList.appendChild(folderItem);
-            
+
             if (expandedFolders.has(folder) && grouped[folder]) {
                 // Sort sprites within this folder alphabetically
                 const sortedSprites = sortSpritesAlphabetically(grouped[folder]);
@@ -326,40 +326,40 @@ export default async ({addon, console, msg}) => {
                 });
             }
         });
-        
+
         // Render non-folder sprites at the bottom, sorted alphabetically
         const sortedNonFolderSprites = sortSpritesAlphabetically(nonFolderSprites);
         sortedNonFolderSprites.forEach(sprite => {
             fileList.appendChild(createListItem(sprite, 0, fileList, container));
         });
-        
+
         listContainer.appendChild(fileList);
-        
+
         const originalContent = container.querySelector('[class*="sprite-selector_sprite-wrapper"]');
         if (originalContent) {
             originalContent.style.display = 'none';
         }
-        
+
         container.appendChild(listContainer);
     }
 
     function createListItem(sprite, level = 0, fileList, container) {
         const item = document.createElement('div');
         const isSelected = vm && vm.editingTarget && sprite.id === vm.editingTarget.id;
-        
+
         item.className = `sa-file-list-item ${isSelected ? 'selected' : ''}`;
         item.dataset.spriteId = sprite.id;
         item.style.paddingLeft = `${level * 16 + 8}px`;
         item.draggable = true;
-        
+
         const iconContainer = document.createElement('span');
         iconContainer.className = 'sa-file-icon-container';
-        
+
         const icon = document.createElement('img');
         icon.className = 'sa-file-icon';
         icon.alt = '';
         spriteItemIcons.set(sprite.id, icon);
-        
+
         getSpriteImage(sprite).then(src => {
             if (icon.parentNode) {
                 icon.src = src;
@@ -368,31 +368,31 @@ export default async ({addon, console, msg}) => {
                 });
             }
         });
-        
+
         iconContainer.appendChild(icon);
-        
+
         const name = document.createElement('span');
         name.className = 'sa-file-name';
         const spriteName = sprite.name || sprite.sprite?.name || 'Untitled';
         const folder = getFolderFromName(spriteName);
         name.textContent = folder ? getNameWithoutFolder(spriteName) : spriteName;
-        
+
         item.appendChild(iconContainer);
         item.appendChild(name);
-        
+
         item.addEventListener('click', () => selectSprite(sprite));
-        
+
         // Right-click to show context menu
         item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             // Select the sprite first
             selectSprite(sprite);
-            
+
             showSpriteContextMenu(e, sprite, container);
         });
-        
+
         // Drag events
         item.addEventListener('dragstart', (e) => {
             draggedSprite = sprite;
@@ -400,7 +400,7 @@ export default async ({addon, console, msg}) => {
             item.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
         });
-        
+
         item.addEventListener('dragend', () => {
             draggedSprite = null;
             item.classList.remove('dragging');
@@ -409,47 +409,47 @@ export default async ({addon, console, msg}) => {
                 draggedOverFolder = null;
             }
         });
-        
+
         item.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
         });
-        
+
         return item;
     }
 
     function createFolderItem(foldername, level = 0) {
         const isExpanded = expandedFolders.has(foldername);
-        
+
         const item = document.createElement('div');
         item.className = `sa-folder-item ${isExpanded ? 'expanded' : ''}`;
         item.style.paddingLeft = `${level * 16 + 8}px`;
-        
+
         // Folder icon
         const folderIconWrapper = document.createElement('span');
         folderIconWrapper.className = 'sa-folder-icon';
         item.appendChild(folderIconWrapper);
-        
+
         loadSVG(isExpanded ? 'folder-open' : 'folder').then(svgContent => {
             if (svgContent) {
                 folderIconWrapper.innerHTML = svgContent;
                 folderIconWrapper.style.display = 'inline-flex';
             }
         });
-        
+
         const name = document.createElement('span');
         name.className = 'sa-folder-name';
         name.textContent = foldername;
         item.appendChild(name);
-        
+
         item.addEventListener('click', () => toggleFolder(foldername));
-        
+
         // Folder right-click menu
         item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             showFolderContextMenu(e, foldername);
         });
-        
+
         // Drop events for folders
         item.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -457,7 +457,7 @@ export default async ({addon, console, msg}) => {
                 e.dataTransfer.dropEffect = 'move';
             }
         });
-        
+
         item.addEventListener('dragenter', (e) => {
             e.preventDefault();
             if (draggedSprite && getFolderFromName(draggedSprite.name || draggedSprite.sprite?.name) !== foldername) {
@@ -465,47 +465,59 @@ export default async ({addon, console, msg}) => {
                 draggedOverFolder = item;
             }
         });
-        
+
         item.addEventListener('dragleave', () => {
             item.classList.remove('drag-over');
         });
-        
+
         item.addEventListener('drop', (e) => {
             e.preventDefault();
             item.classList.remove('drag-over');
-            
+
             if (draggedSprite) {
                 const spriteName = draggedSprite.name || draggedSprite.sprite?.name;
                 const currentFolder = getFolderFromName(spriteName);
-                
+
                 if (currentFolder !== foldername) {
                     const newName = setFolderOfName(spriteName, foldername);
                     vm.renameSprite(draggedSprite.id, newName);
-                    
+
                     // If folder was empty, it's no longer empty
                     if (emptyFolders.has(foldername)) {
                         emptyFolders.delete(foldername);
                     }
-                    
+
                     setTimeout(() => renderFileList(), 100);
                 }
             }
         });
-        
+
         return item;
     }
-    
+
+    function removeContextMenu() {
+        const last_menu = document.getElementsByClassName('sa-folder-context-menu');
+        try {
+            for (let i = 0; i <= last_menu.length; i += 1) {
+                last_menu[i].remove();
+            }
+        } catch (e) {
+            // 忽略
+        }
+    }
+
     function showFolderContextMenu(e, foldername) {
+        removeContextMenu();
         const menu = document.createElement('div');
         menu.className = 'sa-folder-context-menu';
         menu.style.left = `${e.clientX}px`;
         menu.style.top = `${e.clientY}px`;
-        
+
         const hasSprites = vm.runtime.targets.some(t => {
             const name = t.name || t.sprite?.name;
             return name && getFolderFromName(name) === foldername;
         });
-        
+
         const btnRename = document.createElement('div');
         btnRename.className = 'sa-context-menu-item';
         btnRename.textContent = msg('rename');
@@ -521,28 +533,29 @@ export default async ({addon, console, msg}) => {
             menu.remove();
             deleteFolder(foldername);
         });
-        
+
         menu.appendChild(btnRename);
         menu.appendChild(btnDelete);
-        
+
         document.body.appendChild(menu);
-        
+
         const closeMenu = (e2) => {
             if (!menu.contains(e2.target)) {
                 menu.remove();
                 document.removeEventListener('click', closeMenu);
             }
         };
-        
+
         setTimeout(() => document.addEventListener('click', closeMenu), 0);
     }
 
     function showSpriteContextMenu(e, sprite, container) {
+        removeContextMenu();
         const menu = document.createElement('div');
         menu.className = 'sa-folder-context-menu';
         menu.style.left = `${e.clientX}px`;
         menu.style.top = `${e.clientY}px`;
-        
+
         const duplicateBtn = document.createElement('div');
         duplicateBtn.className = 'sa-context-menu-item';
         duplicateBtn.textContent = msg('duplicate');
@@ -559,13 +572,13 @@ export default async ({addon, console, msg}) => {
             // Find the original wrapper and call its export handler
             const originalWrappers = container.querySelectorAll('[class*="sprite-selector_sprite-wrapper"]');
             for (const wrapper of originalWrappers) {
-                const reactKey = Object.keys(wrapper).find(key => key.startsWith('__reactInternalInstance$') || key.startsWith('__reactFiber'));
+                const reactKey = Object.keys(wrapper).find(key => key.startsWith('__reactInternalInstance$'));
                 if (reactKey) {
                     const fiber = wrapper[reactKey];
-                    const stateNode = fiber?.return?.return?.stateNode;
-                    const props = stateNode?.props || fiber?.memoizedProps;
-                    if (props && props.id === sprite.id && props.onExportButtonClick) {
-                        props.onExportButtonClick();
+                    // Navigate fiber tree: child -> child -> child -> stateNode
+                    const stateNode = fiber?.child?.child?.child?.stateNode;
+                    if (stateNode && stateNode.props && stateNode.props.id === sprite.id && stateNode.props.onExportButtonClick) {
+                        stateNode.props.onExportButtonClick(sprite.id);
                         return;
                     }
                 }
@@ -592,21 +605,21 @@ export default async ({addon, console, msg}) => {
                 vm.deleteSprite(sprite.id);
             }
         });
-        
+
         menu.appendChild(duplicateBtn);
         menu.appendChild(exportBtn);
         menu.appendChild(renameBtn);
         menu.appendChild(deleteBtn);
-        
+
         document.body.appendChild(menu);
-        
+
         const closeMenu = (e2) => {
             if (!menu.contains(e2.target)) {
                 menu.remove();
                 document.removeEventListener('click', closeMenu);
             }
         };
-        
+
         setTimeout(() => document.addEventListener('click', closeMenu), 0);
     }
 
@@ -626,7 +639,7 @@ export default async ({addon, console, msg}) => {
 
     function updateSelection() {
         if (!vm || !vm.editingTarget || !vm.editingTarget.id) return;
-        
+
         const items = document.querySelectorAll('.sa-file-list-item');
         items.forEach(item => {
             const spriteId = item.dataset.spriteId;
@@ -640,13 +653,13 @@ export default async ({addon, console, msg}) => {
 
     function autoExpandCurrentFolder() {
         if (!vm || !vm.editingTarget) return;
-        
+
         const currentSprite = vm.editingTarget;
         if (!currentSprite || currentSprite.isStage) return;
-        
+
         const spriteName = currentSprite.name || currentSprite.sprite?.name;
         if (!spriteName) return;
-        
+
         const folder = getFolderFromName(spriteName);
         if (folder && !expandedFolders.has(folder)) {
             expandedFolders.add(folder);
@@ -657,10 +670,10 @@ export default async ({addon, console, msg}) => {
     function observeSpriteList() {
         let renderTimeout = null;
         let updateTimeout = null;
-        
+
         const observer = new MutationObserver((mutations) => {
             let spriteItemsChanged = false;
-            
+
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === 1) {
@@ -670,9 +683,9 @@ export default async ({addon, console, msg}) => {
                     }
                 });
             });
-            
+
             const listContainer = container?.querySelector('.sa-file-list-container');
-            
+
             // Hide any new original sprite items that appear
             const originalItems = container?.querySelectorAll('[class*="sprite-selector_sprite-wrapper"]');
             if (originalItems) {
@@ -682,7 +695,7 @@ export default async ({addon, console, msg}) => {
                     }
                 });
             }
-            
+
             // Check if our container exists, if not render it
             if (!listContainer || spriteItemsChanged) {
                 if (!renderTimeout) {
@@ -693,7 +706,7 @@ export default async ({addon, console, msg}) => {
                 }
                 return;
             }
-            
+
             // Debounce updateSelection to avoid excessive calls
             if (!updateTimeout) {
                 updateTimeout = setTimeout(() => {
@@ -702,9 +715,9 @@ export default async ({addon, console, msg}) => {
                 }, 50);
             }
         });
-        
+
         const container = document.querySelector('[class*="sprite-selector_items-wrapper"]');
-        
+
         observer.observe(container, {
             childList: true,
             subtree: true,
@@ -717,7 +730,7 @@ export default async ({addon, console, msg}) => {
 
     // Wait for both the container and sprites to be available
     const container = await addon.tab.waitForElement('[class*="sprite-selector_items-wrapper"]');
-    
+
     // Initial render after ensuring sprites are loaded
     function initialRender() {
         if (vm && vm.runtime && vm.runtime.targets && vm.runtime.targets.length > 0) {
@@ -730,10 +743,10 @@ export default async ({addon, console, msg}) => {
             setTimeout(initialRender, 100);
         }
     }
-    
+
     initialRender();
     observeSpriteList();
-    
+
     // Listen for sprite updates
     vm.runtime.on('targetsUpdate', () => {
         setTimeout(() => {
@@ -747,18 +760,18 @@ export default async ({addon, console, msg}) => {
             updateSelection();
         }, 100);
     });
-    
+
     vm.runtime.on('targetChanged', () => {
         updateSelection();
         autoExpandCurrentFolder();
     });
-    
+
     vm.on('SCRIPT_CHANGED', () => {
         updateSelection();
     });
-    
+
     let visualUpdateTimeout = null;
-    
+
     vm.on('VISUAL_CHANGED', () => {
         updateSelection();
         // Debounce and re-render the entire list when visuals change
@@ -768,15 +781,15 @@ export default async ({addon, console, msg}) => {
             visualUpdateTimeout = null;
         }, 100);
     });
-    
+
     vm.on('PROJECT_CHANGED', () => {
         renderFileList();
         updateSelection();
     });
-    
+
     // Listen for sprite addition (VM event when new sprite is created)
     const originalInstallTargets = vm.installTargets.bind(vm);
-    vm.installTargets = function(...args) {
+    vm.installTargets = function (...args) {
         return originalInstallTargets(...args).then(() => {
             setTimeout(() => {
                 renderFileList();
@@ -784,7 +797,7 @@ export default async ({addon, console, msg}) => {
             }, 100);
         });
     };
-    
+
     // Also listen for project loaded events
     vm.on('PROJECT_LOADED', () => {
         setTimeout(() => {

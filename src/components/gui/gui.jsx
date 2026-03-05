@@ -279,7 +279,7 @@ const GUIComponent = props => {
 
     // 显示AE特性MODAL
     useEffect(() => {
-        if (!localStorage.getItem('ae:firstEnter') || localStorage.getItem('ae:lastVersion') !== version.version) {
+        if (!localStorage.getItem('ae:firstEnter') || localStorage.getItem('ae:lastVersion') !== version.version || localStorage.getItem('ae:webBuild') !== version.webBuild) {
             try {
                 dispatch(openAeFeaturesModal());
             } catch (e) {

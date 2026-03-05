@@ -4705,6 +4705,7 @@
         "tw.aeFeaturesModal.MoreNewAddons": "更多新插件",
         "tw.aeFeaturesModal.MoreOptimizes": "更多优化",
         "tw.aeFeaturesModal.UpdateMessage": "你已更新到版本 {version} ( {date} )！点击此按钮查看此版本的新功能",
+        "tw.aeFeaturesModal.UpdateMessageofWeb": "你已更新到版本 {date} : ",
         "tw.aeFeaturesModal.extensionTip": "我们正在重制扩展编辑器，敬请期待！",
         "tw.aeFeaturesModal.introduction": "我们制作了更多功能让你的编程速度快如闪电。",
         "tw.aeFeaturesModal.linkDiv": "有什么新功能?",
