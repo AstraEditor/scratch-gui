@@ -83,12 +83,16 @@ const addons = [
     'tw-disable-compiler',
     'editor-stepping',
     'hide-menubar',
-    'Terminal'
+    'Terminal',
+    'my-blocks-plus',
+    'astras-copilot',
+    'sprite-folders'
 ];
 
 const newAddons = [
     'expanded-backpack',
-    'simple-project-analyzer'
+    'simple-project-analyzer',
+    'sprite-folders'
 ];
 
 // eslint-disable-next-line import/no-commonjs

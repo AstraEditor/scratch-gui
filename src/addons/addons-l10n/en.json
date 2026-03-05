@@ -377,5 +377,21 @@
     "block-pins/unpin_all": "Unpin all",
     "block-pins/no_pinned_blocks": "No Pinned Blocks!",
     "block-pins/some_pins_could_not_load": "Some Pins Could Not Load!",
-    "block-pins/pinned": "Pinned"
+    "block-pins/pinned": "Pinned",
+    "sprite-folders/expand-all": "Expand All",
+    "sprite-folders/collapse-all": "Collapse All",
+    "sprite-folders/new-folder": "New Folder",
+    "sprite-folders/folder-name-prompt": "Enter folder name:",
+    "sprite-folders/folder-exists": "Folder already exists!",
+    "sprite-folders/rename-folder-prompt": "Rename folder \"{name}\" to:",
+    "sprite-folders/delete-folder-with-sprites": "Delete folder \"{name}\" and all its sprites?",
+    "sprite-folders/remove-empty-folder": "Remove empty folder \"{name}\" from the list?",
+    "sprite-folders/untitled": "Untitled",
+    "sprite-folders/rename": "Rename",
+    "sprite-folders/delete": "Delete",
+    "sprite-folders/remove-folder": "Remove Folder",
+    "sprite-folders/duplicate": "Duplicate",
+    "sprite-folders/export": "Export",
+    "sprite-folders/rename-sprite-prompt": "Rename sprite:",
+    "sprite-folders/delete-sprite-confirm": "Delete this sprite?"
 }

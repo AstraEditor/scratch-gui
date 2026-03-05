@@ -369,5 +369,21 @@
     "block-pins/unpin_all": "全部不再置顶",
     "block-pins/no_pinned_blocks": "没有置顶的积木!",
     "block-pins/some_pins_could_not_load": "一些置顶的积木未能加载!",
-    "block-pins/pinned": "置顶"
+    "block-pins/pinned": "置顶",
+    "sprite-folders/expand-all": "全部展开",
+    "sprite-folders/collapse-all": "全部折叠",
+    "sprite-folders/new-folder": "新建文件夹",
+    "sprite-folders/folder-name-prompt": "输入文件夹名称：",
+    "sprite-folders/folder-exists": "文件夹已存在！",
+    "sprite-folders/rename-folder-prompt": "将文件夹 \"{name}\" 重命名为：",
+    "sprite-folders/delete-folder-with-sprites": "删除文件夹 \"{name}\" 及其所有角色？",
+    "sprite-folders/remove-empty-folder": "从列表中移除空文件夹 \"{name}\"？",
+    "sprite-folders/untitled": "未命名",
+    "sprite-folders/rename": "重命名",
+    "sprite-folders/delete": "删除",
+    "sprite-folders/remove-folder": "移除文件夹",
+    "sprite-folders/duplicate": "复制",
+    "sprite-folders/export": "导出",
+    "sprite-folders/rename-sprite-prompt": "重命名角色：",
+    "sprite-folders/delete-sprite-confirm": "删除此角色？"
 }

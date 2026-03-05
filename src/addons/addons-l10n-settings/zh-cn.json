@@ -408,7 +408,7 @@
     "tw-straighten-comments/@description": "确保注释始终通过一条水平的直线与其对应的源代码块相连，而不产生任何角度。",
     "simple-project-analyzer/@name": "SPA 简易作品分析器",
     "simple-project-analyzer/@description": "使用简单的算法在编辑器中分析您的作品！",
-    "hide-menubar/@name":"隐藏工具栏",
+    "hide-menubar/@name": "隐藏工具栏",
     "hide-menubar/@description": "将工具栏隐藏，且当鼠标靠近时可自动弹出。您也可将其锁定，恢复为常驻显示。",
     "toolbox-category-drag/@name": "拖动调整工具箱分类",
     "toolbox-category-drag/@description": "通过长按工具箱分类图标来改变他们的分类顺序。",
@@ -421,9 +421,11 @@
     "bookmark/@description": "放置一个锚点，然后随时传送到这里！",
     "tw-comment-markdown-editor/@name": "Markdown注释编辑器",
     "tw-comment-markdown-editor/@description": "为注释框添加Markdown编辑和预览功能，支持标题、粗体、斜体、代码和链接等语法。使用快捷键 Ctrl+M 快速切换编辑/预览模式",
-    "my-blocks-plus/@name":"自制积木+",
-    "my-blocks-plus/@description":"创建带有自定义输入、颜色等的私有或全局自定义积木！我们通过将扩展插件化，让您的体验更上一层楼。",
-    "my-blocks-plus/@info-info":"这个插件会在创建项目时自动加载“自制积木+”扩展",
-    "my-blocks-plus/@info-warn":"警告：它会加载新的扩展，且无法在扩展管理器中删除。",
-    "astras-copilot/@description":"用于Scratch Mods的AI Copilot，支持任何与OpenAI相兼容的API。且主题实时跟随编辑器。"
+    "my-blocks-plus/@name": "自制积木+",
+    "my-blocks-plus/@description": "创建带有自定义输入、颜色等的私有或全局自定义积木！我们通过将扩展插件化，让您的体验更上一层楼。",
+    "my-blocks-plus/@info-info": "这个插件会在创建项目时自动加载“自制积木+”扩展",
+    "my-blocks-plus/@info-warn": "警告：它会加载新的扩展，且无法在扩展管理器中删除。",
+    "astras-copilot/@description": "用于Scratch Mods的AI Copilot，支持任何与OpenAI相兼容的API。且主题实时跟随编辑器。",
+    "sprite-folders/@name": "角色文件列表视图",
+    "sprite-folders/@description": "将角色列表转换为 VSCode 风格的文件浏览器，支持文件夹（需要使用 // 文件夹命名）。"
 }
