@@ -9,7 +9,26 @@ import {APP_NAME} from '../../lib/brand';
 
 const LoadExtensionModal = props => (
     <div>
+<<<<<<< Updated upstream
         {props.url.startsWith('data:') ? (
+=======
+        {props.extensions && Object.keys(props.extensions).length > 0 ? (
+            <React.Fragment>
+                <FormattedMessage
+                    defaultMessage="The project wants to load the following custom extensions:"
+                    description="Part of modal asking for permission to load multiple extensions"
+                    id="tw.loadExtension.multiple"
+                />
+                <ul>
+                    {Object.entries(props.extensions).map(([id, url]) => (
+                        <li key={id}>
+                            <strong>{id}</strong>
+                        </li>
+                    ))}
+                </ul>
+            </React.Fragment>
+        ) : props.url && props.url.startsWith('data:') ? (
+>>>>>>> Stashed changes
             <React.Fragment>
                 <FormattedMessage
                     defaultMessage="The project wants to load a custom extension with the code:"
@@ -68,6 +87,7 @@ const LoadExtensionModal = props => (
                 />
             </div>
         )}
+        <br />
     </div>
 );
 

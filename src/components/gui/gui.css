@@ -210,8 +210,8 @@
     display: flex;
     flex-direction: column;
     /* pad entire wrapper to the left and right; allow children to fill width */
-    padding-left: $space;
-    padding-right: $space;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 
     /* this will only ever be as wide as the stage */
     flex-basis: 0;
@@ -222,8 +222,14 @@
     flex-grow: 1;
     flex-basis: 0;
 
+<<<<<<< Updated upstream
     padding-top: $space;
     min-height: 0; /* this makes it work in Firefox */
+=======
+    padding-top: 0 !important;
+    min-height: 0;
+    /* this makes it work in Firefox */
+>>>>>>> Stashed changes
 
     /*
         For making the sprite-selector a scrollable pane

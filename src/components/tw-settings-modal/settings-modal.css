@@ -13,7 +13,61 @@
     max-height: calc(100vh - 250px);
     overflow-y: auto;
 }
+<<<<<<< Updated upstream
 
+=======
+.tab-button-enable,
+.tab-button-unable {
+    border: none;
+    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
+    height: 30px;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.Modaltab{
+    position: relative;
+    height: 35px;
+}
+.tab-button-enable {
+    /* filter: brightness(0.8) disable */
+    filter: brightness(1);
+    background: $ui-modal-background;
+}
+.Modaltab::after {
+    content: "";
+    position: absolute;
+    width: 50%;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: $looks-secondary;
+    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
+}
+.Modaltab:has(button:nth-child(1).tab-button-enable)::after {
+    left: 0;
+}
+.Modaltab:has(button:nth-child(2).tab-button-enable)::after {
+    left: 50%;
+}
+.Modaltab:has(button:active)::after {
+    width: 100% !important;
+    left: 0 !important;
+}
+.tab-button-enable:hover,
+.tab-button-unable:hover {
+    /* filter: brightness(1.2) disable */
+    filter: brightness(1);
+    background: $ui-modal-background;
+}
+
+.tab-button-enable:active,
+.tab-button-unable:active {
+    filter: brightness(0.9);
+    background: $ui-modal-background;
+}
+>>>>>>> Stashed changes
 /* For small screens, such as in the embed */
 @media (max-height: 600px) {
     .modal-content {
