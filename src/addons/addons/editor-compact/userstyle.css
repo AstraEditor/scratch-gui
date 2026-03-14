@@ -537,3 +537,17 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 [class*=stage-wrapper_stage-canvas-wrapper]{
   padding-top: 34px !important;
 }
+
+/* Sprite File List View */
+[class*=sa-toolbar-button]{
+  padding: 4px !important;
+}
+
+[class*=sa-file-list-toolbar]{
+  padding: 4px !important;
+}
+
+[class*=sa-file-icon-container]{
+  width: 25px !important;
+  height: 25px !important;
+}

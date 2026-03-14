@@ -302,10 +302,10 @@
       var logo = document.getElementsByClassName('circle');
       splash.setAttribute('data-theme', theme);
 
-      if (theme !== 'dark') {
+      if (theme !== 'dark' && !!theme) {
         for (let element = 0; element < logo.length; element += 1) {
-          logo[element].style.backgroundColor = accent + '50';
-          logo[element].style.borderColor = accent + '10';
+          logo[element].style.backgroundColor = '#ffffff50';
+          logo[element].style.borderColor = '#ffffff10';
         };
           <% if (htmlWebpackPlugin.options.isEditor) { %>
           splash.style.backgroundColor = accent;
@@ -315,8 +315,8 @@
           <% } %>
        } else {
         for (let element = 0; element < logo.length; element += 1) {
-          logo[element].style.backgroundColor = '#ffffff50';
-          logo[element].style.borderColor = '#ffffff10';
+          logo[element].style.backgroundColor = accent + '50';
+          logo[element].style.borderColor = accent + '10';
         };
       }
 
