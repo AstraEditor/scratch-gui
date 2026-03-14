@@ -34,8 +34,8 @@ jobs:
       - name: Deploy to online directory
         run: |
           cd gh-pages
-          # 清空 online 目录（保留 .git）
-          find online -mindepth 1 -delete
+          # 清空 snapshot 目录（保留 .git）
+          find snapshot -mindepth 1 -delete
           # 复制构建产物
           cp -r $GITHUB_WORKSPACE/build/* snapshot/
           # 提交
