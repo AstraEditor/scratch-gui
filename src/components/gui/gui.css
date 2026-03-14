@@ -222,14 +222,9 @@
     flex-grow: 1;
     flex-basis: 0;
 
-<<<<<<< Updated upstream
-    padding-top: $space;
-    min-height: 0; /* this makes it work in Firefox */
-=======
     padding-top: 0 !important;
     min-height: 0;
     /* this makes it work in Firefox */
->>>>>>> Stashed changes
 
     /*
         For making the sprite-selector a scrollable pane

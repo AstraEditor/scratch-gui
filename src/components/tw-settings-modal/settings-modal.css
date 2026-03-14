@@ -13,9 +13,6 @@
     max-height: calc(100vh - 250px);
     overflow-y: auto;
 }
-<<<<<<< Updated upstream
-
-=======
 .tab-button-enable,
 .tab-button-unable {
     border: none;
@@ -67,7 +64,6 @@
     filter: brightness(0.9);
     background: $ui-modal-background;
 }
->>>>>>> Stashed changes
 /* For small screens, such as in the embed */
 @media (max-height: 600px) {
     .modal-content {

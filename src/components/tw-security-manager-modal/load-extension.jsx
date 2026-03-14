@@ -9,9 +9,6 @@ import {APP_NAME} from '../../lib/brand';
 
 const LoadExtensionModal = props => (
     <div>
-<<<<<<< Updated upstream
-        {props.url.startsWith('data:') ? (
-=======
         {props.extensions && Object.keys(props.extensions).length > 0 ? (
             <React.Fragment>
                 <FormattedMessage
@@ -28,7 +25,6 @@ const LoadExtensionModal = props => (
                 </ul>
             </React.Fragment>
         ) : props.url && props.url.startsWith('data:') ? (
->>>>>>> Stashed changes
             <React.Fragment>
                 <FormattedMessage
                     defaultMessage="The project wants to load a custom extension with the code:"
