@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "左回り",
     "_general/blocks/clockwise": "右回り",
     "_general/blocks/green-flag": "緑の旗",
@@ -80,7 +80,12 @@
     "debugger/tab-logs": "ログ",
     "debugger/tab-performance": "パフォーマンス",
     "debugger/tab-threads": "スレッド",
+    "debugger/tab-variables": "変数",
     "debugger/thread": "スレッド {id}",
+    "debugger/search": "検索",
+    "debugger/too-big": "クリックして非常に大きな値を表示します。",
+    "debugger/for-all-sprites": "すべてのスプライトの変数",
+    "debugger/for-this-sprite": "このスプライトの変数",
     "debugger/unknown-sprite": "(不明なスプライト)",
     "debugger/unpause": "再開",
     "pause/pause": "一時停止",

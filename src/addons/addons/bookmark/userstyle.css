@@ -1,0 +1,221 @@
+﻿.sa-bookmark-button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.5rem;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: var(--ui-white);
+  border-width: 1px;
+  border-style: solid;
+  color: var(--text-primary);
+  border-color: var(--ui-black-transparent);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+  white-space: nowrap;
+  gap: 0.5rem;
+  height: 1.5rem;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+  margin-left: 10px;
+}
+
+.sa-bookmark-button:hover {
+  border-color: var(--motion-primary);
+}
+
+.sa-bookmark-button img {
+  display: inline-block;
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.sa-bookmark-button svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
+/* VSCode 布局下的书签按钮样式 */
+[class*="tabs"][class*="vscodeList"] .sa-bookmark-button {
+  width: 40px;
+  height: 30px;
+  font-size: 0;
+  background-color: #00000000;
+  border: 0;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 10px !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-bookmark-button img {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Modal styles */
+.sa-bookmark-modal {
+  box-sizing: border-box;
+  width: 700px;
+  max-height: min(800px, 80vh);
+  max-width: 85%;
+  margin-top: 12vh;
+  overflow-y: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sa-bookmark-modal-content {
+  padding: 1.5rem 2.25rem;
+}
+
+.sa-bookmark-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.sa-bookmark-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-primary);
+}
+
+.sa-bookmark-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.sa-bookmark-item:last-child {
+  margin-bottom: 0;
+}
+
+.sa-bookmark-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sa-bookmark-name {
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sa-bookmark-name:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sa-bookmark-name-input {
+  width: 100%;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 0.25rem;
+}
+
+.sa-bookmark-time {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.sa-bookmark-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sa-bookmark-action-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.sa-bookmark-action-button:hover {
+  opacity: 0.8;
+}
+
+.sa-bookmark-delete {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+.sa-bookmark-delete:hover {
+  background-color: #ff3333;
+}
+
+.sa-bookmark-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ui-black-transparent);
+}
+
+.sa-bookmark-add-form label {
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.sa-bookmark-add-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.sa-bookmark-add-form button {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  .sa-bookmark-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sa-bookmark-item {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .sa-bookmark-empty {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .sa-bookmark-time {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .sa-bookmark-add-form input {
+    border-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+  }
+}

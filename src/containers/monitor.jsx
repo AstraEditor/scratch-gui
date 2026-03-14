@@ -75,7 +75,7 @@ class Monitor extends React.Component {
                 this.props.monitorLayout, this.props.id, this.element.offsetWidth, this.element.offsetHeight);
             this.props.addMonitorRect(this.props.id, rect);
             this.props.vm.runtime.requestUpdateMonitor({
-                id: this.props.id,
+                id: this.props.id,  
                 x: rect.upperStart.x,
                 y: rect.upperStart.y
             });

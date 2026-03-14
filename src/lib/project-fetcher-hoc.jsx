@@ -25,6 +25,7 @@ import storage from './storage';
 
 import VM from 'scratch-vm';
 import {fetchProjectMeta} from './tw-project-meta-fetcher-hoc.jsx';
+import defaultProjectAssets from './default-project';
 
 // TW: Temporary hack for project tokens
 const fetchProjectToken = async projectId => {
@@ -46,7 +47,8 @@ const fetchProjectToken = async projectId => {
         return metadata.project_token;
     } catch (e) {
         log.error(e);
-        throw new Error('Cannot access project token. Project is probably unshared. See https://docs.turbowarp.org/unshared-projects');
+        alert('Cannot access project token. Project is probably unshared. See https://docs.turbowarp.org/unshared-project');
+        return null;
     }
 };
 
@@ -106,19 +108,9 @@ const ProjectFetcherHOC = function (WrappedComponent) {
             this.props.vm.quit();
 
             let assetPromise;
-            // In case running in node...
-            let projectUrl = typeof URLSearchParams === 'undefined' ?
-                null :
-                new URLSearchParams(location.search).get('project_url');
-            if (projectUrl) {
-                if (
-                    !projectUrl.startsWith('http:') &&
-                    !projectUrl.startsWith('https:') &&
-                    !projectUrl.startsWith('data:')
-                ) {
-                    projectUrl = `https://${projectUrl}`;
-                }
-                assetPromise = fetch(projectUrl)
+            // Check if projectId is a direct URL (data URL or http/https URL)
+            if (projectId.startsWith('data:') || projectId.startsWith('http://') || projectId.startsWith('https://')) {
+                assetPromise = fetch(projectId)
                     .then(r => {
                         if (!r.ok) {
                             throw new Error(`Request returned status ${r.status}`);
@@ -127,12 +119,40 @@ const ProjectFetcherHOC = function (WrappedComponent) {
                     })
                     .then(buffer => ({data: buffer}));
             } else {
-                // TW: Temporary hack for project tokens
-                assetPromise = fetchProjectToken(projectId)
-                    .then(token => {
-                        storage.setProjectToken(token);
-                        return storage.load(storage.AssetType.Project, projectId, storage.DataFormat.JSON);
-                    });
+                // In case running in node...
+                let projectUrl = typeof URLSearchParams === 'undefined' ?
+                    null :
+                    new URLSearchParams(location.search).get('project_url');
+                if (projectUrl) {
+                    if (
+                        !projectUrl.startsWith('http:') &&
+                        !projectUrl.startsWith('https:') &&
+                        !projectUrl.startsWith('data:')
+                    ) {
+                        projectUrl = `https://${projectUrl}`;
+                    }
+                    assetPromise = fetch(projectUrl)
+                        .then(r => {
+                            if (!r.ok) {
+                                throw new Error(`Request returned status ${r.status}`);
+                            }
+                            return r.arrayBuffer();
+                        })
+                        .then(buffer => ({data: buffer}));
+                } else {
+                    // TW: Temporary hack for project tokens
+                    assetPromise = fetchProjectToken(projectId)
+                        .then(token => {
+                            storage.setProjectToken(token);
+                            if (token === null) {
+                                // If token is null (project is unshared), load default project directly
+                                const defaultAssets = defaultProjectAssets(this.props.intl.formatMessage);
+                                const projectAsset = defaultAssets.find(a => a.assetType === 'Project');
+                                return projectAsset ? {data: projectAsset.data} : null;
+                            }
+                            return storage.load(storage.AssetType.Project, projectId, storage.DataFormat.JSON);
+                        });
+                }
             }
 
             return assetPromise

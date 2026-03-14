@@ -64,6 +64,18 @@ export default async function ({ addon, console, msg }) {
   });
 
   while (true) {
+    const storedSettings = localStorage.getItem('AESettings');
+    let hideButton = false;
+    try {
+      hideButton = JSON.parse(storedSettings).EnableMobileLayout;
+    } catch (e) {
+      hideButton = false;
+    }
+
+    if (hideButton) {
+      break
+    }
+    
     const stageControls = await addon.tab.waitForElement(
       "[class*='stage-header_stage-size-toggle-group_'] > [class*='toggle-buttons_row_']",
       {
@@ -85,5 +97,6 @@ export default async function ({ addon, console, msg }) {
     if (smallStageButton) smallStageButton.addEventListener("click", unhideStage);
     if (largeStageButton) largeStageButton.addEventListener("click", unhideStage);
     if (fullStageButton) fullStageButton.addEventListener("click", unhideStage);
+
   }
 }

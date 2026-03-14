@@ -35,3 +35,7 @@
     --editorDarkMode-page: $ui-primary;
     --editorDarkMode-highlightText: $looks-secondary;
 }
+
+:root{
+    --editor-menu-background: $menu-bar-background
+}

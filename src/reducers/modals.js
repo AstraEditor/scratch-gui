@@ -4,6 +4,7 @@ const CLOSE_MODAL = 'scratch-gui/modals/CLOSE_MODAL';
 const MODAL_BACKDROP_LIBRARY = 'backdropLibrary';
 const MODAL_COSTUME_LIBRARY = 'costumeLibrary';
 const MODAL_EXTENSION_LIBRARY = 'extensionLibrary';
+const MODAL_EXTENSION_MANAGER = 'extensionManager';
 const MODAL_LOADING_PROJECT = 'loadingProject';
 const MODAL_TELEMETRY = 'telemetryModal';
 const MODAL_SOUND_LIBRARY = 'soundLibrary';
@@ -18,11 +19,16 @@ const MODAL_RESTORE_POINTS = 'restorePointModal';
 const MODAL_FONTS = 'fontsModal';
 const MODAL_UNKNOWN_PLATFORM = 'unknownPlatformModal';
 const MODAL_INVALID_PROJECT = 'invalidProjectModal';
+const MODAL_CUSTOM_THEME = 'customtheme';
+const MODAL_README = 'readme';
+const MODAL_PREVIEW_EXT = 'previewExt';
+const MODAL_AE_FEATURES = 'aeFeaturesModal';
 
 const initialState = {
     [MODAL_BACKDROP_LIBRARY]: false,
     [MODAL_COSTUME_LIBRARY]: false,
     [MODAL_EXTENSION_LIBRARY]: false,
+    [MODAL_EXTENSION_MANAGER]: false,
     [MODAL_LOADING_PROJECT]: false,
     [MODAL_TELEMETRY]: false,
     [MODAL_SOUND_LIBRARY]: false,
@@ -36,7 +42,10 @@ const initialState = {
     [MODAL_RESTORE_POINTS]: false,
     [MODAL_FONTS]: false,
     [MODAL_UNKNOWN_PLATFORM]: false,
-    [MODAL_INVALID_PROJECT]: false
+    [MODAL_INVALID_PROJECT]: false,
+    [MODAL_README]: false,
+    [MODAL_PREVIEW_EXT]: false,
+    [MODAL_AE_FEATURES]: false
 };
 
 const reducer = function (state, action) {
@@ -75,6 +84,12 @@ const openCostumeLibrary = function () {
 const openExtensionLibrary = function () {
     return openModal(MODAL_EXTENSION_LIBRARY);
 };
+const openExtensionManager = function () {
+    return openModal(MODAL_EXTENSION_MANAGER);
+};
+const openPreviewExt = function () {
+    return openModal(MODAL_PREVIEW_EXT);
+};
 const openLoadingProject = function () {
     return openModal(MODAL_LOADING_PROJECT);
 };
@@ -86,6 +101,15 @@ const openSoundLibrary = function () {
 };
 const openSpriteLibrary = function () {
     return openModal(MODAL_SPRITE_LIBRARY);
+};
+const openCustomTheme = function () {
+    return openModal(MODAL_CUSTOM_THEME);
+};
+const closePreviewExt = function () {
+    return closeModal(MODAL_PREVIEW_EXT);
+};
+const closeCustomTheme = function () {
+    return closeModal(MODAL_CUSTOM_THEME);
 };
 const openSoundRecorder = function () {
     return openModal(MODAL_SOUND_RECORDER);
@@ -111,11 +135,23 @@ const openRestorePointModal = function () {
 const openFontsModal = function () {
     return openModal(MODAL_FONTS);
 };
+const openReadme = function () {
+    return openModal(MODAL_README);
+};
+const closeReadme = function() {
+    return closeModal(MODAL_README);
+}
 const openUnknownPlatformModal = function () {
     return openModal(MODAL_UNKNOWN_PLATFORM);
 };
 const openInvalidProjectModal = function () {
     return openModal(MODAL_INVALID_PROJECT);
+};
+const openAeFeaturesModal = function () {
+    return openModal(MODAL_AE_FEATURES);
+};
+const closeAeFeaturesModal = function () {
+    return closeModal(MODAL_AE_FEATURES);
 };
 const closeBackdropLibrary = function () {
     return closeModal(MODAL_BACKDROP_LIBRARY);
@@ -125,6 +161,9 @@ const closeCostumeLibrary = function () {
 };
 const closeExtensionLibrary = function () {
     return closeModal(MODAL_EXTENSION_LIBRARY);
+};
+const closeExtensionManager = function () {
+    return closeModal(MODAL_EXTENSION_MANAGER);
 };
 const closeLoadingProject = function () {
     return closeModal(MODAL_LOADING_PROJECT);
@@ -174,6 +213,7 @@ export {
     openBackdropLibrary,
     openCostumeLibrary,
     openExtensionLibrary,
+    openExtensionManager,
     openLoadingProject,
     openSoundLibrary,
     openSpriteLibrary,
@@ -186,11 +226,19 @@ export {
     openCustomExtensionModal,
     openRestorePointModal,
     openFontsModal,
+    openCustomTheme,
     openUnknownPlatformModal,
     openInvalidProjectModal,
+    openReadme,
+    openPreviewExt,
+    openAeFeaturesModal,
+    closeAeFeaturesModal,
+    closePreviewExt,
+    closeReadme,
     closeBackdropLibrary,
     closeCostumeLibrary,
     closeExtensionLibrary,
+    closeExtensionManager,
     closeLoadingProject,
     closeSpriteLibrary,
     closeSoundLibrary,
@@ -204,5 +252,6 @@ export {
     closeRestorePointModal,
     closeFontsModal,
     closeUnknownPlatformModal,
-    closeInvalidProjectModal
+    closeInvalidProjectModal,
+    closeCustomTheme
 };

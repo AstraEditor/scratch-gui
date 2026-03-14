@@ -74,6 +74,7 @@ class LibraryItemComponent extends React.PureComponent {
                         loading="lazy"
                         draggable={false}
                         src={this.props.iconURL}
+                        onError={this.props.onImageError}
                     />
                 </div>
                 {this.props.insetIconURL ? (
@@ -232,6 +233,7 @@ class LibraryItemComponent extends React.PureComponent {
                             loading="lazy"
                             src={this.props.iconURL}
                             draggable={false}
+                            onError={this.props.onImageError}
                         />
                     </Box>
                 </Box>
@@ -291,7 +293,8 @@ LibraryItemComponent.propTypes = {
     onMouseLeave: PropTypes.func.isRequired,
     onPlay: PropTypes.func.isRequired,
     onStop: PropTypes.func.isRequired,
-    showPlayButton: PropTypes.bool
+    showPlayButton: PropTypes.bool,
+    onImageError: PropTypes.func
 };
 
 LibraryItemComponent.defaultProps = {

@@ -18,7 +18,8 @@ const onReactContextMenu = function (e) {
     // Monitors are rendered on document.body.
     // This is internal id which is different from the actual monitor ID.
     // Optional chain just to prevent crashes when they change the internal stuff.
-    const mInternalId = ctxTarget[this.traps.getInternalKey(ctxTarget)]?.return?.stateNode?.props?.id;
+    const internal = ctxTarget[this.traps.getInternalKey(ctxTarget)];
+    const mInternalId = internal && internal.return && internal.return.stateNode && internal.return.stateNode.props && internal.return.stateNode.props.id;
     if (!mInternalId) return;
     ctxMenu = Array.prototype.find.call(
       document.querySelectorAll("body > nav.react-contextmenu"),

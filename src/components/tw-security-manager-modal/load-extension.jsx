@@ -1,11 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {FormattedMessage} from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 import styles from './load-extension.css';
 import URL from './url.jsx';
 import DataURL from './data-url.jsx';
 import FancyCheckbox from '../tw-fancy-checkbox/checkbox.jsx';
-import {APP_NAME} from '../../lib/brand';
+import { APP_NAME } from '../../lib/brand';
 
 const LoadExtensionModal = props => (
     <div>
@@ -33,7 +33,7 @@ const LoadExtensionModal = props => (
                 />
                 <DataURL url={props.url} />
             </React.Fragment>
-        ) : (
+        ) : props.url ? (
             <React.Fragment>
                 <FormattedMessage
                     defaultMessage="The project wants to load a custom extension from the URL:"
@@ -42,9 +42,15 @@ const LoadExtensionModal = props => (
                 />
                 <URL url={props.url} />
             </React.Fragment>
-        )}
+        ) : null}
 
-        {props.onChangeUnsandboxed && (
+        {props.extensions && Object.keys(props.extensions).length > 0 ? (
+            <FormattedMessage
+                defaultMessage="All Extensions will run without sandbox"
+                description="sandbox is unable all the time"
+                id="tw.loadExtension.skipsandbox"
+            />
+        ) : props.onChangeUnsandboxed && (
             <React.Fragment>
                 <label className={styles.unsandboxedContainer}>
                     <FancyCheckbox
@@ -72,7 +78,8 @@ const LoadExtensionModal = props => (
                     </div>
                 )}
             </React.Fragment>
-        )}
+        )
+        }
         {!props.unsandboxed && (
             <div className={styles.sandboxed}>
                 <FormattedMessage
@@ -88,7 +95,9 @@ const LoadExtensionModal = props => (
 );
 
 LoadExtensionModal.propTypes = {
-    url: PropTypes.string.isRequired,
+    url: PropTypes.string,
+    extensions: PropTypes.object,
+    showAll: PropTypes.bool,
     unsandboxed: PropTypes.bool.isRequired,
     onChangeUnsandboxed: PropTypes.func
 };

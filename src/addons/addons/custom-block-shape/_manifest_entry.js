@@ -3,6 +3,7 @@ const manifest = {
   "editorOnly": true,
   "noTranslations": true,
   "name": "Customizable block shape",
+  "enabledByDefault": true,
   "description": "Adjust the padding, corner radius, and notch height of blocks.",
   "tags": [
     "theme"
@@ -21,7 +22,6 @@ const manifest = {
       "link": "https://scratch.mit.edu/users/GarboMuffin/"
     }
   ],
-  "enabledByDefault": false,
   "dynamicDisable": true,
   "userscripts": [
     {
@@ -42,7 +42,7 @@ const manifest = {
       "id": "paddingSize",
       "type": "integer",
       "min": 50,
-      "default": 100,
+      "default": 70,
       "max": 200
     },
     {
@@ -51,7 +51,7 @@ const manifest = {
       "id": "cornerSize",
       "type": "integer",
       "min": 0,
-      "default": 100,
+      "default": 200,
       "max": 300
     },
     {
@@ -60,7 +60,7 @@ const manifest = {
       "id": "notchSize",
       "type": "integer",
       "min": 0,
-      "default": 100,
+      "default": 75,
       "max": 150
     }
   ],

@@ -4,6 +4,7 @@ const manifest = {
   "name": "Block count",
   "description": "Shows the total number of blocks in a project in the editor menu bar. Previously part of \"sprite and script count\".",
   "tags": [],
+  "enabledByDefault": true,
   "credits": [
     {
       "name": "TheColaber",

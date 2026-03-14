@@ -194,17 +194,18 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         // file upload raw data is available in the reader
         onload () {
             if (this.fileReader) {
-                this.props.onLoadingStarted();
                 const filename = this.fileToUpload && this.fileToUpload.name;
+                // 放前头气死我了不然它显示的是OLD的
+                if (filename) {
+                    const uploadedProjectTitle = this.getProjectTitleFromFilename(filename);
+                    this.props.onSetProjectTitle(uploadedProjectTitle);
+                }
+                this.props.onLoadingStarted();
                 let loadingSuccess = false;
                 // tw: stop when loading new project
                 this.props.vm.quit();
                 this.props.vm.loadProject(this.fileReader.result)
                     .then(() => {
-                        if (filename) {
-                            const uploadedProjectTitle = this.getProjectTitleFromFilename(filename);
-                            this.props.onSetProjectTitle(uploadedProjectTitle);
-                        }
                         this.props.vm.renderer.draw();
                         loadingSuccess = true;
                     })

@@ -13,10 +13,8 @@ const systemPreferencesTheme = () => {
     if (PREFERS_HIGH_CONTRAST_QUERY && PREFERS_HIGH_CONTRAST_QUERY.matches) {
         return Theme.highContrast;
     }
-    if (PREFERS_DARK_QUERY && PREFERS_DARK_QUERY.matches) {
-        return Theme.dark;
-    }
-    return Theme.light;
+    // 默认使用深色主题 (GUI_DARK)，不再根据系统浅色模式返回 Theme.light
+    return Theme.dark;
 };
 
 /**
@@ -104,6 +102,13 @@ const persistTheme = theme => {
         } catch (e) {
             // ignore
         }
+    }
+
+    // 触发自定义事件，通知组件主题已更改
+    try {
+        window.dispatchEvent(new Event('tw:theme-changed'));
+    } catch (e) {
+        // ignore
     }
 };
 

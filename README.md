@@ -1,4 +1,4 @@
-scratch-gui modified for use in [TurboWarp](https://turbowarp.org/)
+scratch-gui modified for use in [AstraEditor](https://www.github.com/AstraEditor)
 
 ## Setup
 

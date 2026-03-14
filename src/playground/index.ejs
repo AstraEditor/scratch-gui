@@ -1,191 +1,388 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="google" value="notranslate">
-    <meta name="description" content="<%= htmlWebpackPlugin.options.APP_NAME %> is a Scratch mod with a compiler to run projects faster, dark mode for your eyes, a bunch of addons to improve the editor, and more." />
-    <title><%= htmlWebpackPlugin.options.title %></title>
-    <link rel="apple-touch-icon" href="<%= htmlWebpackPlugin.options.root %>images/apple-touch-icon.png">
-    <% if (htmlWebpackPlugin.options.root === "/" || htmlWebpackPlugin.options.root === "") { %>
-      <link rel="manifest" href="<%= htmlWebpackPlugin.options.root %>manifest.webmanifest">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <meta name="description"
+    content="<%= htmlWebpackPlugin.options.APP_NAME %> is a Scratch mod with a compiler to run projects faster, dark mode for your eyes, a bunch of addons to improve the editor, and more." />
+  <title>
+    <%= htmlWebpackPlugin.options.title %>
+  </title>
+  <link rel="icon" href="<%= htmlWebpackPlugin.options.root %>favicon.ico">
+  <link rel="apple-touch-icon" href="<%= htmlWebpackPlugin.options.root %>images/apple-touch-icon.png">
+  <% if (htmlWebpackPlugin.options.root==="/" || htmlWebpackPlugin.options.root==="" ) { %>
+    <link rel="manifest" href="<%= htmlWebpackPlugin.options.root %>manifest.webmanifest">
     <% } %>
-    <style>
-      .splash-screen {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      }
-      .splash-screen[hidden] {
-        display: none;
-      }
-      .splash-screen[data-theme="dark"] {
-        background-color: #333;
-        color: white;
-      }
-      .splash-screen > * {
-        max-width: 80%;
-      }
-      .splash-spinner:after {
-        content: " ";
-        display: block;
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        border: 6px solid;
-        border-color: currentColor transparent currentColor transparent;
-        animation: splash-spinner 1.2s linear infinite;
-      }
-      @keyframes splash-spinner {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      .splash-error-title {
-        font-weight: bold;
-      }
-      .splash-error-title a {
-        color: inherit;
-      }
-      .splash-errors {
-        font-family: monospace;
-      }
-      .splash-error-list {
-        white-space: pre-wrap;
-      }
-      .splash-reset {
-        color: inherit;
-        background: none;
-        padding: 0;
-        margin: 0;
-        border: none;
-        text-decoration: underline;
-        cursor: pointer;
-      }
-      .splash-reset:disabled {
-        opacity: 0.8;
-      }
-    </style>
-  </head>
-  <body>
-    <noscript>
-      <div class="splash-screen">
-        <div>
-          <h1><%= htmlWebpackPlugin.options.APP_NAME %> requires JavaScript</h1>
-          <p>Consider using <a href="https://desktop.turbowarp.org/">TurboWarp Desktop</a> if you are afraid of remote JavaScript.</p>
-        </div>
+      <style>
+        .splash-screen {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+          display: flex;
+          flex-direction: row;
+          gap: 1rem;
+          align-items: center;
+          justify-content: center;
+          text-align: right;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          overflow: hidden;
+        }
+
+        .splash-screen[hidden] {
+          display: none;
+        }
+
+        .splash-screen[data-theme="dark"] {
+          background-color: #333;
+          color: white;
+        }
+
+        .splash-screen>* {
+          max-width: 80%;
+        }
+
+        .circle {
+          width: 64px;
+          height: 64px;
+          border-radius: 200%;
+          display: block;
+          border-width: 1px !important;
+          border-style: solid;
+        }
+
+
+        @keyframes circleA_1 {
+
+          50%,
+          0% {
+            transform: translate(0px, 22px) scale(0.75, 0.75);
+            opacity: 0;
+          }
+
+          75% {
+            opacity: 1;
+          }
+
+          100% {
+            transform: scale(1.95, 1.95);
+          }
+        }
+
+        @keyframes circleA_2 {
+
+          20%,
+          0% {
+            transform: translate(0px, -52px) scale(0.5, 0.5);
+            opacity: 0;
+          }
+
+          75% {
+            opacity: 1;
+          }
+
+          100% {
+            transform: translate(-25px, -12px) scale(0.96, 0.96);
+          }
+        }
+
+        @keyframes circleA_3 {
+
+          30%,
+          0% {
+            transform: translate(0px, -112px) scale(0.26, 0.26);
+            opacity: 0;
+          }
+
+          75% {
+            opacity: 1;
+          }
+
+          100% {
+            transform: translate(40px, -108px) scale(1.46, 1.46);
+          }
+        }
+
+        #circle_1,
+        #circle_2,
+        #circle_3 {
+          animation-duration: 1s;
+          animation-iteration-count: infinite;
+          animation-direction: alternate;
+          transition: background-color 0.5s ease;
+        }
+
+        #circle_1 {
+          animation-name: circleA_1;
+        }
+
+        #circle_2 {
+          animation-name: circleA_2;
+        }
+
+        #circle_3 {
+          animation-name: circleA_3;
+        }
+
+        .splash-error-title {
+          font-weight: bold;
+        }
+
+        .splash-error-title a {
+          color: inherit;
+        }
+
+        .splash-errors {
+          font-family: monospace;
+          max-width: 40%;
+          margin-left: auto;
+          margin-top: 20px;
+          margin-bottom: 20px;
+          background-color: #ffffff44;
+          padding: 5px;
+          border-radius: 10px;
+        }
+
+        .splash-error-list {
+          white-space: pre-wrap;
+        }
+
+        .splash-reset {
+          color: inherit;
+          background: none;
+          padding: 0;
+          margin: 0;
+          border: none;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+
+        .splash-reset:disabled {
+          opacity: 0.8;
+        }
+      </style>
+</head>
+
+<body>
+  <noscript>
+    <div class="splash-screen">
+      <div>
+        <h1>
+          <%= htmlWebpackPlugin.options.APP_NAME %> requires JavaScript
+        </h1>
+        <p>Consider using <a href="https://desktop.turbowarp.org/">TurboWarp Desktop</a> if you are afraid of remote
+          JavaScript.</p>
       </div>
-    </noscript>
+    </div>
+  </noscript>
 
-    <div class="splash-screen spash-waiting-for-js" hidden>
-      <div class="splash-spinner"></div>
-
-      <div class="splash-error-title" hidden>Something went wrong. <a href="https://scratch.mit.edu/users/GarboMuffin/#comments" target="_blank" rel="noreferrer">Please report</a> with the information below.</div>
+  <div class="splash-screen spash-waiting-for-js" hidden>
+    <div class="logo">
+      <div class="circle" id="circle_1"></div>
+      <div class="circle" id="circle_2"></div>
+      <div class="circle" id="circle_3"></div>
+    </div>
+    <div>
+      <div class="splash-error-title" hidden><span class="splash-error-title-text1">Something went wrong. </span><a class="splash-error-link"
+          href="https://github.com/AstraEditor/scratch-gui/issues" target="_blank" rel="noreferrer">Please report</a>
+        <span class="splash-error-title-text2">with the information below.</span></div>
       <div class="splash-errors" hidden></div>
       <button class="splash-reset" hidden>Click here to reset caches (can fix some errors)</button>
     </div>
+  </div>
 
-    <script>
-      (function () {
-        'use strict';
 
-        var theme = '';
-        var accent = '#ff4c4c';
+  <script>
+    (function () {
+      'use strict';
 
+      var logoAll = document.getElementsByClassName('logo')[0];
+      logoAll.style.transform = 'scale(1.5, 1.5) translateY(40px)';
+
+      var theme = '';
+      var accent = '#0099ff';
+
+      const Texts = {
+        "zh-CN": {
+          "title_1": "一些地方出错了！",
+          "title_2_link": "请报告",
+          "title_3": "这个错误并附上下面的信息。",
+          "reset": "单击此处重置缓存（可以修复一些错误）"
+        },
+        "en-US": {
+          "title_1": "Something went wrong. ",
+          "title_2_like": "Please report",
+          "title_3": "with the information below.",
+          "reset": 'Click here to reset caches (can fix some errors)'
+        },
+        "ja": {
+          "title_1": "何かが間違っています。",
+          "title_2_link": "報告してください",
+          "title_3": "このエラーと以下の情報。",
+          "reset": "キャッシュをリセットするにはここをクリックしてください（一部のエラーを修正できます）"
+        },
+        "ko": {
+          "title_1": "문제가 발생했습니다.",
+          "title_2_link": "보고해 주세요",
+          "title_3": "이 오류와 아래 정보를 함께.",
+          "reset": "캐시를 재설정하려면 여기를 클릭하세요 (일부 오류를 수정할 수 있음)"
+        },
+        "es": {
+          "title_1": "Algo salió mal.",
+          "title_2_link": "Por favor informe",
+          "title_3": "este error con la información a continuación.",
+          "reset": "Haga clic aquí para restablecer caché (puede solucionar algunos errores)"
+        },
+        "fr": {
+          "title_1": "Quelque chose s'est mal passé.",
+          "title_2_link": "Veuillez signaler",
+          "title_3": "cette erreur avec les informations ci-dessous.",
+          "reset": "Cliquez ici pour réinitialiser le cache (peut corriger certaines erreurs)"
+        },
+        "de": {
+          "title_1": "Etwas ist schiefgelaufen.",
+          "title_2_link": "Bitte melden Sie",
+          "title_3": "diesen Fehler mit den folgenden Informationen.",
+          "reset": "Klicken Sie hier, um den Cache zurückzusetzen (kann einige Fehler beheben)"
+        },
+        "ru": {
+          "title_1": "Что-то пошло не так.",
+          "title_2_link": "Пожалуйста, сообщите",
+          "title_3": "об этой ошибке с информацией ниже.",
+          "reset": "Нажмите здесь, чтобы сбросить кэш (может исправить некоторые ошибки)"
+        }
+      }
+      const getText = (id) => {
         try {
-          var themeSetting = localStorage.getItem('tw:theme');
+          return Texts[navigator.language][id]
+        } catch (e) {
+          try {
+            return Texts['en-US'][id]
+          } catch (e) {
+            return id
+          }
+        }
+      }
+
+      try {
+        var themeSetting = localStorage.getItem('tw:theme');
+      } catch (e) {
+        // ignore
+      }
+      if (themeSetting === 'light') {
+        theme = 'light';
+      } else if (themeSetting === 'dark') {
+        theme = 'dark';
+      } else if (themeSetting) {
+        try {
+          var parsed = JSON.parse(themeSetting);
+          if (parsed.accent === 'purple') {
+            accent = '#855cd6';
+          } else if (parsed.accent === 'blue') {
+            accent = '#4c97ff';
+          } else {
+            accent = '#0099ff';
+          }
+          if (parsed.gui === 'dark' || parsed.gui === 'light') {
+            theme = parsed.gui;
+          }
         } catch (e) {
           // ignore
         }
-        if (themeSetting === 'light') {
-          theme = 'light';
-        } else if (themeSetting === 'dark') {
-          theme = 'dark';
-        } else if (themeSetting) {
-          try {
-            var parsed = JSON.parse(themeSetting);
-            if (parsed.accent === 'purple') {
-              accent = '#855cd6';
-            } else if (parsed.accent === 'blue') {
-              accent = '#4c97ff';
-            }
-            if (parsed.gui === 'dark' || parsed.gui === 'light') {
-              theme = parsed.gui;
-            }
-          } catch (e) {
-            // ignore
-          }
-        }
+      }
 
-        if (!theme) {
-          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
+      if (!theme) {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
 
-        var splash = document.querySelector('.spash-waiting-for-js');
-        splash.setAttribute('data-theme', theme);
-        if (theme !== 'dark') {
+      var splash = document.querySelector('.spash-waiting-for-js');
+      var logo = document.getElementsByClassName('circle');
+      splash.setAttribute('data-theme', theme);
+
+      if (theme !== 'dark' && !!theme) {
+        for (let element = 0; element < logo.length; element += 1) {
+          logo[element].style.backgroundColor = '#ffffff50';
+          logo[element].style.borderColor = '#ffffff10';
+        };
           <% if (htmlWebpackPlugin.options.isEditor) { %>
-            splash.style.backgroundColor = accent;
-            splash.style.color = 'white';
+          splash.style.backgroundColor = accent;
+          splash.style.color = 'white';
           <% } else { %>
-            splash.style.color = accent;
+          splash.style.color = accent;
           <% } %>
+       } else {
+        for (let element = 0; element < logo.length; element += 1) {
+          logo[element].style.backgroundColor = accent + '50';
+          logo[element].style.borderColor = accent + '10';
+        };
+      }
+
+      splash.hidden = false;
+
+      var splashErrorTitle = document.querySelector('.splash-error-title');
+      var splashError = document.querySelector('.splash-errors');
+      var splashReset = document.querySelector('.splash-reset');
+
+      var splashErrorLink = document.querySelector('.splash-error-link');
+      var splashErrorText1 = document.querySelector('.splash-error-title-text1');
+      var splashErrorText2 = document.querySelector('.splash-error-title-text2');
+
+      var totalErrors = 0;
+      window.onerror = function (event, source, line, col, err) {
+        if (++totalErrors > 5) return; // dont bother logging more
+        splashErrorTitle.hidden = splashError.hidden = splashReset.hidden = false;
+
+        splashErrorText1.textContent = getText('title_1');
+        splashErrorLink.textContent = getText('title_2_link');
+        splashErrorText2.textContent = getText('title_3');
+        splashReset.textContent = getText('reset')
+
+        var el = document.createElement('div');
+        el.textContent = 'Error (splash) in ' + source + ' (' + line + ':' + col + '): ' + err;
+        splashError.appendChild(el);
+        logoAll.style.transform = 'scale(6, 6) translate(20px, 40px)';
+        splash.style.backgroundColor = '#ff8888';
+        for (let element = 0; element < logo.length; element += 1) {
+          logo[element].style.backgroundColor = '#ffffff50';
+          logo[element].style.borderColor = '#ffffff10';
+        };
+      };
+
+      splashReset.onclick = function () {
+        splashReset.disabled = true;
+        function hardRefresh() {
+          var search = location.search.replace(/[?&]nocache=[\d.]+(?=$|&)/, '');
+          // This is a functional cookie used so that we respond with Clear-Site-Data just once. No tracking.
+          // Can't use nocache parameter to trigger this because people might accidentally bookmark that, and
+          // then we would be clearing their cache on every visit.
+          document.cookie = 'tw_clear_cache_once=1; max-age=60; path=/; samesite=strict; secure';
+          location.replace(location.pathname + search + (search ? '&' : '?') + 'nocache=' + Math.floor(Math.random() * 10000000));
         }
-        splash.hidden = false;
+        if ('serviceWorker' in navigator) {
+          setTimeout(hardRefresh, 5000);
+          navigator.serviceWorker.getRegistration(<%= JSON.stringify(htmlWebpackPlugin.options.root) %>)
+            .then(function (registration) {
+              if (registration) {
+                return registration.unregister();
+              }
+            })
+            .then(hardRefresh)
+            .catch(hardRefresh);
+        } else {
+          hardRefresh();
+        }
+      };
 
-        var splashErrorTitle = document.querySelector('.splash-error-title');
-        var splashError = document.querySelector('.splash-errors');
-        var splashReset = document.querySelector('.splash-reset');
+      window.SplashEnd = () => {
+        splash.hidden = true;
+        window.onerror = null;
+      };
+    })();
+  </script>
+  <div id="app"></div>
+</body>
 
-        var totalErrors = 0;
-        window.onerror = function (event, source, line, col, err) {
-          if (++totalErrors > 5) return; // dont bother logging more
-          splashErrorTitle.hidden = splashError.hidden = splashReset.hidden = false;
-          var el = document.createElement('div');
-          el.textContent = 'Error (splash) in ' + source + ' (' + line + ':' + col + '): ' + err;
-          splashError.appendChild(el);
-        };
-
-        splashReset.onclick = function () {
-          splashReset.disabled = true;
-          function hardRefresh() {
-            var search = location.search.replace(/[?&]nocache=[\d.]+(?=$|&)/, '');
-            // This is a functional cookie used so that we respond with Clear-Site-Data just once. No tracking.
-            // Can't use nocache parameter to trigger this because people might accidentally bookmark that, and
-            // then we would be clearing their cache on every visit.
-            document.cookie = 'tw_clear_cache_once=1; max-age=60; path=/; samesite=strict; secure';
-            location.replace(location.pathname + search + (search ? '&' : '?') + 'nocache=' + Math.floor(Math.random() * 10000000));
-          }
-          if ('serviceWorker' in navigator) {
-            setTimeout(hardRefresh, 5000);
-            navigator.serviceWorker.getRegistration(<%= JSON.stringify(htmlWebpackPlugin.options.root) %>)
-              .then(function(registration) {
-                if (registration) {
-                  return registration.unregister();
-                }
-              })
-              .then(hardRefresh)
-              .catch(hardRefresh);
-          } else {
-            hardRefresh();
-          }
-        };
-
-        window.SplashEnd = () => {
-          splash.hidden = true;
-          window.onerror = null;
-        };
-      })();
-    </script>
-
-    <div id="app"></div>
-  </body>
 </html>

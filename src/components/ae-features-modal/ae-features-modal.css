@@ -1,0 +1,155 @@
+@import "../../css/colors.css";
+
+.modal-content {
+    width: 600px;
+}
+
+.body {
+    background: $ui-modal-background;
+    padding: 1.5rem 2.25rem;
+}
+
+.body input[type="checkbox"],
+.body input[type="radio"] {
+    margin: 3px;
+}
+
+.text-input {
+    margin-bottom: 1rem;
+    width: 100%;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 5px;
+    padding: 0 1rem;
+    height: 3rem;
+    color: $text-primary-transparent;
+    font-size: .875rem;
+    background-color: $input-background;
+}
+
+.button-row {
+    font-weight: bolder;
+    text-align: right;
+}
+
+.button-row button {
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    background: white;
+    border: 1px solid $ui-black-transparent;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.button-row button[disabled] {
+    opacity: 0.5;
+}
+
+[dir="ltr"] .button-row button+button {
+    margin-left: 0.5rem;
+}
+
+[dir="rtl"] .button-row button+button {
+    margin-right: 0.5rem;
+}
+
+.button-row button.ok-button {
+    background: $looks-secondary;
+    border: $looks-secondary;
+    color: white;
+}
+
+.button-row button.cancel-button {
+    color: black;
+}
+
+.help-text {
+    margin-bottom: 1rem;
+}
+
+.must-change {
+    font-weight: bold;
+}
+
+.reset-link {
+    cursor: pointer;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0.5rem 0 0 0;
+    font-weight: bold;
+}
+
+.divider {
+    flex-grow: 1;
+    margin-left: 1rem;
+    border-top: 1px dashed $ui-tertiary;
+}
+
+
+.hr {
+    opacity: 0.2;
+}
+
+.logo {
+    width: 60%;
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.title {
+    text-align: center;
+}
+
+.intro {
+    text-align: center;
+
+}
+
+.linkDiv {
+    border-radius: 5px;
+    margin: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.linkDivContent {
+    border: none;
+    background: $ui-secondary;
+    color: $text-primary;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin: 5px 0;
+    transition: filter 0.15s ease;
+}
+
+.linkDivContent:hover {
+    filter: brightness(0.8);
+}
+
+.backIcon {
+    width: 25px;
+    height: 25px;
+    -webkit-filter: drop-shadow(0 0 5px #55555580);
+    filter: drop-shadow(0 0 5px #55555580);
+}
+
+.backButton {
+    position: absolute;
+    background-color: #ffffff00;
+    border: none;
+}
+
+.dorpdownIcon {
+    width: 15px;
+    height: 15px;
+    -webkit-filter: drop-shadow(0 0 5px #55555580);
+    filter: drop-shadow(0 0 5px #55555580);
+}

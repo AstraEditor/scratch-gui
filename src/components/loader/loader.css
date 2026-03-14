@@ -3,190 +3,187 @@
 @import "../../css/default-colors.css";
 
 .background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: $z-index-loader;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: $menu-bar-background;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    text-align: center;
-    color: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: $z-index-loader;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: $ui-white;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: $text-primary;
+  animation-duration: 0.25s;
+  animation-iteration-count: 1;
+  animation-name: BG_SHOW;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+  overflow: hidden;
 }
+.fadeOut {
+  animation-name: BG_HIDE;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+@keyframes BG_SHOW {
+  from{
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to{
+    opacity: 1;
+  }
+}
+
+@keyframes BG_HIDE {
+  from{
+    opacity: 1;
+  }
+  to{
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* Both animations use 0.5s duration for consistency */
 
 .fullscreen {
-    /* Break out of the layout using position: fixed to cover the whole screen */
-    position: fixed;
-    /* Use the fullscreen stage z-index to allow covering full-screen mode */
-    z-index: $z-index-stage-wrapper-overlay;
+  /* Break out of the layout using position: fixed to cover the whole screen */
+  position: fixed;
+  /* Use the fullscreen stage z-index to allow covering full-screen mode */
+  z-index: $z-index-stage-wrapper-overlay;
 }
 
-.block-animation {
-    width: 125px;
-    height: 150px;
-    margin: 50px auto 0px;
-}
-
-.block-animation img {
-    display: block;
-    position: relative;
-    height: 30%;
-    margin-top: -4px;
-}
-
-.top-block {
-    animation: top-slide-in 1.5s ease infinite;
-}
-
-.middle-block {
-    animation: middle-slide-in 1.5s ease infinite;
-}
-
-.bottom-block {
-    animation: bottom-slide-in 1.5s ease infinite;
-}
-
-[dir="rtl"] .top-block {
-    animation: top-slide-in-rtl 1.5s ease infinite;
-}
-
-[dir="rtl"] .middle-block {
-    animation: middle-slide-in-rtl 1.5s ease infinite;
-}
-
-[dir="rtl"] .bottom-block {
-    animation: bottom-slide-in-rtl 1.5s ease infinite;
-}
-
-@keyframes top-slide-in {
-  0% {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-
-  33% {
-    transform: translateY(0px);
-    opacity: 1;
-  }
-}
-
-@keyframes middle-slide-in {
-  0% {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-
-  33% {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-
-  66% {
-    transform: translateY(0px);
-    opacity: 1;
-  }
-}
-
-@keyframes bottom-slide-in {
-  0% {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-
-  66% {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateY(0px);
-    opacity: 1;
-  }
-}
-
-@keyframes top-slide-in-rtl {
-  0% {
-    transform: translateY(50px) scaleX(-1);
-    opacity: 0;
-  }
-
-  33% {
-    transform: translateY(0px) scaleX(-1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0px) scaleX(-1);
-    opacity: 1;
-  }
-}
-
-@keyframes middle-slide-in-rtl {
-  0% {
-    transform: translateY(50px) scaleX(-1);
-    opacity: 0;
-  }
-
-  33% {
-    transform: translateY(50px) scaleX(-1);
-    opacity: 0;
-  }
-
-  66% {
-    transform: translateY(0px) scaleX(-1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0px) scaleX(-1);
-    opacity: 1;
-  }
-}
-
-@keyframes bottom-slide-in-rtl {
-  0% {
-    transform: translateY(50px) scaleX(-1);
-    opacity: 0;
-  }
-
-  66% {
-    transform: translateY(50px) scaleX(-1);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateY(0px) scaleX(-1);
-    opacity: 1;
-  }
-}
 
 .title {
-    font-size: 2rem;
-    font-weight: bold;
-    margin: 0.75rem 0;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
 }
 
 .message {
-    height: 20px;
-    margin: 5px 0;
+  height: 20px;
+  margin: 10px 0;
 }
 
 .bar-outer {
-    width: 250px;
-    height: 8px;
-    border-radius: 8px;
-    background-color: $ui-white-transparent-default;
-    overflow: hidden;
-    position: relative;
-    margin: auto;
+  width: 300px;
+  height: 8px;
+  border-radius: 8px;
+  background-color: $ui-modal-header-foreground ;
+  overflow: hidden;
+  position: relative;
+  margin-left: auto;
+}
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 100px;
+  margin: auto 0
+}
+.Tips{
+  position: absolute;
+  right: 7%;
+  bottom: 7%;
 }
 .bar-inner {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 100%;
-    background-color: $ui-white-default;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background-color: $ui-modal-header-background ;
+}
+
+.logoLoader {
+  transform: scale(6, 6) translate(20px, 40px) !important;
+}
+
+.circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 200%;
+  display: block;
+  border-width: none;
+  background-color: $looks-transparent;
+}
+
+
+@keyframes circleA_1 {
+
+  50%,
+  0% {
+    transform: translate(0px, 22px) scale(0.75, 0.75);
+    opacity: 0;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.95, 1.95);
+  }
+}
+
+@keyframes circleA_2 {
+
+  20%,
+  0% {
+    transform: translate(0px, -52px) scale(0.5, 0.5);
+    opacity: 0;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-25px, -12px) scale(0.96, 0.96);
+  }
+}
+
+@keyframes circleA_3 {
+
+  30%,
+  0% {
+    transform: translate(0px, -112px) scale(0.26, 0.26);
+    opacity: 0;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(40px, -108px) scale(1.46, 1.46);
+  }
+}
+
+#circle_1,
+#circle_2,
+#circle_3 {
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  transition: background-color 0.5s ease;
+}
+
+#circle_1 {
+  animation-name: circleA_1;
+}
+
+#circle_2 {
+  animation-name: circleA_2;
+}
+
+#circle_3 {
+  animation-name: circleA_3;
 }

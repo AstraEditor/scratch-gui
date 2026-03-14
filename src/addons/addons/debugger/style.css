@@ -26,6 +26,7 @@
   height: 6px;
   background-color: var(--editorDarkMode-highlightText, #855cd6);
   border-radius: 50%;
+
 }
 
 .sa-debugger-interface {
@@ -36,11 +37,15 @@
   color: var(--ui-modal-foreground);
   width: 565px;
   height: 25rem;
+  resize: both;
+  padding-bottom: 10px;
+  min-width: 350px;
+  min-height: 120px;
 }
 
 .sa-debugger-interface [class*="card_header-buttons_"] {
-  background-color: #29beb8;
-  border-color: #3aa8a4;
+  background-color: var(--looks-secondary);
+  border-color:var(--looks-transparent);
 }
 
 .sa-debugger-interface h1 {
@@ -276,4 +281,141 @@
 }
 .sa-debugger-compiler-warning[hidden] {
   display: none;
+}
+
+.sa-debugger-variables {
+  display: block;
+  padding: 10px;
+}
+
+.sa-debugger-variables-searchbox {
+  background-image: url(./icons/search.svg);
+  width: calc(100% - 40px);
+  margin-bottom: 8px;
+  padding: 8px;
+  padding-right: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--ui-black-transparent);
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  background-position: calc(100% - 7px) center;
+  font-size: 0.75rem;
+}
+
+[dir="rtl"] .sa-debugger-variables-searchbox {
+  padding-right: 8px;
+  padding-left: 32px;
+  background-position: 7px center;
+}
+
+.sa-debugger-variables.freeze .sa-debugger-variables-value *,
+.sa-debugger-variables.freeze .sa-debugger-variables-name * {
+  opacity: 0.5;
+}
+
+.sa-debugger-variables.freeze input:focus,
+.sa-debugger-variables.freeze textarea:focus {
+  opacity: 1;
+}
+
+.sa-debugger-variables-heading {
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.sa-debugger-variables-name {
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sa-debugger-variables .sa-debugger-variables-value {
+  width: 75%;
+}
+
+.sa-debugger-variables * > input {
+  background: none;
+  border: none;
+  padding: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.sa-debugger-variables-value > textarea {
+  background: none;
+  border: none;
+  padding: 4px;
+  width: 100%;
+  height: 100%;
+  line-height: 1.5em;
+  resize: none;
+  font-family: monospace;
+}
+
+.sa-debugger-variables-too-big {
+  display: none;
+  cursor: pointer;
+  font: inherit;
+  font-style: italic;
+  color: inherit;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 4px;
+  opacity: 0.8;
+  width: 100%;
+  text-align: left;
+}
+.sa-debugger-variables-too-big:hover {
+  text-decoration: underline;
+}
+[data-too-big="true"] .sa-debugger-variables-too-big {
+  display: block;
+}
+[data-too-big="true"] .sa-debugger-variables-value-input {
+  display: none;
+}
+
+.sa-debugger-variables table {
+  border-radius: 5px;
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.sa-debugger-variables td {
+  border: 1px solid var(--ui-black-transparent);
+  text-align: left;
+  padding: 2px;
+}
+
+.sa-debugger-variables-favorite {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.sa-debugger-variables-favorite:hover {
+  opacity: 1;
+}
+
+.sa-debugger-variables-favorite-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }

@@ -4,8 +4,9 @@ import PropTypes from 'prop-types';
 import log from './log';
 import {getIsShowingProject} from '../reducers/project-state';
 
-const PACKAGER_URL = 'https://packager.turbowarp.org';
+const PACKAGER_URL = 'https://editors.astras.top/packager/';
 const PACKAGER_ORIGIN = PACKAGER_URL;
+// 不删除，以后可能会加回来
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
     class PackagerIntegrationComponent extends React.Component {
@@ -25,10 +26,13 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 window.open(`${PACKAGER_URL}/?import_from=${location.origin}`);
             }
         }
-        handleMessage (e) {
+        handleMessage(e) {
+            /*
             if (e.origin !== PACKAGER_ORIGIN) {
-                return;
+                 return;
             }
+            这里不检查origin是因为在开发环境下packager可能会被运行在localhost:3000以外的地址上，而我们想让它能正常工作
+            */
 
             if (!this.props.canOpenPackager) {
                 return;

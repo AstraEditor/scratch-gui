@@ -1,10 +1,16 @@
 import BlockItem from "./blockly/BlockItem.js";
 import BlockInstance from "./blockly/BlockInstance.js";
 import Utils from "./blockly/Utils.js";
+import icon from "!../../../lib/tw-recolor/build!./icon.svg"
 
 export default async function ({ addon, msg, console }) {
   const Blockly = await addon.tab.traps.getBlockly();
-
+  let VSCodeLayout
+  try {
+    VSCodeLayout = JSON.parse(localStorage.getItem('AESettings')).EnableVSCodeLayout;
+  } catch (e) {
+    VSCodeLayout = false;
+  }
   class FindBar {
     constructor() {
       this.utils = new Utils(addon);
@@ -48,6 +54,31 @@ export default async function ({ addon, msg, console }) {
 
       this.dropdownOut.appendChild(this.dropdown.createDom());
 
+      // 在 VSCode 布局下，搜索栏默认隐藏并使用绝对定位
+      if (VSCodeLayout) {
+        this.findBarOuter.classList.add("sa-find-bar-float");
+        this.findBarOuter.style.display = "none";
+      }
+
+      this.findBarButton = document.createElement("Button");
+      this.findBarButtonText = document.createElement("img");
+      this.findBarButtonText.className = "sa-find-bar-button-text";
+      this.findBarButtonText.src = icon();
+      this.findBarButtonText.style.filter = "grayscale(100%)";
+      this.findBarButton.appendChild(this.findBarButtonText)
+      this.findBarButton.className = "sa-find-bar-button";
+      this.findBarButton.addEventListener("click", () => {
+        if (VSCodeLayout) {
+          // VSCode 布局下，点击按钮显示搜索栏
+          this.findBarOuter.style.display = "flex";
+          this.findInput.focus();
+        } else {
+          this.findInput.focus();
+        }
+      });
+
+      if (VSCodeLayout) root.appendChild(this.findBarButton);
+
       this.bindEvents();
       this.tabChanged();
     }
@@ -56,7 +87,13 @@ export default async function ({ addon, msg, console }) {
       this.findInput.addEventListener("focus", () => this.inputChange());
       this.findInput.addEventListener("keydown", (e) => this.inputKeyDown(e));
       this.findInput.addEventListener("keyup", () => this.inputChange());
-      this.findInput.addEventListener("focusout", () => this.hideDropDown());
+      this.findInput.addEventListener("focusout", () => {
+        this.hideDropDown();
+        // 在 VSCode 布局下，失去焦点时隐藏搜索栏
+        if (VSCodeLayout) {
+          this.findBarOuter.style.display = "none";
+        }
+      });
     }
 
     tabChanged() {
@@ -66,6 +103,10 @@ export default async function ({ addon, msg, console }) {
       const tab = addon.tab.redux.state.scratchGui.editorTab.activeTabIndex;
       const visible = tab === 0 || tab === 1 || tab === 2;
       this.findBarOuter.hidden = !visible;
+      // 在 VSCode 布局下，标签切换时隐藏搜索栏
+      if (VSCodeLayout) {
+        this.findBarOuter.style.display = "none";
+      }
     }
 
     inputChange() {
@@ -123,6 +164,10 @@ export default async function ({ addon, msg, console }) {
         } else {
           this.findInput.blur();
         }
+        // 在 VSCode 布局下，按下 Escape 键时隐藏搜索栏
+        if (VSCodeLayout) {
+          this.findBarOuter.style.display = "none";
+        }
         e.preventDefault();
         return;
       }
@@ -135,6 +180,10 @@ export default async function ({ addon, msg, console }) {
 
       if (e.key.toLowerCase() === "f" && ctrlKey && !e.shiftKey) {
         // Ctrl + F (Override default Ctrl+F find)
+        // 在 VSCode 布局下，按下 Ctrl+F 时显示搜索栏
+        if (VSCodeLayout) {
+          this.findBarOuter.style.display = "flex";
+        }
         this.findInput.focus();
         this.findInput.select();
         e.cancelBubble = true;
@@ -831,7 +880,7 @@ export default async function ({ addon, msg, console }) {
   });
 
   while (true) {
-    const root = await addon.tab.waitForElement("ul[class*=gui_tab-list_]", {
+    const root = await addon.tab.waitForElement("div[class*=findBar]", { //改了匹配路径让它能到readme的左边
       markAsSeen: true,
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,

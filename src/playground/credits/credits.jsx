@@ -3,17 +3,17 @@ import PropTypes from 'prop-types';
 import render from '../app-target';
 import styles from './credits.css';
 
-import {APP_NAME} from '../../lib/brand';
-import {applyGuiColors} from '../../lib/themes/guiHelpers';
-import {detectTheme} from '../../lib/themes/themePersistance';
+import { APP_NAME } from '../../lib/brand';
+import { applyGuiColors } from '../../lib/themes/guiHelpers';
+import { detectTheme } from '../../lib/themes/themePersistance';
 import UserData from './users';
-
+import AEUserData from './ae-users';
 /* eslint-disable react/jsx-no-literals */
 
 applyGuiColors(detectTheme());
 document.documentElement.lang = 'en';
 
-const User = ({image, text, href}) => (
+const User = ({ image, text, href }) => (
     <a
         href={href}
         target="_blank"
@@ -38,7 +38,7 @@ User.propTypes = {
     href: PropTypes.string
 };
 
-const UserList = ({users}) => (
+const UserList = ({ users }) => (
     <div className={styles.users}>
         {users.map((data, index) => (
             <User
@@ -67,16 +67,52 @@ const Credits = () => (
         {APP_NAME !== 'TurboWarp' && (
             // Be kind and considerate. Don't remove this :)
             <section>
-                <h2>TurboWarp</h2>
+                <h2>About</h2>
                 <p>
                     {APP_NAME} is based on <a href="https://turbowarp.org/">TurboWarp</a>.
                 </p>
+
             </section>
+
         )}
+        <section>
+            <p>
+                AstraEditor is a modified project based on TurboWarp, but it is not affiliated with other derivative editors or TurboWarp. We extend our sincere gratitude to GarboMuffin, the creator of TurboWarp, and all the volunteers for their outstanding contributions to TurboWarp.
+            </p>
+        </section>
+        <section>
+            <h2>Contributors</h2>
+            <UserList users={AEUserData.contributors} />
+        </section>
+        <section>
+            <h2>Logo</h2>
+            <UserList users={AEUserData.logo} />
+        </section>
+        <section>
+            <h2>Website</h2>
+            <UserList users={AEUserData.website} />
+        </section>
+        <h4 style={{
+            textAlign: "center"
+        }}>
+            The creation of some functions also relies on the collaboration of artificial intelligence(AI)!
+        </h4>
+
+
+        <header className={styles.headerContainerTurboWarp}>
+            <h1 className={styles.headerText}>
+                TurboWarp Credits
+            </h1>
+        </header>
+        <section>
+            <p>
+                The TurboWarp project is made possible by the work of many volunteers.
+            </p>
+        </section>
         <section>
             <h2>Scratch</h2>
             <p>
-                {APP_NAME} is based on the work of the <a href="https://scratch.mit.edu/credits">Scratch contributors</a> but is not endorsed by Scratch in any way.
+                TurboWarp is based on the work of the <a href="https://scratch.mit.edu/credits">Scratch contributors</a> but is not endorsed by Scratch in any way.
             </p>
             <p>
                 <a href="https://scratch.mit.edu/donate">
@@ -103,7 +139,7 @@ const Credits = () => (
         <section>
             <h2>Translators</h2>
             <p>
-                More than 100 people have helped translate {APP_NAME} and its addons into many languages
+                More than 100 people have helped translate TurboWarp and its addons into many languages
                 &mdash; far more than we could hope to list here.
             </p>
         </section>

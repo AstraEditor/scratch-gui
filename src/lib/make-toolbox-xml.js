@@ -355,6 +355,14 @@ const sound = function (isInitialSetup, isStage, targetId, soundName, colors) {
 };
 
 const events = function (isInitialSetup, isStage, targetId, colors) {
+    const hiddenBlocksTitle = translate(
+        'HIDDENBLOCKS_TITLE',
+        'Hidden Blocks of Scratch'
+    );
+    const hiddenBlocksIntro = translate(
+        'HIDDENBLOCKS_INTRO',
+        'They are not displayed by default'
+    )
     // Note: the category's secondaryColour matches up with the blocks' tertiary color, both used for border color.
     return `
     <category name="%{BKY_CATEGORY_EVENTS}" id="events" colour="${colors.primary}" secondaryColour="${colors.tertiary}">
@@ -390,12 +398,24 @@ const events = function (isInitialSetup, isStage, targetId, colors) {
             </value>
         </block>
         ${categorySeparator}
+        <label text="${hiddenBlocksTitle}"></label>
+        <label text="${hiddenBlocksIntro}"></label>
+        <block type="event_whentouchingobject"><value name="TOUCHINGOBJECTMENU"><shadow type="sensing_touchingobjectmenu"/></value></block>
     </category>
     `;
 };
 
 const control = function (isInitialSetup, isStage, targetId, colors) {
     // Note: the category's secondaryColour matches up with the blocks' tertiary color, both used for border color.
+    const hiddenBlocksTitle = translate(
+        'HIDDENBLOCKS_TITLE',
+        'Hidden Blocks of Scratch'
+    );
+    const hiddenBlocksIntro = translate(
+        'HIDDENBLOCKS_INTRO',
+        'They are not displayed by default'
+    );
+
     return `
     <category
         name="%{BKY_CATEGORY_CONTROL}"
@@ -443,6 +463,17 @@ const control = function (isInitialSetup, isStage, targetId, colors) {
             <block type="control_delete_this_clone"/>
         `}
         ${categorySeparator}
+        ${blockSeparator}
+        <label text="${hiddenBlocksTitle}"></label>
+        <label text="${hiddenBlocksIntro}"></label>
+        <block type="control_for_each">
+            <value name="VALUE"><shadow type="math_whole_number"><field name="NUM">10</field></shadow></value>
+        </block>
+        ${blockSeparator}
+        <block id="control_get_counter" type="control_get_counter"/>
+        <block type="control_incr_counter"/>
+        <block type="control_clear_counter"/>
+
     </category>
     `;
 };

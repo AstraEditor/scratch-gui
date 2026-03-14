@@ -30,7 +30,7 @@ export default async ({ addon, console, msg }) => {
     const getOptions = () => {
       const { backdrop, container, content, closeButton, remove } = addon.tab.createModal(msg("option-title"), {
         isOpen: true,
-        useEditorClasses: true,
+        useEditorClasses: true
       });
       container.classList.add("mediaRecorderPopup");
       content.classList.add("mediaRecorderPopupContent");
@@ -230,7 +230,11 @@ export default async ({ addon, console, msg }) => {
       } else {
         recorder.onstop = () => {
           const blob = new Blob(recordBuffer, { type: mimeType });
-          downloadBlob(`${addon.tab.redux.state?.preview?.projectInfo?.title || "video"}.${fileExtension}`, blob);
+          const reduxState = addon.tab.redux.state;
+    const preview = reduxState && reduxState.preview;
+    const projectInfo = preview && preview.projectInfo;
+    const title = projectInfo && projectInfo.title;
+    downloadBlob(`${title || "video"}.${fileExtension}`, blob);
           disposeRecorder();
         };
         recorder.stop();

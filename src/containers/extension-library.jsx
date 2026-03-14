@@ -2,18 +2,25 @@ import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
 import VM from 'scratch-vm';
-import {defineMessages, injectIntl, intlShape} from 'react-intl';
+import { defineMessages, injectIntl, intlShape } from 'react-intl';
 import log from '../lib/log';
 
 import extensionLibraryContent, {
-    galleryError,
-    galleryLoading,
-    galleryMore
+    galleryError as galleryTwError,
+    galleryLoading as galleryTwLoading,
+    galleryMore as galleryTwMore,
+    aeGalleryError as galleryAeError,
+    aeGalleryMore as galleryAeMore
 } from '../lib/libraries/extensions/index.jsx';
 import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
+
+const extensionsLibs = [
+    { id: "tw", url: "https://extensions.turbowarp.org/" },
+    { id: "ae", url: "https://editors.astras.top/extensions" },
+]
 
 const messages = defineMessages({
     extensionTitle: {
@@ -40,63 +47,115 @@ const translateGalleryItem = (extension, locale) => ({
 });
 
 let cachedGallery = null;
+let cachedTwError = false;
+let cachedAeError = false;
 
 const fetchLibrary = async () => {
-    const res = await fetch('https://extensions.turbowarp.org/generated-metadata/extensions-v0.json');
-    if (!res.ok) {
-        throw new Error(`HTTP status ${res.status}`);
-    }
-    const data = await res.json();
-    return data.extensions.map(extension => ({
-        name: extension.name,
-        nameTranslations: extension.nameTranslations || {},
-        description: extension.description,
-        descriptionTranslations: extension.descriptionTranslations || {},
-        extensionId: extension.id,
-        extensionURL: `https://extensions.turbowarp.org/${extension.slug}.js`,
-        iconURL: `https://extensions.turbowarp.org/${extension.image || 'images/unknown.svg'}`,
-        tags: ['tw'],
-        credits: [
-            ...(extension.original || []),
-            ...(extension.by || [])
-        ].map(credit => {
-            if (credit.link) {
-                return (
-                    <a
-                        href={credit.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        key={credit.name}
-                    >
-                        {credit.name}
-                    </a>
-                );
+    const getExtLists = extensionsLibs.map(async (item) => {
+        try {
+            const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
+            if (!res.ok) {
+                return { id: item.id, error: true };
             }
-            return credit.name;
-        }),
-        docsURI: extension.docs ? `https://extensions.turbowarp.org/${extension.slug}` : null,
-        samples: extension.samples ? extension.samples.map(sample => ({
-            href: `${process.env.ROOT}editor?project_url=https://extensions.turbowarp.org/samples/${encodeURIComponent(sample)}.sb3`,
-            text: sample
-        })) : null,
-        incompatibleWithScratch: !extension.scratchCompatible,
-        featured: true
-    }));
+            const data = await res.json();
+            return { id: item.id, data, error: false };
+        } catch (e) {
+            return { id: item.id, error: true };
+        }
+    });
+
+    const results = await Promise.all(getExtLists);
+    console.log(results);
+    
+    let extensionsData = {
+        "extensions": []
+    };
+    
+    results.forEach((result, index) => {
+        if (result.error) {
+            if (result.id === 'tw') {
+                cachedTwError = true;
+            } else if (result.id === 'ae') {
+                cachedAeError = true;
+            }
+            return;
+        }
+        
+        extensionsData.extensions.push(extensionsLibs[index]);
+        result.data.extensions.forEach(extension => {
+            extensionsData.extensions.push(extension);
+        });
+    })
+
+
+    const returnData = []
+    let tag = "";
+    let link = "";
+    extensionsData.extensions.forEach((extension, index) => {
+        if (extension.id !== undefined && extension.url !== undefined) {
+            tag = extension.id; //平台
+            link = extension.url //链接
+        } else { //扩展
+            returnData.push({
+                name: extension.name,
+                nameTranslations: extension.nameTranslations || {},
+                description: extension.description,
+                descriptionTranslations: extension.descriptionTranslations || {},
+                extensionId: extension.id,
+                extensionURL: `${link}/${extension.slug}.js`,
+                iconURL: extension.image ? `${link}/${extension.image}` : 'https://extensions.turbowarp.org/images/unknown.svg',
+                tags: [tag],
+                credits: [
+                    ...(extension.original || []),
+                    ...(extension.by || [])
+                ]
+                    .filter(credit => credit && typeof credit === 'object')
+                    .map(credit => {
+                        if (credit.link) {
+                            return (
+                                <a
+                                    href={credit.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    key={credit.name}
+                                >
+                                    {credit.name}
+                                </a>
+                            );
+                        }
+                        return credit.name;
+                    }),
+                docsURI: extension.docs ? `${link}/${extension.slug}` : null,
+                samples: extension.samples ? extension.samples.map(sample => ({
+                    href: `${process.env.ROOT}editor?project_url=${link}/samples/${encodeURIComponent(sample)}.sb3`,
+                    text: sample
+                })) : null,
+                incompatibleWithScratch: !extension.scratchCompatible,
+                featured: true
+            })
+        }
+    })
+    return {
+        gallery: returnData,
+        twError: cachedTwError,
+        aeError: cachedAeError
+    };
 };
 
 class ExtensionLibrary extends React.PureComponent {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'handleItemSelect'
         ]);
         this.state = {
             gallery: cachedGallery,
-            galleryError: null,
+            twGalleryError: null,
+            aeGalleryError: null,
             galleryTimedOut: false
         };
     }
-    componentDidMount () {
+    componentDidMount() {
         if (!this.state.gallery) {
             const timeout = setTimeout(() => {
                 this.setState({
@@ -105,23 +164,31 @@ class ExtensionLibrary extends React.PureComponent {
             }, 750);
 
             fetchLibrary()
-                .then(gallery => {
-                    cachedGallery = gallery;
+                .then(result => {
+                    cachedGallery = result.gallery;
                     this.setState({
-                        gallery
+                        gallery: result.gallery,
+                        twGalleryError: result.twError ? galleryTwError : null,
+                        aeGalleryError: result.aeError ? galleryAeError : null
                     });
                     clearTimeout(timeout);
                 })
                 .catch(error => {
                     log.error(error);
                     this.setState({
-                        galleryError: error
+                        twGalleryError: galleryTwError,
+                        aeGalleryError: galleryAeError
                     });
                     clearTimeout(timeout);
                 });
         }
     }
-    handleItemSelect (item) {
+    handleItemSelect(item) {
+        if (!item) {
+            log.error('handleItemSelect received undefined item');
+            return;
+        }
+
         if (item.href) {
             return;
         }
@@ -130,6 +197,11 @@ class ExtensionLibrary extends React.PureComponent {
 
         if (extensionId === 'custom_extension') {
             this.props.onOpenCustomExtensionModal();
+            return;
+        }
+
+        if (extensionId === 'upload_extension') {
+            window.open("./upload.html", "_blank");
             return;
         }
 
@@ -156,24 +228,42 @@ class ExtensionLibrary extends React.PureComponent {
             }
         }
     }
-    render () {
+    render() {
         let library = null;
-        if (this.state.gallery || this.state.galleryError || this.state.galleryTimedOut) {
+        if (this.state.gallery || this.state.twGalleryError || this.state.aeGalleryError || this.state.galleryTimedOut) {
             library = extensionLibraryContent.map(toLibraryItem);
             library.push('---');
-            if (this.state.gallery) {
-                library.push(toLibraryItem(galleryMore));
-                const locale = this.props.intl.locale;
+            
+            const locale = this.props.intl.locale;
+            
+            // TW 扩展区
+            if (this.state.twGalleryError) {
+                library.push(toLibraryItem(galleryTwError));
+            } else if (this.state.gallery) {
+                library.push(toLibraryItem(galleryTwMore));
                 library.push(
                     ...this.state.gallery
-                        .filter(i => i.extensionId !== 'faceSensing')
+                        .filter(i => i.tags.includes('tw') && i.extensionId !== 'faceSensing')
                         .map(i => translateGalleryItem(i, locale))
                         .map(toLibraryItem)
                 );
-            } else if (this.state.galleryError) {
-                library.push(toLibraryItem(galleryError));
             } else {
-                library.push(toLibraryItem(galleryLoading));
+                library.push(toLibraryItem(galleryTwLoading));
+            }
+            
+            // AE 扩展区
+            if (this.state.aeGalleryError) {
+                library.push(toLibraryItem(galleryAeError));
+            } else if (this.state.gallery) {
+                library.push(toLibraryItem(galleryAeMore));
+                library.push(
+                    ...this.state.gallery
+                        .filter(i => i.tags.includes('ae'))
+                        .map(i => translateGalleryItem(i, locale))
+                        .map(toLibraryItem)
+                );
+            } else {
+                library.push(toLibraryItem(galleryAeMore));
             }
         }
 

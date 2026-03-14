@@ -8,7 +8,7 @@ const manifest = {
     }
   ],
   "tags": [
-    "new"
+    "recommended"
   ],
   "enabledByDefault": false,
   "settings": [

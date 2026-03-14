@@ -13,13 +13,43 @@
   /* !important to override displayNoneWhileDisabled */
   display: none !important;
 }
-
+.sa-find-bar-float {
+  position: absolute !important;
+  z-index: 999;
+  top: 50px;
+  left: 10px;
+  width: auto !important;
+  max-width: 300px;
+  height: auto !important;
+  background-color: var(--ui-modal-background);
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 4px;
+  box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.3);
+}
+.sa-find-bar-button{
+  margin: 5px 0 !important;
+  border: 0;
+  background-color: #00000000;
+  width: 100%;
+  margin: 5px;
+}
+.sa-find-bar-button-text{
+  width: 25px;
+}
+.sa-find-bar-button[hidden] {
+  /* !important to override displayNoneWhileDisabled */
+  display: none !important;
+}
 .sa-find-wrapper {
   overflow: visible;
   position: relative;
   height: 2rem;
   width: 100%;
   max-width: 16em;
+}
+.sa-find-bar-float .sa-find-wrapper {
+  width: auto;
+  max-width: 250px;
 }
 
 .sa-find-dropdown-out {
@@ -33,14 +63,25 @@
   border: none;
   border-radius: 4px;
   margin-top: 6px;
+  transition: width 0.2s ease;
 }
 
 .sa-find-dropdown-out.visible {
-  position: absolute;
   width: 16em;
   box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.3);
   background-color: var(--ui-modal-background);
   outline: 1px solid var(--ui-black-transparent);
+}
+
+.sa-find-bar-float .sa-find-dropdown-out {
+  width: auto;
+  max-width: 250px;
+}
+.sa-find-bar-float .sa-find-dropdown-out.visible {
+  width: auto;
+  box-shadow: none;
+  background-color: var(--ui-modal-background);
+  outline: none;
 }
 
 /* We need to modify Scratch styles so that the place where the find bar is injected */
@@ -76,7 +117,6 @@
   font-size: 0.75rem;
   line-height: 1;
   overflow-y: auto;
-  min-height: 128px;
   max-height: 65vh;
   user-select: none;
   max-width: 100%;

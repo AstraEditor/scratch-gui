@@ -1,18 +1,25 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {FormattedMessage, defineMessages} from 'react-intl';
-import {connect} from 'react-redux';
+import { FormattedMessage, defineMessages } from 'react-intl';
+import { connect } from 'react-redux';
 
 import check from './check.svg';
 import dropdownCaret from './dropdown-caret.svg';
-import {MenuItem, Submenu} from '../menu/menu.jsx';
-import {ACCENT_BLUE, ACCENT_MAP, ACCENT_PURPLE, ACCENT_RED, ACCENT_RAINBOW, Theme} from '../../lib/themes/index.js';
-import {openAccentMenu, accentMenuOpen, closeSettingsMenu} from '../../reducers/menus.js';
-import {setTheme} from '../../reducers/theme.js';
-import {persistTheme} from '../../lib/themes/themePersistance.js';
+import { MenuItem, Submenu } from '../menu/menu.jsx';
+import { ACCENT_BLUE, ACCENT_MAP, ACCENT_PURPLE, ACCENT_RED, ACCENT_RAINBOW, ACCENT_AE, Theme, ACCENT_COSTOM, ACCENT_MIKU, ACCENT_CE, ACCENT_TY } from '../../lib/themes/index.js';
+import { openAccentMenu, accentMenuOpen, closeSettingsMenu } from '../../reducers/menus.js';
+import { setTheme } from '../../reducers/theme.js';
+import { persistTheme } from '../../lib/themes/themePersistance.js';
 import rainbowIcon from './tw-accent-rainbow.svg';
+import customIcon from './tw-accent-custom.svg';
 import styles from './settings-menu.css';
+
+import { openCustomTheme } from '../../reducers/modals';
+
+import {
+    closeEditMenu,
+} from '../../reducers/menus';
 
 const options = defineMessages({
     [ACCENT_RED]: {
@@ -30,17 +37,42 @@ const options = defineMessages({
         description: 'Name of the blue color scheme. Matches Scratch before the high contrast update.',
         id: 'tw.accent.blue'
     },
+    [ACCENT_AE]: {
+        defaultMessage: 'AstraEditor',
+        description: 'AstraEditor\' theme',
+        id: 'tw.accent.ae'
+    },
+    [ACCENT_CE]:{
+        defaultMessage: 'Cyberexplorer Pink',
+        description: 'Name of the Cyberexplorer pink',
+        id: 'tw.accent.cybere'
+    },
+    [ACCENT_MIKU]:{
+        defaultMessage: 'Miku Green',
+        description: 'Name of the Miku color',
+        id: 'tw.accent.miku'
+    },
+    [ACCENT_TY]:{
+        defaultMessage: 'Tianyi Blue',
+        description: 'Name of the tianyi color',
+        id: 'tw.accent.tianyi'
+    },
     [ACCENT_RAINBOW]: {
         defaultMessage: 'Rainbow',
         description: 'Name of color scheme that uses a rainbow.',
         id: 'tw.accent.rainbow'
-    }
+    },
+    [ACCENT_COSTOM]: {
+        defaultMessage: 'Costom',
+        description: 'Costom your theme',
+        id: 'tw.accent.custom'
+    },
+
 });
 
 const icons = {
     [ACCENT_RAINBOW]: rainbowIcon
 };
-
 const ColorIcon = props => (
     icons[props.id] ? (
         <img
@@ -50,7 +82,7 @@ const ColorIcon = props => (
             // Image is decorative
             alt=""
         />
-    ) : (
+    ) : props.id != "custom" ? (
         <div
             className={styles.accentIconOuter}
             style={{
@@ -59,6 +91,13 @@ const ColorIcon = props => (
                 backgroundImage: ACCENT_MAP[props.id].guiColors['menu-bar-background-image']
             }}
         />
+    ) : (
+                <img
+                    className={styles.accentIconOuter}
+                    src={customIcon}
+                    draggable={false}
+                    alt=""
+                />
     )
 );
 
@@ -70,7 +109,7 @@ const AccentMenuItem = props => (
     <MenuItem onClick={props.onClick}>
         <div className={styles.option}>
             <img
-                className={classNames(styles.check, {[styles.selected]: props.isSelected})}
+                className={classNames(styles.check, { [styles.selected]: props.isSelected })}
                 width={15}
                 height={12}
                 src={check}
@@ -93,6 +132,7 @@ const AccentThemeMenu = ({
     isRtl,
     onChangeTheme,
     onOpen,
+    onClickCustomThemeModal,
     theme
 }) => (
     <MenuItem expanded={isOpen}>
@@ -121,7 +161,10 @@ const AccentThemeMenu = ({
                     id={item}
                     isSelected={theme.accent === item}
                     // eslint-disable-next-line react/jsx-no-bind
-                    onClick={() => onChangeTheme(theme.set('accent', item))}
+                    onClick={() => {
+                        if (item == "custom") onClickCustomThemeModal()
+                        else onChangeTheme(theme.set('accent', item))
+                    }}
                 />
             ))}
         </Submenu>
@@ -132,6 +175,7 @@ AccentThemeMenu.propTypes = {
     isOpen: PropTypes.bool,
     isRtl: PropTypes.bool,
     onChangeTheme: PropTypes.func,
+    onClickCustomThemeModal: PropTypes.func,
     onOpen: PropTypes.func,
     theme: PropTypes.instanceOf(Theme)
 };
@@ -148,7 +192,11 @@ const mapDispatchToProps = dispatch => ({
         dispatch(closeSettingsMenu());
         persistTheme(theme);
     },
-    onOpen: () => dispatch(openAccentMenu())
+    onOpen: () => dispatch(openAccentMenu()),
+    onClickCustomThemeModal: () => {
+        dispatch(closeEditMenu());
+        dispatch(openCustomTheme());
+    },
 });
 
 export default connect(

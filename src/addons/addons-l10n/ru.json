@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "Очистить блоки +",
     "editor-devtools/copy-all": "Копировать все",
     "editor-devtools/copy-block": "Копировать блок",
@@ -74,7 +74,12 @@
     "debugger/tab-logs": "Логи",
     "debugger/tab-performance": "Производительность",
     "debugger/tab-threads": "Потоки",
+    "debugger/tab-variables": "Переменные",
     "debugger/thread": "Поток {id}",
+    "debugger/search": "Поиск",
+    "debugger/too-big": "Нажмите, чтобы отобразить очень большое значение.",
+    "debugger/for-all-sprites": "Переменные для всех спрайтов",
+    "debugger/for-this-sprite": "Переменные для этого спрайта",
     "debugger/unknown-sprite": "(неизвестный спрайт)",
     "debugger/unpause": "Продолжить",
     "pause/pause": "Пауза",

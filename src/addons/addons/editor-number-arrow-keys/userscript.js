@@ -158,7 +158,7 @@ export default async function ({ addon }) {
         inputMap.delete(e.target);
       } else {
         setTimeout(() => {
-          if (inputMap.get(e.target)?.time === currentTime) {
+          if (inputMap.get(e.target) && inputMap.get(e.target).time === currentTime) {
             flushInput();
             inputMap.delete(e.target);
           }

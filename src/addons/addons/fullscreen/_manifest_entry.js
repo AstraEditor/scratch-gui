@@ -21,7 +21,7 @@ const manifest = {
       "name": "Open full screen project player in full screen browser mode",
       "id": "browserFullscreen",
       "type": "boolean",
-      "default": true
+      "default": false
     },
     {
       "dynamic": true,
@@ -42,7 +42,7 @@ const manifest = {
           "id": "hide"
         }
       ],
-      "default": "show"
+      "default": "hover"
     }
   ],
   "dynamicDisable": true,
@@ -92,6 +92,6 @@ const manifest = {
   "tags": [
     "beta"
   ],
-  "enabledByDefault": false
+  "enabledByDefault": true
 };
 export default manifest;

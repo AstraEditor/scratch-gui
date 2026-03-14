@@ -63,7 +63,7 @@
 
 .sa-lock-object {
   display: var(--hideFlyout-lockDisplay) !important;
-  transform: translate(calc(var(--sa-flyout-width) - 15px - 32px), 3px);
+  transform: translate(calc(var(--sa-flyout-width) - 15px - 42px), 3px);
   width: 32px;
   height: 32px;
 }

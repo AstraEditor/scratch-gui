@@ -32,7 +32,9 @@ const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     devtool: process.env.SOURCEMAP || (process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map'),
     devServer: {
-        contentBase: path.resolve(__dirname, 'build'),
+        contentBase: [
+            path.resolve(__dirname, 'build')
+        ],
         host: '0.0.0.0',
         disableHostCheck: true,
         compress: true,
@@ -62,24 +64,37 @@ const base = {
         symlinks: false,
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
-            'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts')
+            'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts'),
+
+            // Ensure there is exactly one React instance in the bundle.
+            'react$': path.resolve(__dirname, 'node_modules/react'),
+            'react-dom$': path.resolve(__dirname, 'node_modules/react-dom')
         }
     },
     module: {
         rules: [{
             test: /\.jsx?$/,
             loader: 'babel-loader',
-            include: [
-                path.resolve(__dirname, 'src'),
-                /node_modules[\\/]scratch-[^\\/]+[\\/]src/,
-                /node_modules[\\/]pify/,
-                /node_modules[\\/]@vernier[\\/]godirect/
-            ],
+            include: function (filepath) {
+                // Always include src
+                if (filepath.includes(path.resolve(__dirname, 'src'))) return true;
+                // Include scratch-* packages
+                if (/node_modules[\\/]scratch-[^\\/]+[\\/]/.test(filepath)) return true;
+                // Include @turbowarp/scratch-l10n
+                if (/node_modules[\\/]@turbowarp[\\/]scratch-l10n[\\/]/.test(filepath)) return true;
+                // Include pify, @vernier/godirect, htmlparser2
+                if (/node_modules[\\/]pify/.test(filepath)) return true;
+                if (/node_modules[\\/]@vernier[\\/]godirect/.test(filepath)) return true;
+                if (/node_modules[\\/]htmlparser2/.test(filepath)) return true;
+                return false;
+            },
             options: {
                 // Explicitly disable babelrc so we don't catch various config
                 // in much lower dependencies.
                 babelrc: false,
                 plugins: [
+                    '@babel/plugin-proposal-nullish-coalescing-operator',
+                    '@babel/plugin-proposal-optional-chaining',
                     ['react-intl', {
                         messagesDir: './translations/messages/'
                     }]],
@@ -153,18 +168,18 @@ module.exports = [
             path: path.resolve(__dirname, 'build')
         },
         module: {
-            rules: base.module.rules.concat([
-                {
-                    test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
-                    loader: 'url-loader',
-                    options: {
-                        limit: 2048,
-                        outputPath: 'static/assets/',
-                        esModule: false
-                    }
-                }
-            ])
-        },
+                    rules: base.module.rules.concat([
+                        {
+                                    test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
+                                    loader: 'url-loader',
+                                    options: {
+                                        limit: 2048,
+                                        outputPath: 'static/assets/',
+                                        esModule: false
+                                    }
+                                }
+                    ])
+                },
         optimization: {
             splitChunks: {
                 chunks: 'all',

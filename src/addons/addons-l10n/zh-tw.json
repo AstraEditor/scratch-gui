@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "整理積木 +",
     "editor-devtools/copy-all": "複製全部",
     "editor-devtools/copy-block": "複製積木",
@@ -71,7 +71,12 @@
     "debugger/tab-logs": "紀錄",
     "debugger/tab-performance": "效能",
     "debugger/tab-threads": "執行緒",
+    "debugger/tab-variables": "變數",
     "debugger/thread": "執行緒 {id}",
+    "debugger/search": "搜尋",
+    "debugger/too-big": "單擊顯示非常大的值。",
+    "debugger/for-all-sprites": "所有角色的變數",
+    "debugger/for-this-sprite": "當前角色的變數",
     "debugger/unknown-sprite": "（未知角色）",
     "debugger/unpause": "繼續",
     "pause/pause": "暫停",

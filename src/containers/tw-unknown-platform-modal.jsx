@@ -22,7 +22,7 @@ class TWUnknownPlatformModal extends React.Component {
             this.setState({
                 canClose: true
             });
-        }, 1000);
+        }, 100);
     }
 
     handleClose () {

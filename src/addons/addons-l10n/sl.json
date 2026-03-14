@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "v nasprotni smeri urnega kazalca",
     "_general/blocks/clockwise": "v smeri urnega kazalca",
     "_general/blocks/green-flag": "zastavico",
@@ -77,7 +77,12 @@
     "debugger/tab-logs": "Zapiski",
     "debugger/tab-performance": "Učinkovitost",
     "debugger/tab-threads": "Niti",
+    "debugger/tab-variables": "Spremenljivke",
     "debugger/thread": "Nit {id}",
+    "debugger/search": "Iskanje",
+    "debugger/too-big": "Kliknite za prikaz zelo velike vrednosti.",
+    "debugger/for-all-sprites": "Spremenljivke za vse figure",
+    "debugger/for-this-sprite": "Spremenljivke za to figuro",
     "debugger/unknown-sprite": "(neznana figura)",
     "debugger/unpause": "Nadaljuj",
     "pause/pause": "Premor",

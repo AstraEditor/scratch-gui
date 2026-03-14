@@ -26,7 +26,7 @@ export const initialState = {
     highQualityPen: false,
     compilerOptions: {
         enabled: true,
-        warpTimer: false
+        warpTimer: false // 为啥这里是默认禁用？
     },
     runtimeOptions: {
         maxClones: 300,

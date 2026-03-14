@@ -1,0 +1,372 @@
+/* 分析按钮样式 */
+.sa-analyze-button {
+  display: flex;
+  justify-items: center;
+  align-items: center;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: var(--ui-white);
+  border-width: 1px;
+  border-style: solid;
+  color: var(--text-primary);
+  border-color: var(--ui-black-transparent);
+  padding: 0.2rem 0.5rem;
+  margin: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  white-space: nowrap;
+  width: auto;
+  height: 1.5rem;
+  margin-left: 10px;
+}
+
+.sa-analyze-button:hover {
+  border-color: var(--motion-primary);
+}
+
+/* VSCode 布局下的分析按钮样式 */
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button {
+  width: 40px;
+  height: 30px;
+  font-size: 0;
+  background-color: #00000000;
+  border: 0;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 10px !important;
+
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* 模态框样式 */
+.sa-analyze-modal-popup {
+  max-width: 90%;
+  max-height: 90vh;
+  width: 900px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-analyze-modal-popup [class*="modal_header"] {
+  padding: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sa-analyze-modal-popup [class*="modal_header-item-title"] {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sa-analyze-modal-content {
+  padding: 0;
+  overflow: hidden;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-analyze-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  height: 100%;
+}
+
+.sa-analyze-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--ui-primary);
+  animation: sa-analyze-spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes sa-analyze-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sa-analyze-results {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* 模态框主体样式 */
+.sa-analyze-modal-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 节样式 */
+.sa-analyze-section {
+  background: var(--ui-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.sa-analyze-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* 统计网格样式 */
+.sa-analyze-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.sa-analyze-stat {
+  background: var(--ui-white);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sa-analyze-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sa-analyze-stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--motion-primary);
+  margin-bottom: 8px;
+}
+
+.sa-analyze-stat-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
+/* 行和列样式 */
+.sa-analyze-row {
+  display: flex;
+  gap: 20px;
+}
+
+.sa-analyze-col-6 {
+  flex: 1;
+}
+
+/* 图表容器样式 */
+.sa-analyze-chart-container {
+  background: var(--ui-white);
+  border-radius: 8px;
+  padding: 16px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 评分详情样式 */
+.sa-analyze-score-details {
+  background: var(--ui-white);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sa-analyze-score-summary {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sa-analyze-score-summary h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sa-analyze-score-level {
+  font-size: 14px;
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
+.sa-analyze-score-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.sa-analyze-score-label {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.sa-analyze-score-bar {
+  flex: 2;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sa-analyze-score-fill {
+  height: 100%;
+  background: var(--motion-primary);
+  transition: width 0.3s ease;
+}
+
+.sa-analyze-score-value {
+  width: 40px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 扩展列表样式 */
+.sa-analyze-extensions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.sa-analyze-extension-item {
+  background: var(--ui-white);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sa-analyze-extension-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sa-analyze-extension-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sa-analyze-extension-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.sa-analyze-extension-count {
+  font-size: 12px;
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+/* 滚动条样式 */
+.sa-analyze-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sa-analyze-results::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.sa-analyze-results::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.sa-analyze-results::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .sa-analyze-modal-popup {
+    max-width: 95%;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+  }
+  
+  .sa-analyze-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  
+  .sa-analyze-stat {
+    padding: 12px;
+  }
+  
+  .sa-analyze-stat-value {
+    font-size: 20px;
+  }
+  
+  .sa-analyze-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .sa-analyze-chart-container {
+    height: 250px;
+  }
+  
+  .sa-analyze-extensions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sa-analyze-button {
+    font-size: 12px;
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sa-analyze-section {
+    padding: 16px;
+  }
+  
+  .sa-analyze-results {
+    padding: 16px;
+  }
+  
+  .sa-analyze-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

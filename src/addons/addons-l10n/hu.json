@@ -1,4 +1,4 @@
-{
+﻿{
     "editor-devtools/clean-plus": "Rendrakás +",
     "editor-devtools/copy-all": "Összes Másolása",
     "editor-devtools/copy-block": "Blokk Másolása",
@@ -77,7 +77,12 @@
     "debugger/tab-logs": "Napló",
     "debugger/tab-performance": "Teljesítmény",
     "debugger/tab-threads": "Szálak",
+    "debugger/tab-variables": "Változók",
     "debugger/thread": "Szál {id}",
+    "debugger/search": "Keresés",
+    "debugger/too-big": "Kattintson a nagyon nagy érték megjelenítéséhez.",
+    "debugger/for-all-sprites": "Változók minden szereplőnek",
+    "debugger/for-this-sprite": "Változók ennek a szereplőnek",
     "debugger/unknown-sprite": "(névtelen szereplő)",
     "debugger/unpause": "Visszatérés",
     "pause/pause": "Megállítás",

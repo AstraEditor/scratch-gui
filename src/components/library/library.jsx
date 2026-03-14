@@ -31,7 +31,6 @@ const messages = defineMessages({
 
 const ALL_TAG = {tag: 'all', intlLabel: messages.allTag};
 const tagListPrefix = [ALL_TAG];
-
 class LibraryComponent extends React.Component {
     constructor (props) {
         super(props);
@@ -229,13 +228,7 @@ class LibraryComponent extends React.Component {
                     }
                 }
                 if (dataItem.description) {
-                    if (typeof dataItem.description === 'string') {
-                        search.push(dataItem.description);
-                    } else {
-                        search.push(this.props.intl.formatMessage(dataItem.description.props, {
-                            APP_NAME
-                        }));
-                    }
+                    search.push(dataItem.description);
                 }
                 return search
                     .join('\n')

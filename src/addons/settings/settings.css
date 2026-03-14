@@ -348,8 +348,13 @@ a:active, a:focus {
 }
 .tag-new {
     color: white;
-    background: #b117f8;
-    border-color: #6f0073;
+    background: #e77000;
+    border-color: #b35600;
+}
+.tag-not-compatible {
+    color: white;
+    background: #d400ff;
+    border-color: #9800b6;
 }
 .tag-danger {
     color: white;

@@ -13,6 +13,10 @@ import _asset9 from "!url-loader!./icons/step.svg";
 import _asset10 from "!url-loader!./icons/subthread.svg";
 import _asset11 from "!url-loader!./icons/threads.svg";
 import _asset12 from "!url-loader!./icons/warning.svg";
+import _asset13 from "!url-loader!./icons/variables.svg";
+import _asset14 from "!url-loader!./icons/favorites.svg";
+import _asset15 from "!url-loader!./icons/favorited.svg";
+
 export const resources = {
   "userscript.js": _js,
   "style.css": _css,
@@ -28,4 +32,7 @@ export const resources = {
   "icons/subthread.svg": _asset10,
   "icons/threads.svg": _asset11,
   "icons/warning.svg": _asset12,
+  "icons/variables.svg": _asset13,
+  "icons/favorites.svg": _asset14,
+  "icons/favorited.svg": _asset15
 };

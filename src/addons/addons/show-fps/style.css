@@ -1,0 +1,27 @@
+.fps-container-container {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  -webkit-user-select: none;
+  user-select: none;
+  width: 60px;
+  justify-content: center;
+  position: relative;
+}
+
+.fps-container {
+  font-size: 0.6rem;
+  font-weight: bold;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #82c1ff;
+  white-space: nowrap;
+}
+
+/* Use pseudo elements to avoid firing mutation observers by just moving the cursor */
+.fps-container > span::after {
+  content: attr(data-content);
+}
+
+.sa-small-stage .fps-container-container {
+  display: none !important;
+}

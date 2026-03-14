@@ -88,7 +88,7 @@ const manifest = {
       }
     }
   ],
-  "settings": [
+    "settings": [
     {
       "dynamic": true,
       "name": "motion",
@@ -191,50 +191,38 @@ const manifest = {
       }
     },
     {
-      "dynamic": true,
-      "name": "Block inputs",
-      "id": "input-color",
-      "type": "color",
-      "default": "#FFFFFF",
-      "allowTransparency": true
+        "dynamic": true,
+        "name": "input color",
+        "id": "input-color",
+        "type": "color",
+        "default": "#FFFFFF",
+        "allowTransparency": true
     },
     {
-      "dynamic": true,
-      "name": "Comments",
-      "id": "comment-color",
-      "type": "color",
-      "default": "#FEF49C"
+        "dynamic": true,
+        "name": "comment color",
+        "id": "comment-color",
+        "type": "color",
+        "default": "#FEF49C",
+        "allowTransparency": true
     },
     {
-      "dynamic": true,
-      "name": "Text color",
+      "name": "text",
       "id": "text",
       "type": "select",
       "default": "white",
       "potentialValues": [
-        {
-          "id": "white",
-          "name": "White"
-        },
-        {
-          "id": "black",
-          "name": "Black"
-        },
-        {
-          "id": "colorOnWhite",
-          "name": "Colored on white background"
-        },
-        {
-          "id": "colorOnBlack",
-          "name": "Colored on black background"
-        }
+        {"id": "white", "name": "White"},
+        {"id": "black", "name": "Black"},
+        {"id": "colorOnWhite", "name": "Color on White"},
+        {"id": "colorOnBlack", "name": "Color on Black"}
       ]
     }
   ],
   "tags": [
     "theme"
   ],
-  "enabledByDefault": false,
+  "enabledByDefault": true,
   "presets": [
     {
       "name": "High contrast",

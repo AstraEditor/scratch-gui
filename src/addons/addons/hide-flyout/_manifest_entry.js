@@ -114,11 +114,12 @@ const manifest = {
       "name": "Open by default",
       "id": "lockLoad",
       "type": "boolean",
-      "default": false
+      "default": true
     }
   ],
   "tags": [
     "recommended"
-  ]
+  ],
+  "enabledByDefault": true
 };
 export default manifest;

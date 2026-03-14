@@ -1,15 +1,24 @@
 import React from 'react';
-import {FormattedMessage, injectIntl, intlShape, defineMessages} from 'react-intl';
-import {connect} from 'react-redux';
+import { FormattedMessage, injectIntl, intlShape, defineMessages } from 'react-intl';
+import { connect } from 'react-redux';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
 import styles from './loader.css';
-import {getIsLoadingWithId} from '../../reducers/project-state';
-import topBlock from './top-block.svg';
-import middleBlock from './middle-block.svg';
-import bottomBlock from './bottom-block.svg';
+import { getIsLoadingWithId} from '../../reducers/project-state';
+import Tips from '../../lib/default-project/titles.json'
+const returnRandomText = () => {
+	const userName = localStorage.getItem('tw:username') || '创作者'
 
+	const titles = Tips
+
+	if (!titles || titles.length === 0) {
+		return '你好世界'
+	}
+
+	const randomTitle = titles[Math.floor(Math.random() * titles.length)]
+	return randomTitle.replace('${UserName}', userName)
+}
 const mainMessages = {
     'gui.loader.headline': (
         <FormattedMessage
@@ -49,7 +58,7 @@ const messages = defineMessages({
 // process and React updates are very slow, we bypass React for updating the progress bar.
 
 class LoaderComponent extends React.Component {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'handleAssetProgress',
@@ -61,7 +70,7 @@ class LoaderComponent extends React.Component {
         this.messageEl = null;
         this.ignoreProgress = false;
     }
-    componentDidMount () {
+componentDidMount() {
         this.handleAssetProgress(
             this.props.vm.runtime.finishedAssetRequests,
             this.props.vm.runtime.totalAssetRequests
@@ -69,11 +78,11 @@ class LoaderComponent extends React.Component {
         this.props.vm.on('ASSET_PROGRESS', this.handleAssetProgress);
         this.props.vm.runtime.on('PROJECT_LOADED', this.handleProjectLoaded);
     }
-    componentWillUnmount () {
+    componentWillUnmount() {
         this.props.vm.off('ASSET_PROGRESS', this.handleAssetProgress);
         this.props.vm.runtime.off('PROJECT_LOADED', this.handleProjectLoaded);
     }
-    handleAssetProgress (finished, total) {
+        handleAssetProgress(finished, total) {
         if (this.ignoreProgress || !this.barInnerEl || !this.messageEl) {
             return;
         }
@@ -91,7 +100,7 @@ class LoaderComponent extends React.Component {
             });
         }
     }
-    handleProjectLoaded () {
+    handleProjectLoaded() {
         if (this.ignoreProgress || !this.barInnerEl || !this.messageEl) {
             return;
         }
@@ -99,54 +108,58 @@ class LoaderComponent extends React.Component {
         this.ignoreProgress = true;
         this.props.vm.runtime.resetProgress();
     }
-    barInnerRef (barInner) {
+    barInnerRef(barInner) {
         this.barInnerEl = barInner;
     }
-    messageRef (message) {
+    messageRef(message) {
         this.messageEl = message;
     }
-    render () {
+    
+    render() {
+        const circle1Id = styles.circle_1 || styles.circle1 || 'circle_1';
+        const circle2Id = styles.circle_2 || styles.circle2 || 'circle_2';
+        const circle3Id = styles.circle_3 || styles.circle3 || 'circle_3';
         return (
             <div
                 className={classNames(styles.background, {
                     [styles.fullscreen]: this.props.isFullScreen
-                })}
+                }, {
+                    [styles.fadeOut]: this.props.isExiting
+                }, this.props.className)}
             >
                 <div className={styles.container}>
-                    <div className={styles.blockAnimation}>
-                        <img
-                            className={styles.topBlock}
-                            src={topBlock}
-                            draggable={false}
-                        />
-                        <img
-                            className={styles.middleBlock}
-                            src={middleBlock}
-                            draggable={false}
-                        />
-                        <img
-                            className={styles.bottomBlock}
-                            src={bottomBlock}
-                            draggable={false}
-                        />
+
+                    <div className={styles.logoLoader}>
+                        <div className={styles.circle} id={circle1Id}></div>
+                        <div className={styles.circle} id={circle2Id}></div>
+                        <div className={styles.circle} id={circle3Id}></div>
                     </div>
-
-                    <div className={styles.title}>
-                        {mainMessages[this.props.messageId]}
-                    </div>
-
-                    <div
-                        className={styles.message}
-                        ref={this.messageRef}
-                    />
-
-                    <div className={styles.barOuter}>
+                    <div style={{
+                        textAlign: "right"
+                    }}>
+                        <div className={styles.title}>
+                            {mainMessages[this.props.messageId]}{!(!this.props.projectTitle && this.props.projectTitle == "") && (<span>
+                                :"{this.props.projectTitle}"
+                            </span>)}
+                        </div>
                         <div
-                            className={styles.barInner}
-                            ref={this.barInnerRef}
+                            className={styles.message}
+                            ref={this.messageRef}
                         />
+
+                        <div className={styles.barOuter}>
+                            <div
+                                className={styles.barInner}
+                                ref={this.barInnerRef}
+                            />
+                        </div>
+                        <div className={styles.Tips}>
+                            {returnRandomText()}
+                        </div>
                     </div>
+                    
                 </div>
+                
             </div>
         );
     }
@@ -154,9 +167,11 @@ class LoaderComponent extends React.Component {
 
 LoaderComponent.propTypes = {
     intl: intlShape,
+    isExiting: PropTypes.bool,
     isFullScreen: PropTypes.bool,
     isRemote: PropTypes.bool,
     messageId: PropTypes.string,
+    className: PropTypes.string,
     vm: PropTypes.shape({
         on: PropTypes.func,
         off: PropTypes.func,
@@ -170,13 +185,16 @@ LoaderComponent.propTypes = {
     })
 };
 LoaderComponent.defaultProps = {
+    isExiting: false,
     isFullScreen: false,
     messageId: 'gui.loader.headline'
 };
 
 const mapStateToProps = state => ({
     isRemote: getIsLoadingWithId(state.scratchGui.projectState.loadingState),
-    vm: state.scratchGui.vm
+    loadingState: state.scratchGui.projectState.loadingState,
+    vm: state.scratchGui.vm,
+    projectTitle: state.scratchGui.projectTitle
 });
 
 const mapDispatchToProps = () => ({});

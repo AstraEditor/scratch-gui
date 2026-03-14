@@ -29,11 +29,13 @@ class LibraryItem extends React.PureComponent {
             'handleStop',
             'rotateIcon',
             'startRotatingIcons',
-            'stopRotatingIcons'
+            'stopRotatingIcons',
+            'handleImageError'
         ]);
         this.state = {
             iconIndex: 0,
-            isRotatingIcon: false
+            isRotatingIcon: false,
+            imageLoadFailed: false
         };
     }
     componentWillUnmount () {
@@ -120,6 +122,13 @@ class LibraryItem extends React.PureComponent {
             this.intervalId = clearInterval(this.intervalId);
         }
     }
+    handleImageError () {
+        if (!this.state.imageLoadFailed) {
+            this.setState({
+                imageLoadFailed: true
+            });
+        }
+    }
     rotateIcon () {
         const nextIconIndex = (this.state.iconIndex + 1) % this.props.icons.length;
         this.setState({iconIndex: nextIconIndex});
@@ -138,9 +147,12 @@ class LibraryItem extends React.PureComponent {
     }
     render () {
         const iconMd5 = this.curIconMd5();
-        const iconURL = iconMd5 ?
+        const baseIconURL = iconMd5 ?
             `https://cdn.assets.scratch.mit.edu/internalapi/asset/${iconMd5}/get/` :
             this.props.iconRawURL;
+        const iconURL = this.state.imageLoadFailed ?
+            'https://extensions.turbowarp.org/images/unknown.svg' :
+            baseIconURL;
         return (
             <LibraryItemComponent
                 intl={this.props.intl}
@@ -172,6 +184,7 @@ class LibraryItem extends React.PureComponent {
                 onMouseLeave={this.handleMouseLeave}
                 onPlay={this.handlePlay}
                 onStop={this.handleStop}
+                onImageError={this.handleImageError}
             />
         );
     }

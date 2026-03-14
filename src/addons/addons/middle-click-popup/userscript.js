@@ -222,7 +222,7 @@ export default async function ({ addon, msg, console }) {
 
       queryPreviews.push({
         block: result.block,
-        autocompleteFactory: result.autocompleteFactory ?? null,
+        autocompleteFactory: result.autocompleteFactory !== undefined && result.autocompleteFactory !== null ? result.autocompleteFactory : null,
         renderedBlock,
         svgBlock,
         svgBackground,

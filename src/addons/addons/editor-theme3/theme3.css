@@ -5,19 +5,20 @@
 }
 
 .scratchCommentRect {
-  fill: var(--editorTheme3-commentColor);
+  /* If the addon CSS loads before its CSS variables are initialized, SVG defaults to black. */
+  fill: var(--editorTheme3-commentColor, #fef49c);
 }
 .scratchCommentBody,
 .scratchCommentTextarea {
-  background-color: var(--editorTheme3-commentColor);
+  background-color: var(--editorTheme3-commentColor, #fef49c);
 }
 .scratchWorkspaceCommentBorder {
-  stroke: var(--editorTheme3-commentBorder);
+  stroke: var(--editorTheme3-commentBorder, #bca903);
 }
 .scratchCommentTextarea::placeholder {
-  color: var(--editorTheme3-commentTextTransparent);
+  color: var(--editorTheme3-commentTextTransparent, rgba(0, 0, 0, 0.5));
 }
 .scratchCommentText {
-  fill: var(--editorTheme3-commentText);
-  color: var(--editorTheme3-commentText);
+  fill: var(--editorTheme3-commentText, black);
+  color: var(--editorTheme3-commentText, black);
 }

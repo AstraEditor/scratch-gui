@@ -80,6 +80,18 @@ import _tw_disable_vibration from "../addons/tw-disable-vibration/_manifest_entr
 import _tw_disable_cloud_variables from "../addons/tw-disable-cloud-variables/_manifest_entry.js";
 import _tw_disable_compiler from "../addons/tw-disable-compiler/_manifest_entry.js";
 import _editor_stepping from "../addons/editor-stepping/_manifest_entry.js";
+import _comment_markdown from "../addons/tw-comment-markdown-editor/_manifest_entry.js"
+import _simple_project_analyzer from "../addons/simple-project-analyzer/_manifest_entry.js";
+import _hide_menubar from "../addons/hide-menubar/_manifest_entry.js";
+import _show_fps from "../addons/show-fps/_manifest_entry.js";
+import _toolbox_category_drag from "../addons/toolbox-category-drag/_manifest_entry.js";
+import _block_pins from "../addons/block-pins/_manifest_entry.js";
+import _bookmark from "../addons/bookmark/_manifest_entry.js";
+import _Terminal from "../addons/Terminal/_manifest_entry.js";
+import _myblocksplus from '../addons/my-blocks-plus/_manifest_entry.js';
+import _astras_copilot from '../addons/astras-copilot/_manifest_entry.js'
+import _sprite_folders from '../addons/sprite-folders/_manifest_entry.js'
+
 export default {
   "cat-blocks": _cat_blocks,
   "editor-devtools": _editor_devtools,
@@ -162,4 +174,15 @@ export default {
   "tw-disable-cloud-variables": _tw_disable_cloud_variables,
   "tw-disable-compiler": _tw_disable_compiler,
   "editor-stepping": _editor_stepping,
+  "tw-comment-markdown-editor": _comment_markdown,
+  "simple-project-analyzer": _simple_project_analyzer,
+  "hide-menubar": _hide_menubar,
+  "show-fps": _show_fps,
+  "toolbox-category-drag": _toolbox_category_drag,
+  "block-pins": _block_pins,
+  "bookmark": _bookmark,
+  // "Terminal": _Terminal,
+  // "my-blocks-plus": _myblocksplus,
+  // "astras-copilot": _astras_copilot,
+  "sprite-folders": _sprite_folders
 };

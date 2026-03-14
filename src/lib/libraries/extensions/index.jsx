@@ -49,10 +49,13 @@ import gdxforInsetIconURL from './gdxfor/gdxfor-small.svg';
 import gdxforConnectionIconURL from './gdxfor/gdxfor-illustration.svg';
 import gdxforConnectionSmallIconURL from './gdxfor/gdxfor-small.svg';
 
+import uploadURL from './upload/upload_extension.png'
+
 import twIcon from './tw/tw.svg';
 import customExtensionIcon from './custom/custom.svg';
 import returnIcon from './custom/return.svg';
-import galleryIcon from './gallery/gallery.svg';
+import galleryIcon from './gallery/twgallery.svg';
+import aeGalleryIcon from './gallery/aegallery.png';
 import {APP_NAME} from '../../brand';
 
 export default [
@@ -385,12 +388,9 @@ export default [
     {
         name: (
             <FormattedMessage
-                defaultMessage="{APP_NAME} Blocks"
+                defaultMessage="TurboWarp Blocks"
                 description="Name of the strange 'TurboWarp Blocks' extension"
                 id="tw.twExtension.name"
-                values={{
-                    APP_NAME
-                }}
             />
         ),
         extensionId: 'tw',
@@ -426,13 +426,33 @@ export default [
         tags: ['tw'],
         featured: true
         // Not marked as incompatible with Scratch so that clicking on it doesn't show a prompt
+    },
+    {
+        name: (
+            <FormattedMessage
+                defaultMessage="Upload Your Extension"
+                description="Name of library item to let user add extension"
+                id="tw.addTourExtension.name"
+            />
+        ),
+                extensionId: 'upload_extension',
+        iconURL: uploadURL,
+        description: (
+            <FormattedMessage
+                defaultMessage="Upload your own extension to the AstraEditor extension library!"
+                description="Description of library item to let user add extension"
+                id="tw.addTourExtension.description"
+            />
+        ),
+        tags: ['ae'],
+        featured: true
     }
 ];
 
 export const galleryLoading = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{
@@ -458,12 +478,9 @@ export const galleryLoading = {
 export const galleryMore = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
-            values={{
-                APP_NAME
-            }}
         />
     ),
     href: 'https://extensions.turbowarp.org/',
@@ -484,7 +501,7 @@ export const galleryMore = {
 export const galleryError = {
     name: (
         <FormattedMessage
-            defaultMessage="{APP_NAME} Extension Gallery"
+            defaultMessage="TurboWarp Extension Gallery"
             description="Name of extensions.turbowarp.org in extension library"
             id="tw.extensionGallery.name"
             values={{
@@ -504,5 +521,55 @@ export const galleryError = {
         />
     ),
     tags: ['tw'],
+    featured: true
+};
+
+
+export const aeGalleryMore = {
+    name: (
+        <FormattedMessage
+            defaultMessage="AstraEditor Extension Gallery"
+            description="Name of editors.astras.top/extensions in extension library"
+            id="tw.extensionGallery.aename"
+        />
+    ),
+    href: 'https://editors.astras.top/extensions',
+    extensionId: 'gallery',
+    iconURL: aeGalleryIcon,
+    description: (
+        <FormattedMessage
+            // eslint-disable-next-line max-len
+            defaultMessage="Learn more about extensions at editors.astras.top/extensions."
+            description="Appears after the extension list from the gallery was loaded successfully"
+            id="tw.extensionGallery.aemore"
+        />
+    ),
+    tags: ['ae'],
+    featured: true
+};
+
+export const aeGalleryError = {
+    name: (
+        <FormattedMessage
+            defaultMessage="AstraEditor Extension Gallery"
+            description="Name of editors.astras.top/extensions in extension library"
+            id="tw.extensionGallery.aename"
+            values={{
+                APP_NAME
+            }}
+        />
+    ),
+    href: 'https://editors.astras.top/extensions',
+    extensionId: 'gallery',
+    iconURL: aeGalleryIcon,
+    description: (
+        <FormattedMessage
+            // eslint-disable-next-line max-len
+            defaultMessage="Error loading extension gallery. Visit editors.astras.top/extensions to find more extensions."
+            description="Appears when an error occurred loading extension list from the custom extension gallery"
+            id="tw.extensionGallery.aeerror"
+        />
+    ),
+    tags: ['ae'],
     featured: true
 };

@@ -435,12 +435,12 @@ test('setStore weird values', () => {
 
 test('resetting an addon through setStore', () => {
     const store = new SettingStore();
-    expect(store.getAddonSetting('custom-block-shape', 'paddingSize')).toBe(100);
+    expect(store.getAddonSetting('custom-block-shape', 'paddingSize')).toBe(70);
     store.setAddonSetting('custom-block-shape', 'paddingSize', 50);
     expect(store.getAddonSetting('custom-block-shape', 'paddingSize')).toBe(50);
     const store2 = new SettingStore();
     store.setStore(store2.store);
-    expect(store.getAddonSetting('custom-block-shape', 'paddingSize')).toBe(100);
+    expect(store.getAddonSetting('custom-block-shape', 'paddingSize')).toBe(70);
 });
 
 test('setStoreWithVersionCheck', () => {
@@ -479,7 +479,7 @@ test('Settings migration 1 -> 2', () => {
     // eslint-disable-next-line max-len
     global.localStorage.getItem = () => `{"_":1,"tw-project-info":{"enabled":false},"tw-interface-customization":{"enabled":false,"removeFeedback":true,"removeBackpack":true}}`;
     store.readLocalStorage();
-    expect(store.getAddonEnabled('block-count')).toBe(false);
+    expect(store.getAddonEnabled('block-count')).toBe(true);
     expect(store.getAddonEnabled('tw-remove-backpack')).toBe(false);
     expect(store.getAddonEnabled('tw-remove-feedback')).toBe(false);
 
@@ -651,7 +651,7 @@ test('Settings migration 4 -> 5', () => {
         _: 4
     });
     store.readLocalStorage();
-    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('show');
+    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('hover');
 
     // also implied default settings
     global.localStorage.getItem = () => JSON.stringify({
@@ -659,7 +659,7 @@ test('Settings migration 4 -> 5', () => {
         fullscreen: {}
     });
     store.readLocalStorage();
-    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('show');
+    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('hover');
 
     // explicit default settings
     global.localStorage.getItem = () => JSON.stringify({
@@ -669,7 +669,7 @@ test('Settings migration 4 -> 5', () => {
         }
     });
     store.readLocalStorage();
-    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('show');
+    expect(store.getAddonSetting('fullscreen', 'toolbar')).toBe('hover');
 
     // explicit hide, implied default hover setting
     global.localStorage.getItem = () => JSON.stringify({

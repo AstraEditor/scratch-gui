@@ -127,9 +127,9 @@ const Footer = () => (
                     </a>
                 </div>
                 <div className={styles.footerSection}>
-                    <a href="https://desktop.turbowarp.org/">
+                    <a href="https://github.com/AstraEditor/Desktop/releases">
                         {/* Do not translate */}
-                        {'TurboWarp Desktop'}
+                        {'AstraEditor Desktop'}
                     </a>
                     <a href="https://packager.turbowarp.org/">
                         {/* Do not translate */}
@@ -137,7 +137,7 @@ const Footer = () => (
                     </a>
                     <a href="https://docs.turbowarp.org/embedding">
                         <FormattedMessage
-                            defaultMessage="Embedding"
+                            defaultMessage="TurboWarp Embedding"
                             description="Link in footer to embedding documentation for embedding link"
                             id="tw.footer.embed"
                         />
@@ -151,7 +151,7 @@ const Footer = () => (
                     </a>
                     <a href="https://docs.turbowarp.org/">
                         <FormattedMessage
-                            defaultMessage="Documentation"
+                            defaultMessage="TurboWarp Documentation"
                             description="Link in footer to additional documentation"
                             id="tw.footer.documentation"
                         />
@@ -165,7 +165,7 @@ const Footer = () => (
                             id="tw.feedback"
                         />
                     </a>
-                    <a href="https://github.com/TurboWarp/">
+                    <a href="https://github.com/AstraEditor/">
                         <FormattedMessage
                             defaultMessage="Source Code"
                             description="Link to source code"
@@ -177,6 +177,13 @@ const Footer = () => (
                             defaultMessage="Privacy Policy"
                             description="Link to privacy policy"
                             id="tw.privacy"
+                        />
+                    </a>
+                    <a href="why.html">
+                        <FormattedMessage
+                            defaultMessage="Relationship"
+                            description="Link to relationship"
+                            id="tw.relationship"
                         />
                     </a>
                 </div>
@@ -329,7 +336,7 @@ class Interface extends React.Component {
                                 <p>
                                     <FormattedMessage
                                         // eslint-disable-next-line max-len
-                                        defaultMessage="{APP_NAME} is a Scratch mod that compiles projects to JavaScript to make them run really fast. Try it out by inputting a project ID or URL above or choosing a featured project below."
+                                        defaultMessage="{APP_NAME} is a TurboWarp mod used to add more practical features to make your writing lightning fast. Why not enter some dataURLs or download links about the work?"
                                         description="Description of TurboWarp on the homepage"
                                         id="tw.home.description"
                                         values={{
@@ -337,9 +344,6 @@ class Interface extends React.Component {
                                         }}
                                     />
                                 </p>
-                            </div>
-                            <div className={styles.section}>
-                                <FeaturedProjects studio="27205657" />
                             </div>
                         </React.Fragment>
                     ) : null}
