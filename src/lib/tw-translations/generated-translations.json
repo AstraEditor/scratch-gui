@@ -5073,7 +5073,8 @@
         "tw.extensionManager.total": "共加载了{LENGTH}个扩展",
         "tw.settingsModal.enablehtmlsupportreadme": "启用HTML支持",
         "tw.settingsModal.enablehtmlsupportreadmeHelp": "允许README显示HTML标签",
-        "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置"
+        "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置",
+        "tw.menuBar.extensionEditor": "扩展编辑器"
     },
     "zh-tw": {
         "tw.alerts.lostPeripheralConnection": "與{extensionName}的連線中斷了。",
