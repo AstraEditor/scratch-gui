@@ -150,6 +150,7 @@ const GUIComponent = props => {
         onActivateTab,
         onClickLogo,
         onExtensionButtonClick,
+        onOpenExtensionEditor,
         onOpenCustomExtensionModal,
         onProjectTelemetryEvent,
         onRequestCloseBackdropLibrary,
@@ -286,7 +287,7 @@ const GUIComponent = props => {
                 // ingore
             }
         }
-    },[])
+    }, [])
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -479,6 +480,7 @@ const GUIComponent = props => {
                     onShare={onShare}
                     onStartSelectingFileUpload={onStartSelectingFileUpload}
                     onToggleLoginOpen={onToggleLoginOpen}
+                    onOpenExtensionEditor={onOpenExtensionEditor}
                 />
                 <Box className={styles.bodyWrapper}>
                     <Box className={styles.flexWrapper} style={Settings.get('EnableMobileLayout') ? {
@@ -581,7 +583,6 @@ const GUIComponent = props => {
                                                 "README"
                                             )}
                                         </button>}
-
                                 </TabList>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     <Box className={styles.blocksWrapper}>
@@ -716,6 +717,7 @@ GUIComponent.propTypes = {
     onClickLogo: PropTypes.func,
     onCloseAccountNav: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
+    onOpenExtensionEditor: PropTypes.func,
     onOpenCustomExtensionModal: PropTypes.func,
     onLogOut: PropTypes.func,
     onOpenRegistration: PropTypes.func,

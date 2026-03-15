@@ -716,6 +716,19 @@ class MenuBar extends React.Component {
                                             </MenuItem>
                                         </MenuSection>
                                     )}
+                                    {this.props.onOpenExtensionEditor && (
+                                        <MenuSection>
+                                            <MenuItem
+                                                onClick={this.props.onOpenExtensionEditor}
+                                            >
+                                                <FormattedMessage
+                                                    defaultMessage="Extension Editor"
+                                                    description="Menu bar item to open the extension editor"
+                                                    id="tw.menuBar.extensionEditor"
+                                                />
+                                            </MenuItem>
+                                        </MenuSection>
+                                    )}
                                     <MenuSection>
                                         <MenuItem onClick={this.handleClickRestorePoints}>
                                             <FormattedMessage
