@@ -22,12 +22,11 @@
   border: 1px solid transparent;
 }
 
-/* Menu bar */
-/* [class*="menu-bar_file-group_"] [class*="menu-bar_hoverable_"] > img,
-[class*="menu-bar_divider"],
+[class*="menu-bar_Icon"],
+[class*="settings-menu_SettingIcon"],
 [class*="menu-bar_help-icon"] {
-  display: none;
-} */
+  width: 0;
+}
 [class*="menu-bar_collapsible-label_"],
 [dir="rtl"] [class*="menu-bar_collapsible-label_"],
 [class*="settings-menu_dropdown-label_"],
@@ -41,8 +40,12 @@
 }
 
 [class*="gui_menu-bar-position"][class*="menu-bar_menu-bar"][class*="box_box"],
-[class*="menu-bar_menu-bar-item"] {
+[class*="menu-bar_menu-bar-item"],
+[class*="menu-bar_control-bar"]{
   height: 2rem;
+}
+[class*="modal_modal-overlay"] { /*Menubar在最顶层，所以很多地方都需要让个位置*/
+  margin-top: 2rem;
 }
 
 [class*="menu-bar_file-group_"] [class*="menu-bar_menu-bar-item_"],
@@ -534,7 +537,7 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
   line-height: 0.6;
 }
 
-[class*=stage-wrapper_stage-canvas-wrapper]{
+[class*="stage-wrapper_stage-canvas-wrapper"]:not([class*="stage-wrapper_isfullScreen"]) {
   padding-top: 34px !important;
 }
 

@@ -66,6 +66,9 @@
     .dropdown-label {
         display: none;
     }
+    .SettingIcon{
+        width: 20px !important;
+    }
 }
 
 .accent-icon-outer {
@@ -87,4 +90,9 @@
 
 .open-link {
     margin-left: 0.5rem;
+}
+
+.SettingIcon{
+    width: 20px;
+    height: auto;
 }

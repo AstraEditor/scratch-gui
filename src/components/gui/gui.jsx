@@ -140,6 +140,9 @@ const GUIComponent = props => {
         onCloseAccountNav,
         onClickAddonSettings,
         onClickDesktopSettings,
+        onClickMinimize,
+        onClickMaximize,
+        onClickClose,
         onClickNewWindow,
         onClickPackager,
         onLogOut,
@@ -469,6 +472,9 @@ const GUIComponent = props => {
                     onClickAccountNav={onClickAccountNav}
                     onClickAddonSettings={onClickAddonSettings}
                     onClickDesktopSettings={onClickDesktopSettings}
+                    onClickMinimize={onClickMinimize}
+                    onClickMaximize={onClickMaximize}
+                    onClickClose={onClickClose}
                     onClickNewWindow={onClickNewWindow}
                     onClickPackager={onClickPackager}
                     onClickLogo={onClickLogo}
@@ -712,6 +718,9 @@ GUIComponent.propTypes = {
     onClickAccountNav: PropTypes.func,
     onClickAddonSettings: PropTypes.func,
     onClickDesktopSettings: PropTypes.func,
+    onClickMinimize: PropTypes.func,
+    onClickMaximize: PropTypes.func,
+    onClickClose: PropTypes.func,
     onClickNewWindow: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickLogo: PropTypes.func,

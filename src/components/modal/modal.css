@@ -11,6 +11,7 @@
     z-index: $z-index-modal;
     background-color: $ui-modal-overlay;
     color: $ui-modal-foreground;
+    margin-top: $menu-bar-height;
 }
 
 .modal-content * {
