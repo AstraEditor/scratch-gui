@@ -186,7 +186,16 @@ module.exports = [
                 minChunks: 2,
                 minSize: 50000,
                 maxInitialRequests: 5
-            }
+            },
+            minimizer: [
+                new (require('terser-webpack-plugin'))({
+                    terserOptions: {
+                        compress: {
+                            reduce_vars: false
+                        }
+                    }
+                })
+            ]
         },
         plugins: base.plugins.concat([
             new webpack.DefinePlugin({
