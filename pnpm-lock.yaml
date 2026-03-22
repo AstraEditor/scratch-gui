@@ -194,9 +194,6 @@ importers:
       scratch-blocks:
         specifier: github:AstraEditor/scratch-blocks#develop-builds
         version: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276
-      scratch-extension-editor:
-        specifier: github:AstraEditor/scratch-extension-editor#main
-        version: https://codeload.github.com/AstraEditor/scratch-extension-editor/tar.gz/d116a004e494162a9aac005539b19005ddd75f77(react-dom@16.14.0(react@16.14.0))(react@16.14.0)(webpack@4.47.0)
       scratch-paint:
         specifier: github:AstraEditor/scratch-paint#develop
         version: https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/5fc829e564cdf7a285c149482ed1018b593d7b13(react-dom@16.14.0(react@16.14.0))(react-intl-redux@0.7.0(react-intl@2.9.0(prop-types@15.8.1)(react@16.14.0))(react-redux@5.0.7(react@16.14.0)(redux@3.7.2)))(react-intl@2.9.0(prop-types@15.8.1)(react@16.14.0))(react-popover@0.5.10)(react-redux@5.0.7(react@16.14.0)(redux@3.7.2))(react-responsive@5.0.0(react@16.14.0))(react-style-proptype@3.2.2)(react-tooltip@3.8.0(react-dom@16.14.0(react@16.14.0))(react@16.14.0))(react@16.14.0)(redux@3.7.2)
@@ -5224,12 +5221,6 @@ packages:
   raw-loader@0.5.1:
     resolution: {integrity: sha512-sf7oGoLuaYAScB4VGr0tzetsYlS8EJH6qnTCfQ/WVEa89hALQ4RQfCKt5xCyPQKPDUbVUAIP1QsxAwfAjlDp7Q==}
 
-  raw-loader@4.0.2:
-    resolution: {integrity: sha512-ZnScIV3ag9A4wPX/ZayxL/jZH+euYb6FcUinPcgiQW0+UBtEv0O6Q3lGd3cqJ+GHH+rksEv3Pj99oxJ3u3VIKA==}
-    engines: {node: '>= 10.13.0'}
-    peerDependencies:
-      webpack: ^4.0.0 || ^5.0.0
-
   react-contextmenu@2.9.4:
     resolution: {integrity: sha512-ma4YQw4J7JNv8L8mMVd1NHHbvH3+gaK/rQ6FC5Tft7OCUweKi7PHqHEE0fDF2009FLSGoV5JnjPnTTEyThqaJg==}
     peerDependencies:
@@ -5573,13 +5564,6 @@ packages:
   scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276:
     resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276}
     version: 0.1.0
-
-  scratch-extension-editor@https://codeload.github.com/AstraEditor/scratch-extension-editor/tar.gz/d116a004e494162a9aac005539b19005ddd75f77:
-    resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-extension-editor/tar.gz/d116a004e494162a9aac005539b19005ddd75f77}
-    version: 1.0.0
-    peerDependencies:
-      react: ^16.0.0
-      react-dom: ^16.0.0
 
   scratch-paint@https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/5fc829e564cdf7a285c149482ed1018b593d7b13:
     resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/5fc829e564cdf7a285c149482ed1018b593d7b13}
@@ -12742,12 +12726,6 @@ snapshots:
 
   raw-loader@0.5.1: {}
 
-  raw-loader@4.0.2(webpack@4.47.0):
-    dependencies:
-      loader-utils: 2.0.4
-      schema-utils: 3.3.0
-      webpack: 4.47.0(webpack-cli@3.3.12)
-
   react-contextmenu@2.9.4(prop-types@15.8.1)(react-dom@16.14.0(react@16.14.0))(react@16.14.0):
     dependencies:
       classnames: 2.2.6
@@ -13204,18 +13182,6 @@ snapshots:
     dependencies:
       exports-loader: 0.7.0
       imports-loader: 0.8.0
-
-  scratch-extension-editor@https://codeload.github.com/AstraEditor/scratch-extension-editor/tar.gz/d116a004e494162a9aac005539b19005ddd75f77(react-dom@16.14.0(react@16.14.0))(react@16.14.0)(webpack@4.47.0):
-    dependencies:
-      monaco-editor: 0.45.0
-      prop-types: 15.8.1
-      raw-loader: 4.0.2(webpack@4.47.0)
-      react: 16.14.0
-      react-dom: 16.14.0(react@16.14.0)
-      react-intl: 2.9.0(prop-types@15.8.1)(react@16.14.0)
-      react-markdown: 4.3.1(react@16.14.0)
-    transitivePeerDependencies:
-      - webpack
 
   scratch-paint@https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/5fc829e564cdf7a285c149482ed1018b593d7b13(react-dom@16.14.0(react@16.14.0))(react-intl-redux@0.7.0(react-intl@2.9.0(prop-types@15.8.1)(react@16.14.0))(react-redux@5.0.7(react@16.14.0)(redux@3.7.2)))(react-intl@2.9.0(prop-types@15.8.1)(react@16.14.0))(react-popover@0.5.10)(react-redux@5.0.7(react@16.14.0)(redux@3.7.2))(react-responsive@5.0.0(react@16.14.0))(react-style-proptype@3.2.2)(react-tooltip@3.8.0(react-dom@16.14.0(react@16.14.0))(react@16.14.0))(react@16.14.0)(redux@3.7.2):
     dependencies:
