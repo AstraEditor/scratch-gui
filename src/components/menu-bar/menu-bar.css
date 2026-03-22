@@ -265,7 +265,6 @@
     font-weight: bold;
     background-color: $menu-bar-background;
     color: $menu-bar-foreground;
-    -webkit-app-region: drag;
     pointer-events: none;
 }
 
@@ -276,4 +275,21 @@
 .Icon{
     width: 20px;
     height: auto;
+}
+
+.controlButton{
+    width: 46px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    -webkit-app-region: none;
+    user-select: none;
+    background-color: $menu-bar-background;
+
+}
+.controlButton:hover{
+    filter: brightness(1.2);
 }

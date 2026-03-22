@@ -34,6 +34,11 @@ import CloudVariablesToggler from '../../containers/tw-cloud-toggler.jsx';
 import TWSaveStatus from './tw-save-status.jsx';
 import TWNews from './tw-news.jsx';
 
+import restore from './restore.svg';
+import close from './close.svg';
+import minimize from './minimize.svg';
+import maximize from './maximize.svg';
+
 import { openTipsLibrary, openSettingsModal, openRestorePointModal } from '../../reducers/modals';
 import { setPlayer } from '../../reducers/mode';
 import {
@@ -217,6 +222,9 @@ MenuItemLink.propTypes = {
 class MenuBar extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            isMaximized: false
+        };
         bindAll(this, [
             'handleClickSeeInside',
             'handleClickNew',
@@ -233,14 +241,43 @@ class MenuBar extends React.Component {
             'handleKeyPress',
             'handleRestoreOption',
             'getSaveToComputerHandler',
-            'restoreOptionMessage'
+            'restoreOptionMessage',
+            'handleMaximizeClick',
+            'updateMaximizedState',
+            'handleResize'
         ]);
     }
     componentDidMount() {
         document.addEventListener('keydown', this.handleKeyPress);
+        // 初始化最大化状态
+        this.updateMaximizedState();
+        // 监听窗口大小变化
+        window.addEventListener('resize', this.handleResize);
+    }
+    componentDidUpdate(prevProps) {
+        // 当 isMaximize 首次可用时更新状态
+        if (this.props.isMaximize && !prevProps.isMaximize) {
+            this.updateMaximizedState();
+        }
     }
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyPress);
+        window.removeEventListener('resize', this.handleResize);
+    }
+    handleResize() {
+        // 窗口大小变化时更新最大化状态
+        this.updateMaximizedState();
+    }
+    async updateMaximizedState() {
+        if (this.props.isMaximize) {
+            const isMaximized = await this.props.isMaximize();
+            this.setState({ isMaximized });
+        }
+    }
+    handleMaximizeClick() {
+        this.props.onClickMaximize();
+        // 延迟更新状态，等待 Electron 完成窗口状态变化
+        setTimeout(() => this.updateMaximizedState(), 100);
     }
     handleClickNew() {
         // if the project is dirty, and user owns the project, we will autosave.
@@ -443,21 +480,10 @@ class MenuBar extends React.Component {
             </MenuLabel>
         );
     }
-    buildControlBar(onClickMinimize, onClickMaximize, onClickClose) {
+    buildControlBar(onClickMinimize, onClickMaximize, onClickClose, isMaximized, onMaximizeClick) {
         if (!onClickMinimize && !onClickMaximize && !onClickClose) {
             return null;
         }
-        const buttonStyle = {
-            width: '46px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '16px',
-            WebkitAppRegion: 'none',
-            userSelect: 'none'
-        };
         return (
             <div
                 style={{
@@ -469,29 +495,26 @@ class MenuBar extends React.Component {
             >
                 {onClickMinimize && (
                     <div
-                        style={buttonStyle}
+                        className={styles.controlButton}
                         onClick={onClickMinimize}
                     >
-                        ─
+                        <img src={minimize} alt="─" />
                     </div>
                 )}
                 {onClickMaximize && (
                     <div
-                        style={buttonStyle}
-                        onClick={onClickMaximize}
+                    className={styles.controlButton}
+                    onClick={onMaximizeClick}
                     >
-                        □
+                        {!isMaximized ? <img src={maximize} alt="□" /> : <img src={restore} style={{width:"10px",height:"10px"}} alt="□" />}
                     </div>
                 )}
                 {onClickClose && (
                     <div
-                        style={{
-                            ...buttonStyle,
-                            color: '#fff'
-                        }}
+                        className={styles.controlButton}
                         onClick={onClickClose}
                     >
-                        ✕
+                        <img src={close} alt="✕" />
                     </div>
                 )}
             </div>
@@ -550,7 +573,9 @@ class MenuBar extends React.Component {
         const controlBar = this.buildControlBar(
             this.props.onClickMinimize,
             this.props.onClickMaximize,
-            this.props.onClickClose
+            this.props.onClickClose,
+            this.state.isMaximized,
+            this.handleMaximizeClick
         );
         const menuBar = (
             <Box
@@ -1275,6 +1300,7 @@ MenuBar.propTypes = {
     onClickDesktopSettings: PropTypes.func,
     onClickMinimize: PropTypes.func,
     onClickMaximize: PropTypes.func,
+    isMaximize: PropTypes.func,
     onClickClose: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickRestorePoints: PropTypes.func,

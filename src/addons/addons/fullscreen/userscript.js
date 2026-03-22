@@ -25,6 +25,8 @@ export default async function ({ addon, console }) {
         document.documentElement.requestFullscreen()
           .then(() => {
             isEnteringFullscreen = false;
+            // 浏览器全屏时，设置 --stage-fullscreen-top 为 0
+            document.documentElement.style.setProperty('--stage-fullscreen-top', '0');
           })
           .catch((err) => {
             console.error(err);
@@ -32,6 +34,8 @@ export default async function ({ addon, console }) {
           });
       } else if (!addon.tab.redux.state.scratchGui.mode.isFullScreen && document.fullscreenElement !== null) {
         document.exitFullscreen();
+        // 退出浏览器全屏时，恢复 --stage-fullscreen-top
+        document.documentElement.style.removeProperty('--stage-fullscreen-top');
       }
     }
   }
@@ -61,6 +65,12 @@ export default async function ({ addon, console }) {
     ) {
       const canvas = await addon.tab.waitForElement('[class*="stage_full-screen"] canvas');
       const header = await addon.tab.waitForElement('[class^="stage-header_stage-header-wrapper"]');
+
+      // 检查是否已经存在 phantom
+      if (header.parentElement.classList.contains("phantom-header")) {
+        return; // 已经存在，不需要重新创建
+      }
+
       const phantom = header.parentElement.appendChild(document.createElement("div"));
       phantom.classList.add("phantom-header");
 
@@ -75,9 +85,24 @@ export default async function ({ addon, console }) {
         header.classList.remove("stage-header-hover");
       });
 
+      // 获取1rem的大小
+      const getTopPx = () => {
+        try {
+          const root = document.documentElement;
+
+          const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+          const stageFullscreenTop = parseFloat(getComputedStyle(root).getPropertyValue('--stage-fullscreen-top'));
+
+          return rootFontSize * stageFullscreenTop;
+        } catch (e) {
+          console.error(e);
+          return 20
+        }
+      }
+
       // Listen for when the mouse moves above the page (helps to show header when not in browser full screen mode)
       document.body.addEventListener("mouseleave", (e) => {
-        if (e.clientY < 8) {
+        if (e.clientY < getTopPx()) {
           header.classList.add("stage-header-hover");
         }
       });
@@ -169,6 +194,10 @@ export default async function ({ addon, console }) {
         type: "scratch-gui/mode/SET_FULL_SCREEN",
         isFullScreen: false,
       });
+    }
+    // 退出浏览器全屏时，恢复 --stage-fullscreen-top
+    if (document.fullscreenElement === null) {
+      document.documentElement.style.removeProperty('--stage-fullscreen-top');
     }
   });
 

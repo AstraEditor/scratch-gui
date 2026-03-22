@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - scratch-blocks
+  - scratch-vm
+  - react-markdown

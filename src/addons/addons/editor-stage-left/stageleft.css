@@ -24,8 +24,8 @@
   margin-left: 0;
 }
 [class^="gui_flex-wrapper"] {
-  flex-direction: row-reverse;
-  overflow-x: hidden;
+  flex-direction: row-reverse !important;
+  overflow-x: hidden !important;
 }
 
 [dir="ltr"] [class^="backpack_backpack-header"] {

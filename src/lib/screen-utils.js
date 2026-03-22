@@ -23,7 +23,42 @@ const STAGE_DIMENSION_DEFAULTS = {
     fullScreenSpacingBorderAdjustment: 8,
     // referencing css/units.css,
     // menuHeightAdjustment = $stage-menu-height
-    menuHeightAdjustment: 44
+    menuHeightAdjustment: 44,
+    // referencing css/units.css,
+    // menuBarHeightAdjustment = $menu-bar-height (permanent menu bar in fullscreen)
+    menuBarHeightAdjustment: 48
+};
+
+/**
+ * Get the current menu bar height from CSS custom property.
+ * Plugins can override --stage-fullscreen-top to change this value.
+ * @returns {number} menu bar height in pixels
+ */
+const getMenuBarHeight = () => {
+    if (typeof window === 'undefined') {
+        return STAGE_DIMENSION_DEFAULTS.menuBarHeightAdjustment;
+    }
+    const rootStyle = getComputedStyle(document.documentElement);
+    const cssValue = rootStyle.getPropertyValue('--stage-fullscreen-top').trim();
+    if (cssValue) {
+        // Convert rem to px if needed
+        if (cssValue.endsWith('rem')) {
+            const remValue = parseFloat(cssValue);
+            const fontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            return remValue * fontSize;
+        }
+        // Already in px
+        if (cssValue.endsWith('px')) {
+            return parseFloat(cssValue);
+        }
+        // Assume it's a number (rem)
+        const remValue = parseFloat(cssValue);
+        if (!isNaN(remValue)) {
+            const fontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            return remValue * fontSize;
+        }
+    }
+    return STAGE_DIMENSION_DEFAULTS.menuBarHeightAdjustment;
 };
 
 /**
@@ -58,6 +93,7 @@ const getStageDimensions = (stageSize, customStageSize, isFullScreen) => {
     if (isFullScreen) {
         stageDimensions.height = window.innerHeight -
             STAGE_DIMENSION_DEFAULTS.menuHeightAdjustment -
+            getMenuBarHeight() -
             STAGE_DIMENSION_DEFAULTS.fullScreenSpacingBorderAdjustment;
 
         stageDimensions.width = stageDimensions.height * (customStageSize.width / customStageSize.height);

@@ -2,6 +2,16 @@
 @import "../../css/colors.css";
 @import "../../css/z-index.css";
 
+/*
+ * CSS custom property for fullscreen top offset.
+ * Plugins can override this via:
+ *   :root { --stage-fullscreen-top: 0; }
+ * or directly: .stage-wrapper.full-screen { top: 0 !important; }
+ */
+:root {
+    --stage-fullscreen-top: $menu-bar-height;
+}
+
 .stage-wrapper {
     position: relative;
 }
@@ -21,7 +31,7 @@
 
 .stage-wrapper.full-screen {
     position: fixed;
-    top: $stage-menu-height;
+    top: var(--stage-fullscreen-top);
     left: 0;
     right: 0;
     bottom: 0;

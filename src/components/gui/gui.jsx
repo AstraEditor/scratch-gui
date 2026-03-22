@@ -142,6 +142,7 @@ const GUIComponent = props => {
         onClickDesktopSettings,
         onClickMinimize,
         onClickMaximize,
+        isMaximize,
         onClickClose,
         onClickNewWindow,
         onClickPackager,
@@ -474,6 +475,7 @@ const GUIComponent = props => {
                     onClickDesktopSettings={onClickDesktopSettings}
                     onClickMinimize={onClickMinimize}
                     onClickMaximize={onClickMaximize}
+                    isMaximize={isMaximize}
                     onClickClose={onClickClose}
                     onClickNewWindow={onClickNewWindow}
                     onClickPackager={onClickPackager}
@@ -720,6 +722,7 @@ GUIComponent.propTypes = {
     onClickDesktopSettings: PropTypes.func,
     onClickMinimize: PropTypes.func,
     onClickMaximize: PropTypes.func,
+    isMaximize: PropTypes.func,
     onClickClose: PropTypes.func,
     onClickNewWindow: PropTypes.func,
     onClickPackager: PropTypes.func,

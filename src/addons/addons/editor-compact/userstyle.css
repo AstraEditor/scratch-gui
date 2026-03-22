@@ -2,6 +2,12 @@
 /* [class*="gui_body-wrapper"] {
   height: calc(100% - 2rem);
 } 这个会导致显示问题*/
+
+/* Override fullscreen top offset for compact menu bar height */
+:root {
+  --stage-fullscreen-top: 2rem;
+}
+
 .sa-body-editor,
 .sa-body-editor * {
   scrollbar-width: thin;
