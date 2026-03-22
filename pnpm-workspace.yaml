@@ -1,3 +1,6 @@
+ignoredBuiltDependencies:
+  - chromedriver
+  - core-js
 onlyBuiltDependencies:
   - scratch-blocks
   - scratch-vm
