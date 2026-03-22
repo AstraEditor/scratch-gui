@@ -1,4 +1,5 @@
 import { defineMessages } from 'react-intl';
+import React from 'react';
 
 const messages = defineMessages({
     motion_direction: {
