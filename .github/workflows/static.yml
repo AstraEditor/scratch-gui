@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate files
+        run: npm run prepublish
+
       - name: Build
         run: NODE_ENV=production npm run build
 
