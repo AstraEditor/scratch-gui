@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: NODE_ENV=production npm run build
 
       - name: Checkout astraeditor.github.io
         uses: actions/checkout@v4
