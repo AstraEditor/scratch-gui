@@ -309,23 +309,7 @@ const GUIComponent = props => {
         Math.max(0, customStageSize.width - FIXED_WIDTH)
     );
 
-    const editorTheme = () => {
-        let theme = 'dark'
-        switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
-            case undefined:
-                theme = 'dark';
-                break
-            case 'dark':
-                theme = 'dark';
-                break
-            case 'light':
-                theme = 'light';
-                break
-            default:
-                theme = 'dark'
-        }
-        return theme
-    }
+
     return (<MediaQuery minWidth={unconstrainedWidth}>{isUnconstrained => {
         const stageSize = resolveStageSize(stageSizeMode, isUnconstrained);
 

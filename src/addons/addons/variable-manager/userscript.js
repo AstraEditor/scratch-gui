@@ -1,6 +1,10 @@
+import sidebar from "../../ui/side-bar/side-bar.js"
+
+
 export default async function ({ addon, console, msg }) {
   const vm = addon.tab.traps.vm;
-
+  let sideBar = null;
+  
   let localVariables = [];
   let globalVariables = [];
   let preventUpdate = false;
@@ -329,7 +333,20 @@ export default async function ({ addon, console, msg }) {
   }
 
   varTab.addEventListener("click", (e) => {
-    addon.tab.redux.dispatch({ type: "scratch-gui/navigation/ACTIVATE_TAB", activeTabIndex: 4 });
+    if (sideBar.isOpen()) {
+      sideBar.close();
+      varTab.classList.remove(
+        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
+        addon.tab.scratchClass("gui_is-selected")
+      );
+    } else {
+      sideBar.open();
+      varTab.classList.add(
+        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
+        addon.tab.scratchClass("gui_is-selected")
+      );
+      fullReload();
+    }
   });
 
   function setVisible(visible) {
@@ -338,35 +355,27 @@ export default async function ({ addon, console, msg }) {
         addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
         addon.tab.scratchClass("gui_is-selected")
       );
-      const contentArea = document.querySelector("[class^=gui_tabs]");
-      contentArea.insertAdjacentElement("beforeend", manager);
+      sideBar.open();
       fullReload();
     } else {
       varTab.classList.remove(
         addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
         addon.tab.scratchClass("gui_is-selected")
       );
-      manager.remove();
+      sideBar.close();
       cleanup();
     }
   }
 
   addon.tab.redux.initialize();
   addon.tab.redux.addEventListener("statechanged", ({ detail }) => {
-    if (detail.action.type === "scratch-gui/navigation/ACTIVATE_TAB") {
-      const varManagerWasSelected = document.body.contains(manager);
-      const switchedToVarManager = detail.action.activeTabIndex === 4;
-
-      if (varManagerWasSelected && !switchedToVarManager) {
-        // Fixes #5773
-        queueMicrotask(() => window.dispatchEvent(new Event("resize")));
-      }
-
-      setVisible(switchedToVarManager);
-    } else if (detail.action.type === "scratch-gui/mode/SET_PLAYER") {
-      if (!detail.action.isPlayerOnly && addon.tab.redux.state.scratchGui.editorTab.activeTabIndex === 4) {
-        // DOM doesn't actually exist yet
-        queueMicrotask(() => setVisible(true));
+    if (detail.action.type === "scratch-gui/mode/SET_PLAYER") {
+      if (!detail.action.isPlayerOnly) {
+        sideBar.close();
+        varTab.classList.remove(
+          addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
+          addon.tab.scratchClass("gui_is-selected")
+        );
       }
     }
   });
@@ -402,13 +411,18 @@ export default async function ({ addon, console, msg }) {
       addon.tab.redux.dispatch({ type: "scratch-gui/navigation/ACTIVATE_TAB", activeTabIndex: 2 });
     }
   });
-
+  let tabAdded = false;
   while (true) {
     await addon.tab.waitForElement("[class^='react-tabs_react-tabs__tab-list']", {
       markAsSeen: true,
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
+    if (!tabAdded) {
+      sideBar = new sidebar();
+      sideBar.addTab("变量", manager);
+      tabAdded = true;
+    }
     addon.tab.appendToSharedSpace({ space: "afterTabs", element: varTab, order: 4 });
   }
 }
