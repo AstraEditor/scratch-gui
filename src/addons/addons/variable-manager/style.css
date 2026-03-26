@@ -15,12 +15,62 @@
   z-index: 6;
 }
 
+/* 变量管理器 Tab 激活状态样式 - 参考 .tab.is-selected */
+#react-tabs-sa-variable-manager.sa-var-manager-active {
+  height: 90%;
+  color: #4c97ff;
+  background-color: var(--ui-white, white);
+  z-index: 10 !important;
+}
+
+#react-tabs-sa-variable-manager.sa-var-manager-active img {
+  filter: none;
+}
+
+/* VSCode 布局样式 */
+#react-tabs-sa-variable-manager.vscode-tab {
+  width: 40px !important;
+  height: auto !important;
+  min-height: 50px;
+  flex-grow: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  font-size: 0 !important;
+  background-color: transparent !important;
+  border: 0 !important;
+}
+
+#react-tabs-sa-variable-manager.vscode-tab img {
+  width: 2rem !important;
+  height: 2rem !important;
+  margin: 0 !important;
+}
+
+#react-tabs-sa-variable-manager.vscode-tab span {
+  display: none !important;
+}
+
+#react-tabs-sa-variable-manager.vscode-tab.sa-var-manager-active,
+#react-tabs-sa-variable-manager.vscode-tab.is-selected {
+  background-color: var(--ui-white, white) !important;
+  box-shadow: inset 3px 0px 0px 0px #4c97ff !important;
+}
+
 .sa-var-manager {
   display: block;
   padding: 18px;
   /* weird hack to fix scrolling??? */
   height: 50px; /*lol, it's strange*/
   overflow-y: auto;
+}
+
+/* 侧边栏中的变量管理器使用全高度 */
+.addons-side-bar .sa-var-manager {
+  height: 100% !important;
 }
 
 /* VSCode layout: allow variable manager to use full height */
@@ -31,7 +81,7 @@
 
 .sa-var-manager-searchbox {
   background-image: url("search.svg");
-  width: 25%;
+  width: 100%;
   margin-bottom: 4px;
   padding: 8px;
   padding-right: 32px; /* for the text to not overlap the image */
@@ -130,3 +180,10 @@
 /* tr:nth-child(even) {
     background-color: #dddddd;
 } */
+
+/* 不让Tab按钮显示为ScratchTab*/
+.variableManger-Tab{
+  border-radius: 5px !important;
+  margin: auto 0 auto 20px !important;
+  background-color: var(--ui-white) !important;
+}

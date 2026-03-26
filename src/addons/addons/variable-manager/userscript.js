@@ -1,16 +1,28 @@
-import sidebar from "../../ui/side-bar/side-bar.js"
+import SideBar from "../../ui/side-bar/side-bar.js";
 
+// 检测是否启用 VSCode 布局
+function isVSCodeLayoutEnabled() {
+  try {
+    const settings = localStorage.getItem("AESettings");
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      return parsed.EnableVSCodeLayout === true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
 
 export default async function ({ addon, console, msg }) {
   const vm = addon.tab.traps.vm;
-  let sideBar = null;
-  
+
   let localVariables = [];
   let globalVariables = [];
   let preventUpdate = false;
 
   const manager = document.createElement("div");
-  manager.classList.add(addon.tab.scratchClass("asset-panel_wrapper"), "sa-var-manager");
+  manager.classList.add("sa-var-manager");
 
   const searchBox = document.createElement("input");
   searchBox.placeholder = msg("search");
@@ -47,21 +59,48 @@ export default async function ({ addon, console, msg }) {
   manager.appendChild(localVars);
   manager.appendChild(globalVars);
 
-  const varTab = document.createElement("li");
-  addon.tab.displayNoneWhileDisabled(varTab, { display: "flex" });
-  varTab.classList.add(addon.tab.scratchClass("react-tabs_react-tabs__tab"), addon.tab.scratchClass("gui_tab"));
-  // Cannot use number due to conflict after leaving and re-entering editor
-  varTab.id = "react-tabs-sa-variable-manager";
+  // 创建侧边栏
+  const sideBar = new SideBar(manager);
 
-  const varTabIcon = addon.tab.recolorable();
-  varTabIcon.draggable = false;
-  varTabIcon.src = addon.self.getResource("/icon.svg") /* rewritten by pull.js */;
+  // 检测 VSCode 布局
+  const isVSCode = isVSCodeLayoutEnabled();
 
-  const varTabText = document.createElement("span");
-  varTabText.innerText = msg("variables");
+  // 创建侧边栏切换按钮（Tab 样式）
+  const toggleBtn = document.createElement("li");
+  addon.tab.displayNoneWhileDisabled(toggleBtn, { display: "flex" });
+  toggleBtn.classList.add(
+    addon.tab.scratchClass("react-tabs_react-tabs__tab"),
+    addon.tab.scratchClass("gui_tab"),
+    "tab",
+    "variableManger-Tab"
+  );
+  if (isVSCode) {
+    toggleBtn.classList.add("vscode-tab");
+  }
+  toggleBtn.id = "react-tabs-sa-variable-manager";
 
-  varTab.appendChild(varTabIcon);
-  varTab.appendChild(varTabText);
+  const toggleBtnIcon = addon.tab.recolorable();
+  toggleBtnIcon.draggable = false;
+  toggleBtnIcon.src = addon.self.getResource("/icon.svg") /* rewritten by pull.js */;
+
+  const toggleBtnText = document.createElement("span");
+  toggleBtnText.innerText = msg("variables");
+
+  toggleBtn.appendChild(toggleBtnIcon);
+  toggleBtn.appendChild(toggleBtnText);
+
+  toggleBtn.addEventListener("click", () => {
+    if (sideBar.isOpen()) {
+      sideBar.close();
+      toggleBtn.classList.remove("sa-var-manager-active", "is-selected");
+      toggleBtn.setAttribute("aria-selected", "false");
+    } else {
+      sideBar.open();
+      toggleBtn.classList.add("sa-var-manager-active", "is-selected");
+      toggleBtn.setAttribute("aria-selected", "true");
+      fullReload();
+    }
+  });
 
   function updateHeadingVisibility() {
     // used to hide the headings if there are no variables
@@ -284,7 +323,7 @@ export default async function ({ addon, console, msg }) {
   }
 
   function fullReload() {
-    if (addon.tab.redux.state?.scratchGui?.editorTab?.activeTabIndex !== 4 || preventUpdate) return;
+    if (!sideBar.isOpen() || preventUpdate) return;
 
     const editingTarget = vm.runtime.getEditingTarget();
     const stage = vm.runtime.getTargetForStage();
@@ -317,7 +356,7 @@ export default async function ({ addon, console, msg }) {
   }
 
   function quickReload() {
-    if (addon.tab.redux.state?.scratchGui?.editorTab?.activeTabIndex !== 4 || preventUpdate) return;
+    if (!sideBar.isOpen() || preventUpdate) return;
 
     for (const variable of localVariables) {
       variable.updateValue();
@@ -327,58 +366,6 @@ export default async function ({ addon, console, msg }) {
     }
   }
 
-  function cleanup() {
-    localVariables = [];
-    globalVariables = [];
-  }
-
-  varTab.addEventListener("click", (e) => {
-    if (sideBar.isOpen()) {
-      sideBar.close();
-      varTab.classList.remove(
-        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
-        addon.tab.scratchClass("gui_is-selected")
-      );
-    } else {
-      sideBar.open();
-      varTab.classList.add(
-        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
-        addon.tab.scratchClass("gui_is-selected")
-      );
-      fullReload();
-    }
-  });
-
-  function setVisible(visible) {
-    if (visible) {
-      varTab.classList.add(
-        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
-        addon.tab.scratchClass("gui_is-selected")
-      );
-      sideBar.open();
-      fullReload();
-    } else {
-      varTab.classList.remove(
-        addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
-        addon.tab.scratchClass("gui_is-selected")
-      );
-      sideBar.close();
-      cleanup();
-    }
-  }
-
-  addon.tab.redux.initialize();
-  addon.tab.redux.addEventListener("statechanged", ({ detail }) => {
-    if (detail.action.type === "scratch-gui/mode/SET_PLAYER") {
-      if (!detail.action.isPlayerOnly) {
-        sideBar.close();
-        varTab.classList.remove(
-          addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
-          addon.tab.scratchClass("gui_is-selected")
-        );
-      }
-    }
-  });
 
   vm.runtime.on("PROJECT_LOADED", () => {
     try {
@@ -407,22 +394,19 @@ export default async function ({ addon, console, msg }) {
   };
 
   addon.self.addEventListener("disabled", () => {
-    if (addon.tab.redux.state.scratchGui.editorTab.activeTabIndex === 4) {
-      addon.tab.redux.dispatch({ type: "scratch-gui/navigation/ACTIVATE_TAB", activeTabIndex: 2 });
+    if (sideBar.isOpen()) {
+      sideBar.close();
+      toggleBtn.classList.remove("sa-var-manager-active");
     }
   });
-  let tabAdded = false;
+
+  // 将切换按钮添加到 Tab 列表中
   while (true) {
     await addon.tab.waitForElement("[class^='react-tabs_react-tabs__tab-list']", {
       markAsSeen: true,
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
-    if (!tabAdded) {
-      sideBar = new sidebar();
-      sideBar.addTab("变量", manager);
-      tabAdded = true;
-    }
-    addon.tab.appendToSharedSpace({ space: "afterTabs", element: varTab, order: 4 });
+    addon.tab.appendToSharedSpace({ space: "afterTabs", element: toggleBtn, order: 4 });
   }
 }
