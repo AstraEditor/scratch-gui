@@ -61,7 +61,7 @@ const base = {
         publicPath: root
     },
     resolve: {
-        symlinks: false,
+        symlinks: true,
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts'),
@@ -186,7 +186,16 @@ module.exports = [
                 minChunks: 2,
                 minSize: 50000,
                 maxInitialRequests: 5
-            }
+            },
+            minimizer: [
+                new (require('terser-webpack-plugin'))({
+                    terserOptions: {
+                        compress: {
+                            reduce_vars: false
+                        }
+                    }
+                })
+            ]
         },
         plugins: base.plugins.concat([
             new webpack.DefinePlugin({
