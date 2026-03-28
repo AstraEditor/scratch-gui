@@ -33,6 +33,16 @@
   width: 100%;
   margin: 5px;
 }
+
+/* 按钮激活状态 */
+.sa-find-bar-button-active {
+  background-color: var(--ui-primary) !important;
+}
+
+.sa-find-bar-button-active .sa-find-bar-button-text {
+  filter: none !important;
+}
+
 .sa-find-bar-button-text{
   width: 25px;
 }
@@ -188,4 +198,88 @@
 
 .sa-find-carousel-control:hover {
   color: #ffff80;
+}
+
+/* Sidebar 内容容器样式 */
+.sa-find-sidebar-content {
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Sidebar 模式下的搜索包装器 */
+.sa-find-sidebar-wrapper {
+  width: 100%;
+}
+
+/* Sidebar 模式下的下拉输出容器 */
+.sa-find-dropdown-out-sidebar {
+  display: block;
+  z-index: 100;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  padding: 4px;
+  border: none;
+  border-radius: 0;
+  margin-top: 6px;
+  transition: width 0.2s ease;
+}
+
+.sa-find-dropdown-out-sidebar.visible {
+  width: 100%;
+  box-shadow: none;
+  background-color: transparent;
+  outline: none;
+}
+
+/* Sidebar 模式下的下拉列表 */
+.sa-find-dropdown-out-sidebar > .sa-find-dropdown {
+  max-height: calc(100vh - 300px);
+  max-width: 100%;
+  overflow-y: auto;
+}
+
+/* Sidebar 模式下的搜索输入框 */
+.sa-find-dropdown-out-sidebar .sa-find-input {
+  width: 100%;
+  box-sizing: border-box !important;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  padding-left: 0.4em;
+}
+
+.sa-find-dropdown-out-sidebar .sa-find-input:focus {
+  box-shadow: none;
+}
+
+/* Sidebar 模式下的轮播控件 */
+.sa-find-dropdown-out-sidebar .sa-find-carousel {
+  font-weight: normal;
+  position: absolute;
+  right: 0;
+  white-space: nowrap;
+  background-color: inherit;
+  z-index: 1;
+  padding: 0;
+}
+
+.sa-find-dropdown-out-sidebar .sa-find-carousel-control {
+  padding: 0 6px;
+}
+
+.sa-find-dropdown-out-sidebar .sa-find-carousel-control:hover {
+  color: #ffff80;
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .sa-find-dropdown-out-sidebar.visible {
+    background-color: var(--ui-secondary);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
 }

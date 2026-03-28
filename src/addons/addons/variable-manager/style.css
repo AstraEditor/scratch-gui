@@ -70,7 +70,10 @@
 
 /* 侧边栏中的变量管理器使用全高度 */
 .addons-side-bar .sa-var-manager {
+  max-height: calc(100vh - 80px);
   height: 100% !important;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* VSCode layout: allow variable manager to use full height */

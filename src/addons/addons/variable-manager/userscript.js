@@ -59,8 +59,20 @@ export default async function ({ addon, console, msg }) {
   manager.appendChild(localVars);
   manager.appendChild(globalVars);
 
-  // 创建侧边栏
-  const sideBar = new SideBar(manager);
+  // 注册侧边栏插件
+  SideBar.register('variable-manager', manager, {
+    onActivate: () => {
+      // 激活时添加按钮状态
+      toggleBtn.classList.add("sa-var-manager-active", "is-selected");
+      toggleBtn.setAttribute("aria-selected", "true");
+      fullReload();
+    },
+    onDeactivate: () => {
+      // 停用时移除按钮状态
+      toggleBtn.classList.remove("sa-var-manager-active", "is-selected");
+      toggleBtn.setAttribute("aria-selected", "false");
+    }
+  });
 
   // 检测 VSCode 布局
   const isVSCode = isVSCodeLayoutEnabled();
@@ -90,15 +102,13 @@ export default async function ({ addon, console, msg }) {
   toggleBtn.appendChild(toggleBtnText);
 
   toggleBtn.addEventListener("click", () => {
-    if (sideBar.isOpen()) {
-      sideBar.close();
-      toggleBtn.classList.remove("sa-var-manager-active", "is-selected");
-      toggleBtn.setAttribute("aria-selected", "false");
+    // 检查当前是否已激活
+    if (SideBar.getActivePlugin() === 'variable-manager') {
+      // 如果已激活，则关闭
+      SideBar.close();
     } else {
-      sideBar.open();
-      toggleBtn.classList.add("sa-var-manager-active", "is-selected");
-      toggleBtn.setAttribute("aria-selected", "true");
-      fullReload();
+      // 否则切换到变量管理器
+      SideBar.switchTo('variable-manager');
     }
   });
 
@@ -323,7 +333,7 @@ export default async function ({ addon, console, msg }) {
   }
 
   function fullReload() {
-    if (!sideBar.isOpen() || preventUpdate) return;
+    if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
 
     const editingTarget = vm.runtime.getEditingTarget();
     const stage = vm.runtime.getTargetForStage();
@@ -356,7 +366,7 @@ export default async function ({ addon, console, msg }) {
   }
 
   function quickReload() {
-    if (!sideBar.isOpen() || preventUpdate) return;
+    if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
 
     for (const variable of localVariables) {
       variable.updateValue();
@@ -394,9 +404,8 @@ export default async function ({ addon, console, msg }) {
   };
 
   addon.self.addEventListener("disabled", () => {
-    if (sideBar.isOpen()) {
-      sideBar.close();
-      toggleBtn.classList.remove("sa-var-manager-active");
+    if (SideBar.getActivePlugin() === 'variable-manager') {
+      SideBar.close();
     }
   });
 

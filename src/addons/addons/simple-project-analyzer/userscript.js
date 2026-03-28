@@ -14,6 +14,22 @@ async function loadChartJS() {
   });
 }
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
+import SideBar from '../../ui/side-bar/side-bar.js';
+
+// 检测是否启用 VSCode 布局
+function isVSCodeLayoutEnabled() {
+  try {
+    const settings = localStorage.getItem("AESettings");
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      return parsed.EnableVSCodeLayout === true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
 export default async function ({ addon, msg, safeMsg, console }) {
   // 加载Chart.js库
   await loadChartJS();
@@ -24,9 +40,11 @@ export default async function ({ addon, msg, safeMsg, console }) {
       this.analyzeButton = null;
       this.analyzeModal = null;
       this.removeModal = null;
+      this.sidebarContent = null;
       this.chartInstance = null;
       this.mathLogicChartInstance = null;
       this.drScratchChartInstance = null;
+      this.isVSCodeLayout = isVSCodeLayoutEnabled();
     }
 
     // 创建分析按钮
@@ -76,7 +94,22 @@ export default async function ({ addon, msg, safeMsg, console }) {
       // 禁用时隐藏按钮
       addon.tab.displayNoneWhileDisabled(this.analyzeButton);
 
-      this.analyzeButton.addEventListener('click', () => this.showAnalysisModal());
+      this.analyzeButton.addEventListener('click', () => {
+        // 重新检测布局模式
+        this.isVSCodeLayout = isVSCodeLayoutEnabled();
+
+        if (this.isVSCodeLayout) {
+          // VSCode 布局下，按钮作为切换开关
+          if (SideBar.getActivePlugin() === 'simple-project-analyzer') {
+            SideBar.close();
+          } else {
+            this.showSidebar();
+          }
+        } else {
+          // 非 VSCode 布局下，每次点击都打开新的 modal
+          this.showModal();
+        }
+      });
 
       // 将按钮添加到目标位置
       if (VSCodeLayout) {
@@ -93,6 +126,74 @@ export default async function ({ addon, msg, safeMsg, console }) {
 
     // 显示分析结果模态框
     showAnalysisModal() {
+      // 检测当前布局模式
+      this.isVSCodeLayout = isVSCodeLayoutEnabled();
+
+      if (this.isVSCodeLayout) {
+        // VSCode 布局下显示在 sidebar
+        this.showSidebar();
+      } else {
+        // 非 VSCode 布局下显示在 Modal
+        this.showModal();
+      }
+    }
+
+    // 在 Sidebar 中显示分析结果
+    showSidebar() {
+      // 检查当前是否已经激活
+      if (SideBar.getActivePlugin() === 'simple-project-analyzer') {
+        // 如果已激活，则关闭
+        SideBar.close();
+        return;
+      }
+
+      // 如果还没有创建内容，创建并注册
+      if (!this.sidebarContent) {
+        this.sidebarContent = document.createElement('div');
+        this.sidebarContent.className = 'sa-analyze-sidebar-content';
+
+        // 生成分析结果HTML
+        const analysisHTML = this.generateAnalysisHTML();
+
+        // 设置 sidebar 内容
+        this.sidebarContent.innerHTML = `
+          <div class="sa-analyze-loading" id="saAnalyzeLoading">
+            <div class="sa-analyze-spinner"></div>
+            <p>${msg('analyzing')}</p>
+          </div>
+          <div class="sa-analyze-results" id="saAnalyzeResults" style="display: none;">
+            ${analysisHTML}
+          </div>
+        `;
+
+        // 注册插件内容和回调
+        SideBar.register('simple-project-analyzer', this.sidebarContent, {
+          onActivate: () => {
+            // 激活时添加按钮状态
+            if (this.analyzeButton) {
+              this.analyzeButton.classList.add('sa-analyze-button-active');
+            }
+          },
+          onDeactivate: () => {
+            // 停用时移除按钮状态
+            if (this.analyzeButton) {
+              this.analyzeButton.classList.remove('sa-analyze-button-active');
+            }
+            // 停用时销毁图表
+            this.destroyCharts();
+          }
+        });
+      }
+
+      // 切换到 SPA 插件
+      SideBar.switchTo('simple-project-analyzer');
+
+      // 异步分析项目
+      this.analyzeProject();
+    }
+
+    // 在 Modal 中显示分析结果
+    showModal() {
       // 如果模态框已存在，先移除
       if (this.analyzeModal) {
         this.analyzeModal.remove();
@@ -137,20 +238,36 @@ export default async function ({ addon, msg, safeMsg, console }) {
         this.removeModal();
         this.analyzeModal = null;
         this.removeModal = null;
-        
+
         // 销毁图表实例
-        if (this.chartInstance) {
-          this.chartInstance.destroy();
-          this.chartInstance = null;
+        this.destroyCharts();
+
+        // 移除按钮激活状态
+        if (this.analyzeButton) {
+          this.analyzeButton.classList.remove('sa-analyze-button-active');
         }
-        if (this.mathLogicChartInstance) {
-          this.mathLogicChartInstance.destroy();
-          this.mathLogicChartInstance = null;
-        }
-        if (this.drScratchChartInstance) {
-          this.drScratchChartInstance.destroy();
-          this.drScratchChartInstance = null;
-        }
+      }
+    }
+
+    // 关闭 Sidebar
+    closeSidebar() {
+      // 使用全局 close 方法，会自动触发 onDeactivate 回调
+      SideBar.close();
+    }
+
+    // 销毁所有图表实例
+    destroyCharts() {
+      if (this.chartInstance) {
+        this.chartInstance.destroy();
+        this.chartInstance = null;
+      }
+      if (this.mathLogicChartInstance) {
+        this.mathLogicChartInstance.destroy();
+        this.mathLogicChartInstance = null;
+      }
+      if (this.drScratchChartInstance) {
+        this.drScratchChartInstance.destroy();
+        this.drScratchChartInstance = null;
       }
     }
 

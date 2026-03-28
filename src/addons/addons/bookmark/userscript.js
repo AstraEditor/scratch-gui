@@ -1,4 +1,19 @@
 import icon from "!../../../lib/tw-recolor/build!./bookmark.svg";
+import SideBar from "../../ui/side-bar/side-bar.js";
+
+// 检测是否启用 VSCode 布局
+function isVSCodeLayoutEnabled() {
+  try {
+    const settings = localStorage.getItem("AESettings");
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      return parsed.EnableVSCodeLayout === true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
 
 export default async ({ addon, msg, console }) => {
   const Blockly = await addon.tab.traps.getBlockly();
@@ -121,6 +136,8 @@ export default async ({ addon, msg, console }) => {
   };
 
   let bookmarkButton = null;
+  let sidebarContent = null;
+  let currentVSCodeLayout = isVSCodeLayoutEnabled();
 
   // Check if VSCodeLayout is enabled
   const isVSCodeLayout = () => {
@@ -130,6 +147,167 @@ export default async ({ addon, msg, console }) => {
     } catch (e) {
       return false;
     }
+  };
+
+  // Show bookmark in sidebar
+  const showBookmarkSidebar = () => {
+    // 如果还没有创建内容，创建并注册
+    if (!sidebarContent) {
+      sidebarContent = document.createElement("div");
+      sidebarContent.className = "sa-bookmark-sidebar-content";
+
+      // 创建书签列表
+      const bookmarkList = document.createElement("div");
+      bookmarkList.className = "sa-bookmark-list";
+
+      const renderBookmarks = () => {
+        bookmarkList.innerHTML = "";
+        const bookmarks = parseBookmarkComment();
+
+        if (bookmarks.length === 0) {
+          const emptyMessage = document.createElement("div");
+          emptyMessage.className = "sa-bookmark-empty";
+          emptyMessage.textContent = msg("no-bookmarks");
+          bookmarkList.appendChild(emptyMessage);
+          return;
+        }
+
+        bookmarks.forEach((bookmark, index) => {
+          const bookmarkItem = document.createElement("div");
+          bookmarkItem.className = "sa-bookmark-item";
+
+          const bookmarkInfo = document.createElement("div");
+          bookmarkInfo.className = "sa-bookmark-info";
+
+          const bookmarkName = document.createElement("span");
+          bookmarkName.className = "sa-bookmark-name";
+          bookmarkName.textContent = bookmark.name || msg("bookmark-default-name", { index: index + 1 });
+          bookmarkName.title = msg("edit-bookmark-hint");
+
+          // Make bookmark name editable
+          bookmarkName.addEventListener("click", () => {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = bookmark.name || msg("bookmark-default-name", { index: index + 1 });
+            input.className = "sa-bookmark-name-input";
+            input.classList.add(addon.tab.scratchClass("input_input-form"));
+
+            const saveEdit = () => {
+              const newName = input.value.trim();
+              bookmark.name = newName || null;
+              saveBookmarkComment(bookmarks);
+              bookmarkName.textContent = newName || msg("bookmark-default-name", { index: index + 1 });
+            };
+
+            input.addEventListener("blur", saveEdit);
+            input.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") {
+                saveEdit();
+              } else if (e.key === "Escape") {
+                bookmarkName.textContent = bookmark.name || msg("bookmark-default-name", { index: index + 1 });
+              }
+            });
+
+            bookmarkName.innerHTML = "";
+            bookmarkName.appendChild(input);
+            input.focus();
+            input.select();
+          });
+
+          const bookmarkTime = document.createElement("span");
+          bookmarkTime.className = "sa-bookmark-time";
+          bookmarkTime.textContent = new Date(bookmark.timestamp).toLocaleString();
+
+          bookmarkInfo.appendChild(bookmarkName);
+          bookmarkInfo.appendChild(bookmarkTime);
+
+          const bookmarkActions = document.createElement("div");
+          bookmarkActions.className = "sa-bookmark-actions";
+
+          const jumpButton = document.createElement("button");
+          jumpButton.className = "sa-bookmark-action-button";
+          jumpButton.textContent = msg("jump");
+          jumpButton.addEventListener("click", () => {
+            restoreWorkspaceState(bookmark.state);
+          });
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "sa-bookmark-action-button sa-bookmark-delete";
+          deleteButton.textContent = msg("delete");
+          deleteButton.addEventListener("click", () => {
+            const bookmarks = parseBookmarkComment();
+            bookmarks.splice(index, 1);
+            saveBookmarkComment(bookmarks);
+            renderBookmarks();
+          });
+
+          bookmarkActions.appendChild(jumpButton);
+          bookmarkActions.appendChild(deleteButton);
+
+          bookmarkItem.appendChild(bookmarkInfo);
+          bookmarkItem.appendChild(bookmarkActions);
+          bookmarkList.appendChild(bookmarkItem);
+        });
+      };
+
+      // 添加书签表单
+      const addBookmarkForm = document.createElement("div");
+      addBookmarkForm.className = "sa-bookmark-add-form";
+
+      const nameLabel = document.createElement("label");
+      nameLabel.textContent = msg("bookmark-name");
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = msg("bookmark-name-placeholder");
+      nameInput.className = addon.tab.scratchClass("input_input-form");
+
+      const addButton = document.createElement("button");
+      addButton.textContent = msg("add-bookmark");
+      addButton.className = addon.tab.scratchClass("prompt_ok-button");
+
+      addButton.addEventListener("click", () => {
+        const name = nameInput.value.trim();
+        const bookmarks = parseBookmarkComment();
+        const newBookmark = {
+          name: name || null,
+          state: getWorkspaceState(),
+          timestamp: Date.now()
+        };
+        bookmarks.push(newBookmark);
+        saveBookmarkComment(bookmarks);
+        nameInput.value = "";
+        renderBookmarks();
+      });
+
+      addBookmarkForm.appendChild(nameLabel);
+      addBookmarkForm.appendChild(nameInput);
+      addBookmarkForm.appendChild(addButton);
+
+      sidebarContent.appendChild(bookmarkList);
+      sidebarContent.appendChild(addBookmarkForm);
+
+      // 注册插件内容和回调
+      SideBar.register('bookmark', sidebarContent, {
+        onActivate: () => {
+          // 激活时添加按钮状态
+          if (bookmarkButton) {
+            bookmarkButton.classList.add('sa-bookmark-button-active');
+          }
+          // 渲染书签列表
+          renderBookmarks();
+        },
+        onDeactivate: () => {
+          // 停用时移除按钮状态
+          if (bookmarkButton) {
+            bookmarkButton.classList.remove('sa-bookmark-button-active');
+          }
+        }
+      });
+    }
+
+    // 切换到书签插件
+    SideBar.switchTo('bookmark');
   };
 
   // Create bookmark modal
@@ -297,7 +475,7 @@ export default async ({ addon, msg, console }) => {
 
   // Create bookmark button
   const createBookmarkButton = async () => {
-    const VSCodeLayout = JSON.parse(localStorage.getItem('AESettings')).EnableVSCodeLayout;
+    const VSCodeLayout = isVSCodeLayoutEnabled();
 
     // 检测是否在 VSCodeLayout 下
     const tabBar = await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
@@ -343,7 +521,20 @@ export default async ({ addon, msg, console }) => {
     addon.tab.displayNoneWhileDisabled(bookmarkButton);
 
     bookmarkButton.addEventListener("click", () => {
-      createBookmarkModal();
+      // 重新检测布局模式
+      currentVSCodeLayout = isVSCodeLayoutEnabled();
+
+      if (currentVSCodeLayout) {
+        // VSCode 布局下，切换 sidebar
+        if (SideBar.getActivePlugin() === 'bookmark') {
+          SideBar.close();
+        } else {
+          showBookmarkSidebar();
+        }
+      } else {
+        // 非 VSCode 布局下，显示 modal
+        createBookmarkModal();
+      }
     });
 
     // 将按钮添加到目标位置

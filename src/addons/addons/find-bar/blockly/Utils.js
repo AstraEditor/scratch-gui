@@ -92,25 +92,32 @@ export default class Utils {
       xx = block.width + x, // Turns out they have their x & y stored locally, and they are the actual size rather than scaled or including children...
       yy = block.height + y,
       s = workspace.getMetrics();
-    if (
-      x < s.viewLeft + this.offsetX - 4 ||
-      xx > s.viewLeft + s.viewWidth ||
-      y < s.viewTop + this.offsetY - 4 ||
-      yy > s.viewTop + s.viewHeight
-    ) {
-      // sx = s.contentLeft + s.viewWidth / 2 - x,
-      let sx = x - s.contentLeft - this.offsetX,
-        // sy = s.contentTop - y + Math.max(Math.min(32, 32 * scale), (s.viewHeight - yh) / 2);
-        sy = y - s.contentTop - this.offsetY;
 
-      this.navigationHistory.storeView(this.navigationHistory.peek(), 64);
+    // 使用 setTimeout 延迟滚动，确保工作区布局完全更新
+    setTimeout(() => {
+      // 重新获取度量值，确保是最新的
+      s = workspace.getMetrics();
 
-      // workspace.hideChaff(),
-      workspace.scrollbar.set(sx, sy);
-      this.navigationHistory.storeView({ left: sx, top: sy }, 64);
-    }
-    this.blockly && this.blockly.hideChaff();
-    BlockFlasher.flash(block);
+      if (
+        x < s.viewLeft + this.offsetX - 4 ||
+        xx > s.viewLeft + s.viewWidth ||
+        y < s.viewTop + this.offsetY - 4 ||
+        yy > s.viewTop + s.viewHeight
+      ) {
+        // sx = s.contentLeft + s.viewWidth / 2 - x,
+        let sx = x - s.contentLeft - this.offsetX,
+          // sy = s.contentTop - y + Math.max(Math.min(32, 32 * scale), (s.viewHeight - yh) / 2);
+          sy = y - s.contentTop - this.offsetY;
+
+        this.navigationHistory.storeView(this.navigationHistory.peek(), 64);
+
+        // workspace.hideChaff(),
+        workspace.scrollbar.set(sx, sy);
+        this.navigationHistory.storeView({ left: sx, top: sy }, 64);
+      }
+      this.blockly && this.blockly.hideChaff();
+      BlockFlasher.flash(block);
+    }, 50); // 延迟 50ms 确保布局更新
   }
 
   /**

@@ -2,15 +2,25 @@ import BlockItem from "./blockly/BlockItem.js";
 import BlockInstance from "./blockly/BlockInstance.js";
 import Utils from "./blockly/Utils.js";
 import icon from "!../../../lib/tw-recolor/build!./icon.svg"
+import SideBar from "../../ui/side-bar/side-bar.js";
+
+// 检测是否启用 VSCode 布局
+function isVSCodeLayoutEnabled() {
+  try {
+    const settings = localStorage.getItem("AESettings");
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      return parsed.EnableVSCodeLayout === true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
 
 export default async function ({ addon, msg, console }) {
   const Blockly = await addon.tab.traps.getBlockly();
-  let VSCodeLayout
-  try {
-    VSCodeLayout = JSON.parse(localStorage.getItem('AESettings')).EnableVSCodeLayout;
-  } catch (e) {
-    VSCodeLayout = false;
-  }
+  let VSCodeLayout = isVSCodeLayoutEnabled();
   class FindBar {
     constructor() {
       this.utils = new Utils(addon);
@@ -22,6 +32,8 @@ export default async function ({ addon, msg, console }) {
       this.findInput = null;
       this.dropdownOut = null;
       this.dropdown = new Dropdown(this.utils);
+
+      this.sidebarContent = null;
 
       document.addEventListener("keydown", (e) => this.eventKeyDown(e), true);
     }
@@ -68,10 +80,16 @@ export default async function ({ addon, msg, console }) {
       this.findBarButton.appendChild(this.findBarButtonText)
       this.findBarButton.className = "sa-find-bar-button";
       this.findBarButton.addEventListener("click", () => {
+        // 重新检测布局模式
+        VSCodeLayout = isVSCodeLayoutEnabled();
+
         if (VSCodeLayout) {
-          // VSCode 布局下，点击按钮显示搜索栏
-          this.findBarOuter.style.display = "flex";
-          this.findInput.focus();
+          // VSCode 布局下，切换 sidebar
+          if (SideBar.getActivePlugin() === 'find-bar') {
+            SideBar.close();
+          } else {
+            this.showFindSidebar();
+          }
         } else {
           this.findInput.focus();
         }
@@ -81,6 +99,183 @@ export default async function ({ addon, msg, console }) {
 
       this.bindEvents();
       this.tabChanged();
+    }
+
+    // 在 Sidebar 中显示搜索功能
+    showFindSidebar() {
+      // 如果还没有创建内容，创建并注册
+      if (!this.sidebarContent) {
+        this.sidebarContent = document.createElement("div");
+        this.sidebarContent.className = "sa-find-sidebar-content";
+
+        // 创建一个容器来包裹原有的搜索组件
+        const searchWrapper = document.createElement("div");
+        searchWrapper.className = "sa-find-sidebar-wrapper";
+
+        // 创建原有的下拉输出容器
+        const sidebarDropdownOut = document.createElement("label");
+        sidebarDropdownOut.className = "sa-find-dropdown-out sa-find-dropdown-out-sidebar";
+        sidebarDropdownOut.id = "sa-find-dropdown-out-sidebar";
+
+        // 创建搜索输入框（复用原有样式）
+        const sidebarFindInput = document.createElement("input");
+        sidebarFindInput.className = addon.tab.scratchClass("input_input-form", {
+          others: "sa-find-input",
+        });
+        sidebarFindInput.id = "sa-find-input-sidebar";
+        sidebarFindInput.type = "search";
+        sidebarFindInput.placeholder = msg("find-placeholder");
+        sidebarFindInput.autocomplete = "off";
+
+        sidebarDropdownOut.appendChild(sidebarFindInput);
+        sidebarDropdownOut.appendChild(this.dropdown.createDom());
+        searchWrapper.appendChild(sidebarDropdownOut);
+        this.sidebarContent.appendChild(searchWrapper);
+
+        // 保存 sidebar 模式下的输入框引用
+        this.sidebarFindInput = sidebarFindInput;
+        this.sidebarDropdownOut = sidebarDropdownOut;
+
+        // 注册插件内容和回调
+        SideBar.register('find-bar', this.sidebarContent, {
+          onActivate: () => {
+            // 激活时添加按钮状态
+            if (this.findBarButton) {
+              this.findBarButton.classList.add('sa-find-bar-button-active');
+            }
+            // 聚焦搜索输入框
+            sidebarFindInput.focus();
+            // 显示所有积木（常显）
+            this.showDropDownSidebar();
+          },
+          onDeactivate: () => {
+            // 停用时移除按钮状态
+            if (this.findBarButton) {
+              this.findBarButton.classList.remove('sa-find-bar-button-active');
+            }
+            // 不隐藏下拉列表，保持常显
+          }
+        });
+
+        // 绑定 sidebar 模式下的输入框事件
+        sidebarFindInput.addEventListener("focus", () => this.inputChangeSidebar());
+        sidebarFindInput.addEventListener("keydown", (e) => this.inputKeyDownSidebar(e));
+        sidebarFindInput.addEventListener("keyup", () => this.inputChangeSidebar());
+        sidebarFindInput.addEventListener("focusout", () => {
+          // sidebar 模式下不隐藏列表，保持常显
+        });
+      }
+
+      // 切换到搜索插件
+      SideBar.switchTo('find-bar');
+    }
+
+    // Sidebar 模式下的输入变化处理（复用原有逻辑）
+    inputChangeSidebar() {
+      // 使用 sidebar 模式下的输入框
+      const input = this.sidebarFindInput;
+      const dropdownOut = this.sidebarDropdownOut;
+
+      this.showDropDownSidebar();
+
+      // 复用原有的过滤逻辑
+      let val = (input.value || "").toLowerCase();
+      if (val === this.prevValue) {
+        return;
+      }
+      this.prevValue = val;
+
+      this.dropdown.blocks = null;
+
+      // Hide items in list that do not contain filter text
+      let listLI = this.dropdown.items;
+      for (const li of listLI) {
+        let procCode = li.data.procCode;
+        let i = li.data.lower.indexOf(val);
+        if (i >= 0) {
+          li.style.display = "block";
+          while (li.firstChild) {
+            li.removeChild(li.firstChild);
+          }
+          if (i > 0) {
+            li.appendChild(document.createTextNode(procCode.substring(0, i)));
+          }
+          let bText = document.createElement("b");
+          bText.appendChild(document.createTextNode(procCode.substr(i, val.length)));
+          li.appendChild(bText);
+          if (i + val.length < procCode.length) {
+            li.appendChild(document.createTextNode(procCode.substr(i + val.length)));
+          }
+        } else {
+          li.style.display = "none";
+        }
+      }
+    }
+
+    // Sidebar 模式下的键盘事件处理（复用原有逻辑）
+    inputKeyDownSidebar(e) {
+      this.dropdown.inputKeyDown(e);
+
+      // Enter
+      if (e.key === "Enter") {
+        this.sidebarFindInput.blur();
+        return;
+      }
+
+      // Escape
+      if (e.key === "Escape") {
+        if (this.sidebarFindInput.value.length > 0) {
+          this.sidebarFindInput.value = "";
+          this.inputChangeSidebar();
+        } else {
+          this.sidebarFindInput.blur();
+          SideBar.close();
+        }
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // Sidebar 模式下显示下拉列表
+    showDropDownSidebar(focusID, instanceBlock) {
+      // sidebar 模式下，列表总是显示，不需要检查是否已显示
+      if (!focusID) {
+        this.prevValue = "";
+      } else {
+        this.prevValue = null;
+      }
+
+      this.sidebarDropdownOut.classList.add("visible");
+      let scratchBlocks =
+        this.selectedTab === 0
+          ? this.getScratchBlocks()
+          : this.selectedTab === 1
+            ? this.getScratchCostumes()
+            : this.selectedTab === 2
+              ? this.getScratchSounds()
+              : [];
+
+      this.dropdown.empty();
+
+      for (const proc of scratchBlocks) {
+        let item = this.dropdown.addItem(proc);
+
+        if (focusID) {
+          if (proc.matchesID(focusID)) {
+            this.dropdown.onItemClick(item, instanceBlock);
+          } else {
+            item.style.display = "none";
+          }
+        }
+      }
+
+      this.utils.offsetX = this.sidebarDropdownOut.getBoundingClientRect().width + 32;
+      this.utils.offsetY = 32;
+    }
+
+    // Sidebar 模式下隐藏下拉列表
+    hideDropDownSidebar() {
+      this.sidebarDropdownOut.classList.remove("visible");
     }
 
     bindEvents() {
@@ -180,12 +375,27 @@ export default async function ({ addon, msg, console }) {
 
       if (e.key.toLowerCase() === "f" && ctrlKey && !e.shiftKey) {
         // Ctrl + F (Override default Ctrl+F find)
-        // 在 VSCode 布局下，按下 Ctrl+F 时显示搜索栏
+        // 重新检测布局模式
+        VSCodeLayout = isVSCodeLayoutEnabled();
+
         if (VSCodeLayout) {
+          // VSCode 布局下，切换到 sidebar
+          if (SideBar.getActivePlugin() === 'find-bar') {
+            // 如果已经激活，聚焦到输入框
+            if (this.sidebarFindInput) {
+              this.sidebarFindInput.focus();
+              this.sidebarFindInput.select();
+            }
+          } else {
+            // 如果未激活，显示 sidebar
+            this.showFindSidebar();
+          }
+        } else {
+          // 非 VSCode 布局下，显示浮动搜索栏
           this.findBarOuter.style.display = "flex";
+          this.findInput.focus();
+          this.findInput.select();
         }
-        this.findInput.focus();
-        this.findInput.select();
         e.cancelBubble = true;
         e.preventDefault();
         return true;

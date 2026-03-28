@@ -2,38 +2,222 @@ const getSideBar = () => {
     return document.querySelectorAll("[class*=gui_tab-panel]")[0];
 }
 
-// 单例实例
+// 全局单例实例
 let instance = null;
+
+// 插件注册表：pluginName -> { content, callbacks }
+const pluginRegistry = new Map();
+
+// 当前活动的插件名称
+let activePlugin = null;
 
 /**
  * 适用于Addons的侧边栏
- * ## 注意：该侧边栏仅在代码编辑区有效 
+ * ## 注意：该侧边栏仅在代码编辑区有效
+ *
+ * ## 使用方式（推荐）：
  * ```javascript
- * import sidebar from "../../ui/side-bar/side-bar.js"
- * 
- * const sideBar = new SideBar();
- * sideBar.setContent(element);
- * sideBar.open(); // 打开侧边栏
- * 
- * sideBar.close(); // 关闭侧边栏
- * 
- * sideBar.isOpen(); // 侧边栏是否打开
- * 
- * sideBar.clearContent(); // 清空内容
- * sideBar.getWidth(); // 获取当前宽度
- * 
+ * import SideBar from "../../ui/side-bar/side-bar.js"
+ *
+ * // 注册插件内容
+ * SideBar.register('my-plugin', contentElement, {
+ *   onActivate: () => console.log('激活'),
+ *   onDeactivate: () => console.log('停用')
+ * });
+ *
+ * // 切换到插件
+ * SideBar.switchTo('my-plugin');
+ *
+ * // 关闭侧边栏
+ * SideBar.close();
+ *
+ * // 检查是否打开
+ * SideBar.isOpen();
+ *
+ * // 检查当前活动插件
+ * SideBar.getActivePlugin();
  * ```
+ *
+ * ## 兼容旧 API：
+ * ```javascript
+ * const sideBar = new SideBar(element);
+ * sideBar.open();
+ * sideBar.close();
+ * ```
+ *
  * @class
- * @param {Element} element - 侧边栏内渲染元素（可选）
  */
 export default class SideBar {
     constructor(element) {
-        // 销毁旧实例
-        if (instance) {
-            instance.destroy();
+        // 如果传入元素，使用旧 API 模式
+        if (element) {
+            // 确保实例存在
+            if (!instance) {
+                instance = new SideBarInternal();
+            }
+            // 直接设置内容并打开
+            instance.setContent(element);
+            instance.open();
+            // 返回实例，以便兼容旧代码
+            return instance;
         }
-        instance = this;
 
+        // 如果没有传入元素，返回全局实例（用于静态方法调用）
+        if (!instance) {
+            instance = new SideBarInternal();
+        }
+        return instance;
+    }
+
+    /**
+     * 注册插件内容和回调
+     * @param {string} pluginName - 插件名称（唯一标识）
+     * @param {Element} content - 插件内容元素
+     * @param {Object} callbacks - 回调函数 { onActivate, onDeactivate }
+     */
+    static register(pluginName, content, callbacks = {}) {
+        pluginRegistry.set(pluginName, {
+            content,
+            callbacks: {
+                onActivate: callbacks.onActivate || (() => {}),
+                onDeactivate: callbacks.onDeactivate || (() => {})
+            }
+        });
+    }
+
+    /**
+     * 切换到指定插件
+     * @param {string} pluginName - 插件名称
+     */
+    static switchTo(pluginName) {
+        if (!instance) {
+            instance = new SideBarInternal();
+        }
+
+        const plugin = pluginRegistry.get(pluginName);
+        if (!plugin) {
+            console.warn(`SideBar: Plugin "${pluginName}" not registered`);
+            return;
+        }
+
+        // 如果当前有活动插件，先停用它
+        if (activePlugin && activePlugin !== pluginName) {
+            const currentPlugin = pluginRegistry.get(activePlugin);
+            if (currentPlugin && currentPlugin.callbacks.onDeactivate) {
+                currentPlugin.callbacks.onDeactivate();
+            }
+        }
+
+        // 切换到新插件
+        instance.setContent(plugin.content);
+        instance.open();
+        activePlugin = pluginName;
+
+        // 调用新插件的激活回调
+        if (plugin.callbacks.onActivate) {
+            plugin.callbacks.onActivate();
+        }
+    }
+
+    /**
+     * 关闭侧边栏
+     */
+    static close() {
+        if (!instance) return;
+
+        // 停用当前活动插件
+        if (activePlugin) {
+            const plugin = pluginRegistry.get(activePlugin);
+            if (plugin && plugin.callbacks.onDeactivate) {
+                plugin.callbacks.onDeactivate();
+            }
+            activePlugin = null;
+        }
+
+        instance.close();
+    }
+
+    /**
+     * 打开侧边栏（保持当前内容）
+     */
+    static open() {
+        if (!instance) {
+            instance = new SideBarInternal();
+        }
+        instance.open();
+    }
+
+    /**
+     * 检查侧边栏是否打开
+     */
+    static isOpen() {
+        return instance ? instance.isOpen() : false;
+    }
+
+    /**
+     * 获取当前活动插件名称
+     */
+    static getActivePlugin() {
+        return activePlugin;
+    }
+
+    /**
+     * 设置内容（兼容旧 API）
+     * @param {Element} content - 内容元素
+     */
+    static setContent(content) {
+        if (!instance) {
+            instance = new SideBarInternal();
+        }
+        instance.setContent(content);
+    }
+
+    /**
+     * 清空内容（兼容旧 API）
+     */
+    static clearContent() {
+        if (!instance) return;
+        instance.clearContent();
+    }
+
+    /**
+     * 获取内容容器（兼容旧 API）
+     */
+    static getContentContainer() {
+        return instance ? instance.getContentContainer() : null;
+    }
+
+    /**
+     * 获取宽度（兼容旧 API）
+     */
+    static getWidth() {
+        return instance ? instance.getWidth() : 300;
+    }
+
+    /**
+     * 销毁侧边栏（仅用于彻底清理）
+     */
+    static destroy() {
+        if (!instance) return;
+
+        // 停用所有插件
+        pluginRegistry.forEach((plugin) => {
+            if (plugin.callbacks.onDeactivate) {
+                plugin.callbacks.onDeactivate();
+            }
+        });
+
+        activePlugin = null;
+        instance.destroy();
+        instance = null;
+    }
+}
+
+/**
+ * SideBar 内部实现类
+ */
+class SideBarInternal {
+    constructor() {
         this.DEFAULT_WIDTH = 300;
         this.MIN_WIDTH = 200;
         this.MAX_WIDTH = 600;
@@ -101,8 +285,6 @@ export default class SideBar {
 
         this.extensionButton = document.querySelector("[class*=gui_extension-button-container]");
 
-        if (element) this.setContent(element);
-
         if (getSideBar()) getSideBar().prepend(this.element);
     }
 
@@ -149,8 +331,6 @@ export default class SideBar {
         if (this.element && this.element.parentNode) {
             this.element.parentNode.removeChild(this.element);
         }
-
-        instance = null;
     }
 
     startResize(e) {

@@ -28,6 +28,13 @@
   border-color: var(--motion-primary);
 }
 
+/* 按钮激活状态 */
+.sa-analyze-button-active {
+  background-color: var(--ui-primary) !important;
+  color: var(--ui-white) !important;
+  border-color: var(--ui-primary) !important;
+}
+
 /* VSCode 布局下的分析按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button {
   width: 40px;
@@ -49,6 +56,83 @@
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
   width: 2rem;
   height: 2rem;
+}
+
+/* VSCode 布局下按钮激活状态 */
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button-active {
+  background-color: var(--ui-primary) !important;
+}
+
+/* Sidebar 内容容器样式 */
+.sa-analyze-sidebar-content {
+  max-height: calc(100vh - 80px);
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Sidebar 模式下的结果容器 */
+.sa-analyze-sidebar-content .sa-analyze-results {
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Sidebar 模式下的加载容器 */
+.sa-analyze-sidebar-content .sa-analyze-loading {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* Sidebar 模式下的主体容器 */
+.sa-analyze-sidebar-content .sa-analyze-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
+/* Sidebar 模式下的节样式调整 */
+.sa-analyze-sidebar-content .sa-analyze-section {
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar 模式下的图表容器调整 */
+.sa-analyze-sidebar-content .sa-analyze-chart-container {
+  height: 250px;
+  padding: 12px;
+}
+
+/* Sidebar 模式下的行调整为单列 */
+.sa-analyze-sidebar-content .sa-analyze-row {
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Sidebar 模式下的统计网格调整 */
+.sa-analyze-sidebar-content .sa-analyze-stats-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* Sidebar 模式下的统计卡片调整 */
+.sa-analyze-sidebar-content .sa-analyze-stat {
+  padding: 12px;
+}
+
+.sa-analyze-sidebar-content .sa-analyze-stat-value {
+  font-size: 20px;
+}
+
+/* Sidebar 模式下的扩展网格调整 */
+.sa-analyze-sidebar-content .sa-analyze-extensions-grid {
+  grid-template-columns: 1fr;
 }
 
 /* 模态框样式 */
