@@ -9,6 +9,15 @@ import React from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
+import isScratchDesktop from './isScratchDesktop';
+
+// 在 Desktop 模式下使用本地协议，否则使用在线版本
+const getExtensionEditorUrl = () => {
+    if (isScratchDesktop()) {
+        return 'tw-extension-editor://./index.html';
+    }
+    return 'https://editors.astras.top/scratch-extension-editor/';
+};
 
 const EXTENSION_EDITOR_URL = 'https://editors.astras.top/scratch-extension-editor/';
 // const EXTENSION_EDITOR_URL = 'http://192.168.1.7:3000/';
@@ -35,7 +44,7 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
         handleOpenExtensionEditor() {
             // 打开扩展编辑器窗口
             this.extensionEditorWindow = window.open(
-                EXTENSION_EDITOR_URL,
+                getExtensionEditorUrl(),
                 'astra-extension-editor',
                 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no'
             );
@@ -138,5 +147,6 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
 export {
     ExtensionEditorHotReloadHOC as default,
     HOT_RELOAD_MESSAGE_TYPE,
-    EXTENSION_EDITOR_URL
+    EXTENSION_EDITOR_URL,
+    getExtensionEditorUrl
 };
