@@ -80,6 +80,7 @@ const base = {
                 if (filepath.includes(path.resolve(__dirname, 'src'))) return true;
                 // Include scratch-* packages
                 if (/node_modules[\\/]scratch-[^\\/]+[\\/]/.test(filepath)) return true;
+                if (/[\\/]scratch-[^\\/]+[\\/]/.test(filepath)) return true;
                 // Include @turbowarp/scratch-l10n
                 if (/node_modules[\\/]@turbowarp[\\/]scratch-l10n[\\/]/.test(filepath)) return true;
                 // Include pify, @vernier/godirect, htmlparser2
