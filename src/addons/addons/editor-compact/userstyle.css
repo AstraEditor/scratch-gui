@@ -59,6 +59,9 @@
   margin: 0;
   padding: 0 0.5rem;
 }
+[class*="SettingIcon"], [class*="dropdownCaret"]{
+  margin-left: 3px !important;
+}
 [class*="menu-bar_menu-bar-menu"] {
   margin-top: 2rem;
 }

@@ -75,14 +75,14 @@ export default async function ({ addon, msg, safeMsg, console }) {
         others: 'sa-analyze-button'
       });
 
+      const img = document.createElement('img');
       if (VSCodeLayout) {
         // VSCodeLayout 下使用 SVG 图标
-        const img = document.createElement('img');
         img.src = icon();
-        img.style.filter = "grayscale(100%)"
         img.marginTop = '5px';
         img.width = '20px';
         img.height = '20px';
+        img.style.filter = "grayscale(100%)";
         img.alt = '分析';
         this.analyzeButton.appendChild(img);
       } else {
@@ -103,7 +103,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
           if (SideBar.getActivePlugin() === 'simple-project-analyzer') {
             SideBar.close();
           } else {
-            this.showSidebar();
+            this.showSidebar(img);
           }
         } else {
           // 非 VSCode 布局下，每次点击都打开新的 modal
@@ -139,7 +139,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
     }
 
     // 在 Sidebar 中显示分析结果
-    showSidebar() {
+    showSidebar(img) {
       // 检查当前是否已经激活
       if (SideBar.getActivePlugin() === 'simple-project-analyzer') {
         // 如果已激活，则关闭
@@ -171,13 +171,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
           onActivate: () => {
             // 激活时添加按钮状态
             if (this.analyzeButton) {
-              this.analyzeButton.classList.add('sa-analyze-button-active');
+              this.analyzeButton.classList.add('is-selected');
+              img.style.filter = "grayscale(0%)";
             }
           },
           onDeactivate: () => {
             // 停用时移除按钮状态
             if (this.analyzeButton) {
-              this.analyzeButton.classList.remove('sa-analyze-button-active');
+              this.analyzeButton.classList.remove('is-selected');
+              img.style.filter = "grayscale(100%)";
             }
             // 停用时销毁图表
             this.destroyCharts();
@@ -197,6 +199,10 @@ export default async function ({ addon, msg, safeMsg, console }) {
       // 如果模态框已存在，先移除
       if (this.analyzeModal) {
         this.analyzeModal.remove();
+      }
+
+      if (this.analyzeButton) {
+        this.analyzeButton.classList.add('is-selected');
       }
 
       // 使用 addon.tab.createModal 创建模态框
@@ -242,9 +248,9 @@ export default async function ({ addon, msg, safeMsg, console }) {
         // 销毁图表实例
         this.destroyCharts();
 
-        // 移除按钮激活状态
+        // 移除按钮选中状态
         if (this.analyzeButton) {
-          this.analyzeButton.classList.remove('sa-analyze-button-active');
+          this.analyzeButton.classList.remove('is-selected');
         }
       }
     }

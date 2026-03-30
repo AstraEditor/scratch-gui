@@ -33,6 +33,10 @@
     color: $menu-bar-foreground;
 }
 
+.dropdownCaret {
+    /* Nothing, ready for addons */
+}
+
 .main-menu {
     display: flex;
     flex-direction: row;

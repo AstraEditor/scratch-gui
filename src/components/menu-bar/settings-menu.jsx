@@ -51,6 +51,7 @@ const SettingsMenu = ({
             draggable={false}
             width={8}
             height={5}
+            className={styles.dropdownCaret}
         />
         <MenuBarMenu
             className={menuBarStyles.menuBarMenu}

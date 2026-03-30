@@ -9,18 +9,8 @@ import React from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
-import isScratchDesktop from './isScratchDesktop';
 
-// 在 Desktop 模式下使用本地协议，否则使用在线版本
-const getExtensionEditorUrl = () => {
-    if (isScratchDesktop()) {
-        return 'tw-extension-editor://./index.html';
-    }
-    return 'https://editors.astras.top/scratch-extension-editor/';
-};
-
-const EXTENSION_EDITOR_URL = 'https://editors.astras.top/scratch-extension-editor/';
-// const EXTENSION_EDITOR_URL = 'http://192.168.1.7:3000/';
+const DEFAULT_EXTENSION_EDITOR_URL = 'https://editors.astras.top/scratch-extension-editor/';
 
 const HOT_RELOAD_MESSAGE_TYPE = 'astra-extension-hot-reload';
 
@@ -42,9 +32,19 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
         }
 
         handleOpenExtensionEditor() {
-            // 打开扩展编辑器窗口
+            const url = this.props.extensionEditorUrl || DEFAULT_EXTENSION_EDITOR_URL;
+            console.log('[ExtensionEditor] Opening URL:', url);
+            
+            // 在 Desktop 环境中使用 IPC 打开窗口
+            if (typeof EditorPreload !== 'undefined' && EditorPreload.openExtensionEditor) {
+                console.log('[ExtensionEditor] Using IPC to open window');
+                EditorPreload.openExtensionEditor();
+                return;
+            }
+            
+            // 回退：使用 window.open（在线版本）
             this.extensionEditorWindow = window.open(
-                getExtensionEditorUrl(),
+                url,
                 'astra-extension-editor',
                 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no'
             );
@@ -122,6 +122,7 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
     }
 
     ExtensionEditorHotReloadComponent.propTypes = {
+        extensionEditorUrl: PropTypes.string,
         vm: PropTypes.shape({
             extensionManager: PropTypes.shape({
                 isExtensionLoaded: PropTypes.func,
@@ -132,8 +133,9 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
         })
     };
 
-    const mapStateToProps = state => ({
-        vm: state.scratchGui.vm
+    const mapStateToProps = (state, ownProps) => ({
+        vm: state.scratchGui.vm,
+        extensionEditorUrl: ownProps.extensionEditorUrl
     });
 
     const mapDispatchToProps = () => ({});
@@ -147,6 +149,5 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
 export {
     ExtensionEditorHotReloadHOC as default,
     HOT_RELOAD_MESSAGE_TYPE,
-    EXTENSION_EDITOR_URL,
-    getExtensionEditorUrl
+    DEFAULT_EXTENSION_EDITOR_URL
 };

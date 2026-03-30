@@ -150,7 +150,7 @@ export default async ({ addon, msg, console }) => {
   };
 
   // Show bookmark in sidebar
-  const showBookmarkSidebar = () => {
+  const showBookmarkSidebar = (img) => { //img是图标
     // 如果还没有创建内容，创建并注册
     if (!sidebarContent) {
       sidebarContent = document.createElement("div");
@@ -292,7 +292,8 @@ export default async ({ addon, msg, console }) => {
         onActivate: () => {
           // 激活时添加按钮状态
           if (bookmarkButton) {
-            bookmarkButton.classList.add('sa-bookmark-button-active');
+            bookmarkButton.classList.add('sa-bookmark-button-active', "is-selected");
+            img.style.filter = "grayscale(0%)";
           }
           // 渲染书签列表
           renderBookmarks();
@@ -300,7 +301,8 @@ export default async ({ addon, msg, console }) => {
         onDeactivate: () => {
           // 停用时移除按钮状态
           if (bookmarkButton) {
-            bookmarkButton.classList.remove('sa-bookmark-button-active');
+            bookmarkButton.classList.remove('sa-bookmark-button-active', "is-selected");
+            img.style.filter = "grayscale(100%)";
           }
         }
       });
@@ -496,19 +498,18 @@ export default async ({ addon, msg, console }) => {
 
     if (!targetElement) return;
 
-    bookmarkButton = document.createElement('button');
+    bookmarkButton = document.createElement('li');
     bookmarkButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
       others: 'sa-bookmark-button'
     });
+    const img = document.createElement('img');
 
     if (VSCodeLayout) {
       // VSCodeLayout 下使用 SVG 图标
-      const img = document.createElement('img');
       img.src = icon();
       img.style.filter = "grayscale(100%)";
       img.style.width = '20px';
       img.style.height = '20px';
-      img.style.marginTop = '5px';
       img.alt = msg("bookmark-button");
       bookmarkButton.appendChild(img);
     } else {
@@ -529,7 +530,7 @@ export default async ({ addon, msg, console }) => {
         if (SideBar.getActivePlugin() === 'bookmark') {
           SideBar.close();
         } else {
-          showBookmarkSidebar();
+          showBookmarkSidebar(img);
         }
       } else {
         // 非 VSCode 布局下，显示 modal

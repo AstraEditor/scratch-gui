@@ -35,12 +35,19 @@
   border-color: var(--ui-primary) !important;
 }
 
+/* 按钮选中状态 */
+.sa-analyze-button.is-selected {
+  background-color: var(--ui-white, white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
+}
+
 /* VSCode 布局下的分析按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button {
   width: 40px;
-  height: 30px;
+  height: auto;
+  min-height: 40px;
   font-size: 0;
-  background-color: #00000000;
+  background-color: transparent;
   border: 0;
   border-radius: 0 !important;
   margin: 0 !important;
@@ -49,8 +56,6 @@
   justify-content: center;
   align-items: center;
   position: relative;
-  margin-bottom: 10px !important;
-
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
@@ -58,9 +63,10 @@
   height: 2rem;
 }
 
-/* VSCode 布局下按钮激活状态 */
-[class*="tabs"][class*="vscodeList"] .sa-analyze-button-active {
-  background-color: var(--ui-primary) !important;
+/* VSCode 布局下按钮选中状态 */
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button.is-selected {
+  background-color: var(--ui-white, white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
 }
 
 /* Sidebar 内容容器样式 */

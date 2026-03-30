@@ -690,6 +690,7 @@ class MenuBar extends React.Component {
                                         draggable={false}
                                         width={8}
                                         height={5}
+                                        className={styles.dropdownCaret}
                                     />
                                     <MenuBarMenu
                                         className={classNames(styles.menuBarMenu)}
@@ -859,6 +860,7 @@ class MenuBar extends React.Component {
                                     draggable={false}
                                     width={8}
                                     height={5}
+                                    className={styles.dropdownCaret}
                                 />
                                 <MenuBarMenu
                                     className={classNames(styles.menuBarMenu)}
@@ -1068,6 +1070,7 @@ class MenuBar extends React.Component {
                                     draggable={false}
                                     width={8}
                                     height={5}
+                                    className={styles.dropdownCaret}
                                 />
                                 <MenuBarMenu
                                     className={classNames(styles.menuBarMenu)}
