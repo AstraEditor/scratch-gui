@@ -22,7 +22,7 @@ export default async function ({ addon, console, msg }) {
   let preventUpdate = false;
 
   const manager = document.createElement("div");
-  manager.classList.add("sa-var-manager");
+  manager.classList.add(addon.tab.scratchClass("asset-panel_wrapper"), "sa-var-manager");
 
   const searchBox = document.createElement("input");
   searchBox.placeholder = msg("search");
@@ -59,32 +59,33 @@ export default async function ({ addon, console, msg }) {
   manager.appendChild(localVars);
   manager.appendChild(globalVars);
 
-  // 注册侧边栏插件
-  SideBar.register('variable-manager', manager, {
-    onActivate: () => {
-      // 激活时添加按钮状态
-      toggleBtn.classList.add("sa-var-manager-active", "is-selected");
-      toggleBtn.setAttribute("aria-selected", "true");
-      fullReload();
-    },
-    onDeactivate: () => {
-      // 停用时移除按钮状态
-      toggleBtn.classList.remove("sa-var-manager-active", "is-selected");
-      toggleBtn.setAttribute("aria-selected", "false");
-    }
-  });
-
   // 检测 VSCode 布局
   const isVSCode = isVSCodeLayoutEnabled();
 
-  // 创建侧边栏切换按钮（Tab 样式）
+  // 注册侧边栏插件（仅在VSCode布局下使用）
+  if (isVSCode) {
+    SideBar.register('variable-manager', manager, {
+      onActivate: () => {
+        // 激活时添加按钮状态
+        toggleBtn.classList.add("sa-var-manager-active", "is-selected");
+        toggleBtn.setAttribute("aria-selected", "true");
+        fullReload();
+      },
+      onDeactivate: () => {
+        // 停用时移除按钮状态
+        toggleBtn.classList.remove("sa-var-manager-active", "is-selected");
+        toggleBtn.setAttribute("aria-selected", "false");
+      }
+    });
+  }
+
+  // 创建Tab按钮
   const toggleBtn = document.createElement("li");
   addon.tab.displayNoneWhileDisabled(toggleBtn, { display: "flex" });
   toggleBtn.classList.add(
     addon.tab.scratchClass("react-tabs_react-tabs__tab"),
     addon.tab.scratchClass("gui_tab"),
-    "tab",
-    "variableManger-Tab"
+    "tab"
   );
   if (isVSCode) {
     toggleBtn.classList.add("vscode-tab");
@@ -101,16 +102,65 @@ export default async function ({ addon, console, msg }) {
   toggleBtn.appendChild(toggleBtnIcon);
   toggleBtn.appendChild(toggleBtnText);
 
+  // Tab点击逻辑 - 根据布局类型使用不同的显示方式
   toggleBtn.addEventListener("click", () => {
-    // 检查当前是否已激活
-    if (SideBar.getActivePlugin() === 'variable-manager') {
-      // 如果已激活，则关闭
-      SideBar.close();
+    if (isVSCode) {
+      // VSCode布局：使用侧边栏
+      if (SideBar.getActivePlugin() === 'variable-manager') {
+        SideBar.close();
+      } else {
+        SideBar.switchTo('variable-manager');
+      }
     } else {
-      // 否则切换到变量管理器
-      SideBar.switchTo('variable-manager');
+      // 非VSCode布局：使用Tab样式
+      addon.tab.redux.dispatch({ type: "scratch-gui/navigation/ACTIVATE_TAB", activeTabIndex: 4 });
     }
   });
+
+  // Tab样式下的显示/隐藏逻辑（非VSCode布局）
+  if (!isVSCode) {
+    function setVisible(visible) {
+      if (visible) {
+        toggleBtn.classList.add(
+          addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
+          addon.tab.scratchClass("gui_is-selected")
+        );
+        const contentArea = document.querySelector("[class^=gui_tabs]");
+        contentArea.insertAdjacentElement("beforeend", manager);
+        fullReload();
+      } else {
+        toggleBtn.classList.remove(
+          addon.tab.scratchClass("react-tabs_react-tabs__tab--selected"),
+          addon.tab.scratchClass("gui_is-selected")
+        );
+        manager.remove();
+        cleanup();
+      }
+    }
+
+    // 初始化Redux
+    addon.tab.redux.initialize();
+
+    // 监听Redux状态变化
+    addon.tab.redux.addEventListener("statechanged", ({ detail }) => {
+      if (detail.action.type === "scratch-gui/navigation/ACTIVATE_TAB") {
+        const varManagerWasSelected = document.body.contains(manager);
+        const switchedToVarManager = detail.action.activeTabIndex === 4;
+
+        if (varManagerWasSelected && !switchedToVarManager) {
+          // Fixes #5773
+          queueMicrotask(() => window.dispatchEvent(new Event("resize")));
+        }
+
+        setVisible(switchedToVarManager);
+      } else if (detail.action.type === "scratch-gui/mode/SET_PLAYER") {
+        if (!detail.action.isPlayerOnly && addon.tab.redux.state.scratchGui.editorTab.activeTabIndex === 4) {
+          // DOM doesn't actually exist yet
+          queueMicrotask(() => setVisible(true));
+        }
+      }
+    });
+  }
 
   function updateHeadingVisibility() {
     // used to hide the headings if there are no variables
@@ -333,49 +383,65 @@ export default async function ({ addon, console, msg }) {
   }
 
   function fullReload() {
-    if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
-
-    const editingTarget = vm.runtime.getEditingTarget();
-    const stage = vm.runtime.getTargetForStage();
-    localVariables = editingTarget.isStage
-      ? []
-      : Object.values(editingTarget.variables)
+      if (isVSCode) {
+        // VSCode布局：检查侧边栏状态
+        if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
+      } else {
+        // 非VSCode布局：检查Tab索引
+        if (addon.tab.redux.state?.scratchGui?.editorTab?.activeTabIndex !== 4 || preventUpdate) return;
+      }
+  
+      const editingTarget = vm.runtime.getEditingTarget();
+      const stage = vm.runtime.getTargetForStage();
+      localVariables = editingTarget.isStage
+        ? []
+        : Object.values(editingTarget.variables)
+          .filter((i) => i.type === "" || i.type === "list")
+          .map((i) => new WrappedVariable(i, editingTarget));
+      globalVariables = Object.values(stage.variables)
         .filter((i) => i.type === "" || i.type === "list")
-        .map((i) => new WrappedVariable(i, editingTarget));
-    globalVariables = Object.values(stage.variables)
-      .filter((i) => i.type === "" || i.type === "list")
-      .map((i) => new WrappedVariable(i, stage));
-
-    updateHeadingVisibility();
-
-    while (localList.firstChild) {
-      localList.removeChild(localList.firstChild);
+          .map((i) => new WrappedVariable(i, stage));
+  
+      updateHeadingVisibility();
+  
+      while (localList.firstChild) {
+        localList.removeChild(localList.firstChild);
+      }
+      while (globalList.firstChild) {
+        globalList.removeChild(globalList.firstChild);
+      }
+  
+      for (const variable of localVariables) {
+        localList.appendChild(variable.row);
+        variable.resizeInputIfList();
+      }
+      for (const variable of globalVariables) {
+        globalList.appendChild(variable.row);
+        variable.resizeInputIfList();
+      }
     }
-    while (globalList.firstChild) {
-      globalList.removeChild(globalList.firstChild);
+  
+    function quickReload() {
+      if (isVSCode) {
+        // VSCode布局：检查侧边栏状态
+        if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
+      } else {
+        // 非VSCode布局：检查Tab索引
+        if (addon.tab.redux.state?.scratchGui?.editorTab?.activeTabIndex !== 4 || preventUpdate) return;
+      }
+  
+      for (const variable of localVariables) {
+        variable.updateValue();
+      }
+      for (const variable of globalVariables) {
+        variable.updateValue();
+      }
     }
-
-    for (const variable of localVariables) {
-      localList.appendChild(variable.row);
-      variable.resizeInputIfList();
+  
+    function cleanup() {
+      localVariables = [];
+      globalVariables = [];
     }
-    for (const variable of globalVariables) {
-      globalList.appendChild(variable.row);
-      variable.resizeInputIfList();
-    }
-  }
-
-  function quickReload() {
-    if (!SideBar.isOpen() || SideBar.getActivePlugin() !== 'variable-manager' || preventUpdate) return;
-
-    for (const variable of localVariables) {
-      variable.updateValue();
-    }
-    for (const variable of globalVariables) {
-      variable.updateValue();
-    }
-  }
-
 
   vm.runtime.on("PROJECT_LOADED", () => {
     try {
@@ -404,8 +470,16 @@ export default async function ({ addon, console, msg }) {
   };
 
   addon.self.addEventListener("disabled", () => {
-    if (SideBar.getActivePlugin() === 'variable-manager') {
-      SideBar.close();
+    if (isVSCode) {
+      // VSCode布局：关闭侧边栏
+      if (SideBar.getActivePlugin() === 'variable-manager') {
+        SideBar.close();
+      }
+    } else {
+      // 非VSCode布局：切换到其他Tab
+      if (addon.tab.redux.state.scratchGui.editorTab.activeTabIndex === 4) {
+        addon.tab.redux.dispatch({ type: "scratch-gui/navigation/ACTIVATE_TAB", activeTabIndex: 2 });
+      }
     }
   });
 

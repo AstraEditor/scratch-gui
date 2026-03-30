@@ -1,25 +1,134 @@
-/* Terminal 按钮样式 - 与 Scratch 菜单栏按钮风格一致 */
-.sa-terminal-button {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 0.7rem;
+/* Terminal plugin styles */
+
+/* Terminal容器样式 */
+.sa-terminal-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+}
+
+/* Terminal头部样式 */
+.sa-terminal-header {
+  background: #2d2d2d;
+  color: #ffffff;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #3c3c3c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sa-terminal-title {
   font-weight: bold;
-  padding: 0 10px;
-  height: 32px;
+}
+
+.sa-terminal-status {
+  color: #4ec9b0;
+  font-size: 11px;
+}
+
+/* Terminal输出区域样式 */
+.sa-terminal-output {
+  flex: 1;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 10px;
+  font-size: 13px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.4;
+  min-height: 0;
+}
+
+/* Terminal输入行样式 */
+.sa-terminal-input-line {
+  display: flex;
+  align-items: center;
+  background: #1e1e1e;
+  padding: 8px;
+  border-top: 1px solid #3c3c3c;
+  flex-shrink: 0;
+}
+
+.sa-terminal-prompt {
+  color: #4ec9b0;
+  font-size: 13px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.sa-terminal-input {
+  flex: 1;
   background: transparent;
-  color: white;
   border: none;
-  border-radius: 12px;
+  color: #d4d4d4;
+  font-size: 13px;
+  outline: none;
+  font-family: 'Courier New', monospace;
+}
+
+.sa-terminal-input::placeholder {
+  color: #606060;
+}
+
+/* Terminal开关按钮样式 */
+.sa-terminal-toggle-button {
+  padding: 0 12px;
+  background: var(--ui-white);
+  border: none;
+  border-right: 1px solid var(--ui-black-transparent);
+  height: 24px;
+  font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  white-space: nowrap;
+  gap: 6px;
+  transition: all 0.2s;
 }
 
-.sa-terminal-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+.sa-terminal-toggle-button:hover {
+  background: var(--ui-primary);
+  color: var(--ui-white);
 }
 
-.sa-terminal-button:active {
-  background: rgba(255, 255, 255, 0.2);
+.sa-terminal-toggle-button:active {
+  transform: scale(0.95);
+}
+
+/* Terminal按钮激活状态 */
+.sa-terminal-toggle-active {
+  background-color: var(--ui-primary) !important;
+  color: var(--ui-white) !important;
+}
+
+/* Bottom panel specific styles */
+.addons-bottom-panel .sa-terminal-container {
+  height: 100%;
+  border-radius: 0;
+}
+
+/* 滚动条样式 */
+.sa-terminal-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sa-terminal-output::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.sa-terminal-output::-webkit-scrollbar-thumb {
+  background: #4c4c4c;
+  border-radius: 4px;
+}
+
+.sa-terminal-output::-webkit-scrollbar-thumb:hover {
+  background: #5c5c5c;
 }

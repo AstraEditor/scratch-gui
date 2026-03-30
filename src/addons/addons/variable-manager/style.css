@@ -82,6 +82,7 @@
   height: 100% !important;
 }
 
+/* 搜索框样式 - 在侧边栏中为100%，在Tab中为25% */
 .sa-var-manager-searchbox {
   background-image: url("search.svg");
   width: 100%;
@@ -93,6 +94,11 @@
   background-size: 18px 18px;
   background-position: calc(100% - 7px) center;
   font-size: 0.75rem;
+}
+
+/* Tab面板中的搜索框宽度 */
+.tab-panel .sa-var-manager-searchbox {
+  width: 25%;
 }
 
 [dir="rtl"] .sa-var-manager-searchbox {
@@ -183,10 +189,3 @@
 /* tr:nth-child(even) {
     background-color: #dddddd;
 } */
-
-/* 不让Tab按钮显示为ScratchTab*/
-.variableManger-Tab{
-  border-radius: 5px !important;
-  margin: auto 0 auto 20px !important;
-  background-color: var(--ui-white) !important;
-}

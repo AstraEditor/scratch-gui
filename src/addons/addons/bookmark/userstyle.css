@@ -20,17 +20,19 @@
   margin-top: auto !important;
   margin-bottom: auto !important;
   margin-left: 10px;
+  position: relative;
 }
 
 .sa-bookmark-button:hover {
   border-color: var(--motion-primary);
 }
 
-/* 按钮激活状态 */
+/* 按钮激活状态 - 左侧主题色细条 */
 .sa-bookmark-button-active {
   background-color: var(--ui-primary) !important;
   color: var(--ui-white) !important;
-  border-color: var(--ui-primary) !important;
+  border-color: var(--motion-primary) !important;
+  position: relative;
 }
 .sa-bookmark-button.is-selected {
   background-color: var(--ui-white, white) !important;
@@ -38,9 +40,29 @@
   filter: 0 !important;
 }
 
-/* VSCode 布局下按钮激活状态 */
+.sa-bookmark-button-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--motion-primary);
+}
+
+/* VSCode 布局下按钮激活状态 - 左侧主题色细条 */
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active {
   background-color: var(--ui-primary) !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--motion-primary);
 }
 
 .sa-bookmark-button img {

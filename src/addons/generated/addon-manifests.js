@@ -181,7 +181,7 @@ export default {
   "toolbox-category-drag": _toolbox_category_drag,
   "block-pins": _block_pins,
   "bookmark": _bookmark,
-  // "Terminal": _Terminal,
+  "Terminal": _Terminal,
   // "my-blocks-plus": _myblocksplus,
   // "astras-copilot": _astras_copilot,
   "sprite-folders": _sprite_folders

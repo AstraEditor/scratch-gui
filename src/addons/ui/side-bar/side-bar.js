@@ -12,40 +12,8 @@ const pluginRegistry = new Map();
 let activePlugin = null;
 
 /**
- * 适用于Addons的侧边栏
- * ## 注意：该侧边栏仅在代码编辑区有效
- *
- * ## 使用方式（推荐）：
- * ```javascript
- * import SideBar from "../../ui/side-bar/side-bar.js"
- *
- * // 注册插件内容
- * SideBar.register('my-plugin', contentElement, {
- *   onActivate: () => console.log('激活'),
- *   onDeactivate: () => console.log('停用')
- * });
- *
- * // 切换到插件
- * SideBar.switchTo('my-plugin');
- *
- * // 关闭侧边栏
- * SideBar.close();
- *
- * // 检查是否打开
- * SideBar.isOpen();
- *
- * // 检查当前活动插件
- * SideBar.getActivePlugin();
- * ```
- *
- * ## 兼容旧 API：
- * ```javascript
- * const sideBar = new SideBar(element);
- * sideBar.open();
- * sideBar.close();
- * ```
- *
- * @class
+ * 适用于Addons的侧边栏 - 简化版
+ * 移除所有复杂的自动调整逻辑，只保留基本功能
  */
 export default class SideBar {
     constructor(element) {
@@ -71,9 +39,6 @@ export default class SideBar {
 
     /**
      * 注册插件内容和回调
-     * @param {string} pluginName - 插件名称（唯一标识）
-     * @param {Element} content - 插件内容元素
-     * @param {Object} callbacks - 回调函数 { onActivate, onDeactivate }
      */
     static register(pluginName, content, callbacks = {}) {
         pluginRegistry.set(pluginName, {
@@ -87,7 +52,6 @@ export default class SideBar {
 
     /**
      * 切换到指定插件
-     * @param {string} pluginName - 插件名称
      */
     static switchTo(pluginName) {
         if (!instance) {
@@ -163,7 +127,6 @@ export default class SideBar {
 
     /**
      * 设置内容（兼容旧 API）
-     * @param {Element} content - 内容元素
      */
     static setContent(content) {
         if (!instance) {
@@ -235,6 +198,7 @@ class SideBarInternal {
             z-index: 489;
             display: none;
             flex-direction: column;
+            flex-shrink: 0;
         `;
 
         this.contentContainer = document.createElement("div");
@@ -283,9 +247,52 @@ class SideBarInternal {
 
         this.element.appendChild(this.resizeHandle);
 
+        // 监听标签页切换
+        this._boundHandleTabChange = () => {
+            if (this.isOpen() && this.isCostumeTabOpen()) {
+                this.close();
+                this.wasOpenBefore = true;
+            } else if (!this.isOpen() && this.wasOpenBefore && !this.isCostumeTabOpen()) {
+                this.wasOpenBefore = false;
+                this.open();
+            }
+        };
+
+        // 使用MutationObserver监听tab-panel的class变化
+        this._tabObserver = new MutationObserver(() => {
+            this._boundHandleTabChange();
+        });
+
+        setTimeout(() => {
+            const tabPanel = document.querySelector("[class*=gui_tab-panel]");
+            if (tabPanel) {
+                this._tabObserver.observe(tabPanel, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+            }
+        }, 1000);
+
+        this.wasOpenBefore = false;
+
         this.extensionButton = document.querySelector("[class*=gui_extension-button-container]");
 
         if (getSideBar()) getSideBar().prepend(this.element);
+    }
+
+    /**
+     * 检测CostumeTab是否打开
+     */
+    isCostumeTabOpen() {
+        // 检查是否在costume标签页
+        const costumeTab = document.querySelector("[class*='costume-tab']");
+        if (costumeTab) {
+            const style = window.getComputedStyle(costumeTab);
+            if (style.display !== 'none') {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -305,7 +312,7 @@ class SideBarInternal {
     }
 
     /**
-     * 获取内容容器（方便直接操作）
+     * 获取内容容器
      */
     getContentContainer() {
         return this.contentContainer;
@@ -362,7 +369,6 @@ class SideBarInternal {
             this.resizeHandle.style.background = "transparent";
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
-            window.dispatchEvent(new Event("resize"));
         }
     }
 
@@ -371,7 +377,6 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
-        window.dispatchEvent(new Event("resize"));
     }
 
     close() {
@@ -379,7 +384,6 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = "0px";
         }
-        window.dispatchEvent(new Event("resize"));
     }
 
     isOpen() {

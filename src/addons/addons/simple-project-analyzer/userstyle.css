@@ -22,6 +22,7 @@
   width: auto;
   height: 1.5rem;
   margin-left: 10px;
+  position: relative;
 }
 
 .sa-analyze-button:hover {
@@ -67,6 +68,16 @@
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button.is-selected {
   background-color: var(--ui-white, white) !important;
   box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--motion-primary);
 }
 
 /* Sidebar 内容容器样式 */
