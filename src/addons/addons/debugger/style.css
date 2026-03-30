@@ -35,8 +35,10 @@
   z-index: 492;
   background-color: var(--ui-modal-background);
   color: var(--ui-modal-foreground);
-  width: 565px;
+  width: 705px;
   height: 25rem;
+  top: calc(50% - 12.5rem); /* 25rem / 2 */
+  left: calc(50% - 352.5px); /* 705px / 2 */
   resize: both;
   padding-bottom: 10px;
   min-width: 350px;

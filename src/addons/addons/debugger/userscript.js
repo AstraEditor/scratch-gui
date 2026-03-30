@@ -132,10 +132,11 @@ export default async function ({ addon, console, msg }) {
     }
   };
 
-  let mouseOffsetX = 0;
-  let mouseOffsetY = 0;
-  let lastX = 0;
-  let lastY = 0;
+  let mouseOffsetX = 50;
+  let mouseOffsetY = 50;
+  let lastX = window.innerWidth / 2;
+  let lastY = window.innerHeight / 2;
+  let hasBeenDragged = false;
   const handleStartDrag = (e) => {
     e.preventDefault();
     mouseOffsetX = e.clientX - interfaceContainer.offsetLeft;
@@ -161,10 +162,13 @@ export default async function ({ addon, console, msg }) {
   };
   const handleDragInterface = (e) => {
     e.preventDefault();
+    hasBeenDragged = true;
     moveInterface(e.clientX, e.clientY);
   };
   window.addEventListener("resize", () => {
-    moveInterface(lastX, lastY);
+    if (hasBeenDragged) {
+      moveInterface(lastX, lastY);
+    }
   });
   interfaceHeader.addEventListener("mousedown", handleStartDrag);
 
