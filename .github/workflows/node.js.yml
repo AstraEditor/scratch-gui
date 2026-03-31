@@ -35,7 +35,7 @@ jobs:
       run: |
         cd node_modules/scratch-blocks
         
-        pnpm install --no-save google-closure-compiler
+        pnpm add google-closure-compiler
         
         export PATH=$PWD/node_modules/.bin:$PATH
         
@@ -47,8 +47,7 @@ jobs:
     - name: Install microbit
       run: pnpm install
     - name: Build GUI
-      run: |
-        pnpm run build
+      run: pnpm run build
         
     - name: Run Tests
       run: pnpm run test:unit
