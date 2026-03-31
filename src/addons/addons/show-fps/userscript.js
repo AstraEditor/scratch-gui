@@ -1,6 +1,6 @@
 import addSmallStageClass from "../../libraries/common/cs/small-stage.js";
 
-export default async function ({ addon, console }) {
+export default async function ({ addon }) {
   // 创建 FPS 显示容器
   const fpsContainerContainer = document.createElement("div");
   addon.tab.displayNoneWhileDisabled(fpsContainerContainer, { display: "flex" });
@@ -16,31 +16,26 @@ export default async function ({ addon, console }) {
 
   const vm = addon.tab.traps.vm;
 
-  // FPS 计算逻辑 - 参考 debugger/performance.js
   const renderTimes = [];
   let lastFpsTime = performance.now();
   let currentFps = 60;
-  let updateInterval = null;
 
   const updateFps = () => {
     if (addon.self.disabled) return;
 
     const now = performance.now();
 
-    // 移除超过 1 秒的帧时间记录
     while (renderTimes.length > 0 && renderTimes[0] <= now - 1000) {
       renderTimes.shift();
     }
     renderTimes.push(now);
 
-    // 每秒更新一次显示
     if (now - lastFpsTime >= 1000) {
       lastFpsTime = now;
 
-      // 获取目标帧率
       const maxFps = vm.runtime.frameLoop.framerate === 0 ? 60 : vm.runtime.frameLoop.framerate;
       currentFps = Math.min(renderTimes.length, maxFps);
-      fpsText.style.color = currentFps > maxFps * 0.7 ? "#82c1ff" : (
+      fpsText.style.color = currentFps > maxFps * 0.7 ? "var(--looks-secondary)" : (
         currentFps > maxFps * 0.5 ? "#82ff97" : (
           currentFps > maxFps * 0.2 ? "rgb(255, 197, 130)" : "rgb(255, 130, 130)"
         )

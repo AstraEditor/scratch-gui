@@ -11,10 +11,6 @@ const pluginRegistry = new Map();
 // 当前活动的插件名称
 let activePlugin = null;
 
-/**
- * 适用于Addons的侧边栏 - 简化版
- * 移除所有复杂的自动调整逻辑，只保留基本功能
- */
 export default class SideBar {
     constructor(element) {
         // 如果传入元素，使用旧 API 模式
@@ -370,6 +366,7 @@ class SideBarInternal {
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
         }
+        window.dispatchEvent(new Event("resize"));
     }
 
     open() {
@@ -377,6 +374,7 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
+        window.dispatchEvent(new Event("resize"));
     }
 
     close() {
@@ -384,6 +382,7 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = "0px";
         }
+        window.dispatchEvent(new Event("resize"));
     }
 
     isOpen() {
