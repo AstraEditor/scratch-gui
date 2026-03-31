@@ -31,8 +31,9 @@ jobs:
     - name: Install Dependencies
       run: pnpm install --ignore-scripts
 
-    - name: Install microbit
-      run: pnpm install
+    - name: Run prepublish script
+      run: node scripts/prepublish.mjs
+
     - name: Build GUI
       run: pnpm run build
         
