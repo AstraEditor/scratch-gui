@@ -22,16 +22,34 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: npm
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      id: pnpm-cache
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
 
     - name: Install Dependencies
-      run: npm install --ignore-scripts --legacy-peer-deps
+      run: pnpm install --ignore-scripts
 
     - name: Build scratch-blocks manually
       run: |
         cd node_modules/scratch-blocks
         
-        npm install --no-save google-closure-compiler
+        pnpm install --no-save google-closure-compiler
         
         export PATH=$PWD/node_modules/.bin:$PATH
         
@@ -41,10 +59,10 @@ jobs:
         
         node universal-python.js build.py
     - name: Install microbit
-      run: npm install
+      run: pnpm install
     - name: Build GUI
       run: |
-        npm run build
+        pnpm run build
         
     - name: Run Tests
-      run: npm run test:unit
+      run: pnpm run test:unit
