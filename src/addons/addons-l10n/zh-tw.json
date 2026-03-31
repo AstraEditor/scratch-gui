@@ -227,5 +227,6 @@
     "swap-local-global/edit-variable-option": "編輯變數",
     "swap-local-global/to-global": "轉換成「適用於所有角色」",
     "swap-local-global/to-local": "轉換成「僅適用當前角色」",
-    "hide-stage/hide-stage": "隱藏舞台"
+    "hide-stage/hide-stage": "隱藏舞台",
+    "jump-to-def/jump_to_definition": "跳轉到定義"
 }

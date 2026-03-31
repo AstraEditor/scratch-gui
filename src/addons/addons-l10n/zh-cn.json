@@ -385,5 +385,6 @@
     "sprite-folders/duplicate": "复制",
     "sprite-folders/export": "导出",
     "sprite-folders/rename-sprite-prompt": "重命名角色：",
-    "sprite-folders/delete-sprite-confirm": "删除此角色？"
+    "sprite-folders/delete-sprite-confirm": "删除此角色？",
+    "jump-to-def/jump_to_definition": "跳转到定义"
 }

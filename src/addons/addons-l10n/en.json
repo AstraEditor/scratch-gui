@@ -393,5 +393,6 @@
     "sprite-folders/duplicate": "Duplicate",
     "sprite-folders/export": "Export",
     "sprite-folders/rename-sprite-prompt": "Rename sprite:",
-    "sprite-folders/delete-sprite-confirm": "Delete this sprite?"
+    "sprite-folders/delete-sprite-confirm": "Delete this sprite?",
+    "jump-to-def/jump_to_definition": "Jump to definition"
 }

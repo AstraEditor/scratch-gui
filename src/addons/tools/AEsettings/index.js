@@ -1,5 +1,10 @@
 export const getSetting = (id) => {
-    const settings = JSON.parse(localStorage.getItem('AEsettings')) || {};
-    if(!settings[id]) return false;
-    return settings[id];
+    try {
+        const settings = JSON.parse(localStorage.getItem('AESettings')) || {};
+        if(!settings[id]) return false;
+        return settings[id];
+    } catch (e) {
+        console.error('Failed to get setting:', e);
+        return false;
+    }
 }

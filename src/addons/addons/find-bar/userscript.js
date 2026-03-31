@@ -3,19 +3,11 @@ import BlockInstance from "./blockly/BlockInstance.js";
 import Utils from "./blockly/Utils.js";
 import icon from "!../../../lib/tw-recolor/build!./icon.svg"
 import SideBar from "../../ui/side-bar/side-bar.js";
+import { getSetting } from "../../tools/AEsettings/index.js";
 
 // 检测是否启用 VSCode 布局
 function isVSCodeLayoutEnabled() {
-  try {
-    const settings = localStorage.getItem("AESettings");
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      return parsed.EnableVSCodeLayout === true;
-    }
-  } catch (e) {
-    // ignore
-  }
-  return false;
+  return getSetting("EnableVSCodeLayout");
 }
 
 export default async function ({ addon, msg, console }) {
