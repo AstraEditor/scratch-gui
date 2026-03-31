@@ -31,19 +31,6 @@ jobs:
     - name: Install Dependencies
       run: pnpm install --ignore-scripts
 
-    - name: Build scratch-blocks manually
-      run: |
-        cd node_modules/scratch-blocks
-        
-        pnpm add google-closure-compiler
-        
-        export PATH=$PWD/node_modules/.bin:$PATH
-        
-        echo "Checking compiler path..."
-        ls -l $PWD/node_modules/.bin/google-closure-compiler || echo "Compiler not found!"
-        which google-closure-compiler || echo "Command not in PATH"
-        
-        node universal-python.js build.py
     - name: Install microbit
       run: pnpm install
     - name: Build GUI
