@@ -35,7 +35,7 @@ export default async function ({ addon }) {
 
       const maxFps = vm.runtime.frameLoop.framerate === 0 ? 60 : vm.runtime.frameLoop.framerate;
       currentFps = Math.min(renderTimes.length, maxFps);
-      fpsText.style.color = currentFps > maxFps * 0.7 ? "var(--looks-secondary)" : (
+      fpsText.style.color = currentFps > maxFps * 0.7 ? "#0099ff" : (
         currentFps > maxFps * 0.5 ? "#82ff97" : (
           currentFps > maxFps * 0.2 ? "rgb(255, 197, 130)" : "rgb(255, 130, 130)"
         )
