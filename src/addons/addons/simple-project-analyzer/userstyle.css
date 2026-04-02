@@ -22,33 +22,18 @@
   width: auto;
   height: 1.5rem;
   margin-left: 10px;
-  position: relative;
 }
 
 .sa-analyze-button:hover {
   border-color: var(--motion-primary);
 }
 
-/* 按钮激活状态 */
-.sa-analyze-button-active {
-  background-color: var(--ui-primary) !important;
-  color: var(--ui-white) !important;
-  border-color: var(--ui-primary) !important;
-}
-
-/* 按钮选中状态 */
-.sa-analyze-button.is-selected {
-  background-color: var(--ui-white, white) !important;
-  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
-}
-
 /* VSCode 布局下的分析按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button {
   width: 40px;
-  height: auto;
-  min-height: 40px;
+  height: 30px;
   font-size: 0;
-  background-color: transparent;
+  background-color: #00000000;
   border: 0;
   border-radius: 0 !important;
   margin: 0 !important;
@@ -57,99 +42,13 @@
   justify-content: center;
   align-items: center;
   position: relative;
+  margin-bottom: 10px !important;
+
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
   width: 2rem;
   height: 2rem;
-}
-
-/* VSCode 布局下按钮选中状态 */
-[class*="tabs"][class*="vscodeList"] .sa-analyze-button.is-selected {
-  background-color: var(--ui-white, white) !important;
-  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
-}
-
-[class*="tabs"][class*="vscodeList"] .sa-analyze-button-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background-color: var(--motion-primary);
-}
-
-/* Sidebar 内容容器样式 */
-.sa-analyze-sidebar-content {
-  max-height: calc(100vh - 80px);
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  box-sizing: border-box;
-}
-
-/* Sidebar 模式下的结果容器 */
-.sa-analyze-sidebar-content .sa-analyze-results {
-  padding: 0;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-/* Sidebar 模式下的加载容器 */
-.sa-analyze-sidebar-content .sa-analyze-loading {
-  padding: 40px 20px;
-  text-align: center;
-}
-
-/* Sidebar 模式下的主体容器 */
-.sa-analyze-sidebar-content .sa-analyze-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-height: 0;
-}
-
-/* Sidebar 模式下的节样式调整 */
-.sa-analyze-sidebar-content .sa-analyze-section {
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Sidebar 模式下的图表容器调整 */
-.sa-analyze-sidebar-content .sa-analyze-chart-container {
-  height: 250px;
-  padding: 12px;
-}
-
-/* Sidebar 模式下的行调整为单列 */
-.sa-analyze-sidebar-content .sa-analyze-row {
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Sidebar 模式下的统计网格调整 */
-.sa-analyze-sidebar-content .sa-analyze-stats-grid {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-/* Sidebar 模式下的统计卡片调整 */
-.sa-analyze-sidebar-content .sa-analyze-stat {
-  padding: 12px;
-}
-
-.sa-analyze-sidebar-content .sa-analyze-stat-value {
-  font-size: 20px;
-}
-
-/* Sidebar 模式下的扩展网格调整 */
-.sa-analyze-sidebar-content .sa-analyze-extensions-grid {
-  grid-template-columns: 1fr;
 }
 
 /* 模态框样式 */
