@@ -48,6 +48,7 @@ import { openAeFeaturesModal } from '../../reducers/modals.js';
 
 import ExtensionManager from '../extension-chooser/extension-chooser.jsx';
 import PreviewExt from '../../containers/ae-preview-ext.jsx';
+import MonacoEditorTabs from '../monaco-editor-tabs/monaco-editor-tabs.jsx';
 
 import { STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH } from '../../lib/layout-constants';
 import { resolveStageSize } from '../../lib/screen-utils';
@@ -548,6 +549,19 @@ const GUIComponent = props => {
                                             id="gui.gui.soundsTab"
                                         />
                                     </Tab>
+                                    <Tab
+                                        className={tabClassNames.tab}
+                                    >
+                                        <img
+                                            draggable={false}
+                                            src={codeIcon()}
+                                        />
+                                        <FormattedMessage
+                                            defaultMessage="Monaco Editor"
+                                            description="Button to get to the Monaco editor panel"
+                                            id="gui.gui.monacoEditorTab"
+                                        />
+                                    </Tab>
                                     <div className='varM'>
                                         {/*这里是变量Tab*/}
                                     </div>
@@ -615,6 +629,9 @@ const GUIComponent = props => {
                                 </TabPanel>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     {soundsTabVisible ? <SoundTab vm={vm} /> : null}
+                                </TabPanel>
+                                <TabPanel className={tabClassNames.tabPanel}>
+                                    <MonacoEditorTabs vm={vm} />
                                 </TabPanel>
                             </Tabs>
                             {backpackVisible ? (

@@ -266,6 +266,15 @@ module.exports = [
                         context: 'src/examples'
                     }
                 ]
+            }),
+            new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: 'node_modules/scratch-monaco-editor/dist/**',
+                        to: 'monaco-editor',
+                        noErrorOnMissing: true
+                    }
+                ]
             })
         ])
     })

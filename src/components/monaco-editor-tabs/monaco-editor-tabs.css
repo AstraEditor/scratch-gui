@@ -1,0 +1,174 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+    overflow: hidden;
+}
+
+.tabBar {
+    display: flex;
+    align-items: center;
+    background-color: #252526;
+    border-bottom: 1px solid #3e3e42;
+    overflow-x: auto;
+    min-height: 35px;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-right: 1px solid #3e3e42;
+    background-color: #2d2d2d;
+    min-width: 120px;
+    max-width: 200px;
+    transition: background-color 0.2s;
+}
+
+.tab:hover {
+    background-color: #3e3e42;
+}
+
+.activeTab {
+    background-color: #1e1e1e;
+    border-bottom: 2px solid #007acc;
+}
+
+.tabName {
+    flex: 1;
+    font-size: 13px;
+    color: #cccccc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+}
+
+.unsaved {
+    color: #007acc;
+    margin-left: 4px;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background-color: #3e3e42;
+    color: #ffffff;
+}
+
+.addTabButton {
+    background: none;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    margin-left: 4px;
+}
+
+.addTabButton:hover {
+    background-color: #3e3e42;
+    color: #ffffff;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background-color: #333333;
+    border-bottom: 1px solid #3e3e42;
+    gap: 8px;
+}
+
+.toolbarButton {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background-color: #0e639c;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.toolbarButton:hover {
+    background-color: #1177bb;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.editorArea {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #858585;
+    background-color: #1e1e1e;
+}
+
+.emptyIcon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.emptyTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #cccccc;
+}
+
+.emptyDescription {
+    font-size: 14px;
+    max-width: 400px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* 滚动条样式 */
+.tabBar::-webkit-scrollbar {
+    height: 10px;
+}
+
+.tabBar::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.tabBar::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 5px;
+}
+
+.tabBar::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
+}

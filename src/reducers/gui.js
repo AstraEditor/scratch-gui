@@ -31,6 +31,7 @@ import vmReducer, {vmInitialState} from './vm';
 import vmStatusReducer, {vmStatusInitialState} from './vm-status';
 import workspaceMetricsReducer, {workspaceMetricsInitialState} from './workspace-metrics';
 import aePreviewExtReducer, {aePreviewExtDataInitialState} from './ae-preview-ext-data';
+import monacoEditorTabsReducer, {monacoEditorTabsInitialState} from './monaco-editor-tabs';
 import throttle from 'redux-throttle';
 
 import decks from '../lib/libraries/decks/index.jsx';
@@ -69,7 +70,8 @@ const guiInitialState = {
     vm: vmInitialState,
     vmStatus: vmStatusInitialState,
     workspaceMetrics: workspaceMetricsInitialState,
-    aePreviewExtData: aePreviewExtDataInitialState
+    aePreviewExtData: aePreviewExtDataInitialState,
+    monacoEditorTabs: monacoEditorTabsInitialState
 };
 
 const initPlayer = function (currentState) {
@@ -176,7 +178,8 @@ const guiReducer = combineReducers({
     vm: vmReducer,
     vmStatus: vmStatusReducer,
     workspaceMetrics: workspaceMetricsReducer,
-    aePreviewExtData: aePreviewExtReducer
+    aePreviewExtData: aePreviewExtReducer,
+    monacoEditorTabs: monacoEditorTabsReducer
 });
 
 export {
