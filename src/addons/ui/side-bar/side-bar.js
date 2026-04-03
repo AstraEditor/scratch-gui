@@ -238,8 +238,6 @@ class SideBarInternal {
         this.resizeHandle.addEventListener("mouseenter", this._boundHandleMouseEnter);
         this.resizeHandle.addEventListener("mouseleave", this._boundHandleMouseLeave);
         this.resizeHandle.addEventListener("mousedown", this._boundStartResize);
-        document.addEventListener("mousemove", this._boundDoResize);
-        document.addEventListener("mouseup", this._boundEndResize);
 
         this.element.appendChild(this.resizeHandle);
 
