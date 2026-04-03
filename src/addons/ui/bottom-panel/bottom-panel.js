@@ -136,51 +136,84 @@ class BottomPanelInternal {
     }
 
     /**
-     * 插入到DOM中
+     * 检测是否启用VSCode布局
      */
-    insertToDOM() {
-        // 检测VSCode布局
-        const isVSCodeLayout = () => {
-            try {
-                const settings = localStorage.getItem("AESettings");
-                if (settings) {
-                    const parsed = JSON.parse(settings);
-                    return parsed.EnableVSCodeLayout === true;
-                }
-            } catch (e) {
-                // ignore
+    isVSCodeLayout() {
+        try {
+            const settings = localStorage.getItem("AESettings");
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                return parsed.EnableVSCodeLayout === true;
             }
-            return false;
-        };
-
-        const editorWrapper = document.querySelector("[class*=editor-wrapper]");
-        if (editorWrapper) {
-            // 确保按钮栏被插入（常显在底部）
-            if (!editorWrapper.contains(this.buttonBar)) {
-                // 在VSCode布局下，将按钮栏插入到extensionButton之前，避免被挤走
-                if (isVSCodeLayout()) {
-                    const extensionButton = document.querySelector("[class*=gui_extension-button-container]");
-                    if (extensionButton && extensionButton.parentNode === editorWrapper) {
-                        editorWrapper.insertBefore(this.buttonBar, extensionButton);
-                    } else {
-                        editorWrapper.appendChild(this.buttonBar);
-                    }
-                } else {
-                    editorWrapper.appendChild(this.buttonBar);
-                }
-                console.log("BottomPanel button bar inserted");
-            }
-            // 确保主面板被插入（隐藏状态）
-            if (!editorWrapper.contains(this.element)) {
-                editorWrapper.appendChild(this.element);
-                console.log("BottomPanel main panel inserted");
-            }
-        } else {
-            // 如果editor-wrapper不存在，延迟重试
-            console.log("editor-wrapper not found, retrying...");
-            setTimeout(() => this.insertToDOM(), 100);
+        } catch (e) {
+            // ignore
         }
+        return false;
     }
+
+    /**
+
+         * 插入到DOM中
+
+         */
+
+        insertToDOM() {
+
+            const editorWrapper = document.querySelector("[class*=editor-wrapper]");
+
+            if (editorWrapper) {
+
+                // 确保按钮栏被插入（常显在底部）
+
+                if (!editorWrapper.contains(this.buttonBar)) {
+
+                    // 在VSCode布局下，将按钮栏插入到extensionButton之前，避免被挤走
+
+                    if (this.isVSCodeLayout()) {
+
+                        const extensionButton = document.querySelector("[class*=gui_extension-button-container]");
+
+                        if (extensionButton && extensionButton.parentNode === editorWrapper) {
+
+                            editorWrapper.insertBefore(this.buttonBar, extensionButton);
+
+                        } else {
+
+                            editorWrapper.appendChild(this.buttonBar);
+
+                        }
+
+                    } else {
+
+                        editorWrapper.appendChild(this.buttonBar);
+
+                    }
+
+                    console.log("BottomPanel button bar inserted");
+
+                }
+
+                // 确保主面板被插入（隐藏状态）
+
+                if (!editorWrapper.contains(this.element)) {
+
+                    editorWrapper.appendChild(this.element);
+
+                    console.log("BottomPanel main panel inserted");
+
+                }
+
+            } else {
+
+                // 如果editor-wrapper不存在，延迟重试
+
+                console.log("editor-wrapper not found, retrying...");
+
+                setTimeout(() => this.insertToDOM(), 100);
+
+            }
+
+        }
 
     /**
      * 设置面板内容
@@ -215,25 +248,24 @@ class BottomPanelInternal {
      * 销毁面板实例
      */
     destroy() {
-        // 移除事件监听器
-        this.resizeHandle.removeEventListener("mouseenter", this._boundHandleMouseEnter);
-        this.resizeHandle.removeEventListener("mouseleave", this._boundHandleMouseLeave);
-        this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
-        document.removeEventListener("mousemove", this._boundDoResize);
-        document.removeEventListener("mouseup", this._boundEndResize);
-
-        // 停止MutationObserver
-        if (this._tabObserver) {
-            this._tabObserver.disconnect();
-            this._tabObserver = null;
-        }
-
-        // 移除 DOM 元素
-        if (this.element && this.element.parentNode) {
-            this.element.parentNode.removeChild(this.element);
-        }
-    }
-
+            // 移除事件监听器
+            this.resizeHandle.removeEventListener("mouseenter", this._boundHandleMouseEnter);
+            this.resizeHandle.removeEventListener("mouseleave", this._boundHandleMouseLeave);
+            this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
+            document.removeEventListener("mousemove", this._boundDoResize);
+            document.removeEventListener("mouseup", this._boundEndResize);
+    
+            // 停止 MutationObserver
+                    if (this._tabObserver) {
+                        this._tabObserver.disconnect();
+                        this._tabObserver = null;
+                    }
+            
+                    // 移除 DOM 元素
+                    if (this.element && this.element.parentNode) {
+                        this.element.parentNode.removeChild(this.element);
+                    }
+                }
     startResize(e) {
         this.isResizing = true;
         this.startY = e.clientY;
@@ -262,6 +294,8 @@ class BottomPanelInternal {
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
         }
+        // 触发自定义事件通知 sidebar 更新高度
+        window.dispatchEvent(new CustomEvent('bottomPanelResized', { detail: { height: this.currentHeight } }));
     }
 
     open() {
@@ -270,6 +304,8 @@ class BottomPanelInternal {
         this.element.insertBefore(this.buttonBar, this.contentContainer);
         this.buttonBar.style.borderTop = "none";
         this.buttonBar.style.borderBottom = "1px solid var(--ui-black-transparent)";
+        // 触发自定义事件通知 sidebar 更新高度
+        window.dispatchEvent(new CustomEvent('bottomPanelOpened'));
     }
 
     close() {
@@ -278,20 +314,7 @@ class BottomPanelInternal {
         const editorWrapper = document.querySelector("[class*=editor-wrapper]");
         if (editorWrapper) {
             // 在VSCode布局下，将按钮栏插入到extensionButton之前
-            const isVSCodeLayout = () => {
-                try {
-                    const settings = localStorage.getItem("AESettings");
-                    if (settings) {
-                        const parsed = JSON.parse(settings);
-                        return parsed.EnableVSCodeLayout === true;
-                    }
-                } catch (e) {
-                    // ignore
-                }
-                return false;
-            };
-
-            if (isVSCodeLayout()) {
+            if (this.isVSCodeLayout()) {
                 const extensionButton = document.querySelector("[class*=gui_extension-button-container]");
                 if (extensionButton && extensionButton.parentNode === editorWrapper) {
                     editorWrapper.insertBefore(this.buttonBar, extensionButton);
@@ -304,6 +327,8 @@ class BottomPanelInternal {
             this.buttonBar.style.borderTop = "1px solid var(--ui-black-transparent)";
             this.buttonBar.style.borderBottom = "none";
         }
+        // 触发自定义事件通知 sidebar 更新高度
+        window.dispatchEvent(new CustomEvent('bottomPanelClosed'));
     }
 
     isOpen() {

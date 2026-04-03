@@ -238,6 +238,8 @@ class SideBarInternal {
         this.resizeHandle.addEventListener("mouseenter", this._boundHandleMouseEnter);
         this.resizeHandle.addEventListener("mouseleave", this._boundHandleMouseLeave);
         this.resizeHandle.addEventListener("mousedown", this._boundStartResize);
+        document.addEventListener("mousemove", this._boundDoResize);
+        document.addEventListener("mouseup", this._boundEndResize);
 
         this.element.appendChild(this.resizeHandle);
 
@@ -272,6 +274,109 @@ class SideBarInternal {
         this.extensionButton = document.querySelector("[class*=gui_extension-button-container]");
 
         if (getSideBar()) getSideBar().prepend(this.element);
+
+        // 监听父元素高度变化
+        this._boundUpdateHeight = () => this.updateHeight();
+        this._resizeObserver = new ResizeObserver(() => {
+            this._boundUpdateHeight();
+        });
+
+        // 监听父元素和 editor-wrapper 的高度变化
+        setTimeout(() => {
+            const tabPanel = getSideBar();
+            const editorWrapper = document.querySelector("[class*=editor-wrapper]");
+            if (tabPanel) {
+                this._resizeObserver.observe(tabPanel);
+            }
+            if (editorWrapper) {
+                this._resizeObserver.observe(editorWrapper);
+            }
+            // 初始化高度
+            this.updateHeight();
+        }, 100);
+
+        // 监听 Bottom Panel 的打开/关闭
+        this._bottomPanelObserver = new MutationObserver(() => {
+            this.updateHeight();
+        });
+
+        // 监听 buttonBar 的父元素变化（在 editor-wrapper 和 bottomPanel 之间移动）
+        this._buttonBarObserver = new MutationObserver(() => {
+            this.updateHeight();
+        });
+
+        setTimeout(() => {
+            const bottomPanel = document.querySelector(".addons-bottom-panel");
+            if (bottomPanel) {
+                this._bottomPanelObserver.observe(bottomPanel, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            }
+
+            const buttonBar = document.querySelector(".addons-bottom-panel-button-bar");
+            if (buttonBar) {
+                this._buttonBarObserver.observe(buttonBar, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }, 2000);
+
+        // 延迟初始化，确保 DOM 完全准备好
+        setTimeout(() => this.updateHeight(), 500);
+
+        // 监听 bottomPanel 的自定义事件
+        this._boundHandleBottomPanelEvent = () => {
+            this.updateHeight();
+        };
+        window.addEventListener('bottomPanelResized', this._boundHandleBottomPanelEvent);
+        window.addEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
+        window.addEventListener('bottomPanelClosed', this._boundHandleBottomPanelEvent);
+    }
+
+    /**
+     * 更新侧边栏高度
+     */
+    updateHeight() {
+        // 只在 Sidebar 打开时更新高度
+        if (!this.isOpen()) return;
+
+        const tabPanel = getSideBar();
+        if (!tabPanel) return;
+
+        // 使用 offsetHeight 获取 tabPanel 的高度
+        const tabPanelHeight = tabPanel.offsetHeight;
+
+        if (tabPanelHeight < 100) return;
+
+        // 获取 Bottom Panel 的高度（如果打开）
+        const bottomPanel = document.querySelector(".addons-bottom-panel");
+        let bottomPanelHeight = 0;
+        if (bottomPanel && bottomPanel.style.display !== "none") {
+            bottomPanelHeight = bottomPanel.offsetHeight;
+        }
+
+        // 计算可用高度：tabPanel 高度减去 bottomPanel
+        // 注意：buttonBar 在底部时不影响 tabPanel 的高度
+        let availableHeight = tabPanelHeight - bottomPanelHeight;
+
+        // 确保最小高度
+        availableHeight = Math.max(100, availableHeight);
+
+        // 限制最大高度不超过窗口高度
+        const finalHeight = Math.min(availableHeight, window.innerHeight);
+
+        // 更新侧边栏高度
+        this.element.style.height = `${finalHeight}px`;
+
+        // 调试日志
+        console.log('Sidebar updateHeight:', {
+            tabPanelHeight,
+            bottomPanelHeight,
+            availableHeight,
+            finalHeight
+        });
     }
 
     /**
@@ -323,6 +428,36 @@ class SideBarInternal {
         document.removeEventListener("mousemove", this._boundDoResize);
         document.removeEventListener("mouseup", this._boundEndResize);
 
+        // 停止 ResizeObserver
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+
+        // 停止 Bottom Panel Observer
+        if (this._bottomPanelObserver) {
+            this._bottomPanelObserver.disconnect();
+            this._bottomPanelObserver = null;
+        }
+
+        // 停止 ButtonBar Observer
+        if (this._buttonBarObserver) {
+            this._buttonBarObserver.disconnect();
+            this._buttonBarObserver = null;
+        }
+
+        // 停止 MutationObserver
+        if (this._tabObserver) {
+            this._tabObserver.disconnect();
+            this._tabObserver = null;
+        }
+
+        // 移除 bottomPanel 自定义事件监听器
+        window.removeEventListener('bottomPanelResized', this._boundHandleBottomPanelEvent);
+        window.removeEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
+        window.removeEventListener('bottomPanelClosed', this._boundHandleBottomPanelEvent);
+        this._boundHandleBottomPanelEvent = null;
+
         // 重置 extensionButton
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = "0px";
@@ -364,7 +499,7 @@ class SideBarInternal {
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
         }
-        window.dispatchEvent(new Event("resize"));
+        this.updateHeight();
     }
 
     open() {
@@ -372,7 +507,7 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
-        window.dispatchEvent(new Event("resize"));
+        this.updateHeight();
     }
 
     close() {
@@ -380,7 +515,7 @@ class SideBarInternal {
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = "0px";
         }
-        window.dispatchEvent(new Event("resize"));
+        this.updateHeight();
     }
 
     isOpen() {
