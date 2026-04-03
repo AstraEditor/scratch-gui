@@ -1,0 +1,59 @@
+/* Bottom Panel 主容器 */
+.addons-bottom-panel {
+  border-top: 1px solid var(--ui-black-transparent);
+}
+
+/* Bottom Panel 按钮栏 - 常显在编辑器底部 */
+.addons-bottom-panel-button-bar {
+  background: var(--ui-white);
+  padding: 0;
+  display: flex;
+  gap: 0;
+  align-items: center;
+  height: 24px;
+  border-top: 1px solid var(--ui-black-transparent);
+  flex-shrink: 0;
+}
+
+/* Bottom Panel 按钮栏中的按钮样式 */
+.addons-bottom-panel-button-bar button {
+  padding: 0 12px;
+  border: none;
+  border-right: 1px solid var(--ui-black-transparent);
+  height: 24px;
+  background: var(--ui-white);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.addons-bottom-panel-button-bar button:hover {
+  background: var(--ui-primary);
+  color: var(--ui-white);
+}
+
+.addons-bottom-panel-button-bar button:last-child {
+  border-right: none;
+}
+
+/* Bottom Panel 内容容器 */
+.addons-bottom-panel .content-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--ui-white);
+}
+
+/* 调整手柄 */
+.addons-bottom-panel .resize-handle {
+  cursor: ns-resize;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.addons-bottom-panel .resize-handle:hover {
+  background: var(--ui-primary);
+}

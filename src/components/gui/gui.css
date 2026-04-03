@@ -55,10 +55,6 @@
     height: 2rem;
 }
 
-.tab-list.vscode .readmeButton:hover {
-    background-color: $ui-white;
-    box-shadow: inset 3px 0px 0px 0px $looks-secondary
-}
 
 .flex-wrapper {
     display: flex;
@@ -318,8 +314,8 @@
     display: flex;
     /* flex-direction: column; Move to JSX*/
     /* pad entire wrapper to the left and right; allow children to fill width */
-    padding-left: $space;
-    padding-right: $space;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 
     /* this will only ever be as wide as the stage */
     flex-basis: 0;
@@ -334,7 +330,7 @@
     flex-grow: 1;
     flex-basis: 0;
 
-    padding-top: $space;
+    padding-top: 0 !important;
     min-height: 0;
     /* this makes it work in Firefox */
 

@@ -11,6 +11,30 @@
 # on assets.scratch.mit.edu so that MD5 calculations don't change.
 *.svg binary
 
+# I hate Windows CRLF
+# It made my commit looks BAD
+# qwq 
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.bmp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.mp4 binary
+*.webm binary
+*.zip binary
+*.gz binary
+*.pdf binary
+
 # Prefer LF for most file types
 *.css text eol=lf
 *.frag text eol=lf

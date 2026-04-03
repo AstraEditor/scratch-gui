@@ -61,7 +61,7 @@ const base = {
         publicPath: root
     },
     resolve: {
-        symlinks: false,
+        symlinks: true,
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts'),
@@ -80,6 +80,7 @@ const base = {
                 if (filepath.includes(path.resolve(__dirname, 'src'))) return true;
                 // Include scratch-* packages
                 if (/node_modules[\\/]scratch-[^\\/]+[\\/]/.test(filepath)) return true;
+                if (/[\\/]scratch-[^\\/]+[\\/]/.test(filepath)) return true;
                 // Include @turbowarp/scratch-l10n
                 if (/node_modules[\\/]@turbowarp[\\/]scratch-l10n[\\/]/.test(filepath)) return true;
                 // Include pify, @vernier/godirect, htmlparser2
@@ -186,7 +187,16 @@ module.exports = [
                 minChunks: 2,
                 minSize: 50000,
                 maxInitialRequests: 5
-            }
+            },
+            minimizer: [
+                new (require('terser-webpack-plugin'))({
+                    terserOptions: {
+                        compress: {
+                            reduce_vars: false
+                        }
+                    }
+                })
+            ]
         },
         plugins: base.plugins.concat([
             new webpack.DefinePlugin({

@@ -43,6 +43,7 @@ import GUIComponent from '../components/gui/gui.jsx';
 import {setIsScratchDesktop} from '../lib/isScratchDesktop.js';
 import TWFullScreenResizerHOC from '../lib/tw-fullscreen-resizer-hoc.jsx';
 import TWThemeManagerHOC from './tw-theme-manager-hoc.jsx';
+import ExtensionEditorHotReloadHOC from '../lib/tw-extension-editor-hot-reload.jsx';
 
 const {RequestMetadata, setMetadata, unsetMetadata} = storage.scratchFetch;
 
@@ -135,7 +136,8 @@ GUI.propTypes = {
     projectHost: PropTypes.string,
     projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     telemetryModalVisible: PropTypes.bool,
-    vm: PropTypes.instanceOf(VM).isRequired
+    vm: PropTypes.instanceOf(VM).isRequired,
+    extensionEditorUrl: PropTypes.string
 };
 
 GUI.defaultProps = {
@@ -219,7 +221,8 @@ const WrappedGui = compose(
     vmListenerHOC,
     vmManagerHOC,
     SBFileUploaderHOC,
-    cloudManagerHOC
+    cloudManagerHOC,
+    ExtensionEditorHotReloadHOC
 )(ConnectedGUI);
 
 WrappedGui.setAppElement = ReactModal.setAppElement;

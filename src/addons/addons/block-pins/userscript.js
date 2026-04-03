@@ -269,9 +269,12 @@ export default async function({ addon, msg }) {
   if (!autoLoadExtPins) vm.runtime.on("EXTENSION_ADDED", () => {
     populateInit = 2;
   });
-  vm.runtime.on("EXTENSION_REMOVED", (extId) => {
+  vm.runtime.on("EXTENSION_REMOVED", (extId, detail) => {
+    const removedId = typeof extId === "string" ? extId : (detail && detail.id) || "";
+    if (!removedId) return;
+
     // remove blocks in the removed extension from pins
-    pins = pins.filter((t) => !t.startsWith(extId));
+    pins = pins.filter((t) => !t.startsWith(removedId));
 
     populateInit = 2;
   });

@@ -27,6 +27,24 @@ const messages = defineMessages({
     }
 });
 
+const toResolvedAssetURL = (baseURL, assetPath) => {
+    if (!assetPath || typeof assetPath !== 'string') {
+        return null;
+    }
+    if (/^\/\//.test(assetPath)) {
+        return `https:${assetPath}`;
+    }
+    if (/^(?:https?:|data:|blob:|file:)/i.test(assetPath)) {
+        return assetPath;
+    }
+    if (!baseURL) {
+        return assetPath;
+    }
+    const normalizedBaseURL = String(baseURL).replace(/\/+$/, '');
+    const normalizedAssetPath = assetPath.replace(/^\/+/, '');
+    return `${normalizedBaseURL}/${normalizedAssetPath}`;
+};
+
 
 const ExtensionImage = ({ src, alt, style, fallbackSrc, onLoad }) => {
     const [imageError, setImageError] = useState(false);
@@ -105,16 +123,40 @@ const ExtensionChooser = props => {
     }
     useEffect(() => {
         const fetchGallery = async () => {
+            const extensionsLibs = [
+                { id: "tw", url: "https://extensions.turbowarp.org/" },
+                { id: "ae", url: "https://editors.astras.top/extensions" },
+            ]
             try {
-                const res = await fetch('https://extensions.turbowarp.org/generated-metadata/extensions-v0.json');
-                if (!res.ok) return;
-                const data = await res.json();
+                const getExtLists = extensionsLibs.map(async (item) => {
+                    try {
+                        const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
+                        if (!res.ok) {
+                            return { id: item.id, error: true };
+                        }
+                        const data = await res.json();
+                        return { id: item.id, data, error: false };
+                    } catch (e) {
+                        return { id: item.id, error: true };
+                    }
+                });
+                const results = await Promise.all(getExtLists);
+                console.log(results);
                 const metadataMap = {};
-                data.extensions.forEach(ext => {
-                    metadataMap[ext.id] = {
-                        image: ext.image,
-                        iconURL: ext.iconURL
-                    };
+
+                results.forEach((result, index) => {
+                    if (result.error) {
+                        return;
+                    }
+
+                    result.data.extensions.forEach(extension => {
+                        const sourceURL = extensionsLibs[index].url;
+                        metadataMap[extension.id] = {
+                            imageURL: toResolvedAssetURL(sourceURL, extension.image),
+                            iconURL: toResolvedAssetURL(sourceURL, extension.iconURL),
+                            sourceURL
+                        };
+                    });
                 });
                 setGalleryData(metadataMap);
             } catch (error) {
@@ -169,16 +211,19 @@ const ExtensionChooser = props => {
         if (galleryData[item.id]) {
             const extData = galleryData[item.id];
             // 如果有 image 字段，使用它（这是背景图）
-            if (extData.image) {
-                return `https://extensions.turbowarp.org/${extData.image}`;
+            if (extData.imageURL) {
+                return extData.imageURL;
             }
             // 否则使用 iconURL
             if (extData.iconURL) {
                 return extData.iconURL;
             }
+            if (extData.sourceURL) {
+                return toResolvedAssetURL(extData.sourceURL, `images/${item.id}.svg`);
+            }
         }
         if (item.iconURL) {
-            return item.iconURL;
+            return toResolvedAssetURL(null, item.iconURL);
         }
 
         // 最后尝试使用默认路径

@@ -41,7 +41,9 @@ const StageWrapperComponent = function (props) {
                     vm={vm}
                 />
             </Box>
-            <Box className={styles.stageCanvasWrapper}>
+            <Box className={classNames(styles.stageCanvasWrapper, {
+                [styles.isfullScreen]: isFullScreen
+            })}>
                 {
                     isRendererSupported ?
                         <Stage

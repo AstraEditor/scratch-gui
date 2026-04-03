@@ -1,0 +1,55 @@
+/* 底部面板演示样式 */
+.addons-bottom-panel {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.addons-bottom-panel h3 {
+  margin-top: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.addons-bottom-panel p {
+  margin: 10px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.addons-bottom-panel input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.addons-bottom-panel input:focus {
+  outline: none;
+  border-color: #4c97ff;
+}
+
+.addons-bottom-panel .output {
+  padding: 10px;
+  background: var(--ui-primary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+  min-height: 40px;
+  word-wrap: break-word;
+}
+
+/* 切换按钮样式 */
+.sa-bottom-panel-toggle {
+  transition: all 0.2s;
+}
+
+.sa-bottom-panel-toggle:hover {
+  transform: scale(1.05);
+}
+
+.sa-bottom-panel-toggle.is-active {
+  background-color: #4c97ff !important;
+  color: white !important;
+}

@@ -7,6 +7,8 @@ import { generateRandomUsername } from '../lib/tw-username';
 import isScratchDesktop from '../lib/isScratchDesktop';
 import { closeAeFeaturesModal } from '../reducers/modals';
 import AeFeaturesComponent from '../components/ae-features-modal/ae-features-modal.jsx';
+import version from '../lib/ae-version.js';
+
 
 class aeFeaturesModal extends React.Component {
     constructor(props) {
@@ -77,6 +79,7 @@ const mapDispatchToProps = dispatch => ({
     onClose: () => {
         dispatch(closeAeFeaturesModal());
         localStorage.setItem('ae:firstEnter', true);
+        localStorage.setItem('ae:webBuild', version.webBuild)
     },
     onSetUsername: username => {
         dispatch(setUsername(username));

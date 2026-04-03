@@ -7,8 +7,9 @@
 }
 
 .backpack-header {
-    margin-top: 0.5rem;
-    border: 1px solid $ui-black-transparent;
+    margin-top: 0px;
+    border-top: 1px solid $ui-black-transparent;
+    border-right: 1px solid $ui-black-transparent;
     background: $ui-white;
     padding: 0.25rem;
     text-align: center;
@@ -18,7 +19,7 @@
     cursor: pointer;
     user-select: none;
 }
-
+/*
 [dir="ltr"] .backpack-header {
     border-top-right-radius: $space;
 }
@@ -26,7 +27,7 @@
 [dir="rtl"] .backpack-header {
     border-top-left-radius: $space;
 }
-
+disable */
 .backpack-list {
     position: relative;
     display: flex;

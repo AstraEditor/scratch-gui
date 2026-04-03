@@ -1,0 +1,10 @@
+packages:
+  - '.'
+
+ignoredBuiltDependencies:
+  - chromedriver
+  - core-js
+onlyBuiltDependencies:
+  - scratch-blocks
+  - scratch-vm
+  - react-markdown

@@ -73,7 +73,6 @@ const fetchLibrary = async () => {
     
     results.forEach((result, index) => {
         if (result.error) {
-            // 记录错误但不添加扩展
             if (result.id === 'tw') {
                 cachedTwError = true;
             } else if (result.id === 'ae') {

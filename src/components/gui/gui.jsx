@@ -140,6 +140,10 @@ const GUIComponent = props => {
         onCloseAccountNav,
         onClickAddonSettings,
         onClickDesktopSettings,
+        onClickMinimize,
+        onClickMaximize,
+        isMaximize,
+        onClickClose,
         onClickNewWindow,
         onClickPackager,
         onLogOut,
@@ -150,6 +154,7 @@ const GUIComponent = props => {
         onActivateTab,
         onClickLogo,
         onExtensionButtonClick,
+        onOpenExtensionEditor,
         onOpenCustomExtensionModal,
         onProjectTelemetryEvent,
         onRequestCloseBackdropLibrary,
@@ -279,14 +284,14 @@ const GUIComponent = props => {
 
     // 显示AE特性MODAL
     useEffect(() => {
-        if (!localStorage.getItem('ae:firstEnter') || localStorage.getItem('ae:lastVersion') !== version.version) {
+        if (!localStorage.getItem('ae:firstEnter') || localStorage.getItem('ae:lastVersion') !== version.version || localStorage.getItem('ae:webBuild') !== version.webBuild) {
             try {
                 dispatch(openAeFeaturesModal());
             } catch (e) {
                 // ingore
             }
         }
-    },[])
+    }, [])
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -304,23 +309,7 @@ const GUIComponent = props => {
         Math.max(0, customStageSize.width - FIXED_WIDTH)
     );
 
-    const editorTheme = () => {
-        let theme = 'dark'
-        switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
-            case undefined:
-                theme = 'dark';
-                break
-            case 'dark':
-                theme = 'dark';
-                break
-            case 'light':
-                theme = 'light';
-                break
-            default:
-                theme = 'dark'
-        }
-        return theme
-    }
+
     return (<MediaQuery minWidth={unconstrainedWidth}>{isUnconstrained => {
         const stageSize = resolveStageSize(stageSizeMode, isUnconstrained);
 
@@ -468,6 +457,10 @@ const GUIComponent = props => {
                     onClickAccountNav={onClickAccountNav}
                     onClickAddonSettings={onClickAddonSettings}
                     onClickDesktopSettings={onClickDesktopSettings}
+                    onClickMinimize={onClickMinimize}
+                    onClickMaximize={onClickMaximize}
+                    isMaximize={isMaximize}
+                    onClickClose={onClickClose}
                     onClickNewWindow={onClickNewWindow}
                     onClickPackager={onClickPackager}
                     onClickLogo={onClickLogo}
@@ -479,6 +472,7 @@ const GUIComponent = props => {
                     onShare={onShare}
                     onStartSelectingFileUpload={onStartSelectingFileUpload}
                     onToggleLoginOpen={onToggleLoginOpen}
+                    onOpenExtensionEditor={onOpenExtensionEditor}
                 />
                 <Box className={styles.bodyWrapper}>
                     <Box className={styles.flexWrapper} style={Settings.get('EnableMobileLayout') ? {
@@ -581,7 +575,6 @@ const GUIComponent = props => {
                                                 "README"
                                             )}
                                         </button>}
-
                                 </TabList>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     <Box className={styles.blocksWrapper}>
@@ -711,11 +704,16 @@ GUIComponent.propTypes = {
     onClickAccountNav: PropTypes.func,
     onClickAddonSettings: PropTypes.func,
     onClickDesktopSettings: PropTypes.func,
+    onClickMinimize: PropTypes.func,
+    onClickMaximize: PropTypes.func,
+    isMaximize: PropTypes.func,
+    onClickClose: PropTypes.func,
     onClickNewWindow: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickLogo: PropTypes.func,
     onCloseAccountNav: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
+    onOpenExtensionEditor: PropTypes.func,
     onOpenCustomExtensionModal: PropTypes.func,
     onLogOut: PropTypes.func,
     onOpenRegistration: PropTypes.func,

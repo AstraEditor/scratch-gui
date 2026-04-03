@@ -208,7 +208,11 @@ const AeFeaturesComponent = props => {
         <Modal
             className={styles.modalContent}
             onRequestClose={() => {
-                isUpdated() ? props.onCancel : alert(props.intl.formatMessage(mainMessages.warn));
+                if (isUpdated() || localStorage.getItem('ae:webBuild') !== version.webBuild) {
+                    props.onCancel()
+                } else {
+                    alert(props.intl.formatMessage(mainMessages.warn))
+                }
             }}
             contentLabel={props.intl.formatMessage(mainMessages.title)}
             id="aeFeaturesModal"
@@ -329,9 +333,29 @@ const AeFeaturesComponent = props => {
                                     }}
                                 />
                             </button>
-
-                            //如果显示这个modal但并不是更新触发，则为初始化
-                            : (
+                            : localStorage.getItem('ae:webBuild') !== version.webBuild ? (
+                                <>
+                                    <h3>
+                                        <FormattedMessage
+                                            defaultMessage="Web is updated in {date} :"
+                                            description='Web Update Message of the ae-features modal'
+                                            id='tw.aeFeaturesModal.UpdateMessageofWeb'
+                                            values={{
+                                                date: version.date
+                                            }}
+                                        />
+                                    </h3>
+                                    <ul>
+                                        {localStorage.getItem('ae:webBuild') !== version.webBuild && (
+                                            version.webUpdate.map(content => (
+                                                <li>
+                                                    {content}
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                </>
+                            ) : (
                                 <>
                                     <h4>
                                         <FormattedMessage {...mainMessages.InitializationMessage} />

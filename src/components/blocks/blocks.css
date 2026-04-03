@@ -25,15 +25,13 @@
     bottom: 0;
     left: 0;
     border: 1px solid $ui-black-transparent;
-    border-top-right-radius: $space;
-    border-bottom-right-radius: $space;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
 }
 
 [dir="rtl"] .blocks :global(.injectionDiv) {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    border-top-left-radius: $space;
-    border-bottom-left-radius: $space;
 }
 
 .blocks :global(.blocklyMainBackground) {

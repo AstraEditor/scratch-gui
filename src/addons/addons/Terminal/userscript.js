@@ -1,227 +1,289 @@
-export default async function ({ addon, console }) {
-  // 等待 DOM 加载完成
-  await addon.tab.waitForElement("body", { markAsSeen: true });
+import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
 
-  // 存储弹窗引用
-  let terminalWindow = null;
+export default async function ({ addon, console, msg }) {
+  // 创建终端容器
+  const terminalContainer = document.createElement("div");
+  addon.tab.displayNoneWhileDisabled(terminalContainer, { display: "flex" });
+  terminalContainer.className = "sa-terminal-container";
 
-  // 打开终端弹窗
-  const openTerminalWindow = () => {
-    if (terminalWindow && !terminalWindow.closed) {
-      terminalWindow.focus();
-      return;
-    }
+  // 创建终端头部
+  const terminalHeader = document.createElement("div");
+  terminalHeader.className = "sa-terminal-header";
 
-    // 创建弹窗窗口
-    const width = 800;
-    const height = 500;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
+  const terminalTitle = document.createElement("span");
+  terminalTitle.className = "sa-terminal-title";
+  terminalTitle.textContent = "Scratch Terminal";
 
-    terminalWindow = window.open(
-      "",
-      "scratch_terminal",
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
+  const terminalStatus = document.createElement("span");
+  terminalStatus.className = "sa-terminal-status";
+  terminalStatus.textContent = "● Ready";
 
-    if (!terminalWindow) {
-      alert("无法打开终端窗口。请允许弹出窗口。");
-      return;
-    }
+  terminalHeader.appendChild(terminalTitle);
+  terminalHeader.appendChild(terminalStatus);
+  terminalContainer.appendChild(terminalHeader);
 
-    // 设置弹窗内容
-    terminalWindow.document.title = "Scratch Terminal";
-    terminalWindow.document.body.style.margin = "0";
-    terminalWindow.document.body.style.padding = "0";
-    terminalWindow.document.body.style.background = "#1e1e1e";
-    terminalWindow.document.body.style.overflow = "hidden";
+  // 创建终端输出区域
+  const terminalOutput = document.createElement("div");
+  terminalOutput.className = "sa-terminal-output";
+  terminalOutput.textContent = `Scratch Terminal v1.0
+Type 'help' for available commands.
+`;
 
-    // 创建终端容器
-    const terminalContainer = terminalWindow.document.createElement("div");
-    terminalContainer.style.cssText = "width: 100%; height: 100%; padding: 10px; box-sizing: border-box;";
-    terminalWindow.document.body.appendChild(terminalContainer);
+  terminalContainer.appendChild(terminalOutput);
 
-    // 加载 xterm.js 库
-    const loadLibraries = async () => {
-      return Promise.all([
-        new Promise((resolve, reject) => {
-          const script = terminalWindow.document.createElement("script");
-          script.src = "https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js";
-          script.onload = resolve;
-          script.onerror = reject;
-          terminalWindow.document.head.appendChild(script);
-        }),
-        new Promise((resolve, reject) => {
-          const link = terminalWindow.document.createElement("link");
-          link.rel = "stylesheet";
-          link.href = "https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css";
-          link.onload = resolve;
-          link.onerror = reject;
-          terminalWindow.document.head.appendChild(link);
-        })
-      ]);
-    };
+  // 创建输入行
+  const inputLine = document.createElement("div");
+  inputLine.className = "sa-terminal-input-line";
 
-    // 初始化终端
-    const initTerminal = async () => {
-      await loadLibraries();
+  const prompt = document.createElement("span");
+  prompt.className = "sa-terminal-prompt";
+  prompt.textContent = "> ";
 
-      const Terminal = terminalWindow.Terminal;
-      const term = new Terminal({
-        theme: {
-          background: "#1e1e1e",
-          foreground: "#d4d4d4",
-          cursor: "#4d97ff",
-          cursorAccent: "#1e1e1e",
-          selection: "rgba(77, 151, 255, 0.3)",
-          black: "#1e1e1e",
-          red: "#cd3131",
-          green: "#0dbc79",
-          yellow: "#e5e510",
-          blue: "#2472c8",
-          magenta: "#bc3fbc",
-          cyan: "#11a8cd",
-          white: "#e5e5e5",
-          brightBlack: "#666666",
-          brightRed: "#f14c4c",
-          brightGreen: "#23d18b",
-          brightYellow: "#f5f543",
-          brightBlue: "#3b8eea",
-          brightMagenta: "#d670d6",
-          brightCyan: "#29b8db",
-          brightWhite: "#ffffff"
-        },
-        fontFamily: '"Courier New", Courier, monospace',
-        fontSize: 14,
-        lineHeight: 1.2,
-        cursorBlink: true,
-        cursorStyle: "block"
-      });
+  const terminalInput = document.createElement("input");
+  terminalInput.type = "text";
+  terminalInput.className = "sa-terminal-input";
+  terminalInput.placeholder = "Enter command...";
 
-      term.open(terminalContainer);
+  inputLine.appendChild(prompt);
+  inputLine.appendChild(terminalInput);
+  terminalContainer.appendChild(inputLine);
 
-      // 欢迎消息
-      term.writeln("\x1b[1;34m=== Scratch Terminal ===\x1b[0m");
-      term.writeln("\x1b[32mTerminal ready.\x1b[0m");
-      term.writeln("Type commands and press Enter to execute.");
-      term.writeln("");
+  // 命令历史
+  const commandHistory = [];
+  let historyIndex = -1;
 
-      // 监听终端输入
-      let currentLine = "";
-      term.write("\x1b[32m$\x1b[0m ");
-
-      term.onData((data) => {
-        switch (data) {
-          case "\r": // Enter
-            term.writeln("");
-            if (currentLine.trim()) {
-              const args = currentLine.trim().split(/\s+/);
-              const cmd = args[0].toLowerCase();
-
-              switch (cmd) {
-                case "clear":
-                case "cls":
-                  term.clear();
-                  break;
-                case "help":
-                  term.writeln("Available commands:");
-                  term.writeln("  clear, cls - Clear the terminal");
-                  term.writeln("  help       - Show this help message");
-                  term.writeln("  echo       - Echo the input text");
-                  term.writeln("  date       - Show current date and time");
-                  break;
-                case "echo":
-                  term.writeln(args.slice(1).join(" "));
-                  break;
-                case "date":
-                  term.writeln(new Date().toString());
-                  break;
-                default:
-                  term.writeln(`\x1b[31mCommand not found: ${cmd}\x1b[0m`);
-                  term.writeln("Type 'help' for available commands.");
-              }
-            }
-            currentLine = "";
-            term.write("\x1b[32m$\x1b[0m ");
-            break;
-          case "\u007F": // Backspace
-            if (currentLine.length > 0) {
-              currentLine = currentLine.slice(0, -1);
-              term.write("\b \b");
-            }
-            break;
-          default:
-            if (data.charCodeAt(0) >= 32) {
-              currentLine += data;
-              term.write(data);
-            }
+  // 可用命令
+  const commands = {
+    help: {
+      description: "Show available commands",
+      execute: (args) => {
+        let output = "Available commands:\n";
+        for (const [name, cmd] of Object.entries(commands)) {
+          output += `  ${name} - ${cmd.description}\n`;
         }
-      });
-
-      // 监听窗口大小变化
-      terminalWindow.addEventListener("resize", () => {
-        terminalContainer.style.width = "100%";
-        terminalContainer.style.height = "100%";
-      });
-    };
-
-    initTerminal();
-
-    // 监听窗口关闭事件
-    terminalWindow.addEventListener("beforeunload", () => {
-      terminalWindow = null;
-    });
-  };
-
-  // 创建打开终端按钮 - 放在 SPA 分析器按钮旁边
-  const terminalButton = document.createElement("button");
-  terminalButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
-    others: 'sa-terminal-button'
-  });
-  terminalButton.textContent = "Terminal";
-  terminalButton.title = "打开终端窗口";
-  terminalButton.addEventListener("click", openTerminalWindow);
-
-  addon.tab.displayNoneWhileDisabled(terminalButton);
-
-  // 等待标签栏加载完成
-  await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
-    markAsSeen: true,
-    reduxEvents: [
-      "scratch-gui/mode/SET_PLAYER",
-      "fontsLoaded/SET_FONTS_LOADED",
-      "scratch-gui/locales/SELECT_LOCALE"
-    ],
-  });
-
-  // 查找 SPA 分析器按钮
-  const findAnalyzeButton = () => {
-    return document.querySelector('.sa-analyze-button');
-  };
-
-  // 插入终端按钮
-  const insertTerminalButton = () => {
-    const analyzeButton = findAnalyzeButton();
-    if (analyzeButton && !terminalButton.parentNode) {
-      analyzeButton.parentNode.insertBefore(terminalButton, analyzeButton.nextSibling);
-      return true;
-    }
-    // 如果没有找到分析器按钮，插入到标签栏
-    const tabBar = document.querySelector('[class*="react-tabs_react-tabs__tab-list"]');
-    if (tabBar && !terminalButton.parentNode) {
-      tabBar.appendChild(terminalButton);
-      return true;
-    }
-    return false;
-  };
-
-  // 尝试插入按钮，如果失败则重试
-  if (!insertTerminalButton()) {
-    const observer = new MutationObserver(() => {
-      if (insertTerminalButton()) {
-        observer.disconnect();
+        return output;
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    },
+    clear: {
+      description: "Clear the terminal",
+      execute: () => {
+        terminalOutput.textContent = "";
+        return "";
+      }
+    },
+    echo: {
+      description: "Echo the input text",
+      execute: (args) => args.join(" ")
+    },
+    project: {
+      description: "Show project information",
+      execute: () => {
+        try {
+          const vm = addon.tab.traps.vm;
+          const target = vm.runtime.getEditingTarget();
+          const stage = vm.runtime.getTargetForStage();
+
+          return `Project Information:
+  Stage: ${stage.getName()}
+  Current Sprite: ${target.getName()}
+  Sprites: ${vm.runtime.targets.length - 1}
+  Variables: ${Object.keys(stage.variables).length}
+  Broadcasts: ${Object.keys(stage.blocks).filter(k => k.startsWith('broadcast_')).length}
+`;
+        } catch (e) {
+          return "Error: Unable to get project information";
+        }
+      }
+    },
+    variables: {
+      description: "List all variables",
+      execute: () => {
+        try {
+          const vm = addon.tab.traps.vm;
+          const target = vm.runtime.getEditingTarget();
+          const stage = vm.runtime.getTargetForStage();
+
+          let output = "Global Variables:\n";
+          Object.values(stage.variables).forEach(v => {
+            if (v.type === "" || v.type === "list") {
+              const value = v.type === "list" ? `[${v.value.join(", ")}]` : v.value;
+              output += `  ${v.name} = ${value}\n`;
+            }
+          });
+
+          output += "\nLocal Variables:\n";
+          if (!target.isStage) {
+            Object.values(target.variables).forEach(v => {
+              if (v.type === "" || v.type === "list") {
+                const value = v.type === "list" ? `[${v.value.join(", ")}]` : v.value;
+                output += `  ${v.name} = ${value}\n`;
+              }
+            });
+          }
+
+          return output;
+        } catch (e) {
+          return "Error: Unable to get variables";
+        }
+      }
+    },
+    sprites: {
+      description: "List all sprites",
+      execute: () => {
+        try {
+          const vm = addon.tab.traps.vm;
+          let output = "Sprites:\n";
+          vm.runtime.targets.forEach(target => {
+            if (!target.isStage) {
+              output += `  ${target.getName()}\n`;
+            }
+          });
+          return output;
+        } catch (e) {
+          return "Error: Unable to get sprites";
+        }
+      }
+    },
+    version: {
+      description: "Show terminal version",
+      execute: () => "Scratch Terminal v1.0"
+    }
+  };
+
+  // 执行命令
+  const executeCommand = (command) => {
+    const parts = command.trim().split(" ");
+    const cmdName = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    // 添加到历史记录
+    if (command.trim()) {
+      commandHistory.push(command.trim());
+      historyIndex = commandHistory.length;
+    }
+
+    // 显示输入的命令
+    terminalOutput.textContent += `> ${command}\n`;
+
+    if (!cmdName) {
+      return;
+    }
+
+    const cmd = commands[cmdName];
+    if (cmd) {
+      try {
+        const result = cmd.execute(args);
+        if (result) {
+          terminalOutput.textContent += result + "\n";
+        }
+      } catch (e) {
+        terminalOutput.textContent += `Error: ${e.message}\n`;
+      }
+    } else {
+      terminalOutput.textContent += `Unknown command: ${cmdName}. Type 'help' for available commands.\n`;
+    }
+
+    terminalOutput.textContent += "\n";
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  };
+
+  // 输入处理
+  terminalInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const command = terminalInput.value;
+      terminalInput.value = "";
+      executeCommand(command);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        historyIndex--;
+        terminalInput.value = commandHistory[historyIndex];
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        terminalInput.value = commandHistory[historyIndex];
+      } else {
+        historyIndex = commandHistory.length;
+        terminalInput.value = "";
+      }
+    }
+  });
+
+  // 聚焦输入框
+  terminalContainer.addEventListener("click", () => {
+    terminalInput.focus();
+  });
+
+  // 创建底部的Terminal开关按钮
+  const toggleButton = document.createElement("button");
+  toggleButton.className = "sa-terminal-toggle-button";
+  toggleButton.textContent = "⌨ Terminal";
+  toggleButton.style.cssText = `
+    padding: 0 12px;
+    background: var(--ui-white);
+    border: none;
+    border-right: 1px solid var(--ui-black-transparent);
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  `;
+
+  toggleButton.addEventListener("mouseover", () => {
+    if (!toggleButton.classList.contains("sa-terminal-toggle-active")) {
+      toggleButton.style.background = "var(--ui-primary)";
+      toggleButton.style.color = "var(--ui-white)";
+    }
+  });
+
+  toggleButton.addEventListener("mouseout", () => {
+    if (!toggleButton.classList.contains("sa-terminal-toggle-active")) {
+      toggleButton.style.background = "var(--ui-white)";
+      toggleButton.style.color = "var(--text-primary)";
+    }
+  });
+
+  addon.tab.displayNoneWhileDisabled(toggleButton);
+
+  // 注册面板插件
+  BottomPanel.register('terminal', terminalContainer, {
+    onActivate: () => {
+      terminalInput.focus();
+      toggleButton.classList.add("sa-terminal-toggle-active");
+      toggleButton.style.background = "var(--ui-primary)";
+      toggleButton.style.color = "var(--ui-white)";
+    },
+    onDeactivate: () => {
+      toggleButton.classList.remove("sa-terminal-toggle-active");
+      toggleButton.style.background = "var(--ui-white)";
+      toggleButton.style.color = "var(--text-primary)";
+    }
+  });
+
+  // 按钮点击事件
+  toggleButton.addEventListener("click", () => {
+    if (BottomPanel.isOpen() && BottomPanel.getActivePlugin() === 'terminal') {
+      BottomPanel.close();
+    } else {
+      BottomPanel.switchTo('terminal');
+    }
+  });
+
+  // 将按钮添加到BottomPanel的按钮栏
+  while (true) {
+    const buttonBar = BottomPanel.getButtonBar();
+    if (buttonBar) {
+      console.log("Button bar found, adding terminal button");
+      buttonBar.appendChild(toggleButton);
+      console.log("Terminal button added to button bar");
+      break;
+    }
+    console.log("Button bar not found yet, waiting...");
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 }

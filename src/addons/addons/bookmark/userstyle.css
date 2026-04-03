@@ -20,10 +20,49 @@
   margin-top: auto !important;
   margin-bottom: auto !important;
   margin-left: 10px;
+  position: relative;
 }
 
 .sa-bookmark-button:hover {
   border-color: var(--motion-primary);
+}
+
+/* 按钮激活状态 - 左侧主题色细条 */
+.sa-bookmark-button-active {
+  background-color: var(--ui-primary) !important;
+  color: var(--ui-white) !important;
+  border-color: var(--motion-primary) !important;
+  position: relative;
+}
+.sa-bookmark-button.is-selected {
+  background-color: var(--ui-white, white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
+  filter: 0 !important;
+}
+
+.sa-bookmark-button-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--motion-primary);
+}
+
+/* VSCode 布局下按钮激活状态 - 左侧主题色细条 */
+[class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active {
+  background-color: var(--ui-primary) !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--motion-primary);
 }
 
 .sa-bookmark-button img {
@@ -41,9 +80,10 @@
 /* VSCode 布局下的书签按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button {
   width: 40px;
-  height: 30px;
+  height: auto;
+  min-height: 40px;
   font-size: 0;
-  background-color: #00000000;
+  background-color: transparent;
   border: 0;
   border-radius: 0 !important;
   margin: 0 !important;
@@ -52,7 +92,6 @@
   justify-content: center;
   align-items: center;
   position: relative;
-  margin-bottom: 10px !important;
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button img {
@@ -218,4 +257,65 @@
     background-color: rgba(255, 255, 255, 0.05);
     color: white;
   }
+}
+
+/* Sidebar 内容容器样式 */
+.sa-bookmark-sidebar-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Sidebar 模式下的书签列表 */
+.sa-bookmark-sidebar-content .sa-bookmark-list {
+  max-height: none;
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+/* Sidebar 模式下的书签项 */
+.sa-bookmark-sidebar-content .sa-bookmark-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Sidebar 模式下的书签信息 */
+.sa-bookmark-sidebar-content .sa-bookmark-info {
+  width: 100%;
+}
+
+/* Sidebar 模式下的书签操作 */
+.sa-bookmark-sidebar-content .sa-bookmark-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+/* Sidebar 模式下的书签名称 */
+.sa-bookmark-sidebar-content .sa-bookmark-name {
+  font-size: 0.9rem;
+}
+
+/* Sidebar 模式下的书签时间 */
+.sa-bookmark-sidebar-content .sa-bookmark-time {
+  font-size: 0.75rem;
+}
+
+/* Sidebar 模式下的添加表单 */
+.sa-bookmark-sidebar-content .sa-bookmark-add-form {
+  border-top: 1px solid var(--ui-black-transparent);
+  padding-top: 12px;
+}
+
+/* Sidebar 模式下的操作按钮 */
+.sa-bookmark-sidebar-content .sa-bookmark-action-button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
 }

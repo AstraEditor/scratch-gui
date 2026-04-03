@@ -22,29 +22,20 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: npm
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Install Dependencies
-      run: npm install --ignore-scripts --legacy-peer-deps
+      run: pnpm install --ignore-scripts
 
-    - name: Build scratch-blocks manually
-      run: |
-        cd node_modules/scratch-blocks
-        
-        npm install --no-save google-closure-compiler
-        
-        export PATH=$PWD/node_modules/.bin:$PATH
-        
-        echo "Checking compiler path..."
-        ls -l $PWD/node_modules/.bin/google-closure-compiler || echo "Compiler not found!"
-        which google-closure-compiler || echo "Command not in PATH"
-        
-        node universal-python.js build.py
-    - name: Install microbit
-      run: npm install
+    - name: Run prepublish script
+      run: node scripts/prepublish.mjs
+
     - name: Build GUI
-      run: |
-        npm run build
+      run: pnpm run build
         
     - name: Run Tests
-      run: npm run test:unit
+      run: pnpm run test:unit

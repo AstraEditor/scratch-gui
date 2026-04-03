@@ -4705,6 +4705,7 @@
         "tw.aeFeaturesModal.MoreNewAddons": "更多新插件",
         "tw.aeFeaturesModal.MoreOptimizes": "更多优化",
         "tw.aeFeaturesModal.UpdateMessage": "你已更新到版本 {version} ( {date} )！点击此按钮查看此版本的新功能",
+        "tw.aeFeaturesModal.UpdateMessageofWeb": "你已更新到版本 {date} : ",
         "tw.aeFeaturesModal.extensionTip": "我们正在重制扩展编辑器，敬请期待！",
         "tw.aeFeaturesModal.introduction": "我们制作了更多功能让你的编程速度快如闪电。",
         "tw.aeFeaturesModal.linkDiv": "有什么新功能?",
@@ -4835,8 +4836,10 @@
         "tw.invalidProject.options": "你可以从自动创建的还原点或其他备份中恢复这个作品的旧版本。",
         "tw.invalidProject.reportIt": "上报",
         "tw.invalidProject.restorePoints": "查看还原点",
+        "tw.invalidProject.sb3fix": "使用 sb3fix",
         "tw.invalidProject.title": "错误",
         "tw.invalidProject.validationError": "这个错误通常意味着作品的一小部分已损坏，但其他部分仍然正常。这很容易修复，所以请{reportIt}。",
+        "tw.invalidProject.zipCorruption": "这个错误通常意味着文件已损坏，例如存储设备故障，电源耗尽或者热插拔 USB 存储器。为了修复这种问题，可以尝试 {usingSb3fix}",
         "tw.lightMode": "切换到暗色主题",
         "tw.loadExtension.embedded": "此作品希望通过以下代码加载一个自定义扩展：",
         "tw.loadExtension.sandboxed": "即使代码在沙盒中运行，它仍能访问像IP地址或大概位置等设备信息。请在继续使用扩展前确保你信任此作者。",
@@ -5072,7 +5075,8 @@
         "tw.extensionManager.total": "共加载了{LENGTH}个扩展",
         "tw.settingsModal.enablehtmlsupportreadme": "启用HTML支持",
         "tw.settingsModal.enablehtmlsupportreadmeHelp": "允许README显示HTML标签",
-        "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置"
+        "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置",
+        "tw.menuBar.extensionEditor": "扩展编辑器"
     },
     "zh-tw": {
         "tw.alerts.lostPeripheralConnection": "與{extensionName}的連線中斷了。",
