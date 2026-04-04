@@ -46,7 +46,7 @@
     flex-grow: 1;
     gap: 0.5rem;
     z-index: $z-index-menu-bar;
-    background-color: $menu-bar-background;
+    background-color: transparent;
     -webkit-app-region: drag;
 }
 .menuGroup{
@@ -267,7 +267,7 @@
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: $menu-bar-standard-font-size;
     font-weight: bold;
-    background-color: $menu-bar-background;
+    background-color: transparent;
     color: $menu-bar-foreground;
     pointer-events: none;
 }
@@ -291,7 +291,7 @@
     font-size: 16px;
     -webkit-app-region: none;
     user-select: none;
-    background-color: $menu-bar-background;
+    background-color: transparent;
 
 }
 .controlButton:hover{

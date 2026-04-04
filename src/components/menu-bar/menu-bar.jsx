@@ -202,6 +202,29 @@ AboutButton.propTypes = {
     onClick: PropTypes.func.isRequired
 };
 
+const LogoButton = ({
+    logo,
+    onClick
+}) => (
+    <div className={classNames(styles.menuBarItem)}>
+        <img
+            id="logo_img"
+            alt="AstraEditor"
+            className={classNames(styles.scratchLogo, {
+                [styles.clickable]: typeof onClick === 'function'
+            })}
+            draggable={false}
+            src={logo}
+            onClick={onClick}
+        />
+    </div>
+);
+
+LogoButton.propTypes = {
+    logo: PropTypes.string.isRequired,
+    onClick: PropTypes.func
+};
+
 // Unlike <MenuItem href="">, this uses an actual <a>
 const MenuItemLink = props => (
     <a
@@ -587,10 +610,10 @@ class MenuBar extends React.Component {
                 <div className={styles.mainMenu}>
                     <div className={styles.menuGroup}>
                         {!aboutButton ? (
-                            <img src={aeLogo} draggable={false} style={{
-                                width: '25px',
-                                marginLeft: '10px'
-                            }} />
+                            <LogoButton
+                                logo={this.props.logo || aeLogo}
+                                onClick={this.props.onClickLogo}
+                            />
                         ) : (
                             aboutButton
                         )}
@@ -1307,6 +1330,7 @@ MenuBar.propTypes = {
     onClickClose: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickRestorePoints: PropTypes.func,
+    onClickLogo: PropTypes.func,
     onClickEdit: PropTypes.func,
     onClickFile: PropTypes.func,
     onClickLogin: PropTypes.func,
@@ -1337,6 +1361,7 @@ MenuBar.propTypes = {
     onToggleLoginOpen: PropTypes.func,
     projectId: PropTypes.string,
     projectTitle: PropTypes.string,
+    logo: PropTypes.string,
     renderLogin: PropTypes.func,
     sessionExists: PropTypes.bool,
     settingsMenuOpen: PropTypes.bool,
