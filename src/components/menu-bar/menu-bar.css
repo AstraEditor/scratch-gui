@@ -259,21 +259,36 @@
 
 .control-bar {
     position: relative;
+    flex: 0 0 156px;
+    width: 156px;
+    min-width: 156px;
+    height: $menu-bar-height;
+    pointer-events: none;
+}
+
+.controlBarInner {
+    position: fixed;
+    top: 0;
+    right: 0;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
     height: $menu-bar-height;
+    padding-left: 18px;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: $menu-bar-standard-font-size;
     font-weight: bold;
     background-color: transparent;
     color: $menu-bar-foreground;
-    pointer-events: none;
+    -webkit-app-region: drag;
+    pointer-events: auto;
+    z-index: $z-index-menu-bar;
 }
 
-.control-bar > * {
+.controlBarInner > * {
     pointer-events: auto;
+    flex-shrink: 0;
 }
 
 .Icon{
@@ -295,5 +310,5 @@
 
 }
 .controlButton:hover{
-    filter: brightness(1.2);
+    background-color: #ffffff20
 }

@@ -202,29 +202,6 @@ AboutButton.propTypes = {
     onClick: PropTypes.func.isRequired
 };
 
-const LogoButton = ({
-    logo,
-    onClick
-}) => (
-    <div className={classNames(styles.menuBarItem)}>
-        <img
-            id="logo_img"
-            alt="AstraEditor"
-            className={classNames(styles.scratchLogo, {
-                [styles.clickable]: typeof onClick === 'function'
-            })}
-            draggable={false}
-            src={logo}
-            onClick={onClick}
-        />
-    </div>
-);
-
-LogoButton.propTypes = {
-    logo: PropTypes.string.isRequired,
-    onClick: PropTypes.func
-};
-
 // Unlike <MenuItem href="">, this uses an actual <a>
 const MenuItemLink = props => (
     <a
@@ -249,6 +226,7 @@ class MenuBar extends React.Component {
             isMaximized: false
         };
         bindAll(this, [
+            'handleWindowMaximizeStateChange',
             'handleClickSeeInside',
             'handleClickNew',
             'handleClickNewWindow',
@@ -272,6 +250,9 @@ class MenuBar extends React.Component {
     }
     componentDidMount() {
         document.addEventListener('keydown', this.handleKeyPress);
+        if (this.props.setWindowMaximizeStateHandler) {
+            this.props.setWindowMaximizeStateHandler(this.handleWindowMaximizeStateChange);
+        }
         // 初始化最大化状态
         this.updateMaximizedState();
         // 监听窗口大小变化
@@ -282,10 +263,24 @@ class MenuBar extends React.Component {
         if (this.props.isMaximize && !prevProps.isMaximize) {
             this.updateMaximizedState();
         }
+        if (this.props.setWindowMaximizeStateHandler !== prevProps.setWindowMaximizeStateHandler) {
+            if (prevProps.setWindowMaximizeStateHandler) {
+                prevProps.setWindowMaximizeStateHandler(null);
+            }
+            if (this.props.setWindowMaximizeStateHandler) {
+                this.props.setWindowMaximizeStateHandler(this.handleWindowMaximizeStateChange);
+            }
+        }
     }
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyPress);
         window.removeEventListener('resize', this.handleResize);
+        if (this.props.setWindowMaximizeStateHandler) {
+            this.props.setWindowMaximizeStateHandler(null);
+        }
+    }
+    handleWindowMaximizeStateChange(isMaximized) {
+        this.setState({isMaximized: Boolean(isMaximized)});
     }
     handleResize() {
         // 窗口大小变化时更新最大化状态
@@ -509,12 +504,7 @@ class MenuBar extends React.Component {
         }
         return (
             <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '100%',
-                    WebkitAppRegion: 'none'
-                }}
+                className={styles.controlBarInner}
             >
                 {onClickMinimize && (
                     <div
@@ -526,10 +516,10 @@ class MenuBar extends React.Component {
                 )}
                 {onClickMaximize && (
                     <div
-                    className={styles.controlButton}
-                    onClick={onMaximizeClick}
+                        className={styles.controlButton}
+                        onClick={onMaximizeClick}
                     >
-                        {!isMaximized ? <img src={maximize} alt="□" /> : <img src={restore} style={{width:"10px",height:"10px"}} alt="□" />}
+                        {!isMaximized ? <img src={maximize} alt="□" /> : <img src={restore} style={{ width: "10px", height: "10px" }} alt="□" />}
                     </div>
                 )}
                 {onClickClose && (
@@ -610,10 +600,10 @@ class MenuBar extends React.Component {
                 <div className={styles.mainMenu}>
                     <div className={styles.menuGroup}>
                         {!aboutButton ? (
-                            <LogoButton
-                                logo={this.props.logo || aeLogo}
-                                onClick={this.props.onClickLogo}
-                            />
+                            <img src={aeLogo} draggable={false} style={{
+                                width: '25px',
+                                marginLeft: '10px'
+                            }} />
                         ) : (
                             aboutButton
                         )}
@@ -1185,37 +1175,36 @@ class MenuBar extends React.Component {
                                 {remixButton}
                             </div>
                         )}
-                        {this.props.enableCommunity || this.props.showComingSoon || this.props.enableSeeInside && (
-                            <div className={classNames(styles.menuBarItem, styles.communityButtonWrapper)}>
-                                {this.props.enableCommunity ? (
-                                    (this.props.isShowingProject || this.props.isUpdating) && (
-                                        <ProjectWatcher onDoneUpdating={this.props.onSeeCommunity}>
-                                            {
-                                                waitForUpdate => (
-                                                    <CommunityButton
-                                                        className={styles.menuBarButton}
-                                                        /* eslint-disable react/jsx-no-bind */
-                                                        onClick={() => {
-                                                            this.handleClickSeeCommunity(waitForUpdate);
-                                                        }}
-                                                    /* eslint-enable react/jsx-no-bind */
-                                                    />
-                                                )
-                                            }
-                                        </ProjectWatcher>
-                                    )
-                                ) : (this.props.showComingSoon ? (
-                                    <MenuBarItemTooltip id="community-button">
-                                        <CommunityButton className={styles.menuBarButton} />
-                                    </MenuBarItemTooltip>
-                                ) : (this.props.enableSeeInside ? (
-                                    <SeeInsideButton
-                                        className={styles.menuBarButton}
-                                        onClick={this.handleClickSeeInside}
-                                    />
-                                ) : []))}
-                            </div>
-                        )}
+
+                        <div className={classNames(styles.menuBarItem, styles.communityButtonWrapper)}>
+                            {this.props.enableCommunity ? (
+                                (this.props.isShowingProject || this.props.isUpdating) && (
+                                    <ProjectWatcher onDoneUpdating={this.props.onSeeCommunity}>
+                                        {
+                                            waitForUpdate => (
+                                                <CommunityButton
+                                                    className={styles.menuBarButton}
+                                                    /* eslint-disable react/jsx-no-bind */
+                                                    onClick={() => {
+                                                        this.handleClickSeeCommunity(waitForUpdate);
+                                                    }}
+                                                /* eslint-enable react/jsx-no-bind */
+                                                />
+                                            )
+                                        }
+                                    </ProjectWatcher>
+                                )
+                            ) : (this.props.showComingSoon ? (
+                                <MenuBarItemTooltip id="community-button">
+                                    <CommunityButton className={styles.menuBarButton} />
+                                </MenuBarItemTooltip>
+                            ) : (this.props.enableSeeInside ? (
+                                <SeeInsideButton
+                                    className={styles.menuBarButton}
+                                    onClick={this.handleClickSeeInside}
+                                />
+                            ) : []))}
+                        </div>
 
                         {/* tw: add a feedback button */}
                         <div className={styles.menuBarItem}>
@@ -1327,10 +1316,10 @@ MenuBar.propTypes = {
     onClickMinimize: PropTypes.func,
     onClickMaximize: PropTypes.func,
     isMaximize: PropTypes.func,
+    setWindowMaximizeStateHandler: PropTypes.func,
     onClickClose: PropTypes.func,
     onClickPackager: PropTypes.func,
     onClickRestorePoints: PropTypes.func,
-    onClickLogo: PropTypes.func,
     onClickEdit: PropTypes.func,
     onClickFile: PropTypes.func,
     onClickLogin: PropTypes.func,
@@ -1361,7 +1350,6 @@ MenuBar.propTypes = {
     onToggleLoginOpen: PropTypes.func,
     projectId: PropTypes.string,
     projectTitle: PropTypes.string,
-    logo: PropTypes.string,
     renderLogin: PropTypes.func,
     sessionExists: PropTypes.bool,
     settingsMenuOpen: PropTypes.bool,
