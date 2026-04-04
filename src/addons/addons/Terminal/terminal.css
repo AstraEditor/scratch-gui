@@ -79,34 +79,88 @@
   color: #606060;
 }
 
-/* Terminal开关按钮样式 */
-.sa-terminal-toggle-button {
-  padding: 0 12px;
-  background: var(--ui-white);
-  border: none;
-  border-right: 1px solid var(--ui-black-transparent);
-  height: 24px;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
+/* Terminal按钮样式 - 类似编辑器 tabs */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button {
+  padding: 0 12px !important;
+  border: none !important;
+  border-right: 1px solid var(--ui-black-transparent) !important;
+  border-left: 2px solid transparent !important;
+  border-top: 2px solid transparent !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  background: var(--ui-white) !important;
+  color: var(--text-primary-transparent) !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.2s !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-weight: normal !important;
 }
 
-.sa-terminal-toggle-button:hover {
-  background: var(--ui-primary);
-  color: var(--ui-white);
+/* Terminal按钮hover状态 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button:hover {
+  background: var(--ui-primary) !important;
 }
 
-.sa-terminal-toggle-button:active {
-  transform: scale(0.95);
+/* Terminal按钮图标样式 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button img {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
 }
 
-/* Terminal按钮激活状态 */
-.sa-terminal-toggle-active {
-  background-color: var(--ui-primary) !important;
-  color: var(--ui-white) !important;
+/* Terminal按钮文本样式 - 非激活状态显示灰色 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button span {
+  font-size: 12px !important;
+  color: var(--text-primary-transparent) !important;
+}
+
+/* Terminal按钮激活状态 - 主题色边框（上、左、右），背景保持白色 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active {
+  background: var(--ui-white) !important;
+  color: var(--looks-secondary) !important;
+  font-weight: bold !important;
+  border-right: 2px solid var(--looks-secondary) !important;
+  border-left: 2px solid var(--looks-secondary) !important;
+  border-top: 2px solid var(--looks-secondary) !important;
+}
+
+/* 激活状态下图标颜色 - 显示主题色 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active img {
+  filter: none !important;
+}
+
+/* 激活状态下文字颜色 - 显示主题色 */
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active span {
+  color: var(--looks-secondary) !important;
+}
+
+.addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active:hover {
+  background: var(--ui-white) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .addons-bottom-panel-button-bar .sa-terminal-toggle-button {
+    background: var(--ui-dark) !important;
+  }
+
+  .addons-bottom-panel-button-bar .sa-terminal-toggle-button:hover {
+    background: #333333 !important;
+  }
+
+  .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active {
+    background: var(--ui-dark) !important;
+    color: var(--looks-secondary) !important;
+  }
+
+  .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active:hover {
+    background: var(--ui-dark) !important;
+  }
 }
 
 /* Bottom panel specific styles */

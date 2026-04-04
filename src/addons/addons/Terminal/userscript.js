@@ -1,4 +1,5 @@
 import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
+import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 
 export default async function ({ addon, console, msg }) {
   // 创建终端容器
@@ -219,34 +220,20 @@ Type 'help' for available commands.
   // 创建底部的Terminal开关按钮
   const toggleButton = document.createElement("button");
   toggleButton.className = "sa-terminal-toggle-button";
-  toggleButton.textContent = "⌨ Terminal";
-  toggleButton.style.cssText = `
-    padding: 0 12px;
-    background: var(--ui-white);
-    border: none;
-    border-right: 1px solid var(--ui-black-transparent);
-    height: 24px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  `;
 
-  toggleButton.addEventListener("mouseover", () => {
-    if (!toggleButton.classList.contains("sa-terminal-toggle-active")) {
-      toggleButton.style.background = "var(--ui-primary)";
-      toggleButton.style.color = "var(--ui-white)";
-    }
-  });
+  // 创建图标元素 - 使用 tw-recolor loader 加载图标（会自动替换为主题色）
+  const toggleBtnIcon = document.createElement("img");
+  toggleBtnIcon.draggable = false;
+  toggleBtnIcon.src = icon();
+  toggleBtnIcon.style.filter = "grayscale(100%)";
 
-  toggleButton.addEventListener("mouseout", () => {
-    if (!toggleButton.classList.contains("sa-terminal-toggle-active")) {
-      toggleButton.style.background = "var(--ui-white)";
-      toggleButton.style.color = "var(--text-primary)";
-    }
-  });
+  // 创建文本元素
+  const toggleBtnText = document.createElement("span");
+  toggleBtnText.innerText = "Terminal";
+
+  // 组合按钮内容
+  toggleButton.appendChild(toggleBtnIcon);
+  toggleButton.appendChild(toggleBtnText);
 
   addon.tab.displayNoneWhileDisabled(toggleButton);
 
@@ -255,13 +242,9 @@ Type 'help' for available commands.
     onActivate: () => {
       terminalInput.focus();
       toggleButton.classList.add("sa-terminal-toggle-active");
-      toggleButton.style.background = "var(--ui-primary)";
-      toggleButton.style.color = "var(--ui-white)";
     },
     onDeactivate: () => {
       toggleButton.classList.remove("sa-terminal-toggle-active");
-      toggleButton.style.background = "var(--ui-white)";
-      toggleButton.style.color = "var(--text-primary)";
     }
   });
 

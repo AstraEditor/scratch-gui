@@ -35,8 +35,8 @@
   position: relative;
 }
 .sa-bookmark-button.is-selected {
-  background-color: var(--ui-white, white) !important;
-  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
+  background-color: var(--ui-white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
   filter: 0 !important;
 }
 
@@ -50,9 +50,10 @@
   background-color: var(--motion-primary);
 }
 
-/* VSCode 布局下按钮激活状态 - 左侧主题色细条 */
+/* VSCode 布局下按钮激活状态 - 与原始 tab 的激活样式一致 */
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active {
-  background-color: var(--ui-primary) !important;
+  background-color: var(--ui-white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button-active::before {
@@ -62,7 +63,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background-color: var(--motion-primary);
+  background-color: var(--looks-secondary);
 }
 
 .sa-bookmark-button img {
@@ -80,14 +81,13 @@
 /* VSCode 布局下的书签按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button {
   width: 40px;
-  height: auto;
-  min-height: 40px;
+  height: 30px;
   font-size: 0;
-  background-color: transparent;
+  background-color: #00000000;
   border: 0;
   border-radius: 0 !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 20px 0 !important;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -97,6 +97,7 @@
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button img {
   width: 2rem;
   height: 2rem;
+  margin: 0 !important;
 }
 
 /* Modal styles */

@@ -15,13 +15,10 @@ class BottomPanelInternal {
         this.buttonBar.style.cssText = `
             display: flex;
             gap: 0;
-            padding: 0;
             background: var(--ui-white);
             border-top: 1px solid var(--ui-black-transparent);
             flex-shrink: 0;
             position: relative;
-            height: 24px;
-            align-items: center;
         `;
 
         this.element = document.createElement("div");

@@ -37,8 +37,8 @@
 
 /* 按钮激活状态 */
 .sa-find-bar-button-active {
-  background-color: var(--ui-primary) !important;
-  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary, #0099ff) !important;
+  background-color: var(--ui-white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
 }
 
 .sa-find-bar-button-active .sa-find-bar-button-text {
