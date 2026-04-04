@@ -189,20 +189,25 @@ class SideBarInternal {
             top: 0;
             left: 0;
             width: ${this.currentWidth}px;
-            height: 100%;
+            flex: 0 0 auto;
             background-color: var(--ui-white);
             z-index: 489;
             display: none;
             flex-direction: column;
-            flex-shrink: 0;
+            overflow: hidden;
+            min-height: 0;
+            height: 100%;
         `;
 
         this.contentContainer = document.createElement("div");
         this.contentContainer.style.cssText = `
             flex: 1;
-            overflow: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
             position: relative;
             background: var(--ui-white);
+            min-height: 0;
+            max-height: 100%;
         `;
         this.element.appendChild(this.contentContainer);
 
@@ -275,13 +280,23 @@ class SideBarInternal {
 
         if (getSideBar()) getSideBar().prepend(this.element);
 
-        // 监听父元素高度变化
-        this._boundUpdateHeight = () => this.updateHeight();
+        // 使用 requestAnimationFrame 合并多个布局更新请求
+        this._updateRequest = null;
+        this._scheduleUpdate = () => {
+            if (this._updateRequest) {
+                return; // 已经有待处理的更新请求
+            }
+            this._updateRequest = requestAnimationFrame(() => {
+                this.updateHeight();
+                this._updateRequest = null;
+            });
+        };
+
+        // 恢复 ResizeObserver 监听 editor-wrapper 和 tabPanel 的尺寸变化
         this._resizeObserver = new ResizeObserver(() => {
-            this._boundUpdateHeight();
+            this._scheduleUpdate();
         });
 
-        // 监听父元素和 editor-wrapper 的高度变化
         setTimeout(() => {
             const tabPanel = getSideBar();
             const editorWrapper = document.querySelector("[class*=editor-wrapper]");
@@ -292,43 +307,12 @@ class SideBarInternal {
                 this._resizeObserver.observe(editorWrapper);
             }
             // 初始化高度
-            this.updateHeight();
+            this._scheduleUpdate();
         }, 100);
 
-        // 监听 Bottom Panel 的打开/关闭
-        this._bottomPanelObserver = new MutationObserver(() => {
-            this.updateHeight();
-        });
-
-        // 监听 buttonBar 的父元素变化（在 editor-wrapper 和 bottomPanel 之间移动）
-        this._buttonBarObserver = new MutationObserver(() => {
-            this.updateHeight();
-        });
-
-        setTimeout(() => {
-            const bottomPanel = document.querySelector(".addons-bottom-panel");
-            if (bottomPanel) {
-                this._bottomPanelObserver.observe(bottomPanel, {
-                    attributes: true,
-                    attributeFilter: ['style', 'class']
-                });
-            }
-
-            const buttonBar = document.querySelector(".addons-bottom-panel-button-bar");
-            if (buttonBar) {
-                this._buttonBarObserver.observe(buttonBar, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-        }, 2000);
-
-        // 延迟初始化，确保 DOM 完全准备好
-        setTimeout(() => this.updateHeight(), 500);
-
-        // 监听 bottomPanel 的自定义事件
+        // 监听 Bottom Panel 的自定义事件，用于在 Bottom Panel 打开/关闭时触发布局更新
         this._boundHandleBottomPanelEvent = () => {
-            this.updateHeight();
+            this._scheduleUpdate();
         };
         window.addEventListener('bottomPanelResized', this._boundHandleBottomPanelEvent);
         window.addEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
@@ -336,47 +320,21 @@ class SideBarInternal {
     }
 
     /**
-     * 更新侧边栏高度
+     * 更新侧边栏布局
+     * 由于使用 height: 100%，主要确保内容容器正确处理滚动
      */
     updateHeight() {
-        // 只在 Sidebar 打开时更新高度
+        // 只在 Sidebar 打开时更新
         if (!this.isOpen()) return;
 
-        const tabPanel = getSideBar();
-        if (!tabPanel) return;
+        // 确保内容容器的样式正确
+        this.contentContainer.style.flex = '1';
+        this.contentContainer.style.minHeight = '0';
+        this.contentContainer.style.overflowY = 'auto';
+        this.contentContainer.style.overflowX = 'hidden';
 
-        // 使用 offsetHeight 获取 tabPanel 的高度
-        const tabPanelHeight = tabPanel.offsetHeight;
-
-        if (tabPanelHeight < 100) return;
-
-        // 获取 Bottom Panel 的高度（如果打开）
-        const bottomPanel = document.querySelector(".addons-bottom-panel");
-        let bottomPanelHeight = 0;
-        if (bottomPanel && bottomPanel.style.display !== "none") {
-            bottomPanelHeight = bottomPanel.offsetHeight;
-        }
-
-        // 计算可用高度：tabPanel 高度减去 bottomPanel
-        // 注意：buttonBar 在底部时不影响 tabPanel 的高度
-        let availableHeight = tabPanelHeight - bottomPanelHeight;
-
-        // 确保最小高度
-        availableHeight = Math.max(100, availableHeight);
-
-        // 限制最大高度不超过窗口高度
-        const finalHeight = Math.min(availableHeight, window.innerHeight);
-
-        // 更新侧边栏高度
-        this.element.style.height = `${finalHeight}px`;
-
-        // 调试日志
-        console.log('Sidebar updateHeight:', {
-            tabPanelHeight,
-            bottomPanelHeight,
-            availableHeight,
-            finalHeight
-        });
+        // 触发一次重排，让浏览器重新计算布局
+        void this.element.offsetHeight;
     }
 
     /**
@@ -428,28 +386,22 @@ class SideBarInternal {
         document.removeEventListener("mousemove", this._boundDoResize);
         document.removeEventListener("mouseup", this._boundEndResize);
 
+        // 停止 MutationObserver
+        if (this._tabObserver) {
+            this._tabObserver.disconnect();
+            this._tabObserver = null;
+        }
+
         // 停止 ResizeObserver
         if (this._resizeObserver) {
             this._resizeObserver.disconnect();
             this._resizeObserver = null;
         }
 
-        // 停止 Bottom Panel Observer
-        if (this._bottomPanelObserver) {
-            this._bottomPanelObserver.disconnect();
-            this._bottomPanelObserver = null;
-        }
-
-        // 停止 ButtonBar Observer
-        if (this._buttonBarObserver) {
-            this._buttonBarObserver.disconnect();
-            this._buttonBarObserver = null;
-        }
-
-        // 停止 MutationObserver
-        if (this._tabObserver) {
-            this._tabObserver.disconnect();
-            this._tabObserver = null;
+        // 取消待处理的布局更新请求
+        if (this._updateRequest) {
+            cancelAnimationFrame(this._updateRequest);
+            this._updateRequest = null;
         }
 
         // 移除 bottomPanel 自定义事件监听器
@@ -461,6 +413,7 @@ class SideBarInternal {
         // 重置 extensionButton
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = "0px";
+            this.extensionButton.style.left = "0px";
         }
 
         // 移除 DOM 元素
@@ -488,7 +441,8 @@ class SideBarInternal {
         );
         this.element.style.width = `${this.currentWidth}px`;
         if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = this.currentWidth + "px";
+            // 使用 left 属性代替 marginLeft，更稳定地移动绝对定位元素
+            this.extensionButton.style.left = `${this.currentWidth}px`;
         }
     }
 
@@ -505,17 +459,19 @@ class SideBarInternal {
     open() {
         this.element.style.display = "flex";
         if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = this.currentWidth + "px";
+            // 使用 left 属性代替 marginLeft
+            this.extensionButton.style.left = `${this.currentWidth}px`;
         }
-        this.updateHeight();
+        this._scheduleUpdate();
     }
 
     close() {
         this.element.style.display = "none";
         if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = "0px";
+            // 使用 left 属性代替 marginLeft
+            this.extensionButton.style.left = "0px";
         }
-        this.updateHeight();
+        this._scheduleUpdate();
     }
 
     isOpen() {

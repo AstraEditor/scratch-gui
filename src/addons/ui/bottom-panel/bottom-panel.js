@@ -40,6 +40,7 @@ class BottomPanelInternal {
             flex-direction: column;
             flex-shrink: 0;
             border-top: 1px solid var(--ui-black-transparent);
+            min-height: 0;
         `;
 
         this.contentContainer = document.createElement("div");
@@ -49,6 +50,7 @@ class BottomPanelInternal {
             position: relative;
             background: var(--ui-white);
             padding: 10px;
+            min-height: 0;
         `;
         this.element.appendChild(this.contentContainer);
 
@@ -158,62 +160,26 @@ class BottomPanelInternal {
          */
 
         insertToDOM() {
+        const editorWrapper = document.querySelector("[class*=editor-wrapper]");
 
-            const editorWrapper = document.querySelector("[class*=editor-wrapper]");
-
-            if (editorWrapper) {
-
-                // 确保按钮栏被插入（常显在底部）
-
-                if (!editorWrapper.contains(this.buttonBar)) {
-
-                    // 在VSCode布局下，将按钮栏插入到extensionButton之前，避免被挤走
-
-                    if (this.isVSCodeLayout()) {
-
-                        const extensionButton = document.querySelector("[class*=gui_extension-button-container]");
-
-                        if (extensionButton && extensionButton.parentNode === editorWrapper) {
-
-                            editorWrapper.insertBefore(this.buttonBar, extensionButton);
-
-                        } else {
-
-                            editorWrapper.appendChild(this.buttonBar);
-
-                        }
-
-                    } else {
-
-                        editorWrapper.appendChild(this.buttonBar);
-
-                    }
-
-                    console.log("BottomPanel button bar inserted");
-
-                }
-
-                // 确保主面板被插入（隐藏状态）
-
-                if (!editorWrapper.contains(this.element)) {
-
-                    editorWrapper.appendChild(this.element);
-
-                    console.log("BottomPanel main panel inserted");
-
-                }
-
-            } else {
-
-                // 如果editor-wrapper不存在，延迟重试
-
-                console.log("editor-wrapper not found, retrying...");
-
-                setTimeout(() => this.insertToDOM(), 100);
-
+        if (editorWrapper) {
+            // 确保按钮栏被插入到 editor-wrapper（始终保持在底部）
+            if (!editorWrapper.contains(this.buttonBar)) {
+                editorWrapper.appendChild(this.buttonBar);
+                console.log("BottomPanel button bar inserted");
             }
 
+            // 确保主面板被插入到 editor-wrapper（隐藏状态）
+            if (!editorWrapper.contains(this.element)) {
+                editorWrapper.appendChild(this.element);
+                console.log("BottomPanel main panel inserted");
+            }
+        } else {
+            // 如果editor-wrapper不存在，延迟重试
+            console.log("editor-wrapper not found, retrying...");
+            setTimeout(() => this.insertToDOM(), 100);
         }
+    }
 
     /**
      * 设置面板内容
@@ -300,8 +266,8 @@ class BottomPanelInternal {
 
     open() {
         this.element.style.display = "flex";
-        // 将按钮栏移到面板内部顶部
-        this.element.insertBefore(this.buttonBar, this.contentContainer);
+        // 使用 CSS 类控制 buttonBar 样式，而不是移动 DOM
+        this.buttonBar.classList.add('bottom-panel-open');
         this.buttonBar.style.borderTop = "none";
         this.buttonBar.style.borderBottom = "1px solid var(--ui-black-transparent)";
         // 触发自定义事件通知 sidebar 更新高度
@@ -310,23 +276,10 @@ class BottomPanelInternal {
 
     close() {
         this.element.style.display = "none";
-        // 将按钮栏移回editor-wrapper底部
-        const editorWrapper = document.querySelector("[class*=editor-wrapper]");
-        if (editorWrapper) {
-            // 在VSCode布局下，将按钮栏插入到extensionButton之前
-            if (this.isVSCodeLayout()) {
-                const extensionButton = document.querySelector("[class*=gui_extension-button-container]");
-                if (extensionButton && extensionButton.parentNode === editorWrapper) {
-                    editorWrapper.insertBefore(this.buttonBar, extensionButton);
-                } else {
-                    editorWrapper.appendChild(this.buttonBar);
-                }
-            } else {
-                editorWrapper.appendChild(this.buttonBar);
-            }
-            this.buttonBar.style.borderTop = "1px solid var(--ui-black-transparent)";
-            this.buttonBar.style.borderBottom = "none";
-        }
+        // 使用 CSS 类控制 buttonBar 样式，而不是移动 DOM
+        this.buttonBar.classList.remove('bottom-panel-open');
+        this.buttonBar.style.borderTop = "1px solid var(--ui-black-transparent)";
+        this.buttonBar.style.borderBottom = "none";
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelClosed'));
     }
