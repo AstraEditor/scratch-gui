@@ -242,9 +242,19 @@ Type 'help' for available commands.
     onActivate: () => {
       terminalInput.focus();
       toggleButton.classList.add("sa-terminal-toggle-active");
+      // 移除按钮栏的底部边框
+      const buttonBar = BottomPanel.getButtonBar();
+      if (buttonBar) {
+        buttonBar.style.borderBottom = "none";
+      }
     },
     onDeactivate: () => {
       toggleButton.classList.remove("sa-terminal-toggle-active");
+      // 恢复按钮栏的底部边框
+      const buttonBar = BottomPanel.getButtonBar();
+      if (buttonBar) {
+        buttonBar.style.borderBottom = "1px solid var(--ui-black-transparent)";
+      }
     }
   });
 
@@ -254,6 +264,16 @@ Type 'help' for available commands.
       BottomPanel.close();
     } else {
       BottomPanel.switchTo('terminal');
+    }
+  });
+
+  // 监听 Bottom Panel 打开事件，确保 Terminal 激活时移除边框
+  window.addEventListener('bottomPanelOpened', () => {
+    if (BottomPanel.getActivePlugin() === 'terminal') {
+      const buttonBar = BottomPanel.getButtonBar();
+      if (buttonBar) {
+        buttonBar.style.borderBottom = "none";
+      }
     }
   });
 
