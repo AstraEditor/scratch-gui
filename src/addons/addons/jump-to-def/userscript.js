@@ -14,7 +14,10 @@ export default async function ({ addon, msg, console }) {
   Blockly.Gesture.prototype.doBlockClick_ = function() {
     if (!addon.self.disabled && (this.mostRecentEvent_.button === 1 || this.mostRecentEvent_.shiftKey)) {
       jumpTo.call(this);
+      return;
     }
+
+    _doBlockClick_.call(this);
   }
 
   function jumpTo(block) {

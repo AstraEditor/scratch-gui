@@ -58,13 +58,23 @@ const setProjectIdMetadata = projectId => {
 };
 
 class GUI extends React.Component {
+    updateDesktopEnvironmentFlag () {
+        if (typeof document === 'undefined') return;
+        document.documentElement.dataset.isScratchDesktop = this.props.isScratchDesktop ? 'true' : 'false';
+    }
+
     componentDidMount () {
         setIsScratchDesktop(this.props.isScratchDesktop);
+        this.updateDesktopEnvironmentFlag();
         this.props.onStorageInit(storage);
         this.props.onVmInit(this.props.vm);
         setProjectIdMetadata(this.props.projectId);
     }
     componentDidUpdate (prevProps) {
+        if (this.props.isScratchDesktop !== prevProps.isScratchDesktop) {
+            setIsScratchDesktop(this.props.isScratchDesktop);
+            this.updateDesktopEnvironmentFlag();
+        }
         if (this.props.projectId !== prevProps.projectId) {
             if (this.props.projectId !== null) {
                 this.props.onUpdateProjectId(this.props.projectId);
@@ -75,6 +85,11 @@ class GUI extends React.Component {
             // this only notifies container when a project changes from not yet loaded to loaded
             // At this time the project view in www doesn't need to know when a project is unloaded
             this.props.onProjectLoaded();
+        }
+    }
+    componentWillUnmount () {
+        if (typeof document !== 'undefined') {
+            document.documentElement.dataset.isScratchDesktop = 'false';
         }
     }
     render () {

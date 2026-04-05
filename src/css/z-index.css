@@ -14,6 +14,7 @@ $z-index-stage-question: 49; /* "ask" block text input goes above monitors */
 
 $z-index-card: 480;
 $z-index-alerts: 490;
+$z-index-menu-bar: 491; /* menu-bar should go over monitors, alerts and tutorials */
 $z-index-loader: 490; /* behind menu-bar */
 $z-index-modal: 510;
 
@@ -29,5 +30,3 @@ $z-index-stage-wrapper-overlay: 500; /* behind modals */
 
 /* in most interfaces, the context menu is always on top */
 $z-index-context-menu: 10000;
-
-$z-index-menu-bar: 10086; /* menu-bar should go over ANYTHING */
