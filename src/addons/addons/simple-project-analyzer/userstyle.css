@@ -31,24 +31,23 @@
 /* VSCode 布局下的分析按钮样式 */
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button {
   width: 40px;
-  height: 30px;
+  height: 40px;
   font-size: 0;
   background-color: #00000000;
   border: 0;
   border-radius: 0 !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding-top: 5px;
+  padding-bottom: 5px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
-  margin-bottom: 10px !important;
-
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
-  width: 2rem;
-  height: 2rem;
+  width: 22px;
+  height: auto;
 }
 
 /* 模态框样式 */

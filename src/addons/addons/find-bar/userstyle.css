@@ -27,6 +27,7 @@
   box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.3);
 }
 .sa-find-bar-button{
+  height: 40px;
   border: 0;
   background-color: #00000000;
   width: 100%;
@@ -46,7 +47,8 @@
 }
 
 .sa-find-bar-button-text{
-  width: 25px;
+  width: 22px;
+  height: auto;
 }
 .sa-find-bar-button[hidden] {
   /* !important to override displayNoneWhileDisabled */
