@@ -2,6 +2,91 @@ import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
 import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 
 export default async function ({ addon, console, msg }) {
+  const vm = addon.tab.traps.vm;
+
+  // 等待项目加载完成
+  await new Promise((resolve, reject) => {
+    if (vm.editingTarget) return resolve();
+    vm.runtime.once("PROJECT_LOADED", resolve);
+  });
+
+  // 创建终端容器
+  const switchToSprite = (targetId) => {
+    if (targetId !== vm.editingTarget.id) {
+      const target = vm.runtime.getTargetById(targetId);
+      if (target) {
+        vm.setEditingTarget(targetId);
+      }
+    }
+  };
+
+  // 激活代码选项卡
+  const activateCodeTab = () => {
+    const redux = addon.tab.redux;
+    if (redux.state.scratchGui.editorTab.activeTabIndex !== 0) {
+      redux.dispatch({
+        type: "scratch-gui/navigation/ACTIVATE_TAB",
+        activeTabIndex: 0,
+      });
+    }
+  };
+
+  // 定位到指定块
+  const goToBlock = async (blockId) => {
+    const ScratchBlocks = await addon.tab.traps.getBlockly();
+    const workspace = ScratchBlocks.getMainWorkspace();
+    const block = workspace.getBlockById(blockId);
+    if (!block || block.workspace.isFlyout) return;
+    
+    workspace.centerOnBlock(blockId);
+    block.select();
+  };
+
+  // 创建跳转到块的链接
+  const createBlockLink = (targetInfo, blockId) => {
+    const link = document.createElement("a");
+    link.className = "sa-terminal-block-link";
+    
+    const { exists, name, originalId } = targetInfo;
+    link.textContent = name;
+    link.title = "点击跳转到积木";
+    
+    if (exists && originalId) {
+      link.addEventListener("mousedown", () => {
+        switchToSprite(originalId);
+        activateCodeTab();
+        goToBlock(blockId);
+      });
+    } else {
+      link.classList.add("sa-terminal-block-link-unknown");
+    }
+    
+    return link;
+  };
+
+  // 获取目标信息
+  const getTargetInfoById = (id) => {
+    const target = vm.runtime.getTargetById(id);
+    if (target) {
+      let name = target.getName();
+      let original = target;
+      if (!target.isOriginal) {
+        name = `克隆体 (${name})`;
+        original = target.sprite.clones[0];
+      }
+      return {
+        exists: true,
+        originalId: original ? original.id : null,
+        name,
+      };
+    }
+    return {
+      exists: false,
+      originalId: null,
+      name: "（未知角色）",
+    };
+  };
+
   // 创建终端容器
   const terminalContainer = document.createElement("div");
   addon.tab.displayNoneWhileDisabled(terminalContainer, { display: "flex" });
@@ -13,24 +98,88 @@ export default async function ({ addon, console, msg }) {
 
   const terminalTitle = document.createElement("span");
   terminalTitle.className = "sa-terminal-title";
-  terminalTitle.textContent = "Scratch Terminal";
-
-  const terminalStatus = document.createElement("span");
-  terminalStatus.className = "sa-terminal-status";
-  terminalStatus.textContent = "● Ready";
+  terminalTitle.textContent = "AstraEditor Terminal";
 
   terminalHeader.appendChild(terminalTitle);
-  terminalHeader.appendChild(terminalStatus);
   terminalContainer.appendChild(terminalHeader);
 
   // 创建终端输出区域
   const terminalOutput = document.createElement("div");
   terminalOutput.className = "sa-terminal-output";
-  terminalOutput.textContent = `Scratch Terminal v1.0
+  terminalOutput.textContent = `AstraEditor Terminal v1.0
 Type 'help' for available commands.
 `;
 
   terminalContainer.appendChild(terminalOutput);
+
+  // 添加输出块到 Scratch
+  addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
+    args: ["text"],
+    displayName: msg("block-log"),
+    callback: ({ text }, thread) => {
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        // 添加文本内容
+        const textSpan = document.createElement("span");
+        textSpan.textContent = text;
+        line.appendChild(textSpan);
+        
+        // 添加跳转到块的链接
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      }
+    },
+  });
+
+  addon.tab.addBlock("\u200B\u200Bterminal_log_colored\u200B\u200B %s %s", {
+    args: ["text", "color"],
+    displayName: msg("block-log-colored"),
+    callback: ({ text, color }, thread) => {
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        // 添加彩色文本内容
+        const textSpan = document.createElement("span");
+        textSpan.style.color = color;
+        textSpan.textContent = text;
+        line.appendChild(textSpan);
+        
+        // 添加跳转到块的链接
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            link.style.color = "var(--ui-primary)";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      }
+    },
+  });
 
   // 创建输入行
   const inputLine = document.createElement("div");
@@ -147,7 +296,7 @@ Type 'help' for available commands.
     },
     version: {
       description: "Show terminal version",
-      execute: () => "Scratch Terminal v1.0"
+      execute: () => "AstraEditor Terminal v1.0"
     }
   };
 

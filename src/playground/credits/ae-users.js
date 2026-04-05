@@ -6,6 +6,7 @@ import np from './AE_images/np.jpg'
 import msw from './AE_images/msw.jpg'
 import cat from './AE_images/cat.jpg'
 import nangua from './AE_images/nangua.jpg'
+import hypixice from './AE_images/hypi.jpg'
 
 const shuffle = list => {
     for (let i = list.length - 1; i > 0; i--) {
@@ -66,8 +67,17 @@ const website = [
     }
 ];
 
+const icon = [
+    {
+        image: hypixice,
+        text: "Hypixice",
+        href: "https://www.hypixice.top"
+    }
+]
+
 export default {
     contributors: shuffle(contributors),
     logo: shuffle(logo),
-    website: shuffle(website)
+    website: shuffle(website),
+    icon: shuffle(icon)
 };

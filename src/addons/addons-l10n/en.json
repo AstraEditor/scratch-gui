@@ -394,5 +394,7 @@
     "sprite-folders/export": "Export",
     "sprite-folders/rename-sprite-prompt": "Rename sprite:",
     "sprite-folders/delete-sprite-confirm": "Delete this sprite?",
-    "jump-to-def/jump_to_definition": "Jump to definition"
+    "jump-to-def/jump_to_definition": "Jump to definition",
+    "Terminal/block-log": "Terminal log %s",
+    "Terminal/block-log-colored": "Terminal log %s colored %s"
 }

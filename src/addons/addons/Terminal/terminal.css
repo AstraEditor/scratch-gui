@@ -186,3 +186,38 @@
 .sa-terminal-output::-webkit-scrollbar-thumb:hover {
   background: #5c5c5c;
 }
+
+/* 日志行样式 */
+.sa-terminal-log-line {
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 块链接样式 */
+.sa-terminal-block-link {
+  color: #4ec9b0;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.sa-terminal-block-link:hover {
+  background-color: #3c3c3c;
+  text-decoration: none;
+}
+
+.sa-terminal-block-link-unknown {
+  color: #808080;
+  cursor: default;
+  text-decoration: none;
+}
+
+.sa-terminal-block-link-unknown:hover {
+  background-color: transparent;
+}

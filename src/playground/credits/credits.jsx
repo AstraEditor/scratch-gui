@@ -92,6 +92,10 @@ const Credits = () => (
             <h2>Website</h2>
             <UserList users={AEUserData.website} />
         </section>
+        <section>
+            <h2>Icon materials</h2>
+            <UserList users={AEUserData.icon} />
+        </section>
         <h4 style={{
             textAlign: "center"
         }}>

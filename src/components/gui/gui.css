@@ -53,8 +53,8 @@
 }
 
 .tab-list.vscode .readmeButton svg {
-    width: 2rem;
-    height: 2rem;
+    width: 1rem;
+    height: 1rem;
 }
 
 
@@ -278,8 +278,8 @@
 }
 
 .vscode .tab img {
-    width: 2rem;
-    height: 2rem;
+    width: 1.35rem;
+    height: 1.35rem;
     margin: 0 !important;
 }
 
@@ -396,8 +396,9 @@ $fade-out-distance: 15px;
 }
 
 .extension-button-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: 4px;
 }
 
 [dir="rtl"] .extension-button-icon {
