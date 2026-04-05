@@ -4,6 +4,34 @@
  */
 export default async function ({ addon, console }) {
   const vm = addon.tab.traps.vm;
+  let cleanupPhantomHeader = null;
+
+  const getTopPx = () => {
+    try {
+      const root = document.documentElement;
+      const rawValue = getComputedStyle(root).getPropertyValue('--stage-fullscreen-top').trim();
+      if (!rawValue) return 0;
+
+      if (rawValue.endsWith('rem')) {
+        const remValue = parseFloat(rawValue);
+        const rootFontSize = parseFloat(getComputedStyle(root).fontSize);
+        return remValue * rootFontSize;
+      }
+
+      if (rawValue.endsWith('px')) {
+        return parseFloat(rawValue);
+      }
+
+      const numericValue = parseFloat(rawValue);
+      return Number.isNaN(numericValue) ? 0 : numericValue;
+    } catch (e) {
+      console.error(e);
+      return 0;
+    }
+  };
+
+  const getHeaderTriggerZonePx = () => Math.max(8, getTopPx());
+
   const updateStageSize = () => {
     document.documentElement.style.setProperty('--sa-fullscreen-width', vm.runtime.stageWidth);
     document.documentElement.style.setProperty('--sa-fullscreen-height', vm.runtime.stageHeight);
@@ -58,6 +86,11 @@ export default async function ({ addon, console }) {
   // The "phantom header" is a small strip at the top of the page that
   // brings the header into view when hovered.
   async function updatePhantomHeader() {
+    if (cleanupPhantomHeader) {
+      cleanupPhantomHeader();
+      cleanupPhantomHeader = null;
+    }
+
     if (
       !addon.self.disabled &&
       addon.tab.redux.state.scratchGui.mode.isFullScreen &&
@@ -66,9 +99,11 @@ export default async function ({ addon, console }) {
       const canvas = await addon.tab.waitForElement('[class*="stage_full-screen"] canvas');
       const header = await addon.tab.waitForElement('[class^="stage-header_stage-header-wrapper"]');
 
-      // 检查是否已经存在 phantom
+      // 如果已经有旧的 phantom，就先拆掉再重建，避免监听器丢失。
       if (header.parentElement.classList.contains("phantom-header")) {
-        return; // 已经存在，不需要重新创建
+        const existingPhantom = header.parentElement;
+        existingPhantom.parentElement.appendChild(header);
+        existingPhantom.remove();
       }
 
       const phantom = header.parentElement.appendChild(document.createElement("div"));
@@ -85,40 +120,57 @@ export default async function ({ addon, console }) {
         header.classList.remove("stage-header-hover");
       });
 
-      // 获取1rem的大小
-      const getTopPx = () => {
-        try {
-          const root = document.documentElement;
-
-          const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-          const stageFullscreenTop = parseFloat(getComputedStyle(root).getPropertyValue('--stage-fullscreen-top'));
-
-          return rootFontSize * stageFullscreenTop;
-        } catch (e) {
-          console.error(e);
-          return 20
-        }
-      }
+      const showHeader = () => {
+        header.classList.add("stage-header-hover");
+      };
+      const hideHeader = () => {
+        header.classList.remove("stage-header-hover");
+      };
 
       // Listen for when the mouse moves above the page (helps to show header when not in browser full screen mode)
-      document.body.addEventListener("mouseleave", (e) => {
-        if (e.clientY < getTopPx()) {
-          header.classList.add("stage-header-hover");
+      const handleBodyMouseLeave = (e) => {
+        if (e.clientY < getHeaderTriggerZonePx()) {
+          showHeader();
         }
-      });
+      };
       // and for when the mouse re-enters the page
-      document.body.addEventListener("mouseenter", () => {
-        header.classList.remove("stage-header-hover");
-      });
+      const handleBodyMouseEnter = () => {
+        if (!phantom.matches(":hover") && !header.matches(":hover")) {
+          hideHeader();
+        }
+      };
+      // Permanent menubar means the pointer often enters the menubar zone instead of truly leaving the page.
+      const handleDocumentMouseMove = (e) => {
+        if (e.clientY <= getHeaderTriggerZonePx()) {
+          showHeader();
+        } else if (!phantom.matches(":hover") && !header.matches(":hover")) {
+          hideHeader();
+        }
+      };
+
+      document.body.addEventListener("mouseleave", handleBodyMouseLeave);
+      document.body.addEventListener("mouseenter", handleBodyMouseEnter);
+      document.addEventListener("mousemove", handleDocumentMouseMove);
 
       // Pass click events on the phantom header onto the project player, essentially making it click-through
-      ["mousedown", "mousemove", "mouseup", "touchstart", "touchmove", "touchend", "wheel"].forEach((eventName) => {
-        phantom.addEventListener(eventName, (e) => {
-          if (e.target.classList.contains("phantom-header")) {
-            canvas.dispatchEvent(new e.constructor(e.type, e));
-          }
-        });
+      const forwardedEvents = ["mousedown", "mousemove", "mouseup", "touchstart", "touchmove", "touchend", "wheel"];
+      const forwardToCanvas = (e) => {
+        if (e.target.classList.contains("phantom-header")) {
+          canvas.dispatchEvent(new e.constructor(e.type, e));
+        }
+      };
+      forwardedEvents.forEach((eventName) => {
+        phantom.addEventListener(eventName, forwardToCanvas);
       });
+
+      cleanupPhantomHeader = () => {
+        document.body.removeEventListener("mouseleave", handleBodyMouseLeave);
+        document.body.removeEventListener("mouseenter", handleBodyMouseEnter);
+        document.removeEventListener("mousemove", handleDocumentMouseMove);
+        forwardedEvents.forEach((eventName) => {
+          phantom.removeEventListener(eventName, forwardToCanvas);
+        });
+      };
     } else {
       const header = await addon.tab.waitForElement('[class*="stage-header_stage-header-wrapper"]');
       if (header.parentElement.classList.contains("phantom-header")) {

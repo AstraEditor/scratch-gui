@@ -3,9 +3,10 @@
   height: calc(100% - 2rem);
 } 这个会导致显示问题*/
 
-/* Override fullscreen top offset for compact menu bar height */
-:root {
+/* Override fullscreen top offset for compact menu bar height on Desktop only */
+:root[data-is-scratch-desktop='true'] {
   --stage-fullscreen-top: 2rem;
+  --modal-top-offset: 2rem;
 }
 
 .sa-body-editor,
@@ -47,11 +48,9 @@
 
 [class*="gui_menu-bar-position"][class*="menu-bar_menu-bar"][class*="box_box"],
 [class*="menu-bar_menu-bar-item"],
-[class*="menu-bar_control-bar"]{
+[class*="menu-bar_control-bar"],
+[class*="menu-bar_controlBarInner"]{
   height: 2rem;
-}
-[class*="modal_modal-overlay"] { /*Menubar在最顶层，所以很多地方都需要让个位置*/
-  margin-top: 2rem;
 }
 
 [class*="menu-bar_file-group_"] [class*="menu-bar_menu-bar-item_"],

@@ -259,9 +259,6 @@
 
 .control-bar {
     position: relative;
-    flex: 0 0 156px;
-    width: 156px;
-    min-width: 156px;
     height: $menu-bar-height;
     pointer-events: none;
 }
