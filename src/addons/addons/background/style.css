@@ -1,0 +1,5 @@
+.sa-background-popup {
+    box-sizing: border-box;
+    width: min(760px, 88vw);
+    max-height: min(820px, 84vh);
+}
