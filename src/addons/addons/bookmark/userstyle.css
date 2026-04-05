@@ -68,13 +68,9 @@
 
 .sa-bookmark-button img {
   display: inline-block;
-  width: 2rem !important;
-  height: 2rem !important;
 }
 
 .sa-bookmark-button svg {
-  width: 20px;
-  height: 20px;
   color: currentColor;
 }
 
@@ -95,8 +91,8 @@
 }
 
 [class*="tabs"][class*="vscodeList"] .sa-bookmark-button img {
-  width: 2rem;
-  height: 2rem;
+  width: 28px !important;
+  height: auto !important;
   margin: 0 !important;
 }
 
