@@ -20,6 +20,13 @@ const manifest = {
     {
       url: "terminal.css"
     }
+  ],
+  "info": [
+    {
+      "type": "notice",
+      "text": "When the Debugger plugin is enabled simultaneously, there is a probability that the blocks may not load.",
+      "id": "notice"
+    }
   ]
 };
 export default manifest;

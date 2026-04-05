@@ -297,7 +297,11 @@ Type 'help' for available commands.
     version: {
       description: "Show terminal version",
       execute: () => "AstraEditor Terminal v1.0"
+    },
+    "creeper?": {
+      execute: () => "Awwww Man!"
     }
+
   };
 
   // 执行命令
