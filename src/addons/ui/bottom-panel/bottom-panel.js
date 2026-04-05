@@ -256,6 +256,7 @@ class BottomPanelInternal {
             this.resizeHandle.style.background = "transparent";
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
+            window.dispatchEvent(new Event("resize"));
         }
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelResized', { detail: { height: this.currentHeight } }));
@@ -267,6 +268,7 @@ class BottomPanelInternal {
         this.buttonBar.classList.add('bottom-panel-open');
         this.buttonBar.style.borderTop = "none";
         this.buttonBar.style.borderBottom = "1px solid var(--ui-black-transparent)";
+        window.dispatchEvent(new Event("resize"));
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelOpened'));
     }
@@ -277,6 +279,7 @@ class BottomPanelInternal {
         this.buttonBar.classList.remove('bottom-panel-open');
         this.buttonBar.style.borderTop = "1px solid var(--ui-black-transparent)";
         this.buttonBar.style.borderBottom = "none";
+        window.dispatchEvent(new Event("resize"));
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelClosed'));
     }

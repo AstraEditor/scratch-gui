@@ -280,35 +280,17 @@ class SideBarInternal {
 
         if (getSideBar()) getSideBar().prepend(this.element);
 
-        // 使用 requestAnimationFrame 合并多个布局更新请求
-        this._updateRequest = null;
+        // 使用防抖函数处理频繁的布局更新请求
+        this._debounceTimer = null;
         this._scheduleUpdate = () => {
-            if (this._updateRequest) {
-                return; // 已经有待处理的更新请求
+            if (this._debounceTimer) {
+                clearTimeout(this._debounceTimer);
             }
-            this._updateRequest = requestAnimationFrame(() => {
+            this._debounceTimer = setTimeout(() => {
                 this.updateHeight();
-                this._updateRequest = null;
-            });
+                this._debounceTimer = null;
+            }, 100);
         };
-
-        // 恢复 ResizeObserver 监听 editor-wrapper 和 tabPanel 的尺寸变化
-        this._resizeObserver = new ResizeObserver(() => {
-            this._scheduleUpdate();
-        });
-
-        setTimeout(() => {
-            const tabPanel = getSideBar();
-            const editorWrapper = document.querySelector("[class*=editor-wrapper]");
-            if (tabPanel) {
-                this._resizeObserver.observe(tabPanel);
-            }
-            if (editorWrapper) {
-                this._resizeObserver.observe(editorWrapper);
-            }
-            // 初始化高度
-            this._scheduleUpdate();
-        }, 100);
 
         // 监听 Bottom Panel 的自定义事件，用于在 Bottom Panel 打开/关闭时触发布局更新
         this._boundHandleBottomPanelEvent = () => {
@@ -392,16 +374,10 @@ class SideBarInternal {
             this._tabObserver = null;
         }
 
-        // 停止 ResizeObserver
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-            this._resizeObserver = null;
-        }
-
-        // 取消待处理的布局更新请求
-        if (this._updateRequest) {
-            cancelAnimationFrame(this._updateRequest);
-            this._updateRequest = null;
+        // 清除防抖定时器
+        if (this._debounceTimer) {
+            clearTimeout(this._debounceTimer);
+            this._debounceTimer = null;
         }
 
         // 移除 bottomPanel 自定义事件监听器
@@ -441,8 +417,7 @@ class SideBarInternal {
         );
         this.element.style.width = `${this.currentWidth}px`;
         if (this.extensionButton) {
-            // 使用 left 属性代替 marginLeft，更稳定地移动绝对定位元素
-            this.extensionButton.style.left = `${this.currentWidth}px`;
+            this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
     }
 
@@ -452,26 +427,24 @@ class SideBarInternal {
             this.resizeHandle.style.background = "transparent";
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
+            window.dispatchEvent(new Event("resize"));
         }
-        this.updateHeight();
     }
 
     open() {
         this.element.style.display = "flex";
         if (this.extensionButton) {
-            // 使用 left 属性代替 marginLeft
-            this.extensionButton.style.left = `${this.currentWidth}px`;
+            this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
-        this._scheduleUpdate();
+        window.dispatchEvent(new Event("resize"));
     }
 
     close() {
         this.element.style.display = "none";
         if (this.extensionButton) {
-            // 使用 left 属性代替 marginLeft
-            this.extensionButton.style.left = "0px";
+            this.extensionButton.style.marginLeft = "0px";
         }
-        this._scheduleUpdate();
+        window.dispatchEvent(new Event("resize"));
     }
 
     isOpen() {
