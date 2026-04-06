@@ -155,7 +155,6 @@
 
   .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active {
     background: var(--ui-dark) !important;
-    color: var(--looks-secondary) !important;
   }
 
   .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active:hover {

@@ -28,9 +28,9 @@
 }
 .sa-find-bar-button{
   height: 40px;
+  width: 40px;
   border: 0;
   background-color: #00000000;
-  width: 100%;
   margin: 0;
   padding-top: 5px;
   padding-bottom: 5px;
