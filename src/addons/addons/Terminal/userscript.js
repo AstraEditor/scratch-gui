@@ -107,8 +107,8 @@ export default async function ({ addon, console, msg }) {
   // 创建继续按钮（默认隐藏）
   const continueButton = document.createElement("button");
   continueButton.className = "sa-terminal-continue-button";
-  continueButton.innerHTML = "▶";
-  continueButton.title = "继续运行";
+  continueButton.innerHTML = "▶ 继续执行";
+  // continueButton.title = "继续运行";
   continueButton.style.display = "none";
   
   continueButton.addEventListener("click", () => {

@@ -395,6 +395,11 @@
     "sprite-folders/rename-sprite-prompt": "Rename sprite:",
     "sprite-folders/delete-sprite-confirm": "Delete this sprite?",
     "jump-to-def/jump_to_definition": "Jump to definition",
-    "Terminal/block-log": "Terminal log %s",
-    "Terminal/block-log-colored": "Terminal log %s colored %s"
+    "Terminal/block-log": "Output %s",
+    "Terminal/block-log-colored": "Output %s colored %s",
+    "Terminal/block-breakpoint": "Breakpoint",
+    "Terminal/block-log-debug": "Log %s",
+    "Terminal/block-warn": "Warn %s",
+    "Terminal/block-error": "Error %s",
+    "Terminal/block-get-input": "Get last input"
 }
