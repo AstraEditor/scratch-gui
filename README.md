@@ -1,19 +1,31 @@
 scratch-gui modified for use in [AstraEditor](https://www.github.com/AstraEditor)
 
-## Setup
+## AstraEditor-gui!
 
-See https://docs.turbowarp.org/development/getting-started to setup the complete TurboWarp environment.
+Added more plugins to TurboWarp, adjusted the layout and style to make it more modern.
 
-If you just want to play with the GUI then it's the same process as upstream scratch-gui.
+Try now?
+
+## Get Start?
+
+Use `npm install` and `npm start` to get started.
+
+This will start a local debugging server.
+
+Use `npm run build` to create a static web page that can be deployed on GitHub Pages.
+
+Learn more from https://editors.astras.top/document/development/getting-started to setup the complete AstraEditor environment.
 
 ## License
 
-TurboWarp's modifications to Scratch are licensed under the GNU General Public License v3.0. See LICENSE or https://www.gnu.org/licenses/ for details.
+AstraEditor's modifications to TurboWarp are licensed under the GNU General Public License v3.0. 
+
+See LICENSE or https://www.gnu.org/licenses/ for details.
 
 The following is the original license for scratch-gui, which we are required to retain. This is NOT the license of this project.
 
 ```
-Copyright (c) 2016, Massachusetts Institute of Technology
+AstraEditor Copyright (c) 2026, AstrasTeam
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -26,8 +38,6 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
-
-src/lib/default-project/dango.svg is based on [Twemoji](https://twemoji.twitter.com/) and is licensed under CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
 
 <!--
 

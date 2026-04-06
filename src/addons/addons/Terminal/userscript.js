@@ -1,8 +1,12 @@
 import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
 import icon from "!../../../lib/tw-recolor/build!./logo.svg";
+import { setup as setupDebugger, setPaused as setPausedDebugger } from "../debugger/module.js";
 
 export default async function ({ addon, console, msg }) {
   const vm = addon.tab.traps.vm;
+  
+  // 初始化debugger模块
+  setupDebugger(addon);
 
   // 等待项目加载完成
   await new Promise((resolve, reject) => {
@@ -100,17 +104,180 @@ export default async function ({ addon, console, msg }) {
   terminalTitle.className = "sa-terminal-title";
   terminalTitle.textContent = "AstraEditor Terminal";
 
+  // 创建继续按钮（默认隐藏）
+  const continueButton = document.createElement("button");
+  continueButton.className = "sa-terminal-continue-button";
+  continueButton.innerHTML = "▶";
+  continueButton.title = "继续运行";
+  continueButton.style.display = "none";
+  
+  continueButton.addEventListener("click", () => {
+    setPausedDebugger(false);
+    continueButton.style.display = "none";
+  });
+
   terminalHeader.appendChild(terminalTitle);
+  terminalHeader.appendChild(continueButton);
   terminalContainer.appendChild(terminalHeader);
 
   // 创建终端输出区域
   const terminalOutput = document.createElement("div");
   terminalOutput.className = "sa-terminal-output";
-  terminalOutput.textContent = `AstraEditor Terminal v1.0
-Type 'help' for available commands.
-`;
+  
+  // 初始化欢迎信息
+  const welcomeLine1 = document.createElement("div");
+  welcomeLine1.textContent = "AstraEditor Terminal v1.0";
+  terminalOutput.appendChild(welcomeLine1);
+  
+  const welcomeLine2 = document.createElement("div");
+  welcomeLine2.textContent = "Type 'help' for available commands.";
+  terminalOutput.appendChild(welcomeLine2);
+  
+  const welcomeLine3 = document.createElement("div");
+  welcomeLine3.textContent = ""; // 空行
+  terminalOutput.appendChild(welcomeLine3);
 
   terminalContainer.appendChild(terminalOutput);
+
+  // 重复内容处理
+  let lastLogElement = null;
+  let lastLogContent = "";
+  let lastLogCount = 1;
+
+  const addLogLine = (content, element) => {
+    // 检查是否与上一行内容相同
+    const currentContent = content;
+    
+    if (currentContent === lastLogContent && lastLogElement) {
+      // 重复内容，增加计数
+      lastLogCount++;
+      // 更新显示的计数
+      let counter = lastLogElement.querySelector('.sa-terminal-log-counter');
+      if (!counter) {
+        counter = document.createElement("span");
+        counter.className = "sa-terminal-log-counter";
+        lastLogElement.insertBefore(counter, lastLogElement.firstChild);
+      }
+      counter.textContent = lastLogCount;
+    } else {
+      // 新内容，添加新行
+      if (element) {
+        terminalOutput.appendChild(element);
+      } else {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        line.textContent = content;
+        terminalOutput.appendChild(line);
+      }
+      
+      // 更新上一行记录
+      lastLogElement = element || terminalOutput.lastChild;
+      lastLogContent = currentContent;
+      lastLogCount = 1;
+    }
+    
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  };
+
+  // 重置重复内容记录（用于非积木输出的内容）
+  const resetLogTracking = () => {
+    lastLogElement = null;
+    lastLogContent = "";
+    lastLogCount = 1;
+  };
+
+  // 获取元素的内容标识符（用于比较重复内容）
+  const getElementContentHash = (element) => {
+    return element.textContent.replace(/\s+/g, ' ').trim();
+  };
+
+  // 添加日志行（支持重复内容合并）
+  const addLogLineWithElement = (element) => {
+    const contentHash = getElementContentHash(element);
+    
+    if (contentHash === lastLogContent && lastLogElement) {
+      // 重复内容，增加计数
+      lastLogCount++;
+      // 更新显示的计数
+      let counter = lastLogElement.querySelector('.sa-terminal-log-counter');
+      if (!counter) {
+        counter = document.createElement("span");
+        counter.className = "sa-terminal-log-counter";
+        lastLogElement.insertBefore(counter, lastLogElement.firstChild);
+      }
+      counter.textContent = lastLogCount;
+      // 移除重复的元素
+      element.remove();
+    } else {
+      // 新内容，添加新行
+      terminalOutput.appendChild(element);
+      // 更新上一行记录
+      lastLogElement = element;
+      lastLogContent = contentHash;
+      lastLogCount = 1;
+    }
+    
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  };
+
+  
+  // 添加断点积木
+  addon.tab.addBlock("\u200B\u200Bterminal_breakpoint\u200B\u200B", {
+    args: [],
+    displayName: msg("block-breakpoint"),
+    callback: (_, thread) => {
+      // 检查是否在播放器模式下
+      if (addon.tab.redux.state.scratchGui.mode.isPlayerOnly) {
+        if (terminalOutput) {
+          const line = document.createElement("div");
+          line.className = "sa-terminal-log-line";
+          
+          const mark = document.createElement("span");
+          mark.className = "sa-terminal-log-mark error";
+          mark.textContent = "[error]";
+          line.appendChild(mark);
+          
+          line.appendChild(document.createTextNode(" 断点积木只能在编辑器中使用。"));
+          
+          addLogLineWithElement(line);
+        }
+        return;
+      }
+      
+      // 使用debugger的setPaused功能暂停VM
+      setPausedDebugger(true);
+      
+      // 显示继续按钮
+      continueButton.style.display = "inline-block";
+      
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        const mark = document.createElement("span");
+        mark.className = "sa-terminal-log-mark log";
+        mark.textContent = "[breakpoint]";
+        line.appendChild(mark);
+        
+        line.appendChild(document.createTextNode(" 程序已暂停"));
+        
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        addLogLineWithElement(line);
+      }
+    },
+  });
 
   // 添加输出块到 Scratch
   addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
@@ -140,8 +307,7 @@ Type 'help' for available commands.
           }
         }
         
-        terminalOutput.appendChild(line);
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        addLogLineWithElement(line);
       }
     },
   });
@@ -168,17 +334,136 @@ Type 'help' for available commands.
           if (blockId && targetInfo.exists) {
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            link.style.color = "var(--ui-primary)";
+            link.style.color = ""; // 重置颜色，使用CSS定义的默认颜色
             line.appendChild(document.createTextNode(" ["));
             line.appendChild(link);
             line.appendChild(document.createTextNode("]"));
           }
         }
         
-        terminalOutput.appendChild(line);
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        addLogLineWithElement(line);
       }
     },
+  });
+
+  // 添加日志积木（带 [log] 白色标记）
+  addon.tab.addBlock("\u200B\u200Bterminal_log_debug\u200B\u200B %s", {
+    args: ["text"],
+    displayName: msg("block-log-debug"),
+    callback: ({ text }, thread) => {
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        const mark = document.createElement("span");
+        mark.className = "sa-terminal-log-mark log";
+        mark.textContent = "[log]";
+        line.appendChild(mark);
+        
+        const textSpan = document.createElement("span");
+        textSpan.textContent = " " + text;
+        line.appendChild(textSpan);
+        
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        addLogLineWithElement(line);
+      }
+    },
+  });
+
+  // 添加警告积木（带 [warn] 橙色标记）
+  addon.tab.addBlock("\u200B\u200Bterminal_warn\u200B\u200B %s", {
+    args: ["text"],
+    displayName: msg("block-warn"),
+    callback: ({ text }, thread) => {
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        const mark = document.createElement("span");
+        mark.className = "sa-terminal-log-mark warn";
+        mark.textContent = "[warn]";
+        line.appendChild(mark);
+        
+        const textSpan = document.createElement("span");
+        textSpan.textContent = " " + text;
+        line.appendChild(textSpan);
+        
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        addLogLineWithElement(line);
+      }
+    },
+  });
+
+  // 添加错误积木（带 [error] 红色标记）
+  addon.tab.addBlock("\u200B\u200Bterminal_error\u200B\u200B %s", {
+    args: ["text"],
+    displayName: msg("block-error"),
+    callback: ({ text }, thread) => {
+      if (terminalOutput) {
+        const line = document.createElement("div");
+        line.className = "sa-terminal-log-line";
+        
+        const mark = document.createElement("span");
+        mark.className = "sa-terminal-log-mark error";
+        mark.textContent = "[error]";
+        line.appendChild(mark);
+        
+        const textSpan = document.createElement("span");
+        textSpan.textContent = " " + text;
+        line.appendChild(textSpan);
+        
+        if (thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = getTargetInfoById(targetId);
+          if (blockId && targetInfo.exists) {
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            line.appendChild(document.createTextNode(" ["));
+            line.appendChild(link);
+            line.appendChild(document.createTextNode("]"));
+          }
+        }
+        
+        addLogLineWithElement(line);
+      }
+    },
+  });
+
+  // 添加返回值积木（返回用户刚才输入的内容）
+  // 直接使用 vm.addAddonBlock 创建返回值块
+  vm.addAddonBlock({
+    procedureCode: "terminal_get_input",
+    displayName: msg("block-get-input"),
+    callback: () => {
+      // 返回用户最后一次输入，如果没有则返回空字符串
+      return lastUserInput || "";
+    },
+    return: 1 // 1 表示圆角返回值块
   });
 
   // 创建输入行
@@ -201,6 +486,9 @@ Type 'help' for available commands.
   // 命令历史
   const commandHistory = [];
   let historyIndex = -1;
+
+  // 存储用户输入用于返回值积木
+  let lastUserInput = "";
 
   // 可用命令
   const commands = {
@@ -311,14 +599,23 @@ Type 'help' for available commands.
     const cmdName = parts[0].toLowerCase();
     const args = parts.slice(1);
 
+    // 存储用户输入
+    lastUserInput = command.trim();
+
     // 添加到历史记录
     if (command.trim()) {
       commandHistory.push(command.trim());
       historyIndex = commandHistory.length;
     }
 
-    // 显示输入的命令
-    terminalOutput.textContent += `> ${command}\n`;
+    // 重置重复内容记录，命令行不应该触发合并
+    resetLogTracking();
+
+    // 显示输入的命令 - 使用div保持格式
+    const commandLine = document.createElement("div");
+    commandLine.className = "sa-terminal-command-line";
+    commandLine.textContent = `> ${command}`;
+    terminalOutput.appendChild(commandLine);
 
     if (!cmdName) {
       return;
@@ -329,16 +626,21 @@ Type 'help' for available commands.
       try {
         const result = cmd.execute(args);
         if (result) {
-          terminalOutput.textContent += result + "\n";
+          // 使用pre标签保持格式
+          const resultLine = document.createElement("div");
+          resultLine.className = "sa-terminal-result-line";
+          resultLine.textContent = result;
+          terminalOutput.appendChild(resultLine);
         }
       } catch (e) {
-        terminalOutput.textContent += `Error: ${e.message}\n`;
+        const errorLine = document.createElement("div");
+        errorLine.className = "sa-terminal-error-line";
+        errorLine.textContent = `Error: ${e.message}`;
+        terminalOutput.appendChild(errorLine);
       }
-    } else {
-      terminalOutput.textContent += `Unknown command: ${cmdName}. Type 'help' for available commands.\n`;
     }
+    // 不显示unknown command，允许用户输入任意内容
 
-    terminalOutput.textContent += "\n";
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
   };
 

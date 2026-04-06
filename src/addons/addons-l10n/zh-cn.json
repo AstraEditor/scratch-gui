@@ -388,5 +388,10 @@
     "sprite-folders/delete-sprite-confirm": "删除此角色？",
     "jump-to-def/jump_to_definition": "跳转到定义",
     "Terminal/block-log": "Terminal 日志 %s",
-    "Terminal/block-log-colored": "Terminal 日志 %s 颜色 %s"
+    "Terminal/block-log-colored": "Terminal 日志 %s 颜色 %s",
+    "Terminal/block-breakpoint": "断点",
+    "Terminal/block-log-debug": "日志 %s",
+    "Terminal/block-warn": "警告 %s",
+    "Terminal/block-error": "错误 %s",
+    "Terminal/block-get-input": "获取输入"
 }

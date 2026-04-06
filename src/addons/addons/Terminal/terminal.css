@@ -29,6 +29,34 @@
   font-weight: bold;
 }
 
+/* 继续按钮样式 */
+.sa-terminal-continue-button {
+  background: #4ec9b0;
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 6px;
+  font-family: inherit;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sa-terminal-continue-button:hover {
+  opacity: 1;
+}
+
+.sa-terminal-continue-button:active {
+  transform: scale(0.95);
+}
+
 .sa-terminal-status {
   color: #4ec9b0;
   font-size: 11px;
@@ -186,6 +214,26 @@
   background: #5c5c5c;
 }
 
+/* 命令行样式 */
+.sa-terminal-command-line {
+  padding: 2px 0;
+  color: var(--text-primary);
+}
+
+/* 结果行样式 */
+.sa-terminal-result-line {
+  padding: 2px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--text-primary);
+}
+
+/* 错误行样式 */
+.sa-terminal-error-line {
+  padding: 2px 0;
+  color: #ff6b6b;
+}
+
 /* 日志行样式 */
 .sa-terminal-log-line {
   padding: 2px 0;
@@ -193,6 +241,23 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 4px;
+  position: relative;
+}
+
+/* 重复内容计数器 */
+.sa-terminal-log-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: #4ec9b0;
+  color: #000;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: bold;
+  margin-right: 6px;
+  padding: 0 4px;
 }
 
 /* 块链接样式 */
@@ -219,4 +284,27 @@
 
 .sa-terminal-block-link-unknown:hover {
   background-color: transparent;
+}
+
+/* 日志标记样式 */
+.sa-terminal-log-mark {
+  font-weight: bold;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 11px;
+}
+
+.sa-terminal-log-mark.log {
+  color: #ffffff;
+  background-color: #666666;
+}
+
+.sa-terminal-log-mark.warn {
+  color: #ffffff;
+  background-color: #ff9900;
+}
+
+.sa-terminal-log-mark.error {
+  color: #ffffff;
+  background-color: #ff4444;
 }
