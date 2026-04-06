@@ -6,7 +6,6 @@ import {getIsShowingProject} from '../reducers/project-state';
 
 const PACKAGER_URL = 'https://editors.astras.top/packager/';
 const PACKAGER_ORIGIN = 'https://editors.astras.top';
-// 不删除，以后可能会加回来
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
     class PackagerIntegrationComponent extends React.Component {
