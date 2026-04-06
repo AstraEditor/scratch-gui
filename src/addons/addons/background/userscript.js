@@ -229,11 +229,17 @@ function applyBackground(data) {
     blocklySvg.style.backgroundColor = "transparent";
     const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
     const background = document.createElement('img');
+    const existingBg = workspace.querySelector('.sa-background-image');
+    if (existingBg) {
+        existingBg.src = data;
+        return;
+    }
     background.src = data;
+    background.className = 'sa-background-image';
     background.style.opacity = '0.5';
     background.draggable = false;
     background.style.zIndex = 0;
-    workspace.appendChild(background);
+    workspace.prepend(background);
     // workspace.style.backgroundImage = `
     // linear-gradient(
     //     color-mix(in srgb, var(--ui-secondary) 50%, transparent),
