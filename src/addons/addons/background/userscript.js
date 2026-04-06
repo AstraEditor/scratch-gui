@@ -1,5 +1,5 @@
 /**
- * 背景数据库管理类
+ * IndexedDB by AI （嘿嘿）
  */
 class BackgroundDB {
     constructor(dbName = 'sa-background', storeName = 'backgrounds', version = 1) {
@@ -144,7 +144,6 @@ class BackgroundDB {
     }
 }
 
-// 全局数据库实例
 let bgDB;
 
 export default async function ({ addon, msg }) {
@@ -238,16 +237,6 @@ function applyBackground(data) {
     background.className = 'sa-background-image';
     background.style.opacity = '0.5';
     background.draggable = false;
-    background.style.zIndex = 0;
+    background.style.position = 'absolute';
     workspace.prepend(background);
-    // workspace.style.backgroundImage = `
-    // linear-gradient(
-    //     color-mix(in srgb, var(--ui-secondary) 50%, transparent),
-    //     color-mix(in srgb, var(--ui-secondary) 50%, transparent)
-    // ),
-    // url(${data})
-    // `;
-    // workspace.style.backgroundPosition = 'center';
-    // workspace.style.backgroundRepeat = 'no-repeat';
-    // workspace.style.backgroundSize = 'cover';
 }
