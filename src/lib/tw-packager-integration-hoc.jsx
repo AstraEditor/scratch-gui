@@ -5,7 +5,7 @@ import log from './log';
 import {getIsShowingProject} from '../reducers/project-state';
 
 const PACKAGER_URL = 'https://editors.astras.top/packager/';
-const PACKAGER_ORIGIN = PACKAGER_URL;
+const PACKAGER_ORIGIN = 'https://editors.astras.top';
 // 不删除，以后可能会加回来
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
@@ -27,12 +27,11 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             }
         }
         handleMessage(e) {
-            /*
+            console.log(e.origin, PACKAGER_ORIGIN)
             if (e.origin !== PACKAGER_ORIGIN) {
                  return;
             }
-            这里不检查origin是因为在开发环境下packager可能会被运行在localhost:3000以外的地址上，而我们想让它能正常工作
-            */
+
 
             if (!this.props.canOpenPackager) {
                 return;

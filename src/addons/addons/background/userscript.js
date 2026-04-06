@@ -227,15 +227,21 @@ function addContext(modal, msg) {
 function applyBackground(data) {
     const blocklySvg = document.getElementsByClassName('blocklySvg')[0];
     blocklySvg.style.backgroundColor = "transparent";
-    const workspace = document.getElementsByClassName('injectionDiv')[0];
-    workspace.style.backgroundImage = `
-    linear-gradient(
-        color-mix(in srgb, var(--ui-secondary) 50%, transparent),
-        color-mix(in srgb, var(--ui-secondary) 50%, transparent)
-    ),
-    url(${data})
-    `;
-    workspace.style.backgroundPosition = 'center';
-    workspace.style.backgroundRepeat = 'no-repeat';
-    workspace.style.backgroundSize = 'cover';
+    const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
+    const background = document.createElement('img');
+    background.src = data;
+    background.style.opacity = '0.5';
+    background.draggable = false;
+    background.style.zIndex = 0;
+    workspace.appendChild(background);
+    // workspace.style.backgroundImage = `
+    // linear-gradient(
+    //     color-mix(in srgb, var(--ui-secondary) 50%, transparent),
+    //     color-mix(in srgb, var(--ui-secondary) 50%, transparent)
+    // ),
+    // url(${data})
+    // `;
+    // workspace.style.backgroundPosition = 'center';
+    // workspace.style.backgroundRepeat = 'no-repeat';
+    // workspace.style.backgroundSize = 'cover';
 }
