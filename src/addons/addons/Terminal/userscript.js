@@ -299,6 +299,7 @@ Type 'help' for available commands.
       execute: () => "AstraEditor Terminal v1.0"
     },
     "creeper?": {
+      description: "",
       execute: () => "Awwww Man!"
     }
 
@@ -437,6 +438,7 @@ Type 'help' for available commands.
       console.log("Button bar found, adding terminal button");
       buttonBar.appendChild(toggleButton);
       console.log("Terminal button added to button bar");
+      window.dispatchEvent(new Event("resize"));
       break;
     }
     console.log("Button bar not found yet, waiting...");
