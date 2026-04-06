@@ -444,4 +444,32 @@ Type 'help' for available commands.
     console.log("Button bar not found yet, waiting...");
     await new Promise(resolve => setTimeout(resolve, 100));
   }
+
+  // 根据主题更新按钮文字颜色
+  const updateButtonTextColor = () => {
+    try {
+      const themeData = localStorage.getItem('tw:theme');
+      let isLightMode = false;
+
+      if (themeData) {
+        const parsed = JSON.parse(themeData);
+        isLightMode = parsed.gui === 'light';
+      } else {
+        // 如果没有存储主题数据，检查系统偏好
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        isLightMode = !prefersDark;
+      }
+
+      // 设置按钮文字颜色
+      toggleBtnText.style.color = isLightMode ? '#575E75' : '#ffffff';
+    } catch (e) {
+      console.error('Failed to update button text color:', e);
+    }
+  };
+
+  // 初始化按钮文字颜色
+  updateButtonTextColor();
+
+  // 监听主题变化
+  window.addEventListener('tw:theme-changed', updateButtonTextColor);
 }
