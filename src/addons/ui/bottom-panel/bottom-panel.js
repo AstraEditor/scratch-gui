@@ -158,17 +158,31 @@ class BottomPanelInternal {
 
         insertToDOM() {
         const editorWrapper = document.querySelector("[class*=editor-wrapper]");
+        const backpackContainer = document.querySelector("[class^='backpack_backpack-container']");
 
         if (editorWrapper) {
-            // 确保按钮栏被插入到 editor-wrapper（始终保持在底部）
+            // 确定插入位置：在背包容器之前插入
+            const insertBeforeElement = backpackContainer;
+
+            // 确保按钮栏被插入到背包容器之前
             if (!editorWrapper.contains(this.buttonBar)) {
-                editorWrapper.appendChild(this.buttonBar);
+                if (insertBeforeElement) {
+                    editorWrapper.insertBefore(this.buttonBar, insertBeforeElement);
+                } else {
+                    // 如果背包容器不存在，添加到末尾
+                    editorWrapper.appendChild(this.buttonBar);
+                }
                 console.log("BottomPanel button bar inserted");
             }
 
-            // 确保主面板被插入到 editor-wrapper（隐藏状态）
+            // 确保主面板被插入到背包容器之前
             if (!editorWrapper.contains(this.element)) {
-                editorWrapper.appendChild(this.element);
+                if (insertBeforeElement) {
+                    editorWrapper.insertBefore(this.element, insertBeforeElement);
+                } else {
+                    // 如果背包容器不存在，添加到末尾
+                    editorWrapper.appendChild(this.element);
+                }
                 console.log("BottomPanel main panel inserted");
             }
         } else {
