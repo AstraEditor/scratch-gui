@@ -27,7 +27,6 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             }
         }
         handleMessage(e) {
-            console.log(e.origin, PACKAGER_ORIGIN)
             if (e.origin !== PACKAGER_ORIGIN) {
                  return;
             }
