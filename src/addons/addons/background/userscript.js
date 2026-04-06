@@ -15,24 +15,24 @@ class BackgroundDB {
      */
     open() {
         return new Promise((resolve, reject) => {
-            const indexedDB = window.indexedDB || 
-                window.mozIndexedDB || 
-                window.webkitIndexedDB || 
+            const indexedDB = window.indexedDB ||
+                window.mozIndexedDB ||
+                window.webkitIndexedDB ||
                 window.msIndexedDB;
-            
+
             const request = indexedDB.open(this.dbName, this.version);
-            
+
             request.onsuccess = (event) => {
                 this.db = event.target.result;
                 console.log('数据库打开成功');
                 resolve(this.db);
             };
-            
+
             request.onerror = (event) => {
                 console.log('数据库打开报错', event);
                 reject(event);
             };
-            
+
             request.onupgradeneeded = (event) => {
                 console.log('onupgradeneeded');
                 const db = event.target.result;
@@ -80,11 +80,11 @@ class BackgroundDB {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const request = store.getAll();
-            
+
             request.onsuccess = (e) => {
                 const records = e.target.result;
                 if (records && records.length > 0) {
-                    const latest = records.reduce((a, b) => 
+                    const latest = records.reduce((a, b) =>
                         a.sequenceId > b.sequenceId ? a : b
                     );
                     resolve(latest.link || null);
@@ -108,7 +108,7 @@ class BackgroundDB {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const request = store.getAll();
-            
+
             request.onsuccess = (e) => resolve(e.target.result || []);
             request.onerror = (e) => reject(e);
         });
@@ -148,17 +148,22 @@ let bgDB;
 
 export default async function ({ addon, msg }) {
     let bgButton;
-    
+
     // 初始化数据库并加载保存的背景
     bgDB = new BackgroundDB();
     await bgDB.open();
-    
+
     // 加载保存的背景
     const savedBg = await bgDB.getLatest();
     if (savedBg) {
         applyBackground(savedBg);
-        console.log('已加载保存的背景');
     }
+
+    window.addEventListener('tw:theme-changed', () => {
+        setTimeout(() => {
+            clearBG();
+        }, 20);
+    });
 
     while (true) {
         const elem = await addon.tab.waitForElement('div[class*="menu-bar_file-group"] > div:last-child:not(.sa-background)', {
@@ -224,8 +229,7 @@ function addContext(modal, msg) {
 }
 
 function applyBackground(data) {
-    const blocklySvg = document.getElementsByClassName('blocklySvg')[0];
-    blocklySvg.style.backgroundColor = "transparent";
+    clearBG();
     const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
     const background = document.createElement('img');
     const existingBg = workspace.querySelector('.sa-background-image');
@@ -239,4 +243,9 @@ function applyBackground(data) {
     background.draggable = false;
     background.style.position = 'absolute';
     workspace.prepend(background);
+}
+
+function clearBG() {
+    const blocklySvg = document.getElementsByClassName('blocklySvg')[0];
+    blocklySvg.style.backgroundColor = "transparent";
 }
