@@ -1,6 +1,7 @@
 const manifest = {
   "name": "Background",
   "description": "Make your editor MORE BEAUTIFUL.",
+  "editorOnly": false,
   "tags": [
     "new"
   ],

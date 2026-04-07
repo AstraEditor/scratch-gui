@@ -1,19 +1,17 @@
-[class*="stage-wrapper_full-screen"] {
-  display: none;
-  top: var(--stage-fullscreen-top, 3rem) !important;
+:root {
+  --stage-fullscreen-toolbar-height: 0rem;
 }
 
 [class*="stage-header_stage-header-wrapper-overlay"] {
   display: block;
-  top: var(--stage-fullscreen-top, 3rem);
+  top: var(--stage-fullscreen-top, 0rem);
   transform: translateY(-101%);
   transition: transform 0.3s;
 }
 
-/* Trigger area for showing toolbar on hover - positioned just below menu-bar */
 .phantom-header {
-  position: fixed;
-  top: 0;
+  position: absolute;
+  top: 0px;
   left: 0px;
   right: 0px;
   height: 8px;

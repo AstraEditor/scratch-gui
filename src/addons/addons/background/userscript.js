@@ -52,7 +52,7 @@ class BackgroundDB {
      * @param {string} data base64 图片数据
      * @returns {Promise<void>}
      */
-    save(data) {
+    saveBG(data) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
@@ -70,7 +70,7 @@ class BackgroundDB {
             };
         });
     }
-
+    
     /**
      * 获取最新的背景
      * @returns {Promise<string|null>} base64 图片数据
@@ -159,10 +159,26 @@ export default async function ({ addon, msg }) {
         applyBackground(savedBg);
     }
 
-    window.addEventListener('tw:theme-changed', () => {
-        setTimeout(() => {
-            clearBG();
-        }, 20);
+    /**  
+     * 监听工作区，防止blocks重绘时把我刚刚放进去的img干丢了
+     * */
+    const observer = new MutationObserver(() => {
+        const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
+        if (workspace) {
+            applyBackground(savedBg);
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    window.addEventListener('resize', () => {
+        const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
+        const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
+        const bgImage = document.querySelector('.sa-background-image');
+        if (bgImage) {
+            bgImage.style.width = workspaceWidth;
+            bgImage.style.height = workspaceHeight;
+        }
     });
 
     while (true) {
@@ -187,7 +203,7 @@ export default async function ({ addon, msg }) {
 
 function showBgModal(addon, msg) {
     const { backdrop, container, content, closeButton, remove } =
-        addon.tab.createModal(msg('background-title') || '背景设置', {
+        addon.tab.createModal(msg('background-title'), {
             isOpen: true,
             useEditorClasses: true
         });
@@ -217,6 +233,9 @@ function addContext(modal, msg) {
         };
         reader.readAsDataURL(file);
     });
+    const workspaceTitle = document.createElement('h2');
+    workspaceTitle.textContent = msg('background-workspace');
+    modal.appendChild(workspaceTitle);
 
     const context = document.createElement("button");
     context.className = "sa-background-add";
@@ -229,23 +248,22 @@ function addContext(modal, msg) {
 }
 
 function applyBackground(data) {
-    clearBG();
-    const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
-    const background = document.createElement('img');
-    const existingBg = workspace.querySelector('.sa-background-image');
-    if (existingBg) {
-        existingBg.src = data;
-        return;
+    try {
+        const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
+        const background = document.createElement('img');
+        const existingBg = workspace.querySelector('.sa-background-image');
+        if (existingBg) {
+            existingBg.src = data;
+            return;
+        }
+        background.src = data;
+        background.className = 'sa-background-image';
+        background.style.opacity = '0.5';
+        background.draggable = false;
+        background.style.position = 'absolute';
+        workspace.prepend(background);
+    } catch (e) {
+        // ignore
     }
-    background.src = data;
-    background.className = 'sa-background-image';
-    background.style.opacity = '0.5';
-    background.draggable = false;
-    background.style.position = 'absolute';
-    workspace.prepend(background);
-}
 
-function clearBG() {
-    const blocklySvg = document.getElementsByClassName('blocklySvg')[0];
-    blocklySvg.style.backgroundColor = "transparent";
 }

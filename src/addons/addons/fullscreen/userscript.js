@@ -53,8 +53,6 @@ export default async function ({ addon, console }) {
         document.documentElement.requestFullscreen()
           .then(() => {
             isEnteringFullscreen = false;
-            // 浏览器全屏时，设置 --stage-fullscreen-top 为 0
-            document.documentElement.style.setProperty('--stage-fullscreen-top', '0');
           })
           .catch((err) => {
             console.error(err);
@@ -62,8 +60,6 @@ export default async function ({ addon, console }) {
           });
       } else if (!addon.tab.redux.state.scratchGui.mode.isFullScreen && document.fullscreenElement !== null) {
         document.exitFullscreen();
-        // 退出浏览器全屏时，恢复 --stage-fullscreen-top
-        document.documentElement.style.removeProperty('--stage-fullscreen-top');
       }
     }
   }
@@ -246,10 +242,6 @@ export default async function ({ addon, console }) {
         type: "scratch-gui/mode/SET_FULL_SCREEN",
         isFullScreen: false,
       });
-    }
-    // 退出浏览器全屏时，恢复 --stage-fullscreen-top
-    if (document.fullscreenElement === null) {
-      document.documentElement.style.removeProperty('--stage-fullscreen-top');
     }
   });
 

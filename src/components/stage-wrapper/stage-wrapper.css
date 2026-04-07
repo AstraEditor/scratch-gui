@@ -2,13 +2,11 @@
 @import "../../css/colors.css";
 @import "../../css/z-index.css";
 
-/*
- * CSS custom property for fullscreen top offset.
- * Plugins can override this via:
- *   :root { --stage-fullscreen-top: 0; }
- * or directly: .stage-wrapper.full-screen { top: 0 !important; }
- */
 :root {
+    --stage-fullscreen-top: 0;
+}
+
+:root[data-is-scratch-desktop='true'] {
     --stage-fullscreen-top: $menu-bar-height;
 }
 
@@ -31,7 +29,7 @@
 
 .stage-wrapper.full-screen {
     position: fixed;
-    top: var(--stage-fullscreen-top);
+    top: calc(var(--stage-fullscreen-top, 0rem) + $stage-menu-height);
     left: 0;
     right: 0;
     bottom: 0;
@@ -45,12 +43,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    height: calc(100vh - var(--stage-fullscreen-top, 0rem) - $stage-menu-height);
 }
 
 .stage-wrapper.embedded {
     background-color: transparent;
-}
-
-.isfullScreen{
-    
 }

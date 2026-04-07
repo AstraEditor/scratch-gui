@@ -17,7 +17,7 @@
 .stage-header-wrapper-overlay {
     position: fixed;
     background-color: $fullscreen-accent;
-    top: var(--stage-fullscreen-top, $menu-bar-height);
+    top: var(--stage-fullscreen-top, 0);
     left: 0;
     right: 0;
     z-index: $z-index-stage-header;

@@ -50,7 +50,7 @@ import ExtensionManager from '../extension-chooser/extension-chooser.jsx';
 import PreviewExt from '../../containers/ae-preview-ext.jsx';
 
 import { STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH } from '../../lib/layout-constants';
-import { resolveStageSize } from '../../lib/screen-utils';
+import { getStageDimensions, resolveStageSize } from '../../lib/screen-utils';
 import { Theme } from '../../lib/themes';
 
 import { isRendererSupported, isBrowserSupported } from '../../lib/tw-environment-support-prober';
@@ -312,6 +312,8 @@ const GUIComponent = props => {
 
     return (<MediaQuery minWidth={unconstrainedWidth}>{isUnconstrained => {
         const stageSize = resolveStageSize(stageSizeMode, isUnconstrained);
+        const stageDimensions = getStageDimensions(stageSize, customStageSize, false);
+        const stageColumnWidth = stageDimensions.width + 2;
 
         const alwaysEnabledModals = (
             <React.Fragment>
@@ -476,11 +478,9 @@ const GUIComponent = props => {
                 />
                 <Box className={styles.bodyWrapper}>
                     <Box className={styles.flexWrapper} style={Settings.get('EnableMobileLayout') ? {
-                        flexDirection: 'column-reverse',
-                        overflow: 'visible'
+                        flexDirection: 'column-reverse'
                     } : {
-                        flexDirection: 'row',
-                        overflow: 'hidden'
+                        flexDirection: 'row'
                     }}>
                         <Box className={styles.editorWrapper}>
                             <Tabs
@@ -624,9 +624,13 @@ const GUIComponent = props => {
 
                         <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
                             style={Settings.get('EnableMobileLayout') ? {
-                                flexDirection: 'row'
+                                flexDirection: 'row',
+                                minWidth: `${stageColumnWidth}px`,
+                                maxWidth: `${stageColumnWidth}px`
                             } : {
-                                flexDirection: 'column'
+                                flexDirection: 'column',
+                                minWidth: `${stageColumnWidth}px`,
+                                maxWidth: `${stageColumnWidth}px`
                             }}
                         >
                             <StageWrapper
