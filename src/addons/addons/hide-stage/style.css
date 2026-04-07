@@ -58,3 +58,22 @@
 .sa-stage-hidden-outer .scratchEyedropper {
   display: none;
 }
+
+/* 我完全不知道扣式咯到底做了什么让这个插件不生效了 */
+/* 所以我来加css了 */
+
+/* 现在让编辑器在舞台隐藏时占据全宽 */
+.sa-stage-hidden [class*="gui_editor-wrapper_"] {
+    flex-basis: auto !important;
+    flex-grow: 1 !important;
+    width: 100% !important;
+}
+
+/* 确保舞台包裹器不占据空间 */
+.sa-stage-hidden [class*="gui_stage-and-target-wrapper_"] {
+    flex-basis: 0 !important;
+    flex-grow: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+}
