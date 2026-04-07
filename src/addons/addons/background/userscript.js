@@ -229,7 +229,7 @@ function addContext(modal, msg) {
         reader.onload = async (e) => {
             console.log('文件内容:', e.target.result);
             applyBackground(e.target.result);
-            await bgDB.save(e.target.result);
+            await bgDB.saveBG(e.target.result);
         };
         reader.readAsDataURL(file);
     });
