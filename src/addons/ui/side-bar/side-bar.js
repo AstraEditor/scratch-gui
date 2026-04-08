@@ -1,9 +1,21 @@
+import reduxInstance from '../../redux.js';
+
 const getSideBar = () => {
     return document.querySelectorAll("[class*=gui_tab-panel]")[0];
 }
 
 // 全局单例实例
 let instance = null;
+
+// 项目加载相关的 action 类型
+const PROJECT_LOAD_ACTIONS = [
+    'scratch-gui/project-state/DONE_CREATING_NEW',
+    'scratch-gui/project-state/DONE_LOADING_VM_WITH_ID',
+    'scratch-gui/project-state/DONE_LOADING_VM_WITHOUT_ID',
+    'scratch-gui/project-state/DONE_REMIXING',
+    'scratch-gui/project-state/START_CREATING_NEW',
+    'scratch-gui/project-state/START_LOADING_VM_FILE_UPLOAD'
+];
 
 // 插件注册表：pluginName -> { content, callbacks }
 const pluginRegistry = new Map();
@@ -299,6 +311,23 @@ class SideBarInternal {
         window.addEventListener('bottomPanelResized', this._boundHandleBottomPanelEvent);
         window.addEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
         window.addEventListener('bottomPanelClosed', this._boundHandleBottomPanelEvent);
+
+        // 监听项目加载事件，在重载或打开新作品时自动关闭侧边栏
+        this._boundHandleProjectLoad = (e) => {
+            const { action } = e.detail;
+            if (PROJECT_LOAD_ACTIONS.includes(action.type) && this.isOpen()) {
+                // 调用当前活动插件的 onDeactivate 回调
+                if (activePlugin) {
+                    const plugin = pluginRegistry.get(activePlugin);
+                    if (plugin && plugin.callbacks.onDeactivate) {
+                        plugin.callbacks.onDeactivate();
+                    }
+                    activePlugin = null;
+                }
+                this.close();
+            }
+        };
+        reduxInstance.addEventListener('statechanged', this._boundHandleProjectLoad);
     }
 
     /**
@@ -385,6 +414,12 @@ class SideBarInternal {
         window.removeEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
         window.removeEventListener('bottomPanelClosed', this._boundHandleBottomPanelEvent);
         this._boundHandleBottomPanelEvent = null;
+
+        // 移除 Redux 事件监听器
+        if (this._boundHandleProjectLoad) {
+            reduxInstance.removeEventListener('statechanged', this._boundHandleProjectLoad);
+            this._boundHandleProjectLoad = null;
+        }
 
         // 重置 extensionButton
         if (this.extensionButton) {

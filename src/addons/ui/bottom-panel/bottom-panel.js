@@ -1,7 +1,20 @@
+import reduxInstance from '../../redux.js';
+
 /**
  * 工作区下方面板组件 - 简化版
  * 移除所有复杂的自动调整逻辑，只保留基本功能
  */
+
+// 项目加载相关的 action 类型
+const PROJECT_LOAD_ACTIONS = [
+    'scratch-gui/project-state/DONE_CREATING_NEW',
+    'scratch-gui/project-state/DONE_LOADING_VM_WITH_ID',
+    'scratch-gui/project-state/DONE_LOADING_VM_WITHOUT_ID',
+    'scratch-gui/project-state/DONE_REMIXING',
+    'scratch-gui/project-state/START_CREATING_NEW',
+    'scratch-gui/project-state/START_LOADING_VM_FILE_UPLOAD'
+];
+
 class BottomPanelInternal {
     constructor() {
         this.DEFAULT_HEIGHT = 200;
@@ -117,6 +130,23 @@ class BottomPanelInternal {
         this.wasOpenBefore = false;
 
         this.insertToDOM();
+
+        // 监听项目加载事件，在重载或打开新作品时自动关闭底部面板
+        this._boundHandleProjectLoad = (e) => {
+            const { action } = e.detail;
+            if (PROJECT_LOAD_ACTIONS.includes(action.type) && this.isOpen()) {
+                // 调用当前活动插件的 onDeactivate 回调
+                if (activePlugin) {
+                    const plugin = pluginRegistry.get(activePlugin);
+                    if (plugin && plugin.callbacks.onDeactivate) {
+                        plugin.callbacks.onDeactivate();
+                    }
+                    activePlugin = null;
+                }
+                this.close();
+            }
+        };
+        reduxInstance.addEventListener('statechanged', this._boundHandleProjectLoad);
     }
 
     /**
@@ -237,7 +267,13 @@ class BottomPanelInternal {
                         this._tabObserver.disconnect();
                         this._tabObserver = null;
                     }
-            
+
+                    // 移除 Redux 事件监听器
+                    if (this._boundHandleProjectLoad) {
+                        reduxInstance.removeEventListener('statechanged', this._boundHandleProjectLoad);
+                        this._boundHandleProjectLoad = null;
+                    }
+
                     // 移除 DOM 元素
                     if (this.element && this.element.parentNode) {
                         this.element.parentNode.removeChild(this.element);
