@@ -3,6 +3,7 @@ const manifest = {
   "editorOnly": true,
   "name": "Debugger (With New Tab)",
   "description": "A new \"debugger\" window is added to the editor. It allows logging into the \"Logs\" tab of the debugger window using the \"log\", \"warn\", and \"error\" blocks. The \"breakpoint\" block pauses the project when executed. All running stacks of blocks can be viewed in the \"Threads\" tab of the debugger window, and when paused, the \"Step\" button can be used to execute the next block. A graph of frames per second and the number of clones can be viewed in the \"Performance\" tab. A new \"Variables\" tab (from the Variable Manager plugin) allows you to bookmark variables you need to monitor or modify their names/values.",
+  "incompatible": ["Terminal"],
   "credits": [
     {
       "name": "Tacodiva",

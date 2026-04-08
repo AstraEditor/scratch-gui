@@ -244,10 +244,79 @@ class SettingsStore extends EventTargetShim {
         return result;
     }
 
+    /**
+     * Detect conflicts between addons.
+     * @param {string} addonId The ID of the addon to enable.
+     * @returns {string[]} Array of addon IDs that are incompatible and already enabled.
+     */
+    detectConflicts (addonId) {
+        const manifest = this.getAddonManifest(addonId);
+        if (!manifest.incompatible || !Array.isArray(manifest.incompatible)) {
+            return [];
+        }
+
+        return manifest.incompatible.filter(incompatibleId => {
+            // Check if the incompatible addon exists and is enabled
+            if (!Object.prototype.hasOwnProperty.call(addons, incompatibleId)) {
+                return false;
+            }
+            return this.getAddonEnabled(incompatibleId);
+        });
+    }
+
+    /**
+     * Detect reverse conflicts (when enabling an addon, check if any enabled addons declare it as incompatible).
+     * @param {string} addonId The ID of the addon to enable.
+     * @returns {string[]} Array of addon IDs that declare the addon as incompatible and are already enabled.
+     */
+    detectReverseConflicts (addonId) {
+        const conflictingAddons = [];
+
+        for (const [otherId, otherManifest] of Object.entries(addons)) {
+            if (otherId === addonId) continue;
+
+            if (otherManifest.incompatible && Array.isArray(otherManifest.incompatible)) {
+                if (otherManifest.incompatible.includes(addonId) && this.getAddonEnabled(otherId)) {
+                    conflictingAddons.push(otherId);
+                }
+            }
+        }
+
+        return conflictingAddons;
+    }
+
+    /**
+     * Get all conflicting addon IDs (both forward and reverse conflicts).
+     * @param {string} addonId The addon ID.
+     * @returns {string[]} Array of all conflicting addon IDs.
+     */
+    getAllConflicts (addonId) {
+        const conflicts = this.detectConflicts(addonId);
+        const reverseConflicts = this.detectReverseConflicts(addonId);
+        // Remove duplicates
+        return [...new Set([...conflicts, ...reverseConflicts])];
+    }
+
     setAddonEnabled (addonId, enabled) {
         const storage = this.getAddonStorage(addonId);
         const manifest = this.getAddonManifest(addonId);
         const oldValue = this.getAddonEnabled(addonId);
+
+        // If trying to enable, check for conflicts first
+        if (enabled) {
+            const conflicts = this.getAllConflicts(addonId);
+            if (conflicts.length > 0) {
+                // Trigger conflict event instead of enabling
+                this.dispatchEvent(new CustomEvent('addon-conflict', {
+                    detail: {
+                        addonId,
+                        conflictingAddons: conflicts
+                    }
+                }));
+                return false; // Return false to indicate enable failed
+            }
+        }
+
         if (enabled === null) {
             enabled = !!manifest.enabledByDefault;
             delete storage.enabled;
@@ -270,6 +339,7 @@ class SettingsStore extends EventTargetShim {
                 }
             }));
         }
+        return true; // Return true to indicate enable succeeded
     }
 
     setAddonSetting (addonId, settingId, value) {

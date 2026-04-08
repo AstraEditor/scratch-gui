@@ -32,6 +32,7 @@ import brushImage from './icons/brush.svg';
 import undoImage from './icons/undo.svg';
 import expandImageBlack from './icons/expand.svg';
 import infoImage from './icons/info.svg';
+import alertImage from './icons/alert.svg';
 import TWFancyCheckbox from '../../components/tw-fancy-checkbox/checkbox.jsx';
 import styles from './settings.css';
 import {detectTheme} from '../../lib/themes/themePersistance.js';
@@ -561,13 +562,47 @@ Presets.propTypes = {
     }))
 };
 
+const ConflictWarning = ({conflictingAddons, addonTranslations, onDisableConflicting}) => (
+    <div className={styles.conflictWarning}>
+        <img className={styles.conflictIcon} src={alertImage} alt="" draggable={false} />
+        <div className={styles.conflictText}>
+            {settingsTranslations.conflictWarning}
+            <ul>
+                {conflictingAddons.map(id => (
+                    <li key={id}>
+                        <strong>{addonTranslations[`${id}/@name`] || id}</strong>
+                        {' '}
+                        <button
+                            className={classNames(styles.button, styles.conflictDisableButton)}
+                            onClick={() => onDisableConflicting(id)}
+                        >
+                            {settingsTranslations.disable}
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </div>
+);
+
+ConflictWarning.propTypes = {
+    conflictingAddons: PropTypes.arrayOf(PropTypes.string).isRequired,
+    addonTranslations: PropTypes.object.isRequired,
+    onDisableConflicting: PropTypes.func.isRequired
+};
+
 const Addon = ({
     id,
     settings,
     manifest,
-    extended
+    extended,
+    hasConflict
 }) => (
-    <div className={classNames(styles.addon, {[styles.addonDirty]: settings.dirty})}>
+    <div className={classNames(
+        styles.addon,
+        {[styles.addonDirty]: settings.dirty},
+        {[styles.conflictingAddon]: hasConflict}
+    )}>
         <div className={styles.addonHeader}>
             <label className={styles.addonTitle}>
                 <div className={styles.addonSwitch}>
@@ -584,7 +619,7 @@ const Addon = ({
                         }}
                     />
                 </div>
-                
+
                 {manifest.tags.includes('theme') ? (
                     <img
                         className={styles.extensionImage}
@@ -602,20 +637,25 @@ const Addon = ({
                 )}
                 <div className={styles.addonTitleText}>
                     {addonTranslations[`${id}/@name`] || manifest.name}
-                </div> 
+                </div>
                 <span style={{
                     color: "#888888",
                     margin: "0 5px"
                 }}>{`${id} `}</span>
+                {hasConflict && (
+                    <div className={styles.conflictIndicator} title={settingsTranslations.conflictTitle}>
+                        ⚠️
+                    </div>
+                )}
             </label>
             <Tags manifest={manifest} />
-            
+
             {!settings.enabled && (
                 <div className={styles.inlineDescription}>
                     {addonTranslations[`${id}/@description`] || manifest.description}
                 </div>
             )}
-            
+
             <div className={styles.addonOperations}>
                 {settings.enabled && manifest.settings && (
                     <button
@@ -703,7 +743,8 @@ Addon.propTypes = {
         tags: PropTypes.arrayOf(PropTypes.string),
         noCompiler: PropTypes.bool
     }),
-    extended: PropTypes.bool
+    extended: PropTypes.bool,
+    hasConflict: PropTypes.bool
 };
 
 const Dirty = props => (
@@ -752,7 +793,7 @@ UnsupportedAddons.propTypes = {
     }))
 };
 
-const InternalAddonList = ({addons, extended}) => (
+const InternalAddonList = ({addons, extended, conflicts}) => (
     addons.map(({id, manifest, state}) => (
         <Addon
             key={id}
@@ -760,6 +801,7 @@ const InternalAddonList = ({addons, extended}) => (
             settings={state}
             manifest={manifest}
             extended={extended}
+            hasConflict={conflicts && conflicts[id] && conflicts[id].length > 0}
         />
     ))
 );
@@ -801,6 +843,7 @@ class AddonGroup extends React.Component {
                     <InternalAddonList
                         addons={this.props.addons}
                         extended={this.props.extended}
+                        conflicts={this.props.conflicts}
                     />
                 )}
             </div>
@@ -815,7 +858,8 @@ AddonGroup.propTypes = {
         state: PropTypes.shape({}).isRequired,
         manifest: PropTypes.shape({}).isRequired
     })).isRequired,
-    extended: PropTypes.bool.isRequired
+    extended: PropTypes.bool.isRequired,
+    conflicts: PropTypes.object
 };
 
 const addonToSearchItem = ({id, manifest}) => {
@@ -885,19 +929,21 @@ class AddonList extends React.Component {
                     <InternalAddonList
                         addons={addons}
                         extended={this.props.extended}
+                        conflicts={this.props.conflicts}
                     />
                 </div>
             );
         }
         return (
             <div>
-                {Object.entries(groupedAddons).map(([id, {label, addons, open}]) => (   
+                {Object.entries(groupedAddons).map(([id, {label, addons, open}]) => (
                     <AddonGroup
                         key={id}
                         label={label}
                         open={open}
                         addons={addons.map(index => this.props.addons[index])}
                         extended={this.props.extended}
+                        conflicts={this.props.conflicts}
                     />
                 ))}
             </div>
@@ -911,13 +957,15 @@ AddonList.propTypes = {
         manifest: PropTypes.shape({}).isRequired
     })).isRequired,
     search: PropTypes.string.isRequired,
-    extended: PropTypes.bool.isRequired
+    extended: PropTypes.bool.isRequired,
+    conflicts: PropTypes.object
 };
 
 class AddonSettingsComponent extends React.Component {
     constructor (props) {
         super(props);
         this.handleSettingStoreChanged = this.handleSettingStoreChanged.bind(this);
+        this.handleAddonConflict = this.handleAddonConflict.bind(this);
         this.handleReloadNow = this.handleReloadNow.bind(this);
         this.handleResetAll = this.handleResetAll.bind(this);
         this.handleExport = this.handleExport.bind(this);
@@ -933,6 +981,8 @@ class AddonSettingsComponent extends React.Component {
             dirty: false,
             search: getInitialSearch(),
             extended: false,
+            conflicts: {},
+            showingConflict: null,
             ...this.readFullAddonState()
         };
         if (Channels.changeChannel) {
@@ -944,7 +994,9 @@ class AddonSettingsComponent extends React.Component {
     }
     componentDidMount () {
         SettingsStore.addEventListener('setting-changed', this.handleSettingStoreChanged);
+        SettingsStore.addEventListener('addon-conflict', this.handleAddonConflict);
         document.body.addEventListener('keydown', this.handleKeyDown);
+        this.detectAllConflicts();
     }
     componentDidUpdate (prevProps, prevState) {
         if (this.state.search !== prevState.search) {
@@ -953,6 +1005,7 @@ class AddonSettingsComponent extends React.Component {
     }
     componentWillUnmount () {
         SettingsStore.removeEventListener('setting-changed', this.handleSettingStoreChanged);
+        SettingsStore.removeEventListener('addon-conflict', this.handleAddonConflict);
         document.body.removeEventListener('keydown', this.handleKeyDown);
     }
     readFullAddonState () {
@@ -972,6 +1025,36 @@ class AddonSettingsComponent extends React.Component {
         }
         return result;
     }
+
+    detectAllConflicts() {
+        const conflicts = {};
+        for (const id of Object.keys(supportedAddons)) {
+            if (SettingsStore.getAddonEnabled(id)) {
+                const conflictingAddons = SettingsStore.getAllConflicts(id);
+                if (conflictingAddons.length > 0) {
+                    conflicts[id] = conflictingAddons;
+                }
+            }
+        }
+        this.setState({ conflicts });
+    }
+
+    handleAddonConflict = (e) => {
+        const { addonId, conflictingAddons } = e.detail;
+        this.setState({
+            showingConflict: addonId,
+            conflicts: {
+                ...this.state.conflicts,
+                [addonId]: conflictingAddons
+            }
+        });
+    };
+
+    handleDisableConflicting = (addonId) => {
+        SettingsStore.setAddonEnabled(addonId, false);
+        this.detectAllConflicts();
+        this.setState({ showingConflict: null });
+    };
     handleSettingStoreChanged (e) {
         const {addonId, settingId, value} = e.detail;
         // If channels are unavailable, every change requires reload.
@@ -989,6 +1072,10 @@ class AddonSettingsComponent extends React.Component {
             }
             return newState;
         });
+        // If enabling/disabling an addon, re-detect conflicts
+        if (settingId === 'enabled') {
+            this.detectAllConflicts();
+        }
         if (!reloadRequired) {
             postThrottledSettingsChange(SettingsStore.store);
         }
@@ -1126,6 +1213,13 @@ class AddonSettingsComponent extends React.Component {
                             </span>
                         </a>
                     </div>
+                    {this.state.showingConflict && this.state.conflicts[this.state.showingConflict] && (
+                        <ConflictWarning
+                            conflictingAddons={this.state.conflicts[this.state.showingConflict]}
+                            addonTranslations={addonTranslations}
+                            onDisableConflicting={this.handleDisableConflicting}
+                        />
+                    )}
                     {this.state.dirty && (
                         <Dirty
                             onReloadNow={Channels.reloadChannel ? this.handleReloadNow : null}
@@ -1139,6 +1233,7 @@ class AddonSettingsComponent extends React.Component {
                                 addons={addonState}
                                 search={this.state.search}
                                 extended={this.state.extended}
+                                conflicts={this.state.conflicts}
                             />
                             <div className={styles.footerButtons}>
                                 <button

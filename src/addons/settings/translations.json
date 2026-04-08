@@ -652,7 +652,11 @@
         "tagTheme": "外观",
         "tagNotCompatible": "不兼容",
         "title": "插件设置",
-        "unsupported": "某些插件在此浏览器中不可用："
+        "unsupported": "某些插件在此浏览器中不可用：",
+        "conflictWarning": "此插件与以下已启用的插件冲突：",
+        "conflictTitle": "此插件存在冲突",
+        "disable": "禁用",
+        "disableAllConflicts": "禁用所有冲突插件"
     },
     "zh-tw": {
         "addonFeedback": "附加元件回饋",
@@ -678,6 +682,10 @@
         "tagRecommended": "推薦",
         "tagTheme": "外觀",
         "title": "附件設定",
-        "unsupported": "下列附加元件在此瀏覽器不可用："
+        "unsupported": "下列附加元件在此瀏覽器不可用：",
+        "conflictWarning": "此附加元件與以下已啟用的附加元件衝突：",
+        "conflictTitle": "此附加元件存在衝突",
+        "disable": "停用",
+        "disableAllConflicts": "停用所有衝突附加元件"
     }
 }
