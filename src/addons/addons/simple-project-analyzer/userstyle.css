@@ -48,6 +48,19 @@
 [class*="tabs"][class*="vscodeList"] .sa-analyze-button img {
   width: 22px;
   height: auto;
+  filter: grayscale(100%);
+}
+
+/* VSCode 布局下按钮激活状态 - 与原始 tab 的激活样式一致 */
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button.sa-spa-active,
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button.is-selected {
+  background-color: var(--ui-white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button.sa-spa-active img,
+[class*="tabs"][class*="vscodeList"] .sa-analyze-button.is-selected img {
+  filter: grayscale(0%);
 }
 
 /* 模态框样式 */

@@ -14,6 +14,14 @@ async function loadChartJS() {
   });
 }
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
+import SideBar from "../../ui/side-bar/side-bar.js";
+import { getSetting } from "../../tools/AEsettings/index.js";
+
+// 检测是否启用 VSCode 布局
+function isVSCodeLayoutEnabled() {
+  return getSetting("EnableVSCodeLayout");
+}
+
 export default async function ({ addon, msg, safeMsg, console }) {
   // 加载Chart.js库
   await loadChartJS();
@@ -27,13 +35,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
       this.chartInstance = null;
       this.mathLogicChartInstance = null;
       this.drScratchChartInstance = null;
+      this.sidebarContent = null;
+      this.isVSCodeLayout = false;
     }
 
     // 创建分析按钮
     async createAnalyzeButton() {
-      const VSCodeLayout = JSON.parse(localStorage.getItem('AESettings')).EnableVSCodeLayout;
-
       // 检测是否在 VSCodeLayout 下
+      this.isVSCodeLayout = isVSCodeLayoutEnabled();
+
       const tabBar = await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
         markAsSeen: true
       });
@@ -57,8 +67,9 @@ export default async function ({ addon, msg, safeMsg, console }) {
         others: 'sa-analyze-button'
       });
 
-      if (VSCodeLayout) {
+      if (this.isVSCodeLayout) {
         // VSCodeLayout 下使用 SVG 图标
+        this.analyzeButton.classList.add('vscode-tab');
         const img = document.createElement('img');
         img.src = icon();
         img.style.filter = "grayscale(100%)"
@@ -76,10 +87,23 @@ export default async function ({ addon, msg, safeMsg, console }) {
       // 禁用时隐藏按钮
       addon.tab.displayNoneWhileDisabled(this.analyzeButton);
 
-      this.analyzeButton.addEventListener('click', () => this.showAnalysisModal());
+      // 点击事件：根据布局类型选择显示方式
+      this.analyzeButton.addEventListener('click', () => {
+        if (this.isVSCodeLayout) {
+          // VSCode 布局：使用 Sidebar
+          if (SideBar.getActivePlugin() === 'spa') {
+            SideBar.close();
+          } else {
+            this.showAnalysisSidebar();
+          }
+        } else {
+          // 普通 Tab 布局：使用模态框
+          this.showAnalysisModal();
+        }
+      });
 
       // 将按钮添加到目标位置
-      if (VSCodeLayout) {
+      if (this.isVSCodeLayout) {
         // VSCodeLayout 下，按钮应该插入到标签栏（TabList）中
         tabBar.appendChild(this.analyzeButton);
       } else if (findBar) {
@@ -137,7 +161,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         this.removeModal();
         this.analyzeModal = null;
         this.removeModal = null;
-        
+
         // 销毁图表实例
         if (this.chartInstance) {
           this.chartInstance.destroy();
@@ -152,6 +176,457 @@ export default async function ({ addon, msg, safeMsg, console }) {
           this.drScratchChartInstance = null;
         }
       }
+    }
+
+    // 创建 Sidebar 内容容器
+    createSidebarContent() {
+      if (!this.sidebarContent) {
+        this.sidebarContent = document.createElement("div");
+        this.sidebarContent.className = "sa-spa-sidebar-content";
+        this.sidebarContent.style.cssText = `
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 16px;
+          overflow-y: auto;
+        `;
+
+        // 添加标题
+        const title = document.createElement("div");
+        title.className = "sa-spa-sidebar-title";
+        title.style.cssText = `
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text-primary);
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+          flex-shrink: 0;
+        `;
+        title.textContent = msg('modal-title');
+        this.sidebarContent.appendChild(title);
+
+        // 添加加载提示
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "sa-spa-sidebar-loading";
+        loadingDiv.id = "saSAPASidebarLoading";
+        loadingDiv.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          gap: 16px;
+        `;
+        loadingDiv.innerHTML = `
+          <div class="sa-spa-sidebar-spinner" style="
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--ui-primary);
+            animation: sa-spa-spin 1s ease-in-out infinite;
+          "></div>
+          <p style="color: var(--text-primary);">${msg('analyzing')}</p>
+        `;
+        this.sidebarContent.appendChild(loadingDiv);
+
+        // 添加结果容器
+        const resultsDiv = document.createElement("div");
+        resultsDiv.className = "sa-spa-sidebar-results";
+        resultsDiv.id = "saSAPASidebarResults";
+        resultsDiv.style.cssText = `
+          display: none;
+          gap: 16px;
+          flex-direction: column;
+        `;
+        this.sidebarContent.appendChild(resultsDiv);
+
+        // 添加 CSS 动画
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes sa-spa-spin {
+            to { transform: rotate(360deg); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
+    // 在 Sidebar 中显示分析结果
+    showAnalysisSidebar() {
+      this.createSidebarContent();
+
+      // 显示加载，隐藏结果
+      const loadingDiv = document.getElementById('saSAPASidebarLoading');
+      const resultsDiv = document.getElementById('saSAPASidebarResults');
+
+      if (loadingDiv) loadingDiv.style.display = 'flex';
+      if (resultsDiv) resultsDiv.style.display = 'none';
+
+      // 注册到 Sidebar
+      SideBar.register('spa', this.sidebarContent, {
+        onActivate: () => {
+          if (this.analyzeButton) {
+            this.analyzeButton.classList.add("sa-spa-active", "is-selected");
+            const img = this.analyzeButton.querySelector('img');
+            if (img) {
+              img.style.filter = "grayscale(0%)";
+            }
+          }
+          // 开始分析
+          this.analyzeProjectForSidebar();
+        },
+        onDeactivate: () => {
+          if (this.analyzeButton) {
+            this.analyzeButton.classList.remove("sa-spa-active", "is-selected");
+            const img = this.analyzeButton.querySelector('img');
+            if (img) {
+              img.style.filter = "grayscale(100%)";
+            }
+          }
+          // 销毁图表实例
+          if (this.chartInstance) {
+            this.chartInstance.destroy();
+            this.chartInstance = null;
+          }
+          if (this.mathLogicChartInstance) {
+            this.mathLogicChartInstance.destroy();
+            this.mathLogicChartInstance = null;
+          }
+          if (this.drScratchChartInstance) {
+            this.drScratchChartInstance.destroy();
+            this.drScratchChartInstance = null;
+          }
+        }
+      });
+
+      // 切换到 Sidebar
+      SideBar.switchTo('spa');
+    }
+
+    // 为 Sidebar 分析项目
+    async analyzeProjectForSidebar() {
+      try {
+        // 使用 vm.toJSON 获取项目数据
+        const vm = addon.tab.traps.vm;
+        const projectJSON = JSON.parse(vm.toJSON());
+
+        // 执行分析
+        const analysis = this.performAnalysis(projectJSON);
+
+        // 更新 Sidebar UI
+        this.updateSidebarResults(analysis);
+      } catch (error) {
+        console.error(msg('analysis-error', '分析项目时出错:'), error);
+        const loadingDiv = document.getElementById('saSAPASidebarLoading');
+        if (loadingDiv) {
+          loadingDiv.innerHTML = `<p style="color: #d32f2f;">${msg('analysis-error')}</p>`;
+        }
+      }
+    }
+
+    // 更新 Sidebar 分析结果
+    updateSidebarResults(analysis) {
+      const resultsDiv = document.getElementById('saSAPASidebarResults');
+      const loadingDiv = document.getElementById('saSAPASidebarLoading');
+
+      if (!resultsDiv) return;
+
+      // 生成简化版的 HTML（适合 Sidebar 显示）
+      resultsDiv.innerHTML = this.generateSidebarAnalysisHTML(analysis);
+
+      // 更新统计数据
+      this.updateSidebarStats(analysis);
+
+      // 计算并更新 Dr.Scratch 评分
+      const vm = addon.tab.traps.vm;
+      const projectJSON = JSON.parse(vm.toJSON());
+      const drScratchScores = this.calculateDrScratchScores(projectJSON);
+      this.displaySidebarDrScratchScores(drScratchScores);
+
+      // 计算并更新数学逻辑评分
+      const mathLogicScores = this.calculateMathLogicScores(projectJSON);
+      this.displaySidebarMathLogicScores(mathLogicScores);
+
+      // 更新扩展列表
+      this.displaySidebarExtensions(analysis.extensions);
+
+      // 显示结果，隐藏加载
+      if (loadingDiv) loadingDiv.style.display = 'none';
+      resultsDiv.style.display = 'flex';
+    }
+
+    // 生成 Sidebar 版本的分析结果 HTML
+    generateSidebarAnalysisHTML(analysis) {
+      return `
+        <div class="sa-spa-stats-section" style="
+          background: var(--ui-secondary);
+          border-radius: 8px;
+          padding: 12px;
+        ">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">${msg('project-stats')}</h4>
+          <div class="sa-spa-stats-grid" id="saSAPAStatsGrid" style="
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          "></div>
+        </div>
+
+        <div class="sa-spa-drscratch-section" style="
+          background: var(--ui-secondary);
+          border-radius: 8px;
+          padding: 12px;
+        ">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">${msg('dr-scratch-score')}</h4>
+          <div class="sa-spa-drscratch-summary" id="saSAPADrScratchSummary" style="
+            font-size: 14px;
+            color: var(--text-primary);
+          "></div>
+          <div style="height: 180px; margin-top: 8px;">
+            <canvas id="saSAPADrScratchChart"></canvas>
+          </div>
+        </div>
+
+        <div class="sa-spa-math-section" style="
+          background: var(--ui-secondary);
+          border-radius: 8px;
+          padding: 12px;
+        ">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">${msg('math-logic-assessment')}</h4>
+          <div class="sa-spa-math-summary" id="saSAPAMathSummary" style="
+            font-size: 14px;
+            color: var(--text-primary);
+          "></div>
+          <div style="height: 180px; margin-top: 8px;">
+            <canvas id="saSAPAMathChart"></canvas>
+          </div>
+        </div>
+
+        <div class="sa-spa-extensions-section" style="
+          background: var(--ui-secondary);
+          border-radius: 8px;
+          padding: 12px;
+        ">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">${msg('extensions-used')}</h4>
+          <div class="sa-spa-extensions-list" id="saSAPAExtensionsList" style="
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          "></div>
+        </div>
+      `;
+    }
+
+    // 更新 Sidebar 统计数据
+    updateSidebarStats(analysis) {
+      const statsGrid = document.getElementById('saSAPAStatsGrid');
+      if (!statsGrid) return;
+
+      const stats = [
+        { label: msg('total-blocks'), value: analysis.totalBlocks },
+        { label: msg('effective-blocks'), value: analysis.effectiveBlocks },
+        { label: msg('function-definitions'), value: analysis.functionDefinitions },
+        { label: msg('stat-sprites'), value: analysis.sprites },
+        { label: msg('stat-costumes'), value: analysis.costumeCount },
+        { label: msg('stat-sounds'), value: analysis.soundCount },
+        { label: msg('stat-variables'), value: analysis.variableCount },
+        { label: msg('stat-lists'), value: analysis.listCount },
+      ];
+
+      statsGrid.innerHTML = stats.map(stat => `
+        <div style="
+          background: var(--ui-white);
+          border-radius: 4px;
+          padding: 8px;
+          text-align: center;
+        ">
+          <div style="font-size: 18px; font-weight: bold; color: var(--motion-primary);">${stat.value}</div>
+          <div style="font-size: 11px; color: var(--text-primary); opacity: 0.8;">${stat.label}</div>
+        </div>
+      `).join('');
+    }
+
+    // 显示 Sidebar 版本的 Dr.Scratch 评分
+    displaySidebarDrScratchScores(scores) {
+      const canvas = document.getElementById('saSAPADrScratchChart');
+      const summaryDiv = document.getElementById('saSAPADrScratchSummary');
+
+      if (!canvas || !summaryDiv) return;
+
+      const ctx = canvas.getContext('2d');
+      const labels = Object.keys(scores);
+      const data = Object.values(scores);
+      const totalScore = data.reduce((sum, val) => sum + val, 0);
+
+      // 更新总分摘要
+      let level = msg('beginner');
+      if (totalScore >= 18) {
+        level = msg('expert');
+      } else if (totalScore >= 14) {
+        level = msg('advanced');
+      } else if (totalScore >= 10) {
+        level = msg('intermediate');
+      } else if (totalScore >= 6) {
+        level = msg('developing');
+      }
+
+      summaryDiv.innerHTML = `<strong>${msg('total-score')}：</strong>${totalScore} / 21<br><strong>${msg('evaluation-level')}：</strong>${level}`;
+
+      // 创建雷达图
+      if (this.drScratchChartInstance) {
+        this.drScratchChartInstance.destroy();
+      }
+
+      this.drScratchChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: 'rgba(77, 151, 255, 0.2)',
+            borderColor: '#4d97ff',
+            borderWidth: 2,
+            pointBackgroundColor: '#4d97ff',
+            pointBorderColor: '#fff',
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 3,
+              ticks: {
+                stepSize: 1,
+                font: { size: 10 }
+              },
+              pointLabels: {
+                font: { size: 9 }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // 显示 Sidebar 版本的数学逻辑评分
+    displaySidebarMathLogicScores(scores) {
+      const canvas = document.getElementById('saSAPAMathChart');
+      const summaryDiv = document.getElementById('saSAPAMathSummary');
+
+      if (!canvas || !summaryDiv) return;
+
+      const ctx = canvas.getContext('2d');
+      const labels = Object.keys(scores);
+      const data = Object.values(scores);
+      const totalScore = data.reduce((sum, val) => sum + val, 0);
+
+      // 更新总分摘要
+      let level = msg('beginner', '初级');
+      if (totalScore >= 20) {
+        level = msg('advanced', '高级');
+      } else if (totalScore >= 10) {
+        level = msg('intermediate', '中级');
+      } else if (totalScore >= 5) {
+        level = msg('developing', '发展中');
+      }
+
+      summaryDiv.innerHTML = `<strong>${msg('math-total-score')}：</strong>${totalScore}<br><strong>${msg('evaluation-level')}：</strong>${level}`;
+
+      // 数据标准化
+      const maxValue = Math.max(...data, 1);
+      const normalizedData = data.map(value => value / maxValue);
+
+      // 创建雷达图
+      if (this.mathLogicChartInstance) {
+        this.mathLogicChartInstance.destroy();
+      }
+
+      this.mathLogicChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: normalizedData,
+            backgroundColor: 'rgba(230, 81, 0, 0.2)',
+            borderColor: '#E65100',
+            borderWidth: 2,
+            pointBackgroundColor: '#E65100',
+            pointBorderColor: '#fff',
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 1,
+              ticks: {
+                stepSize: 0.2,
+                font: { size: 10 }
+              },
+              pointLabels: {
+                font: { size: 9 }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const rawValue = data[context.dataIndex];
+                  return `${label}: ${rawValue}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 显示 Sidebar 版本的扩展列表
+    displaySidebarExtensions(extensions) {
+      const extensionList = document.getElementById('saSAPAExtensionsList');
+      if (!extensionList) return;
+
+      if (extensions.length === 0) {
+        extensionList.innerHTML = `<p style="font-size: 12px; color: var(--text-primary); opacity: 0.7;">${msg('no-extensions')}</p>`;
+        return;
+      }
+
+      extensionList.innerHTML = extensions.map(extension => {
+        const color = extension.color || '#888888';
+        return `
+          <div style="
+            background: var(--ui-white);
+            border-radius: 4px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">
+            <div style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              flex-shrink: 0;
+              background-color: ${color};
+            "></div>
+            <div style="flex: 1; font-size: 12px; color: var(--text-primary);">${extension.name}</div>
+            <div style="font-size: 11px; color: var(--text-primary); opacity: 0.7;">${extension.blocks.length}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     // 分析项目
