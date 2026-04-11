@@ -404,5 +404,14 @@
     "background/background-layout-height-priority": "高度优先",
     "background/background-layout-width-priority": "宽度优先",
     "background/background-layout-fit": "适应",
-     "background/background-title": "背景设置"
+    "background/background-title": "背景设置",
+    "background/rotation": "轮换",
+    "background/rotation-enable": "启用壁纸轮换",
+    "background/rotation-interval": "间隔（分钟）：",
+    "background/rotate-now": "立即轮换",
+    "background/active": "当前",
+    "background/enabled": "启用",
+    "background/set-current": "设为当前",
+    "background/delete": "删除",
+    "background/animation-duration": "动画持续时间（毫秒）"
 }

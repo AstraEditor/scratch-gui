@@ -412,5 +412,14 @@
     "background/background-layout-height-priority": "Height Priority",
     "background/background-layout-width-priority": "Width Priority",
     "background/background-layout-fit": "Fit",
-    "background/background-title": "Background Settings"
+    "background/background-title": "Background Settings",
+    "background/rotation": "Rotation",
+    "background/rotation-enable": "Enable wallpaper rotation",
+    "background/rotation-interval": "Interval (minutes): ",
+    "background/rotate-now": "Rotate now",
+    "background/active": "Active",
+    "background/enabled": "Enabled",
+    "background/set-current": "Set current",
+    "background/delete": "Delete",
+    "background/animation-duration": "Animation Duration (ms)"
 }

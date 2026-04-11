@@ -178,6 +178,10 @@ class BackgroundDB {
 
 let bgDB;
 let isRefreshingBG = false;
+let wallpaperTransitionTimeout = null;
+let wallpaperRefreshToken = 0;
+
+import close from './close.svg';
 
 async function applySettings(id, value) {
     try {
@@ -197,20 +201,162 @@ async function getSetting(id) {
     }
 }
 
+let wallpaperRotationTimer = null;
+
+function getWallpaperRotationInterval(settings = {}) {
+    const intervalMinutes = Number(settings.WallpaperRotationIntervalMinutes);
+    return intervalMinutes > 0 ? intervalMinutes * 60 * 1000 : 5 * 60 * 1000;
+}
+
+async function getWallpaperRotationList(settings = null) {
+    const resolvedSettings = settings || await bgDB.getSetting('settings') || {};
+    const savedList = Array.isArray(resolvedSettings.WallpaperRotationList) ? resolvedSettings.WallpaperRotationList : null;
+    if (savedList && savedList.length) {
+        const validIds = [];
+        const seenIds = new Set();
+        for (const wallpaperId of savedList) {
+            if (seenIds.has(wallpaperId)) continue;
+            seenIds.add(wallpaperId);
+            const wallpaper = await bgDB.getWallpaper(wallpaperId);
+            if (wallpaper && wallpaper.enabled !== false) {
+                validIds.push(wallpaperId);
+            }
+        }
+        return validIds;
+    }
+    const wallpapers = await bgDB.listWallpapers({ enabledOnly: true });
+    return wallpapers.map((item) => item.id);
+}
+
+async function syncWallpaperSelection({ preferredId = null, settings = null } = {}) {
+    const resolvedSettings = settings || await bgDB.getSetting('settings') || {};
+    const list = await getWallpaperRotationList(resolvedSettings);
+    if (!list.length) {
+        await applySettings('WallpaperRotationIndex', 0);
+        await applySettings('currentWallpaperId', null);
+        return null;
+    }
+
+    let selectedId = preferredId;
+    if (!selectedId || !list.includes(selectedId)) {
+        const savedIndex = Number(resolvedSettings.WallpaperRotationIndex);
+        if (Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < list.length) {
+            selectedId = list[savedIndex];
+        }
+    }
+    if (!selectedId || !list.includes(selectedId)) {
+        const savedCurrentWallpaperId = resolvedSettings.currentWallpaperId;
+        if (savedCurrentWallpaperId && list.includes(savedCurrentWallpaperId)) {
+            selectedId = savedCurrentWallpaperId;
+        }
+    }
+    if (!selectedId || !list.includes(selectedId)) {
+        selectedId = list[0];
+    }
+
+    const selectedIndex = list.indexOf(selectedId);
+    await applySettings('WallpaperRotationIndex', selectedIndex);
+    await applySettings('currentWallpaperId', selectedId);
+    return {
+        list,
+        wallpaperId: selectedId,
+        index: selectedIndex
+    };
+}
+
+async function advanceWallpaperRotationIndex() {
+    const settings = await bgDB.getSetting('settings') || {};
+    const syncedSelection = await syncWallpaperSelection({ settings });
+    if (!syncedSelection) return null;
+    const { list, index: currentIndex } = syncedSelection;
+    const nextIndex = (currentIndex + 1) % list.length;
+    await applySettings('WallpaperRotationIndex', nextIndex);
+    await applySettings('currentWallpaperId', list[nextIndex]);
+    return list[nextIndex];
+}
+
+async function stopWallpaperRotationTimer() {
+    if (wallpaperRotationTimer !== null) {
+        window.clearTimeout(wallpaperRotationTimer);
+        wallpaperRotationTimer = null;
+    }
+}
+
+async function scheduleWallpaperRotationTimer() {
+    await stopWallpaperRotationTimer();
+    const settings = await bgDB.getSetting('settings') || {};
+    if (!settings.WallpaperRotationEnabled) return;
+    const interval = getWallpaperRotationInterval(settings);
+    wallpaperRotationTimer = window.setTimeout(async () => {
+        try {
+            await advanceWallpaperRotationIndex();
+            await refreshWorkSpaceBackground();
+        } catch (e) {
+            console.warn('Wallpaper rotation timer error:', e);
+        } finally {
+            await scheduleWallpaperRotationTimer();
+        }
+    }, interval);
+}
+
+async function initializeWallpaperRotation() {
+    const enabled = await getSetting('WallpaperRotationEnabled');
+    if (enabled) {
+        await scheduleWallpaperRotationTimer();
+    } else {
+        await stopWallpaperRotationTimer();
+    }
+}
+
+function clearWallpaperTransitionTimeout() {
+    if (wallpaperTransitionTimeout !== null) {
+        window.clearTimeout(wallpaperTransitionTimeout);
+        wallpaperTransitionTimeout = null;
+    }
+}
+
+async function setCurrentWallpaperId(id) {
+    await applySettings('currentWallpaperId', id);
+    await applySettings('EnableWorkSpaceBG', true);
+    await syncWallpaperSelection({ preferredId: id });
+    await refreshWorkSpaceBackground();
+}
+
+async function updateWallpaperEnabled(id, enabled) {
+    const wallpaper = await bgDB.getWallpaper(id);
+    if (!wallpaper) return;
+    wallpaper.enabled = enabled;
+    await bgDB.saveWallpaper(wallpaper);
+    await syncWallpaperSelection();
+    await refreshWorkSpaceBackground();
+}
+
+async function deleteWallpaperAndRefresh(id) {
+    await bgDB.deleteWallpaper(id);
+    const currentId = await getSetting('currentWallpaperId');
+    if (currentId === id) {
+        await applySettings('currentWallpaperId', null);
+    }
+    await syncWallpaperSelection();
+    await refreshWorkSpaceBackground();
+}
+
 async function getActiveWorkspaceWallpaper() {
     const settings = await bgDB.getSetting('settings') || {};
     if (settings.EnableWorkSpaceBG === false) return null;
     if (settings.WallpaperRotationEnabled) {
-        let list = Array.isArray(settings.WallpaperRotationList) && settings.WallpaperRotationList.length
-            ? settings.WallpaperRotationList
-            : (await bgDB.listWallpapers({ enabledOnly: true })).map((item) => item.id);
-        if (!list.length) return null;
-        const index = Number(settings.WallpaperRotationIndex) || 0;
-        const wallpaperId = list[index % list.length];
-        return await bgDB.getWallpaper(wallpaperId);
+        const syncedSelection = await syncWallpaperSelection({ settings });
+        if (!syncedSelection) return null;
+        return await bgDB.getWallpaper(syncedSelection.wallpaperId);
     }
     const wallpaperId = settings.currentWallpaperId || 'WorkSpaceBG';
-    return await bgDB.getWallpaper(wallpaperId);
+    const wallpaper = await bgDB.getWallpaper(wallpaperId);
+    if (wallpaper || !settings.currentWallpaperId) {
+        return wallpaper;
+    }
+    const syncedSelection = await syncWallpaperSelection({ settings });
+    if (!syncedSelection) return null;
+    return await bgDB.getWallpaper(syncedSelection.wallpaperId);
 }
 
 
@@ -223,6 +369,7 @@ export default async function ({ addon, msg }) {
 
     // 加载保存的背景
     await refreshWorkSpaceBackground();
+    await initializeWallpaperRotation();
 
     /**  
     * 监听工作区，防止blocks重绘时把我刚刚放进去的img干丢了
@@ -310,26 +457,42 @@ async function addContext(modal, msg) {
     const workspaceAddPicInput = document.createElement("input");
     workspaceAddPicInput.type = "file";
     workspaceAddPicInput.accept = ".png, .bmp, .jpg, .jpeg";
-    workspaceAddPicInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    workspaceAddPicInput.multiple = true;
+    workspaceAddPicInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            await bgDB.saveWallpaper({
-                id: 'WorkSpaceBG',
-                name: 'Workspace Background',
-                source: 'local',
-                link: e.target.result,
-                enabled: true
-            });
-            await applySettings('EnableWorkSpaceBG', true);
-            await applySettings('currentWallpaperId', 'WorkSpaceBG');
-            await refreshWorkSpaceBackground();
-        };
-        reader.readAsDataURL(file);
+        const savedIds = await Promise.all(files.map((file, index) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (loadEvent) => {
+                try {
+                    const wallpaperId = files.length === 1 ? 'WorkSpaceBG' : `WorkSpaceBG-${Date.now()}-${index}`;
+                    await bgDB.saveWallpaper({
+                        id: wallpaperId,
+                        name: files.length === 1 ? 'Workspace Background' : `Workspace Background ${index + 1}`,
+                        source: 'local',
+                        link: loadEvent.target.result,
+                        enabled: true
+                    });
+                    resolve(wallpaperId);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        })));
+
+        await applySettings('EnableWorkSpaceBG', true);
+        if (savedIds.length) {
+            await applySettings('currentWallpaperId', savedIds[0]);
+        }
+        await syncWallpaperSelection({ preferredId: savedIds[0] || null });
+        await refreshWorkSpaceBackground();
+        await refreshWallpaperList();
+        workspaceAddPicInput.value = '';
     });
-    const workspaceTitle = document.createElement('h2');
+    const workspaceTitle = document.createElement('h1');
     workspaceTitle.textContent = msg('background-workspace');
 
     // Layout
@@ -374,6 +537,17 @@ async function addContext(modal, msg) {
         await refreshWorkSpaceBackground();
     });
 
+    // Animation Duration
+    const animationDuration = document.createElement('input');
+    animationDuration.type = 'range';
+    animationDuration.min = 0;
+    animationDuration.max = 2000;
+    animationDuration.step = 100;
+    animationDuration.value = await getSetting('WorkSpaceBGAnimationDuration') || 500;
+    animationDuration.className = 'sa-background-animation-duration';
+    animationDuration.addEventListener('input', async () => {
+        applySettings('WorkSpaceBGAnimationDuration', Number(animationDuration.value));
+    });
 
     const workspaceDiv = document.createElement('div');
     workspaceDiv.className = 'sa-background-blur-wrapper';
@@ -381,6 +555,125 @@ async function addContext(modal, msg) {
     workspaceBlurText.textContent = msg('background-blur');
     const workspaceOpacityText = document.createElement('span');
     workspaceOpacityText.textContent = msg('background-opacity');
+    const animationDurationText = document.createElement('span');
+    animationDurationText.textContent = msg('animation-duration');
+
+
+    // Rotation UI
+    const rotationDiv = document.createElement('div');
+    rotationDiv.className = 'sa-background-rotation-wrapper';
+    const rotationTitle = document.createElement('h2');
+    rotationTitle.textContent = msg('rotation');
+
+    const rotationToggleLabel = document.createElement('label');
+    rotationToggleLabel.className = 'sa-background-rotation-label';
+    const rotationToggle = document.createElement('input');
+    rotationToggle.type = 'checkbox';
+    rotationToggle.checked = await getSetting('WallpaperRotationEnabled') || false;
+    rotationToggle.addEventListener('change', async () => {
+        await applySettings('WallpaperRotationEnabled', rotationToggle.checked);
+        await syncWallpaperSelection();
+        await initializeWallpaperRotation();
+        await refreshWorkSpaceBackground();
+        await refreshWallpaperList();
+    });
+    rotationToggleLabel.appendChild(rotationToggle);
+    rotationToggleLabel.appendChild(document.createTextNode(' ' + msg('rotation-enable')));
+
+    const intervalLabel = document.createElement('label');
+    intervalLabel.className = 'sa-background-rotation-label';
+    intervalLabel.textContent = msg('rotation-interval');
+    const intervalInput = document.createElement('input');
+    intervalInput.type = 'number';
+    intervalInput.min = '1';
+    intervalInput.value = await getSetting('WallpaperRotationIntervalMinutes') || 5;
+    intervalInput.className = 'sa-background-rotation-interval';
+    intervalInput.addEventListener('change', async () => {
+        await applySettings('WallpaperRotationIntervalMinutes', Number(intervalInput.value) || 5);
+        await initializeWallpaperRotation();
+    });
+    intervalLabel.appendChild(intervalInput);
+
+    const rotateNowButton = document.createElement('button');
+    rotateNowButton.className = 'sa-background-add';
+    rotateNowButton.textContent = msg('rotate-now');
+    rotateNowButton.addEventListener('click', async () => {
+        await advanceWallpaperRotationIndex();
+        await refreshWorkSpaceBackground();
+        await refreshWallpaperList();
+    });
+
+    const wallpaperListContainer = document.createElement('div');
+    wallpaperListContainer.className = 'sa-background-wallpaper-list';
+
+    async function refreshWallpaperList() {
+        const activeWallpaper = await getActiveWorkspaceWallpaper();
+        const currentWallpaperId = activeWallpaper ? activeWallpaper.id : await getSetting('currentWallpaperId');
+        const wallpapers = await bgDB.listWallpapers();
+        wallpaperListContainer.innerHTML = '';
+        wallpapers.forEach((wallpaper) => {
+            const item = document.createElement('div');
+            item.className = 'sa-background-wallpaper-item';
+
+            const title = document.createElement('span');
+            title.textContent = wallpaper.name || wallpaper.id;
+            title.className = 'sa-background-wallpaper-title';
+
+            const meta = document.createElement('span');
+            meta.textContent = wallpaper.source ? `(${wallpaper.source})` : '';
+            meta.className = 'sa-background-wallpaper-meta';
+
+            const activeBadge = document.createElement('span');
+            activeBadge.textContent = wallpaper.id === currentWallpaperId ? msg('active') : '';
+            activeBadge.className = 'sa-background-wallpaper-active';
+
+            const enabledLabel = document.createElement('label');
+            enabledLabel.className = 'sa-background-wallpaper-enabled-label';
+            const enabledInput = document.createElement('input');
+            enabledInput.type = 'checkbox';
+            enabledInput.checked = wallpaper.enabled !== false;
+            enabledInput.addEventListener('change', async () => {
+                await updateWallpaperEnabled(wallpaper.id, enabledInput.checked);
+                await refreshWallpaperList();
+            });
+            enabledLabel.appendChild(enabledInput);
+            enabledLabel.appendChild(document.createTextNode(' ' + msg('enabled')));
+
+            const selectButton = document.createElement('button');
+            selectButton.className = 'sa-background-add';
+            selectButton.textContent = msg('set-current');
+            selectButton.disabled = wallpaper.id === currentWallpaperId;
+            selectButton.addEventListener('click', async () => {
+                await setCurrentWallpaperId(wallpaper.id);
+                await refreshWallpaperList();
+            });
+
+            const deleteButton = document.createElement('button');
+            const deleteButtonImg = document.createElement('img');
+            deleteButtonImg.src = close;
+            deleteButtonImg.alt = msg('delete') || 'Delete';
+            deleteButton.appendChild(deleteButtonImg);
+            deleteButton.className = 'sa-background-add';
+            deleteButton.addEventListener('click', async () => {
+                await deleteWallpaperAndRefresh(wallpaper.id);
+                await refreshWallpaperList();
+            });
+
+            item.appendChild(title);
+            item.appendChild(meta);
+            item.appendChild(activeBadge);
+            item.appendChild(enabledLabel);
+            item.appendChild(selectButton);
+            item.appendChild(deleteButton);
+            wallpaperListContainer.appendChild(item);
+        });
+    }
+
+    rotationDiv.appendChild(rotationTitle);
+    rotationDiv.appendChild(rotationToggleLabel);
+    rotationDiv.appendChild(intervalLabel);
+    rotationDiv.appendChild(rotateNowButton);
+    rotationDiv.appendChild(wallpaperListContainer);
 
     // All
     workspaceDiv.appendChild(workspaceTitle);
@@ -391,8 +684,12 @@ async function addContext(modal, msg) {
     workspaceDiv.appendChild(workspaceBlur);
     workspaceDiv.appendChild(workspaceOpacityText);
     workspaceDiv.appendChild(workspaceOpacity);
+    workspaceDiv.appendChild(animationDurationText);
+    workspaceDiv.appendChild(animationDuration);
 
     modal.appendChild(workspaceDiv);
+    modal.appendChild(rotationDiv);
+    await refreshWallpaperList();
 }
 
 async function saveLayout(layout) {
@@ -442,31 +739,87 @@ async function resizeWorkspaceBackground() {
 async function refreshWorkSpaceBackground() {
     if (isRefreshingBG) return;
     isRefreshingBG = true;
+    const refreshToken = ++wallpaperRefreshToken;
     try {
+        const animationDuration = await getSetting('WorkSpaceBGAnimationDuration') || 500;
+        clearWallpaperTransitionTimeout();
         const wallpaper = await getActiveWorkspaceWallpaper();
+        const existingBackgrounds = Array.from(document.querySelectorAll('.sa-background-image'));
+        const existingBg = existingBackgrounds[0] || null;
+        existingBackgrounds.slice(1).forEach((backgroundImage) => backgroundImage.remove());
+
         if (!wallpaper || !wallpaper.link) {
-            document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
-            isRefreshingBG = false;
+            if (existingBg) {
+                existingBg.style.transition = `opacity ${animationDuration}ms ease-out`;
+                existingBg.style.opacity = '0';
+                wallpaperTransitionTimeout = window.setTimeout(() => {
+                    if (refreshToken !== wallpaperRefreshToken) return;
+                    existingBg.remove();
+                    document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+                    wallpaperTransitionTimeout = null;
+                    isRefreshingBG = false;
+                }, animationDuration);
+            } else {
+                document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+                isRefreshingBG = false;
+            }
             return;
         }
 
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
-        if (!workspace) { isRefreshingBG = false; return; }
+        if (!workspace) {
+            isRefreshingBG = false;
+            return;
+        }
 
-        document.querySelectorAll('.sa-background-image').forEach(img => img.remove());
+        if (existingBg && existingBg.dataset.wallpaperId === wallpaper.id) {
+            existingBg.src = wallpaper.link;
+            existingBg.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
+            existingBg.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
+            await resizeWorkspaceBackground();
+            isRefreshingBG = false;
+            return;
+        }
 
-        const background = document.createElement('img');
-        background.className = 'sa-background-image';
-        background.src = wallpaper.link;
-        background.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
-        background.style.clipPath = 'inset(0)';
-        background.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
-        background.style.position = 'absolute';
-        background.draggable = false;
-        workspace.prepend(background);
-        await resizeWorkspaceBackground();
+        if (existingBg) {
+            existingBg.style.transition = `opacity ${animationDuration}ms ease-out`;
+            existingBg.style.opacity = '0';
+            wallpaperTransitionTimeout = window.setTimeout(async () => {
+                if (refreshToken !== wallpaperRefreshToken) return;
+                existingBg.remove();
+                await createNewBackground(wallpaper, workspace, animationDuration);
+                wallpaperTransitionTimeout = null;
+                isRefreshingBG = false;
+            }, animationDuration);
+        } else {
+            await createNewBackground(wallpaper, workspace, animationDuration);
+            isRefreshingBG = false;
+        }
     } catch (e) {
         console.log(e);
+        isRefreshingBG = false;
     }
-    isRefreshingBG = false;
+}
+
+async function createNewBackground(wallpaper, workspace, animationDuration) {
+    clearWallpaperTransitionTimeout();
+    workspace.querySelectorAll('.sa-background-image').forEach((backgroundImage) => backgroundImage.remove());
+    const background = document.createElement('img');
+    background.className = 'sa-background-image';
+    background.dataset.wallpaperId = wallpaper.id || '';
+    background.src = wallpaper.link;
+    background.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
+    background.style.clipPath = 'inset(0)';
+    background.style.opacity = '0'; // Start invisible
+    background.style.position = 'absolute';
+    background.draggable = false;
+    background.style.transition = `opacity ${animationDuration}ms ease-in`; // Add transition for fade in
+
+    workspace.prepend(background);
+    await resizeWorkspaceBackground();
+
+    // Trigger fade in
+    requestAnimationFrame(async () => {
+        background.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
+    });
 }
