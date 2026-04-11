@@ -2,11 +2,12 @@
  * IndexedDB by AI （嘿嘿）
  */
 class BackgroundDB {
-    constructor(dbName = 'sa-background', storeName = 'backgrounds', version = 1) {
+    constructor(dbName = 'sa-background', version = 2) {
         this.dbName = dbName;
-        this.storeName = storeName;
         this.version = version;
         this.db = null;
+        this.settingsStore = 'settings_store';
+        this.wallpapersStore = 'wallpapers_store';
     }
 
     /**
@@ -24,109 +25,150 @@ class BackgroundDB {
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
-                console.log('数据库打开成功');
                 resolve(this.db);
             };
 
             request.onerror = (event) => {
-                console.log('数据库打开报错', event);
+                console.log('Cannot open indexedDB:', event);
                 reject(event);
             };
 
             request.onupgradeneeded = (event) => {
-                console.log('onupgradeneeded');
                 const db = event.target.result;
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    const objectStore = db.createObjectStore(this.storeName, {
-                        keyPath: 'sequenceId'
-                    });
-                    objectStore.createIndex('link', 'link', { unique: false });
-                    objectStore.createIndex('sequenceId', 'sequenceId', { unique: false });
+                if (!db.objectStoreNames.contains(this.settingsStore)) {
+                    db.createObjectStore(this.settingsStore, { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains(this.wallpapersStore)) {
+                    db.createObjectStore(this.wallpapersStore, { keyPath: 'id' });
+                }
+
+                if (db.objectStoreNames.contains('background_store')) {
+                    const transaction = event.target.transaction;
+                    const oldStore = transaction.objectStore('background_store');
+                    const newStore = transaction.objectStore(this.wallpapersStore);
+                    oldStore.openCursor().onsuccess = (cursorEvent) => {
+                        const cursor = cursorEvent.target.result;
+                        if (!cursor) return;
+                        const record = cursor.value;
+                        const wallpaper = {
+                            id: cursor.key,
+                            name: 'Workspace Background',
+                            source: 'legacy',
+                            sourceUrl: null,
+                            link: typeof record === 'object' && record.link ? record.link : record,
+                            enabled: true,
+                            addedAt: new Date().toISOString()
+                        };
+                        newStore.put(wallpaper);
+                        cursor.continue();
+                    };
                 }
             };
         });
     }
 
-    /**
-     * 保存
-     * @param {string} ID ID
-     * @param {string} data base64 图片数据
-     * @returns {Promise<void>}
-     */
-    save(ID, data) {
+    saveSetting(key, value) {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.put({
-                link: data,
-                sequenceId: ID
-            });
-            request.onsuccess = () => {
-                console.log('背景保存成功');
-                resolve();
-            };
+            const transaction = this.db.transaction([this.settingsStore], 'readwrite');
+            const store = transaction.objectStore(this.settingsStore);
+            const request = store.put({ key, value });
+            request.onsuccess = () => resolve();
             request.onerror = (e) => {
-                console.log('背景保存失败', e);
+                console.log('IndexedDB saveSetting failed', e);
                 reject(e);
             };
         });
     }
 
-    /**
-     * 获取背景
-     * @param {'WorkSpaceBG' | 'settings'} sequenceId ID
-     * @returns {Promise<string|null>} base64 图片数据
-     */
-    get(sequenceId) {
+    getSetting(key) {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.getAll();
-
+            const transaction = this.db.transaction([this.settingsStore], 'readonly');
+            const store = transaction.objectStore(this.settingsStore);
+            const request = store.get(key);
             request.onsuccess = (e) => {
-                const records = e.target.result;
-                if (records && records.length > 0) {
-                    let latest = { link: null, sequenceId: null };
-                    records.forEach(element => {
-                        if (sequenceId == element.sequenceId) {
-                            latest = element;
-                        }
-                    });
-                    resolve(latest.link || null);
-                } else {
-                    resolve(null);
-                }
+                const record = e.target.result;
+                resolve(record ? record.value : null);
             };
             request.onerror = (e) => {
-                console.log('加载背景失败', e);
+                console.log('IndexedDB getSetting failed', e);
                 reject(e);
             };
         });
     }
 
-    /**
-     * 删除指定背景
-     * @param {number} sequenceId 主键
-     * @returns {Promise<void>}
-     */
-    delete(sequenceId) {
+    saveWallpaper(wallpaper) {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.delete(sequenceId);
+            const transaction = this.db.transaction([this.wallpapersStore], 'readwrite');
+            const store = transaction.objectStore(this.wallpapersStore);
+            const wallpaperRecord = Object.assign({
+                id: wallpaper.id || (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
+                name: wallpaper.name || 'Wallpaper',
+                source: wallpaper.source || 'local',
+                sourceUrl: wallpaper.sourceUrl || null,
+                link: wallpaper.link || null,
+                enabled: typeof wallpaper.enabled === 'boolean' ? wallpaper.enabled : true,
+                addedAt: wallpaper.addedAt || new Date().toISOString()
+            }, wallpaper);
+            const request = store.put(wallpaperRecord);
+            request.onsuccess = () => resolve(wallpaperRecord);
+            request.onerror = (e) => {
+                console.log('IndexedDB saveWallpaper failed', e);
+                reject(e);
+            };
+        });
+    }
+
+    getWallpaper(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.wallpapersStore], 'readonly');
+            const store = transaction.objectStore(this.wallpapersStore);
+            const request = store.get(id);
+            request.onsuccess = (e) => {
+                resolve(e.target.result || null);
+            };
+            request.onerror = (e) => {
+                console.log('IndexedDB getWallpaper failed', e);
+                reject(e);
+            };
+        });
+    }
+
+    listWallpapers({ enabledOnly = false, source } = {}) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.wallpapersStore], 'readonly');
+            const store = transaction.objectStore(this.wallpapersStore);
+            const request = store.getAll();
+            request.onsuccess = (e) => {
+                let records = e.target.result || [];
+                if (enabledOnly) {
+                    records = records.filter((item) => item.enabled !== false);
+                }
+                if (source) {
+                    records = records.filter((item) => item.source === source);
+                }
+                resolve(records);
+            };
+            request.onerror = (e) => {
+                console.log('IndexedDB listWallpapers failed', e);
+                reject(e);
+            };
+        });
+    }
+
+    deleteWallpaper(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.wallpapersStore], 'readwrite');
+            const store = transaction.objectStore(this.wallpapersStore);
+            const request = store.delete(id);
             request.onsuccess = () => resolve();
             request.onerror = (e) => reject(e);
         });
     }
 
-    /**
-     * 清空所有背景
-     * @returns {Promise<void>}
-     */
-    clear() {
+    clearWallpapers() {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
+            const transaction = this.db.transaction([this.wallpapersStore], 'readwrite');
+            const store = transaction.objectStore(this.wallpapersStore);
             const request = store.clear();
             request.onsuccess = () => resolve();
             request.onerror = (e) => reject(e);
@@ -139,20 +181,36 @@ let isRefreshingBG = false;
 
 async function applySettings(id, value) {
     try {
-        const nowSettings = await bgDB.get('settings') || {};
+        const nowSettings = await bgDB.getSetting('settings') || {};
         nowSettings[id] = value;
-        await bgDB.save('settings', nowSettings);
+        await bgDB.saveSetting('settings', nowSettings);
     } catch (e) {
         throw new Error(e);
     }
 }
 async function getSetting(id) {
     try {
-        const nowSettings = await bgDB.get('settings') || {};
+        const nowSettings = await bgDB.getSetting('settings') || {};
         return nowSettings[id];
     } catch (e) {
         throw new Error(e);
     }
+}
+
+async function getActiveWorkspaceWallpaper() {
+    const settings = await bgDB.getSetting('settings') || {};
+    if (settings.EnableWorkSpaceBG === false) return null;
+    if (settings.WallpaperRotationEnabled) {
+        let list = Array.isArray(settings.WallpaperRotationList) && settings.WallpaperRotationList.length
+            ? settings.WallpaperRotationList
+            : (await bgDB.listWallpapers({ enabledOnly: true })).map((item) => item.id);
+        if (!list.length) return null;
+        const index = Number(settings.WallpaperRotationIndex) || 0;
+        const wallpaperId = list[index % list.length];
+        return await bgDB.getWallpaper(wallpaperId);
+    }
+    const wallpaperId = settings.currentWallpaperId || 'WorkSpaceBG';
+    return await bgDB.getWallpaper(wallpaperId);
 }
 
 
@@ -242,10 +300,12 @@ async function addContext(modal, msg) {
     const workspaceClearButton = document.createElement("button");
     workspaceClearButton.className = "sa-background-add";
     workspaceClearButton.textContent = msg("clear");
-    workspaceClearButton.addEventListener('click', () => {
-        bgDB.delete('WorkSpaceBG');
-        applySettings('EnableWorkSpaceBG', false);
+    workspaceClearButton.addEventListener('click', async () => {
+        await bgDB.deleteWallpaper('WorkSpaceBG');
+        await applySettings('EnableWorkSpaceBG', false);
+        await applySettings('currentWallpaperId', null);
         document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+        await refreshWorkSpaceBackground();
     });
     const workspaceAddPicInput = document.createElement("input");
     workspaceAddPicInput.type = "file";
@@ -256,8 +316,16 @@ async function addContext(modal, msg) {
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            await bgDB.save('WorkSpaceBG', e.target.result);
-            refreshWorkSpaceBackground();
+            await bgDB.saveWallpaper({
+                id: 'WorkSpaceBG',
+                name: 'Workspace Background',
+                source: 'local',
+                link: e.target.result,
+                enabled: true
+            });
+            await applySettings('EnableWorkSpaceBG', true);
+            await applySettings('currentWallpaperId', 'WorkSpaceBG');
+            await refreshWorkSpaceBackground();
         };
         reader.readAsDataURL(file);
     });
@@ -372,25 +440,24 @@ async function resizeWorkspaceBackground() {
 
 
 async function refreshWorkSpaceBackground() {
-    console.log(isRefreshingBG)
     if (isRefreshingBG) return;
     isRefreshingBG = true;
     try {
-        if(await getSetting('EnableWorkSpaceBG') === false) {
+        const wallpaper = await getActiveWorkspaceWallpaper();
+        if (!wallpaper || !wallpaper.link) {
             document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+            isRefreshingBG = false;
             return;
         }
-        const data = await bgDB.get('WorkSpaceBG');
+
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
-        if (!workspace) {isRefreshingBG = false; return ;}
+        if (!workspace) { isRefreshingBG = false; return; }
 
         document.querySelectorAll('.sa-background-image').forEach(img => img.remove());
 
-        if (!data) {isRefreshingBG = false; return ;}
-
         const background = document.createElement('img');
         background.className = 'sa-background-image';
-        background.src = data;
+        background.src = wallpaper.link;
         background.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
         background.style.clipPath = 'inset(0)';
         background.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
