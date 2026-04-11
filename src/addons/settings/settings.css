@@ -44,6 +44,51 @@ a:active, a:focus {
     overflow: hidden;
 }
 
+/* Conflict floating banner */
+.conflict-floating-banner {
+    display: flex;
+    position: absolute;
+    top: calc(100% - 8px);
+    left: 0;
+    width: calc(100% - 20px);
+    margin-left: 10px;
+    z-index: 10;
+    justify-content: center;
+    animation: conflict-appear 0.3s ease;
+    pointer-events: none;
+}
+.conflict-banner-inner {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+@keyframes conflict-appear {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+.conflict-banner-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+.conflict-banner-text {
+    font-weight: bold;
+    font-size: 13px;
+}
+
 .section {
     max-width: 1280px;
     margin: auto;
@@ -206,14 +251,25 @@ a:active, a:focus {
     border-radius: 5px;
     margin: 10px 0 10px 0;
     font-size: 14px;
+    position: relative;
 }
 .addon-dirty {
     background-color: $ui-tertiary;
 }
 
+/* Conflicting addon style */
+.conflicting-addon {
+    border: 2px solid #dc3545 !important;
+}
+
+/* Pending addon style */
+.pending-addon {
+    opacity: 0.7;
+}
+
 .addon-header {
     padding: 0 10px;
-    height: 50px;
+    min-height: 50px;
     display: flex;
     align-items: center;
 }
@@ -233,12 +289,49 @@ a:active, a:focus {
 }
 .addon-switch {
     margin-right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-.addon-title-text {
+.pending-indicator {
+    font-size: 10px;
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+}
 
+.addon-title-text {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.addon-title-text:hover {
+    opacity: 0.7;
 }
 .addon-id {
     margin-left: 10px;
+}
+
+/* Conflict text on the right side */
+.conflict-text-on-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: white;
+    font-size: 12px;
+    white-space: nowrap;
+    font-weight: bold;
+    background: #dc3545;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #dc3545;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
 }
 
 .inline-description {
@@ -386,6 +479,23 @@ a:active, a:focus {
 
 }
 
+.incompatible-info {
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    font-size: 13px;
+}
+.incompatible-label {
+    font-weight: bold;
+    color: #dc3545;
+    margin-right: 8px;
+}
+.incompatible-list {
+    color: #dc3545;
+}
+
 .notice {
     color: black;
     padding: 10px;
@@ -395,6 +505,11 @@ a:active, a:focus {
     display: flex;
     align-items: center;
     background: rgba(154, 212, 207, 0.7);
+}
+.notice[type="conflict"] {
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid #dc3545;
+    color: #dc3545;
 }
 .notice-icon {
     display: block;
@@ -594,68 +709,4 @@ a:active, a:focus {
     }
 }
 
-/* Conflict warning styles */
-.conflict-warning {
-    background: rgba(255, 193, 7, 0.2);
-    border: 2px solid #ffc107;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 8px 0;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    color: $page-foreground;
-}
-.conflict-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    filter: $filter-icon-black;
-}
-.conflict-text {
-    flex: 1;
-}
-.conflict-text ul {
-    margin: 8px 0 0 0;
-    padding-left: 20px;
-}
-.conflict-text li {
-    margin: 4px 0;
-}
-.conflict-disable-button {
-    margin-left: 8px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 2px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-.conflict-disable-button:hover {
-    background: #c82333;
-}
 
-/* Conflicting addon card style */
-.conflicting-addon {
-    border: 2px solid #dc3545 !important;
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0%, 100% {
-        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
-    }
-    50% {
-        box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
-    }
-}
-
-/* Conflict indicator */
-.conflict-indicator {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 20px;
-    cursor: help;
-    filter: drop-shadow(0 0 3px rgba(220, 53, 69, 0.8));
-}

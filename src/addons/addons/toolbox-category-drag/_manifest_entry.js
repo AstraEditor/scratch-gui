@@ -2,6 +2,7 @@
 const manifest = {
     "name": "Draggable Categories in Block Palette",
     "description": "Allows you to click-and-hold categories in the block palette to re-arrange them.",
+    "incompatible": ["block-pins","columns"],
     "credits": [
         {
             "name": "SharkPool",

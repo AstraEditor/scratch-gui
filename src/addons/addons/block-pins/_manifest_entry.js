@@ -3,6 +3,7 @@ const manifest = {
   "editorOnly": true,
   "name": "Block Pinning",
   "description": "Pin your favourite Blocks to the top of the Toolbox.",
+  "incompatible": ["toolbox-category-drag"],
   "credits": [
     {
       "name": "SharkPool",

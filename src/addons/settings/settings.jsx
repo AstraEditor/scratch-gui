@@ -513,7 +513,7 @@ const Notice = ({
     >
         <img
             className={styles.noticeIcon}
-            src={infoImage}
+            src={type === 'conflict' ? alertImage : infoImage}
             alt=""
             draggable={false}
         />
@@ -562,33 +562,24 @@ Presets.propTypes = {
     }))
 };
 
-const ConflictWarning = ({conflictingAddons, addonTranslations, onDisableConflicting}) => (
-    <div className={styles.conflictWarning}>
-        <img className={styles.conflictIcon} src={alertImage} alt="" draggable={false} />
-        <div className={styles.conflictText}>
-            {settingsTranslations.conflictWarning}
-            <ul>
-                {conflictingAddons.map(id => (
-                    <li key={id}>
-                        <strong>{addonTranslations[`${id}/@name`] || id}</strong>
-                        {' '}
-                        <button
-                            className={classNames(styles.button, styles.conflictDisableButton)}
-                            onClick={() => onDisableConflicting(id)}
-                        >
-                            {settingsTranslations.disable}
-                        </button>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    </div>
-);
+const ConflictFloatingBanner = ({conflicts, addonTranslations}) => {
+    if (!conflicts || Object.keys(conflicts).length === 0) return null;
 
-ConflictWarning.propTypes = {
-    conflictingAddons: PropTypes.arrayOf(PropTypes.string).isRequired,
-    addonTranslations: PropTypes.object.isRequired,
-    onDisableConflicting: PropTypes.func.isRequired
+    return (
+        <div className={styles.conflictFloatingBanner}>
+            <div className={styles.conflictBannerInner}>
+                <img className={styles.conflictBannerIcon} src={alertImage} alt="" draggable={false} />
+                <div className={styles.conflictBannerText}>
+                    {settingsTranslations.conflictBannerText || "启用了不兼容的插件"}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+ConflictFloatingBanner.propTypes = {
+    conflicts: PropTypes.object.isRequired,
+    addonTranslations: PropTypes.object.isRequired
 };
 
 const Addon = ({
@@ -596,133 +587,170 @@ const Addon = ({
     settings,
     manifest,
     extended,
-    hasConflict
-}) => (
-    <div className={classNames(
-        styles.addon,
-        {[styles.addonDirty]: settings.dirty},
-        {[styles.conflictingAddon]: hasConflict}
-    )}>
-        <div className={styles.addonHeader}>
-            <label className={styles.addonTitle}>
-                <div className={styles.addonSwitch}>
-                    <Switch
-                        value={settings.enabled}
-                        onChange={value => {
-                            if (
-                                !value ||
-                                !manifest.tags.includes('danger') ||
-                                confirm(settingsTranslations.enableDangerous)
-                            ) {
-                                SettingsStore.setAddonEnabled(id, value);
-                            }
-                        }}
-                    />
-                </div>
+    hasConflict,
+    conflicts,
+    expanded,
+    onToggleExpanded,
+    onToggleAddon
+}) => {
+    const conflictText = hasConflict && conflicts && conflicts[id] && conflicts[id].length > 0
+        ? `与 ${conflicts[id].map(cId => addonTranslations[`${cId}/@name`] || cId).join(', ')} 不兼容`
+        : '';
+    
+    // Get all incompatible addons for this addon
+    const allIncompatible = SettingsStore.getAllConflicts(id);
+    const incompatibleList = allIncompatible.length > 0
+        ? allIncompatible.map(cId => addonTranslations[`${cId}/@name`] || cId).join(', ')
+        : null;
+    
+    const isPending = settings && settings.pendingEnable;
 
-                {manifest.tags.includes('theme') ? (
-                    <img
-                        className={styles.extensionImage}
-                        src={brushImage}
-                        draggable={false}
-                        alt=""
-                    />
-                ) : (
-                    <img
-                        className={styles.extensionImage}
-                        src={extensionImage}
-                        draggable={false}
-                        alt=""
-                    />
-                )}
-                <div className={styles.addonTitleText}>
-                    {addonTranslations[`${id}/@name`] || manifest.name}
-                </div>
-                <span style={{
-                    color: "#888888",
-                    margin: "0 5px"
-                }}>{`${id} `}</span>
-                {hasConflict && (
-                    <div className={styles.conflictIndicator} title={settingsTranslations.conflictTitle}>
-                        ⚠️
-                    </div>
-                )}
-            </label>
-            <Tags manifest={manifest} />
+    const handleTitleClick = (e) => {
+        e.preventDefault();
+        onToggleExpanded(id);
+    };
 
-            {!settings.enabled && (
-                <div className={styles.inlineDescription}>
-                    {addonTranslations[`${id}/@description`] || manifest.description}
-                </div>
-            )}
+    const handleSwitchChange = (value) => {
+        if (!value || !manifest.tags.includes('danger') || confirm(settingsTranslations.enableDangerous)) {
+            onToggleAddon(id, value);
+        }
+    };
 
-            <div className={styles.addonOperations}>
-                {settings.enabled && manifest.settings && (
-                    <button
-                        className={styles.resetButton}
-                        onClick={() => SettingsStore.resetAddon(id)}
-                        title={settingsTranslations.reset}
-                    >
-                        <img
-                            src={undoImage}
-                            className={styles.resetButtonImage}
-                            alt={settingsTranslations.reset}
-                            draggable={false}
+    return (
+        <div className={classNames(
+            styles.addon,
+            {[styles.addonDirty]: settings.dirty},
+            {[styles.conflictingAddon]: hasConflict},
+            {[styles.pendingAddon]: isPending}
+        )}>
+            <div className={styles.addonHeader}>
+                <label className={styles.addonTitle}>
+                    <div className={styles.addonSwitch}>
+                        <Switch
+                            value={settings.enabled || isPending}
+                            onChange={handleSwitchChange}
                         />
-                    </button>
-                )}
-            </div>
-        </div>
-        {settings.enabled && (
-            <div className={styles.addonDetails}>
-                <div className={styles.description}>
-                    {addonTranslations[`${id}/@description`] || manifest.description}
-                </div>
-                {manifest.credits && (
-                    <div className={styles.creditContainer}>
-                        <span className={styles.creditTitle}>
-                            {settingsTranslations.credits}
-                        </span>
-                        <CreditList credits={manifest.credits} />
-                    </div>
-                )}
-                {manifest.info && (
-                    manifest.info.map(info => (
-                        <Notice
-                            key={info.id}
-                            type={info.type}
-                            text={addonTranslations[`${id}/@info-${info.id}`] || info.text}
-                        />
-                    ))
-                )}
-                {manifest.noCompiler && (
-                    <Notice
-                        type="warning"
-                        text={settingsTranslations.noCompiler}
-                    />
-                )}
-                {manifest.settings && (
-                    <div className={styles.settingContainer}>
-                        {manifest.settings.map(setting => (
-                            <Setting
-                                key={setting.id}
-                                addonId={id}
-                                setting={setting}
-                                value={settings[setting.id]}
-                            />
-                        ))}
-                        {manifest.presets && (
-                            <Presets
-                                addonId={id}
-                                presets={manifest.presets}
-                            />
+                        {isPending && (
+                            <span className={styles.pendingIndicator}>
+                                待启用
+                            </span>
                         )}
                     </div>
+
+                    {manifest.tags.includes('theme') ? (
+                        <img
+                            className={styles.extensionImage}
+                            src={brushImage}
+                            draggable={false}
+                            alt=""
+                        />
+                    ) : (
+                        <img
+                            className={styles.extensionImage}
+                            src={extensionImage}
+                            draggable={false}
+                            alt=""
+                        />
+                    )}
+                    <div className={styles.addonTitleText} onClick={handleTitleClick}>
+                        {addonTranslations[`${id}/@name`] || manifest.name}
+                    </div>
+                    <span style={{
+                        color: "#888888",
+                        margin: "0 5px"
+                    }}>{`${id} `}</span>
+                </label>
+                <Tags manifest={manifest} />
+
+                {!settings.enabled && !isPending && (
+                    <div className={styles.inlineDescription}>
+                        {addonTranslations[`${id}/@description`] || manifest.description}
+                    </div>
                 )}
+
+                <div className={styles.addonOperations}>
+                    {settings.enabled && manifest.settings && (
+                        <button
+                            className={styles.resetButton}
+                            onClick={() => SettingsStore.resetAddon(id)}
+                            title={settingsTranslations.reset}
+                        >
+                            <img
+                                src={undoImage}
+                                className={styles.resetButtonImage}
+                                alt={settingsTranslations.reset}
+                                draggable={false}
+                            />
+                        </button>
+                    )}
+                </div>
             </div>
-        )}
-    </div>
-);
+            {expanded && (
+                <div className={styles.addonDetails}>
+                    <div className={styles.description}>
+                        {addonTranslations[`${id}/@description`] || manifest.description}
+                    </div>
+                    {manifest.credits && (
+                        <div className={styles.creditContainer}>
+                            <span className={styles.creditTitle}>
+                                {settingsTranslations.credits}
+                            </span>
+                            <CreditList credits={manifest.credits} />
+                        </div>
+                    )}
+                    {manifest.info && (
+                        manifest.info.map(info => (
+                            <Notice
+                                key={info.id}
+                                type={info.type}
+                                text={addonTranslations[`${id}/@info-${info.id}`] || info.text}
+                            />
+                        ))
+                    )}
+                    {manifest.noCompiler && (
+                        <Notice
+                            type="warning"
+                            text={settingsTranslations.noCompiler}
+                        />
+                    )}
+                    {incompatibleList && (
+                        <div className={styles.incompatibleInfo}>
+                            <span className={styles.incompatibleLabel}>
+                                不兼容插件：
+                            </span>
+                            <span className={styles.incompatibleList}>
+                                {incompatibleList}
+                            </span>
+                        </div>
+                    )}
+                    {manifest.settings && (
+                        <div className={styles.settingContainer}>
+                            {manifest.settings.map(setting => (
+                                <Setting
+                                    key={setting.id}
+                                    addonId={id}
+                                    setting={setting}
+                                    value={settings[setting.id]}
+                                />
+                            ))}
+                            {manifest.presets && (
+                                <Presets
+                                    addonId={id}
+                                    presets={manifest.presets}
+                                />
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+            {hasConflict && (
+                <div className={styles.conflictTextOnRight}>
+                    {conflictText}
+                </div>
+            )}
+        </div>
+    );
+};
 Addon.propTypes = {
     id: PropTypes.string,
     settings: PropTypes.shape({
@@ -744,7 +772,11 @@ Addon.propTypes = {
         noCompiler: PropTypes.bool
     }),
     extended: PropTypes.bool,
-    hasConflict: PropTypes.bool
+    hasConflict: PropTypes.bool,
+    conflicts: PropTypes.object,
+    expanded: PropTypes.bool,
+    onToggleExpanded: PropTypes.func,
+    onToggleAddon: PropTypes.func
 };
 
 const Dirty = props => (
@@ -793,7 +825,7 @@ UnsupportedAddons.propTypes = {
     }))
 };
 
-const InternalAddonList = ({addons, extended, conflicts}) => (
+const InternalAddonList = ({addons, extended, conflicts, expandedAddons, onToggleExpanded, onToggleAddon}) => (
     addons.map(({id, manifest, state}) => (
         <Addon
             key={id}
@@ -802,6 +834,10 @@ const InternalAddonList = ({addons, extended, conflicts}) => (
             manifest={manifest}
             extended={extended}
             hasConflict={conflicts && conflicts[id] && conflicts[id].length > 0}
+            conflicts={conflicts}
+            expanded={expandedAddons[id]}
+            onToggleExpanded={onToggleExpanded}
+            onToggleAddon={onToggleAddon}
         />
     ))
 );
@@ -844,6 +880,9 @@ class AddonGroup extends React.Component {
                         addons={this.props.addons}
                         extended={this.props.extended}
                         conflicts={this.props.conflicts}
+                        expandedAddons={this.props.expandedAddons}
+                        onToggleExpanded={this.props.onToggleExpanded}
+                        onToggleAddon={this.props.onToggleAddon}
                     />
                 )}
             </div>
@@ -859,7 +898,10 @@ AddonGroup.propTypes = {
         manifest: PropTypes.shape({}).isRequired
     })).isRequired,
     extended: PropTypes.bool.isRequired,
-    conflicts: PropTypes.object
+    conflicts: PropTypes.object,
+    expandedAddons: PropTypes.object,
+    onToggleExpanded: PropTypes.func,
+    onToggleAddon: PropTypes.func
 };
 
 const addonToSearchItem = ({id, manifest}) => {
@@ -930,6 +972,9 @@ class AddonList extends React.Component {
                         addons={addons}
                         extended={this.props.extended}
                         conflicts={this.props.conflicts}
+                        expandedAddons={this.props.expandedAddons}
+                        onToggleExpanded={this.props.onToggleExpanded}
+                        onToggleAddon={this.props.onToggleAddon}
                     />
                 </div>
             );
@@ -944,6 +989,9 @@ class AddonList extends React.Component {
                         addons={addons.map(index => this.props.addons[index])}
                         extended={this.props.extended}
                         conflicts={this.props.conflicts}
+                        expandedAddons={this.props.expandedAddons}
+                        onToggleExpanded={this.props.onToggleExpanded}
+                        onToggleAddon={this.props.onToggleAddon}
                     />
                 ))}
             </div>
@@ -958,7 +1006,9 @@ AddonList.propTypes = {
     })).isRequired,
     search: PropTypes.string.isRequired,
     extended: PropTypes.bool.isRequired,
-    conflicts: PropTypes.object
+    conflicts: PropTypes.object,
+    expandedAddons: PropTypes.object,
+    onToggleExpanded: PropTypes.func
 };
 
 class AddonSettingsComponent extends React.Component {
@@ -974,8 +1024,12 @@ class AddonSettingsComponent extends React.Component {
         this.handleSearch = this.handleSearch.bind(this);
         this.handleClickSearchButton = this.handleClickSearchButton.bind(this);
         this.handleClickVersion = this.handleClickVersion.bind(this);
+        this.handleToggleExpanded = this.handleToggleExpanded.bind(this);
+        this.handleToggleAddon = this.handleToggleAddon.bind(this);
         this.searchRef = this.searchRef.bind(this);
         this.searchBar = null;
+        const initialState = this.readFullAddonState();
+        const { expandedAddons, ...addonStates } = initialState;
         this.state = {
             loading: false,
             dirty: false,
@@ -983,12 +1037,18 @@ class AddonSettingsComponent extends React.Component {
             extended: false,
             conflicts: {},
             showingConflict: null,
-            ...this.readFullAddonState()
+            expandedAddons: expandedAddons,
+            ...addonStates
         };
         if (Channels.changeChannel) {
             Channels.changeChannel.addEventListener('message', () => {
                 SettingsStore.readLocalStorage();
-                this.setState(this.readFullAddonState());
+                const newState = this.readFullAddonState();
+                const { expandedAddons: newExpandedAddons, ...newAddonStates } = newState;
+                this.setState({
+                    ...newAddonStates,
+                    expandedAddons: newExpandedAddons
+                });
             });
         }
     }
@@ -1010,6 +1070,7 @@ class AddonSettingsComponent extends React.Component {
     }
     readFullAddonState () {
         const result = {};
+        const expandedAddons = {};
         for (const [id, manifest] of Object.entries(supportedAddons)) {
             const enabled = SettingsStore.getAddonEnabled(id);
             const addonState = {
@@ -1022,21 +1083,86 @@ class AddonSettingsComponent extends React.Component {
                 }
             }
             result[id] = addonState;
+            // Auto-expand enabled addons
+            if (enabled) {
+                expandedAddons[id] = true;
+            }
         }
-        return result;
+        return { ...result, expandedAddons };
     }
 
     detectAllConflicts() {
         const conflicts = {};
+        const pendingAddons = new Set();
+        
+        // 收集所有待启用的插件
         for (const id of Object.keys(supportedAddons)) {
-            if (SettingsStore.getAddonEnabled(id)) {
+            if (this.state[id] && this.state[id].pendingEnable) {
+                pendingAddons.add(id);
+            }
+        }
+        
+        // 检查所有已启用和待启用的插件的冲突
+        for (const id of Object.keys(supportedAddons)) {
+            const isEnabled = SettingsStore.getAddonEnabled(id);
+            const isPending = this.state[id] && this.state[id].pendingEnable;
+            
+            if (isEnabled || isPending) {
                 const conflictingAddons = SettingsStore.getAllConflicts(id);
                 if (conflictingAddons.length > 0) {
-                    conflicts[id] = conflictingAddons;
+                    // 检查冲突插件是否也已启用或待启用
+                    const activeConflicts = conflictingAddons.filter(cId => {
+                        return SettingsStore.getAddonEnabled(cId) || 
+                               (this.state[cId] && this.state[cId].pendingEnable);
+                    });
+                    if (activeConflicts.length > 0) {
+                        // 给当前插件添加冲突
+                        conflicts[id] = activeConflicts;
+                        // 给冲突插件也添加冲突（双向）
+                        for (const conflictId of activeConflicts) {
+                            if (!conflicts[conflictId]) {
+                                conflicts[conflictId] = [];
+                            }
+                            if (!conflicts[conflictId].includes(id)) {
+                                conflicts[conflictId].push(id);
+                            }
+                        }
+                    }
                 }
             }
         }
         this.setState({ conflicts });
+    }
+    
+    checkPendingAddons() {
+        // 检查是否有待启用的插件可以真正启用了
+        let needsUpdate = false;
+        
+        for (const addonId of Object.keys(supportedAddons)) {
+            if (this.state[addonId] && this.state[addonId].pendingEnable) {
+                const conflicts = SettingsStore.getAllConflicts(addonId);
+                const activeConflicts = conflicts.filter(cId => {
+                    return SettingsStore.getAddonEnabled(cId) || 
+                           (this.state[cId] && this.state[cId].pendingEnable);
+                });
+                
+                if (activeConflicts.length === 0) {
+                    // 冲突已解除，可以真正启用
+                    SettingsStore.setAddonEnabled(addonId, true);
+                    this.setState(state => ({
+                        [addonId]: {
+                            ...state[addonId],
+                            pendingEnable: false
+                        }
+                    }));
+                    needsUpdate = true;
+                }
+            }
+        }
+        
+        if (needsUpdate) {
+            this.detectAllConflicts();
+        }
     }
 
     handleAddonConflict = (e) => {
@@ -1070,14 +1196,78 @@ class AddonSettingsComponent extends React.Component {
             if (reloadRequired) {
                 newState.dirty = true;
             }
+            // If enabling an addon, expand it
+            if (settingId === 'enabled' && value) {
+                newState.expandedAddons = {
+                    ...state.expandedAddons,
+                    [addonId]: true
+                };
+            }
             return newState;
         });
-        // If enabling/disabling an addon, re-detect conflicts
+        // If enabling/disabling an addon, re-detect conflicts and check pending
         if (settingId === 'enabled') {
             this.detectAllConflicts();
+            this.checkPendingAddons();
         }
         if (!reloadRequired) {
             postThrottledSettingsChange(SettingsStore.store);
+        }
+    }
+    handleToggleExpanded (addonId) {
+        this.setState(state => ({
+            expandedAddons: {
+                ...state.expandedAddons,
+                [addonId]: !state.expandedAddons[addonId]
+            }
+        }));
+    }
+    handleToggleAddon = (addonId, value) => {
+        if (!value) {
+            // 禁用插件
+            if (this.state[addonId] && this.state[addonId].pendingEnable) {
+                // 清除待启用状态
+                this.setState(state => {
+                    const newState = {
+                        [addonId]: {
+                            ...state[addonId],
+                            pendingEnable: false
+                        }
+                    };
+                    // 在状态更新后重新检测冲突
+                    setTimeout(() => this.detectAllConflicts(), 0);
+                    return newState;
+                });
+            } else {
+                // 真正禁用
+                SettingsStore.setAddonEnabled(addonId, false);
+                this.detectAllConflicts();
+            }
+            return;
+        }
+        
+        // 尝试启用插件
+        const conflicts = SettingsStore.getAllConflicts(addonId);
+        const enabledConflicts = conflicts.filter(id => SettingsStore.getAddonEnabled(id));
+        
+        if (enabledConflicts.length === 0) {
+            // 没有冲突，直接启用
+            SettingsStore.setAddonEnabled(addonId, true);
+            this.detectAllConflicts();
+        } else {
+            // 有冲突，开关显示为开启但实际不启用
+            // 使用临时状态显示
+            this.setState(state => {
+                const newState = {
+                    [addonId]: {
+                        ...state[addonId],
+                        pendingEnable: true
+                    }
+                };
+                // 在状态更新后重新检测冲突以显示红色边框
+                setTimeout(() => this.detectAllConflicts(), 0);
+                return newState;
+            });
         }
     }
     handleReloadNow () {
@@ -1183,6 +1373,7 @@ class AddonSettingsComponent extends React.Component {
             id,
             manifest
         }));
+        const hasConflicts = Object.keys(this.state.conflicts).length > 0;
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
@@ -1213,11 +1404,10 @@ class AddonSettingsComponent extends React.Component {
                             </span>
                         </a>
                     </div>
-                    {this.state.showingConflict && this.state.conflicts[this.state.showingConflict] && (
-                        <ConflictWarning
-                            conflictingAddons={this.state.conflicts[this.state.showingConflict]}
+                    {hasConflicts && (
+                        <ConflictFloatingBanner
+                            conflicts={this.state.conflicts}
                             addonTranslations={addonTranslations}
-                            onDisableConflicting={this.handleDisableConflicting}
                         />
                     )}
                     {this.state.dirty && (
@@ -1234,6 +1424,9 @@ class AddonSettingsComponent extends React.Component {
                                 search={this.state.search}
                                 extended={this.state.extended}
                                 conflicts={this.state.conflicts}
+                                expandedAddons={this.state.expandedAddons}
+                                onToggleExpanded={this.handleToggleExpanded}
+                                onToggleAddon={this.handleToggleAddon}
                             />
                             <div className={styles.footerButtons}>
                                 <button

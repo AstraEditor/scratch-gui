@@ -655,6 +655,7 @@
         "unsupported": "某些插件在此浏览器中不可用：",
         "conflictWarning": "此插件与以下已启用的插件冲突：",
         "conflictTitle": "此插件存在冲突",
+        "conflictBannerText": "启用了不兼容的插件",
         "disable": "禁用",
         "disableAllConflicts": "禁用所有冲突插件"
     },
@@ -685,6 +686,7 @@
         "unsupported": "下列附加元件在此瀏覽器不可用：",
         "conflictWarning": "此附加元件與以下已啟用的附加元件衝突：",
         "conflictTitle": "此附加元件存在衝突",
+        "conflictBannerText": "已啟用不相容的外掛",
         "disable": "停用",
         "disableAllConflicts": "停用所有衝突附加元件"
     }
