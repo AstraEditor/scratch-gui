@@ -658,7 +658,18 @@
         "conflictBannerText": "启用了不兼容的插件",
         "disable": "禁用",
         "disableAllConflicts": "禁用所有冲突插件",
-        "editorIncompatible": "此插件与 AstraEditor 不兼容，无法启用。"
+        "editorIncompatible": "此插件与 AstraEditor 不兼容，无法启用。",
+        "importSuccess": "导入成功！已导入 {count} 个插件。",
+        "importPartial": "导入完成！\n\n成功导入 {successCount} 个插件。\n\n{failCount} 个插件导入失败：\n{failedList}",
+        "importFailed": "• {name}: {reason}",
+        "reasonConflict": "与已启用的插件冲突",
+        "reasonEditor": "与 AstraEditor 不兼容",
+        "pendingMessage": "{count} 个插件已标记为待启用（冲突解除后将自动启用）：\n{pendingList}",
+        "pendingList": "• {name}: {reason}",
+        "failedMessage": "{count} 个插件无法启用：\n{failedList}",
+        "pendingIndicator": "待启用",
+        "incompatibleWith": "与 {plugins} 不兼容",
+        "incompatiblePluginsLabel": "不兼容插件："
     },
     "zh-tw": {
         "addonFeedback": "附加元件回饋",
@@ -690,6 +701,17 @@
         "conflictBannerText": "已啟用不相容的外掛",
         "disable": "停用",
         "disableAllConflicts": "停用所有衝突附加元件",
-        "editorIncompatible": "此附加元件與 AstraEditor 不相容，無法啟用。"
+        "editorIncompatible": "此附加元件與 AstraEditor 不相容，無法啟用。",
+        "importSuccess": "匯入成功！已匯入 {count} 個附加元件。",
+        "importPartial": "匯入完成！\n\n成功匯入 {successCount} 個附加元件。\n\n{failCount} 個附加元件匯入失敗：\n{failedList}",
+        "importFailed": "• {name}: {reason}",
+        "reasonConflict": "與已啟用的附加元件衝突",
+        "reasonEditor": "與 AstraEditor 不相容",
+        "pendingMessage": "{count} 個附加元件已標記為待啟用（衝突解除後將自動啟用）：\n{pendingList}",
+        "pendingList": "• {name}: {reason}",
+        "failedMessage": "{count} 個附加元件無法啟用：\n{failedList}",
+        "pendingIndicator": "待啟用",
+        "incompatibleWith": "與 {plugins} 不相容",
+        "incompatiblePluginsLabel": "不相容附加元件："
     }
 }

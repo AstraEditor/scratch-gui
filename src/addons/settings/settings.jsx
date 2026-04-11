@@ -594,7 +594,7 @@ const Addon = ({
     onToggleAddon
 }) => {
     const conflictText = hasConflict && conflicts && conflicts[id] && conflicts[id].length > 0
-        ? `与 ${conflicts[id].map(cId => addonTranslations[`${cId}/@name`] || cId).join(', ')} 不兼容`
+        ? settingsTranslations.incompatibleWith.replace('{plugins}', conflicts[id].map(cId => addonTranslations[`${cId}/@name`] || cId).join(', '))
         : '';
     
     // Get all incompatible addons for this addon
@@ -639,7 +639,7 @@ const Addon = ({
                         />
                         {isPending && (
                             <span className={styles.pendingIndicator}>
-                                待启用
+                                {settingsTranslations.pendingIndicator}
                             </span>
                         )}
                     </div>
@@ -723,7 +723,7 @@ const Addon = ({
                     {incompatibleList && (
                         <div className={styles.incompatibleInfo}>
                             <span className={styles.incompatibleLabel}>
-                                不兼容插件：
+                                {settingsTranslations.incompatiblePluginsLabel}
                             </span>
                             <span className={styles.incompatibleList}>
                                 {incompatibleList}
@@ -733,7 +733,7 @@ const Addon = ({
                     {isEditorIncompatible && (
                         <div className={classNames(styles.incompatibleInfo, styles.editorIncompatible)}>
                             <span className={styles.incompatibleLabel}>
-                                不兼容：
+                                {settingsTranslations.incompatiblePluginsLabel.replace(':', '')}
                             </span>
                             <span className={styles.incompatibleList}>
                                 AstraEditor
@@ -1318,7 +1318,7 @@ class AddonSettingsComponent extends React.Component {
         });
         this.props.onExportSettings(exportedData);
     }
-    handleImport () {
+    handleImport = () => {
         const fileSelector = document.createElement('input');
         fileSelector.type = 'file';
         fileSelector.accept = '.json';
@@ -1333,13 +1333,99 @@ class AddonSettingsComponent extends React.Component {
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
+                
+                // 监听导入完成事件
+                const handleImportComplete = (e) => {
+                    const { results } = e.detail;
+                    const { successful, failed, pending } = results;
+                    
+                    // 设置待启用的插件状态
+                    if (pending.length > 0) {
+                        const newExpandedAddons = { ...this.state.expandedAddons };
+                        for (const p of pending) {
+                            newExpandedAddons[p.addonId] = true;
+                        }
+                        
+                        this.setState(prevState => {
+                            const newState = {};
+                            for (const p of pending) {
+                                newState[p.addonId] = {
+                                    ...prevState[p.addonId],
+                                    pendingEnable: true
+                                };
+                            }
+                            newState.expandedAddons = newExpandedAddons;
+                            return newState;
+                        });
+                    }
+                    
+                    // 重新检测冲突以显示红色边框
+                    setTimeout(() => this.detectAllConflicts(), 0);
+                    
+                    // 显示导入结果
+                    if (failed.length > 0 || pending.length > 0) {
+                        const reasonMap = {
+                            '与 AstraEditor 不兼容': settingsTranslations.reasonEditor,
+                            '与已启用的插件冲突': settingsTranslations.reasonConflict
+                        };
+                        
+                        let message = '';
+                        
+                        if (successful.length > 0) {
+                            message += settingsTranslations.importSuccess.replace('{count}', successful.length) + '\n\n';
+                        }
+                        
+                        if (pending.length > 0) {
+                            const pendingList = pending.map(p => {
+                                const name = addonTranslations[`${p.addonId}/@name`] || p.addonId;
+                                const reason = reasonMap[p.reason] || p.reason;
+                                return settingsTranslations.pendingList
+                                    .replace('{name}', name)
+                                    .replace('{reason}', reason);
+                            }).join('\n');
+                            
+                            message += settingsTranslations.pendingMessage
+                                .replace('{count}', pending.length)
+                                .replace('{pendingList}', pendingList) + '\n\n';
+                        }
+                        
+                        if (failed.length > 0) {
+                            const failedList = failed.map(f => {
+                                const name = addonTranslations[`${f.addonId}/@name`] || f.addonId;
+                                const reason = reasonMap[f.reason] || f.reason;
+                                return settingsTranslations.importFailed
+                                    .replace('{name}', name)
+                                    .replace('{reason}', reason);
+                            }).join('\n');
+                            
+                            message += settingsTranslations.failedMessage
+                                .replace('{count}', failed.length)
+                                .replace('{failedList}', failedList);
+                        }
+                        
+                        alert(message);
+                    } else {
+                        alert(
+                            settingsTranslations.importSuccess.replace('{count}', successful.length)
+                        );
+                    }
+                    
+                    // 移除事件监听器
+                    SettingsStore.removeEventListener('addon-import-complete', handleImportComplete);
+                };
+                
+                // 添加事件监听器
+                SettingsStore.addEventListener('addon-import-complete', handleImportComplete);
+                
+                // 执行导入
                 SettingsStore.import(data);
+                
                 this.setState({
                     search: ''
                 });
             } catch (e) {
                 console.error(e);
-                alert(e);
+                alert(`导入失败：${e.message}`);
             }
         });
     }
