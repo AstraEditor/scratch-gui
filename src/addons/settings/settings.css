@@ -496,6 +496,11 @@ a:active, a:focus {
     color: #dc3545;
 }
 
+.editor-incompatible {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+}
+
 .notice {
     color: black;
     padding: 10px;

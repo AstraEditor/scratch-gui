@@ -293,6 +293,14 @@ class SettingsStore extends EventTargetShim {
     getAllConflicts (addonId) {
         const conflicts = this.detectConflicts(addonId);
         const reverseConflicts = this.detectReverseConflicts(addonId);
+        
+        // 检查是否有与编辑器不兼容的特殊值
+        const manifest = this.getAddonManifest(addonId);
+        if (manifest.incompatible && Array.isArray(manifest.incompatible) && manifest.incompatible.includes('AstraEditor')) {
+            // 返回特殊标记，表示与编辑器不兼容
+            return ['__AstraEditor__'];
+        }
+        
         // Remove duplicates
         return [...new Set([...conflicts, ...reverseConflicts])];
     }
@@ -305,6 +313,14 @@ class SettingsStore extends EventTargetShim {
         // If trying to enable, check for conflicts first
         if (enabled) {
             const conflicts = this.getAllConflicts(addonId);
+            
+            // 检查是否与编辑器不兼容
+            if (conflicts.includes('__AstraEditor__')) {
+                // 与编辑器不兼容，不允许启用
+                console.warn(`Addon ${addonId} is not compatible with AstraEditor`);
+                return false;
+            }
+            
             if (conflicts.length > 0) {
                 // Trigger conflict event instead of enabling
                 this.dispatchEvent(new CustomEvent('addon-conflict', {

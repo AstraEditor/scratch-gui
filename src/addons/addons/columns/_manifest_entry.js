@@ -4,6 +4,7 @@ const manifest = {
   "noTranslations": true,
   "name": "Two-column category menu",
   "description": "Splits the block category menu into two columns and moves it to the top of the block palette, like in Scratch 2.0. (Not compatible with the new Flyout feature)",
+  "incompatible": ["AstraEditor"],
   "credits": [
     {
       "name": "TheColaber",

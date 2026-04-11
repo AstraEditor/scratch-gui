@@ -599,9 +599,16 @@ const Addon = ({
     
     // Get all incompatible addons for this addon
     const allIncompatible = SettingsStore.getAllConflicts(id);
-    const incompatibleList = allIncompatible.length > 0
-        ? allIncompatible.map(cId => addonTranslations[`${cId}/@name`] || cId).join(', ')
-        : null;
+    let incompatibleList = null;
+    let isEditorIncompatible = false;
+    
+    if (allIncompatible.length > 0) {
+        const filteredIncompatible = allIncompatible.filter(cId => cId !== '__AstraEditor__');
+        incompatibleList = filteredIncompatible.length > 0
+            ? filteredIncompatible.map(cId => addonTranslations[`${cId}/@name`] || cId).join(', ')
+            : null;
+        isEditorIncompatible = allIncompatible.includes('__AstraEditor__');
+    }
     
     const isPending = settings && settings.pendingEnable;
 
@@ -720,6 +727,16 @@ const Addon = ({
                             </span>
                             <span className={styles.incompatibleList}>
                                 {incompatibleList}
+                            </span>
+                        </div>
+                    )}
+                    {isEditorIncompatible && (
+                        <div className={classNames(styles.incompatibleInfo, styles.editorIncompatible)}>
+                            <span className={styles.incompatibleLabel}>
+                                不兼容：
+                            </span>
+                            <span className={styles.incompatibleList}>
+                                AstraEditor
                             </span>
                         </div>
                     )}

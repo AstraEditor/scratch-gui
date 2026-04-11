@@ -657,7 +657,8 @@
         "conflictTitle": "此插件存在冲突",
         "conflictBannerText": "启用了不兼容的插件",
         "disable": "禁用",
-        "disableAllConflicts": "禁用所有冲突插件"
+        "disableAllConflicts": "禁用所有冲突插件",
+        "editorIncompatible": "此插件与 AstraEditor 不兼容，无法启用。"
     },
     "zh-tw": {
         "addonFeedback": "附加元件回饋",
@@ -688,6 +689,7 @@
         "conflictTitle": "此附加元件存在衝突",
         "conflictBannerText": "已啟用不相容的外掛",
         "disable": "停用",
-        "disableAllConflicts": "停用所有衝突附加元件"
+        "disableAllConflicts": "停用所有衝突附加元件",
+        "editorIncompatible": "此附加元件與 AstraEditor 不相容，無法啟用。"
     }
 }
