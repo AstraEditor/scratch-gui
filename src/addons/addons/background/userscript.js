@@ -362,7 +362,7 @@ async function resizeWorkspaceBackground() {
             }
         } else {
             console.warn('Cannot find background image element, try to spawn again');
-            if (!isRefreshingBG) await refreshWorkSpaceBackground();
+            await refreshWorkSpaceBackground();
         }
     } catch (e) {
         console.warn('Failed to resize background image:', e);
@@ -372,6 +372,7 @@ async function resizeWorkspaceBackground() {
 
 
 async function refreshWorkSpaceBackground() {
+    if (isRefreshingBG) return
     isRefreshingBG = true;
     try {
         if(await getSetting('EnableWorkSpaceBG') === false) {
