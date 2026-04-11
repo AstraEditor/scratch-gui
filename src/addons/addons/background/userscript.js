@@ -372,7 +372,8 @@ async function resizeWorkspaceBackground() {
 
 
 async function refreshWorkSpaceBackground() {
-    if (isRefreshingBG) return
+    console.log(isRefreshingBG)
+    if (isRefreshingBG) return;
     isRefreshingBG = true;
     try {
         if(await getSetting('EnableWorkSpaceBG') === false) {
@@ -381,11 +382,11 @@ async function refreshWorkSpaceBackground() {
         }
         const data = await bgDB.get('WorkSpaceBG');
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
-        if (!workspace) return;
+        if (!workspace) {isRefreshingBG = false; return ;}
 
         document.querySelectorAll('.sa-background-image').forEach(img => img.remove());
 
-        if (!data) return;
+        if (!data) {isRefreshingBG = false; return ;}
 
         const background = document.createElement('img');
         background.className = 'sa-background-image';
