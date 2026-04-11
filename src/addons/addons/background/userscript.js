@@ -48,17 +48,18 @@ class BackgroundDB {
     }
 
     /**
-     * 保存背景
+     * 保存
+     * @param {string} ID ID
      * @param {string} data base64 图片数据
      * @returns {Promise<void>}
      */
-    saveBG(data) {
+    save(ID, data) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
             const request = store.put({
                 link: data,
-                sequenceId: Date.now()
+                sequenceId: ID
             });
             request.onsuccess = () => {
                 console.log('背景保存成功');
@@ -70,12 +71,13 @@ class BackgroundDB {
             };
         });
     }
-    
+
     /**
-     * 获取最新的背景
+     * 获取背景
+     * @param {'WorkSpaceBG'} sequenceId ID
      * @returns {Promise<string|null>} base64 图片数据
      */
-    getLatest() {
+    get(sequenceId) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
@@ -84,9 +86,12 @@ class BackgroundDB {
             request.onsuccess = (e) => {
                 const records = e.target.result;
                 if (records && records.length > 0) {
-                    const latest = records.reduce((a, b) =>
-                        a.sequenceId > b.sequenceId ? a : b
-                    );
+                    let latest = { link: null, sequenceId: null };
+                    records.forEach(element => {
+                        if (sequenceId == element.sequenceId) {
+                            latest = element;
+                        }
+                    });
                     resolve(latest.link || null);
                 } else {
                     resolve(null);
@@ -154,9 +159,9 @@ export default async function ({ addon, msg }) {
     await bgDB.open();
 
     // 加载保存的背景
-    const savedBg = await bgDB.getLatest();
+    const savedBg = await bgDB.get('WorkSpaceBG');
     if (savedBg) {
-        applyBackground(savedBg);
+        applyWorkspaceBackground(savedBg);
     }
 
     /**  
@@ -165,20 +170,14 @@ export default async function ({ addon, msg }) {
     const observer = new MutationObserver(() => {
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
         if (workspace) {
-            applyBackground(savedBg);
+            applyWorkspaceBackground(savedBg);
         }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     window.addEventListener('resize', () => {
-        const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
-        const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
-        const bgImage = document.querySelector('.sa-background-image');
-        if (bgImage) {
-            bgImage.style.width = workspaceWidth;
-            bgImage.style.height = workspaceHeight;
-        }
+        resizeWorkspaceBackground();
     });
 
     while (true) {
@@ -228,8 +227,8 @@ function addContext(modal, msg) {
         const reader = new FileReader();
         reader.onload = async (e) => {
             console.log('文件内容:', e.target.result);
-            applyBackground(e.target.result);
-            await bgDB.saveBG(e.target.result);
+            applyWorkspaceBackground(e.target.result);
+            await bgDB.save('WorkSpaceBG', e.target.result);
         };
         reader.readAsDataURL(file);
     });
@@ -237,17 +236,71 @@ function addContext(modal, msg) {
     workspaceTitle.textContent = msg('background-workspace');
     modal.appendChild(workspaceTitle);
 
-    const context = document.createElement("button");
-    context.className = "sa-background-add";
-    context.textContent = msg("add");
-    context.addEventListener('click', () => {
+    const workspaceAddButton = document.createElement("button");
+    workspaceAddButton.className = "sa-background-add";
+    workspaceAddButton.textContent = msg("add");
+    workspaceAddButton.addEventListener('click', () => {
         picinput.click();
     });
 
-    modal.appendChild(context);
+    const workspaceImageLayout = document.createElement('select');
+    workspaceImageLayout.className = 'sa-background-layout';
+    [
+        { name: msg('background-layout-stretch'), value: 'stretch' },
+        { name: msg('background-layout-height-priority'), value: 'height-priority' },
+        { name: msg('background-layout-width-priority'), value: 'width-priority' },
+        { name: msg('background-layout-fit'), value: 'fit' },
+    ].forEach(layout => {
+        const option = document.createElement('option');
+        option.value = layout.value;
+        option.textContent = layout.name;
+        workspaceImageLayout.appendChild(option);
+    });
+    workspaceImageLayout.addEventListener('change', (e) => {
+        saveLayout(e.target.value);
+    });
+
+    modal.appendChild(workspaceImageLayout);
+    modal.appendChild(workspaceAddButton);
 }
 
-function applyBackground(data) {
+function saveLayout(layout) {
+    bgDB.save('WorkSpaceBGLayout', layout);
+    applyWorkspaceBackground(bgDB.get('WorkSpaceBG'));
+}
+
+async function resizeWorkspaceBackground() {
+    const mode = await bgDB.get('WorkSpaceBGLayout') || 'stretch';
+    const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
+    const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
+    const bgImage = document.querySelector('.sa-background-image');
+    bgImage.style.objectFit = 'none';
+    if (bgImage) {
+        switch (mode) {
+            case 'stretch':
+                bgImage.style.width = workspaceWidth;
+                bgImage.style.height = workspaceHeight;
+                break;
+            case 'height-priority':
+                bgImage.style.height = workspaceHeight;
+                bgImage.style.width = 'auto';
+                break;
+            case 'width-priority':
+                bgImage.style.width = workspaceWidth;
+                bgImage.style.height = 'auto';
+                break;
+            case 'fit':
+                bgImage.style.width = workspaceWidth;
+                bgImage.style.height = workspaceHeight;
+                bgImage.style.objectFit = 'cover';
+                break;
+        }
+    } else {
+        console.warn('Cannot find background image element');
+    }
+}
+
+function applyWorkspaceBackground(data) {
     try {
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
         const background = document.createElement('img');
@@ -262,8 +315,10 @@ function applyBackground(data) {
         background.draggable = false;
         background.style.position = 'absolute';
         workspace.prepend(background);
+        resizeWorkspaceBackground();
     } catch (e) {
         // ignore
+        console.log(e);
     }
 
 }
