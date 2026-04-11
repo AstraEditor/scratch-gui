@@ -401,5 +401,16 @@
     "Terminal/block-log-debug": "Log %s",
     "Terminal/block-warn": "Warn %s",
     "Terminal/block-error": "Error %s",
-    "Terminal/block-get-input": "Get last input"
+    "Terminal/block-get-input": "Get last input",
+    "background/background": "Background",
+    "background/clear": "Clear background",
+    "background/add": "Add background image",
+    "background/background-workspace": "Workspace background",
+    "background/background-blur": "Blur",
+    "background/background-opacity": "Opacity",
+    "background/background-layout-stretch": "Stretch",
+    "background/background-layout-height-priority": "Height Priority",
+    "background/background-layout-width-priority": "Width Priority",
+    "background/background-layout-fit": "Fit",
+    "background/background-title": "Background Settings"
 }

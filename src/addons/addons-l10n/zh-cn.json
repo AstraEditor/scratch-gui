@@ -393,5 +393,16 @@
     "Terminal/block-log-debug": "日志 %s",
     "Terminal/block-warn": "警告 %s",
     "Terminal/block-error": "错误 %s",
-    "Terminal/block-get-input": "获取输入"
+    "Terminal/block-get-input": "获取输入",
+    "background/background": "背景",
+    "background/clear": "清除背景",
+    "background/add": "添加背景图片",
+    "background/background-workspace": "工作区背景",
+    "background/background-blur": "模糊",
+    "background/background-opacity": "不透明度",
+    "background/background-layout-stretch": "拉伸",
+    "background/background-layout-height-priority": "高度优先",
+    "background/background-layout-width-priority": "宽度优先",
+    "background/background-layout-fit": "适应",
+     "background/background-title": "背景设置"
 }

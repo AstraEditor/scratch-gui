@@ -1,3 +1,6 @@
+:root{
+    --enable-workspace-background: transparent;
+}
 .sa-background-popup {
     box-sizing: border-box;
     width: 48vw;
@@ -6,10 +9,15 @@
 .sa-background-content{
     padding: 1rem;
 }
+.sa-background-blur-wrapper{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
 
 /*让工作区透明*/
 .blocklySvg{
-    background-color: transparent !important;
+    background-color: var(--enable-workspace-background) !important;
 }
 /*不让左边那框产生“空隙”（原来的颜色是透明的不知道咋想的）*/
 .injectionDiv{

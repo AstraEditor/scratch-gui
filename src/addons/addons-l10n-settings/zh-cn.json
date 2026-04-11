@@ -432,5 +432,8 @@
     "sprite-folders/@description": "将角色列表转换为 VSCode 风格的文件浏览器，支持文件夹（需要使用 // 文件夹命名）。",
     "Terminal/@name": "终端",
     "Terminal/@description": "在页面下方创建一个终端用于输出作品信息和代码调试。我希望它可以替代Debugger插件，更好更优秀",
-    "Terminal/@info-notice": "与Debugger插件同时启用的时候有概率无法加载积木。"
+    "Terminal/@info-notice": "与Debugger插件同时启用的时候有概率无法加载积木。",
+    "background/@name": "背景",
+    "background/@description": "让你的编辑器焕然一新。",
+    "background/@info-reducePerformance": "这可能会造成一些性能问题。"
 }

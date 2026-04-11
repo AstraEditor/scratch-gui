@@ -164,24 +164,29 @@ export default async function ({ addon, msg }) {
     await bgDB.open();
 
     // 加载保存的背景
-    refreshWorkSpaceBackground();
-
+    await refreshWorkSpaceBackground();
 
     /**  
-     * 监听工作区，防止blocks重绘时把我刚刚放进去的img干丢了
-     * */
-    const observer = new MutationObserver(async () => {
-        if(isRefreshingBG) return;
-        const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
-        const bg = document.querySelector('.sa-background-image');
-        if (workspace && !bg) {
-            console.log(!bg, bg)
-            await refreshWorkSpaceBackground();
+    * 监听工作区，防止blocks重绘时把我刚刚放进去的img干丢了
+    * */
+    const AddObserver = async () => {
+        try {
+            const observer = new MutationObserver(async () => {
+                if (isRefreshingBG) return;
+                const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
+                const bg = document.querySelector('.sa-background-image');
+                if (workspace && !bg) {
+                    await refreshWorkSpaceBackground();
+                }
+            });
+
+            observer.observe(document, { childList: true, subtree: true });
+        } catch (e) {
+            console.warn('Warning: Failed to add Observer:', e);
         }
-    });
-    observer.observe(document.querySelector('[class*=gui_blocks-wrapper]'), { childList: true, subtree: true });
+    };
 
-
+    AddObserver();
 
     window.addEventListener('resize', () => {
         resizeWorkspaceBackground();
@@ -231,6 +236,16 @@ async function addContext(modal, msg) {
     workspaceAddButton.textContent = msg("add");
     workspaceAddButton.addEventListener('click', () => {
         workspaceAddPicInput.click();
+        document.documentElement.style.setProperty('--enable-workspace-background', 'transparent');
+        applySettings('EnableWorkSpaceBG', true);
+    });
+    const workspaceClearButton = document.createElement("button");
+    workspaceClearButton.className = "sa-background-add";
+    workspaceClearButton.textContent = msg("clear");
+    workspaceClearButton.addEventListener('click', () => {
+        bgDB.delete('WorkSpaceBG');
+        applySettings('EnableWorkSpaceBG', false);
+        document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
     });
     const workspaceAddPicInput = document.createElement("input");
     workspaceAddPicInput.type = "file";
@@ -279,11 +294,37 @@ async function addContext(modal, msg) {
         applySettings('WorkSpaceBGBlur', workspaceBlur.value);
         await refreshWorkSpaceBackground();
     });
+    // Opacity
+    const workspaceOpacity = document.createElement('input');
+    workspaceOpacity.type = 'range';
+    workspaceOpacity.min = 0;
+    workspaceOpacity.max = 100;
+    workspaceOpacity.value = await getSetting('WorkSpaceBGOpacity') * 100 || 50;
+    workspaceOpacity.className = 'sa-background-opacity';
+    workspaceOpacity.addEventListener('input', async () => {
+        applySettings('WorkSpaceBGOpacity', workspaceOpacity.value / 100);
+        await refreshWorkSpaceBackground();
+    });
 
-    modal.appendChild(workspaceTitle);
-    modal.appendChild(workspaceImageLayout);
-    modal.appendChild(workspaceAddButton);
-    modal.appendChild(workspaceBlur);
+
+    const workspaceDiv = document.createElement('div');
+    workspaceDiv.className = 'sa-background-blur-wrapper';
+    const workspaceBlurText = document.createElement('span');
+    workspaceBlurText.textContent = msg('background-blur');
+    const workspaceOpacityText = document.createElement('span');
+    workspaceOpacityText.textContent = msg('background-opacity');
+
+    // All
+    workspaceDiv.appendChild(workspaceTitle);
+    workspaceDiv.appendChild(workspaceImageLayout);
+    workspaceDiv.appendChild(workspaceAddButton);
+    workspaceDiv.appendChild(workspaceClearButton);
+    workspaceDiv.appendChild(workspaceBlurText);
+    workspaceDiv.appendChild(workspaceBlur);
+    workspaceDiv.appendChild(workspaceOpacityText);
+    workspaceDiv.appendChild(workspaceOpacity);
+
+    modal.appendChild(workspaceDiv);
 }
 
 async function saveLayout(layout) {
@@ -293,41 +334,50 @@ async function saveLayout(layout) {
 
 
 async function resizeWorkspaceBackground() {
-    const mode = await getSetting('WorkSpaceBGLayout') || 'stretch';
-    const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
-    const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
-    const bgImage = document.querySelector('.sa-background-image');
-    if (bgImage) {
-        bgImage.style.objectFit = 'none';
-        switch (mode) {
-            case 'stretch':
-                bgImage.style.width = workspaceWidth;
-                bgImage.style.height = workspaceHeight;
-                break;
-            case 'height-priority':
-                bgImage.style.height = workspaceHeight;
-                bgImage.style.width = 'auto';
-                break;
-            case 'width-priority':
-                bgImage.style.width = workspaceWidth;
-                bgImage.style.height = 'auto';
-                break;
-            case 'fit':
-                bgImage.style.width = workspaceWidth;
-                bgImage.style.height = workspaceHeight;
-                bgImage.style.objectFit = 'cover';
-                break;
+    try {
+        const mode = await getSetting('WorkSpaceBGLayout') || 'stretch';
+        const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
+        const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
+        const bgImage = document.querySelector('.sa-background-image');
+        if (bgImage) {
+            bgImage.style.objectFit = 'none';
+            switch (mode) {
+                case 'stretch':
+                    bgImage.style.width = workspaceWidth;
+                    bgImage.style.height = workspaceHeight;
+                    break;
+                case 'height-priority':
+                    bgImage.style.height = workspaceHeight;
+                    bgImage.style.width = 'auto';
+                    break;
+                case 'width-priority':
+                    bgImage.style.width = workspaceWidth;
+                    bgImage.style.height = 'auto';
+                    break;
+                case 'fit':
+                    bgImage.style.width = workspaceWidth;
+                    bgImage.style.height = workspaceHeight;
+                    bgImage.style.objectFit = 'cover';
+                    break;
+            }
+        } else {
+            console.warn('Cannot find background image element, try to spawn again');
+            if (!isRefreshingBG) await refreshWorkSpaceBackground();
         }
-    } else {
-        console.warn('Cannot find background image element');
+    } catch (e) {
+        console.warn('Failed to resize background image:', e);
     }
+
 }
 
 
 async function refreshWorkSpaceBackground() {
-    console.log('refreshWorkSpaceBackground called');
     isRefreshingBG = true;
     try {
+        if(await getSetting('EnableWorkSpaceBG') === false) {
+            document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+            return;
+        }
         const data = await bgDB.get('WorkSpaceBG');
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
         if (!workspace) return;
@@ -340,7 +390,8 @@ async function refreshWorkSpaceBackground() {
         background.className = 'sa-background-image';
         background.src = data;
         background.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
-        background.style.opacity = '0.5';
+        background.style.clipPath = 'inset(0)';
+        background.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
         background.style.position = 'absolute';
         background.draggable = false;
         workspace.prepend(background);
