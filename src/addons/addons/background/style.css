@@ -14,7 +14,33 @@
     flex-direction: column;
     gap: 1rem;
 }
-
+.sa-background-wallpaper-active{
+    margin-right: 4px;
+    background-color: var(--ui-secondary);
+    padding: 5px;
+    border-radius: 5px;
+}
+.sa-background-wallpaper-title{
+    margin: 0 4px;
+}
+.sa-background-wallpaper-enabled-label{
+    align-items: center;
+    margin: 0 4px;
+}
+.sa-background-wallpaper-title.disabled{
+    opacity: 0.5;
+}
+.sa-background-delete{
+    padding: 5px 10px;
+    border-radius: 100px;
+    border: none;
+}
+.sa-background-wallpaper-item{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 5px;
+}
 /*让工作区透明*/
 .blocklySvg{
     background-color: var(--enable-workspace-background) !important;

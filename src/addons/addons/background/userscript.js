@@ -53,8 +53,6 @@ class BackgroundDB {
                         const wallpaper = {
                             id: cursor.key,
                             name: 'Workspace Background',
-                            source: 'legacy',
-                            sourceUrl: null,
                             link: typeof record === 'object' && record.link ? record.link : record,
                             enabled: true,
                             addedAt: new Date().toISOString()
@@ -103,8 +101,6 @@ class BackgroundDB {
             const wallpaperRecord = Object.assign({
                 id: wallpaper.id || (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
                 name: wallpaper.name || 'Wallpaper',
-                source: wallpaper.source || 'local',
-                sourceUrl: wallpaper.sourceUrl || null,
                 link: wallpaper.link || null,
                 enabled: typeof wallpaper.enabled === 'boolean' ? wallpaper.enabled : true,
                 addedAt: wallpaper.addedAt || new Date().toISOString()
@@ -133,7 +129,7 @@ class BackgroundDB {
         });
     }
 
-    listWallpapers({ enabledOnly = false, source } = {}) {
+    listWallpapers({ enabledOnly = false } = {}) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.wallpapersStore], 'readonly');
             const store = transaction.objectStore(this.wallpapersStore);
@@ -142,9 +138,6 @@ class BackgroundDB {
                 let records = e.target.result || [];
                 if (enabledOnly) {
                     records = records.filter((item) => item.enabled !== false);
-                }
-                if (source) {
-                    records = records.filter((item) => item.source === source);
                 }
                 resolve(records);
             };
@@ -182,6 +175,62 @@ let wallpaperTransitionTimeout = null;
 let wallpaperRefreshToken = 0;
 
 import close from './close.svg';
+
+async function extractThemeColor(imageSrc) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = Math.min(img.width, 100); // Downsample for performance
+                canvas.height = Math.min(img.height, 100);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                let r = 0, g = 0, b = 0, count = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    r += data[i];
+                    g += data[i + 1];
+                    b += data[i + 2];
+                    count++;
+                }
+                r = Math.floor(r / count);
+                g = Math.floor(g / count);
+                b = Math.floor(b / count);
+                resolve(`rgb(${r}, ${g}, ${b})`);
+            } catch (e) {
+                reject(e);
+            }
+        };
+        img.onerror = reject;
+        img.src = imageSrc;
+    });
+}
+
+function adjustColorBrightness(color, amount) {
+    const rgb = color.match(/\d+/g);
+    if (!rgb) return color;
+    let r = parseInt(rgb[0]) + amount;
+    let g = parseInt(rgb[1]) + amount;
+    let b = parseInt(rgb[2]) + amount;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function rgbToHex(rgb) {
+  const result = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+  if (!result) return rgb;
+  const r = parseInt(result[1]);
+  const g = parseInt(result[2]);
+  const b = parseInt(result[3]);
+  const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return hex;
+}
+
 
 async function applySettings(id, value) {
     try {
@@ -222,7 +271,9 @@ async function getWallpaperRotationList(settings = null) {
                 validIds.push(wallpaperId);
             }
         }
-        return validIds;
+        if (validIds.length > 0) {
+            return validIds;
+        }
     }
     const wallpapers = await bgDB.listWallpapers({ enabledOnly: true });
     return wallpapers.map((item) => item.id);
@@ -363,6 +414,10 @@ async function getActiveWorkspaceWallpaper() {
 export default async function ({ addon, msg }) {
     let bgButton;
 
+    // Save original UI colors
+    const originalPrimary = getComputedStyle(document.documentElement).getPropertyValue('--ui-primary').trim();
+    const originalSecondary = getComputedStyle(document.documentElement).getPropertyValue('--ui-secondary').trim();
+
     // 初始化数据库并加载保存的背景
     bgDB = new BackgroundDB();
     await bgDB.open();
@@ -469,8 +524,7 @@ async function addContext(modal, msg) {
                     const wallpaperId = files.length === 1 ? 'WorkSpaceBG' : `WorkSpaceBG-${Date.now()}-${index}`;
                     await bgDB.saveWallpaper({
                         id: wallpaperId,
-                        name: files.length === 1 ? 'Workspace Background' : `Workspace Background ${index + 1}`,
-                        source: 'local',
+                        name: file.name,
                         link: loadEvent.target.result,
                         enabled: true
                     });
@@ -617,14 +671,10 @@ async function addContext(modal, msg) {
 
             const title = document.createElement('span');
             title.textContent = wallpaper.name || wallpaper.id;
-            title.className = 'sa-background-wallpaper-title';
-
-            const meta = document.createElement('span');
-            meta.textContent = wallpaper.source ? `(${wallpaper.source})` : '';
-            meta.className = 'sa-background-wallpaper-meta';
+            title.className = wallpaper.enabled ? 'sa-background-wallpaper-title' : 'sa-background-wallpaper-title disabled';
 
             const activeBadge = document.createElement('span');
-            activeBadge.textContent = wallpaper.id === currentWallpaperId ? msg('active') : '';
+            activeBadge.textContent = msg('active');
             activeBadge.className = 'sa-background-wallpaper-active';
 
             const enabledLabel = document.createElement('label');
@@ -637,7 +687,6 @@ async function addContext(modal, msg) {
                 await refreshWallpaperList();
             });
             enabledLabel.appendChild(enabledInput);
-            enabledLabel.appendChild(document.createTextNode(' ' + msg('enabled')));
 
             const selectButton = document.createElement('button');
             selectButton.className = 'sa-background-add';
@@ -649,27 +698,25 @@ async function addContext(modal, msg) {
             });
 
             const deleteButton = document.createElement('button');
-            const deleteButtonImg = document.createElement('img');
-            deleteButtonImg.src = close;
-            deleteButtonImg.alt = msg('delete') || 'Delete';
-            deleteButton.appendChild(deleteButtonImg);
-            deleteButton.className = 'sa-background-add';
+            deleteButton.textContent = '×';
+            deleteButton.className = 'sa-background-delete';
             deleteButton.addEventListener('click', async () => {
                 await deleteWallpaperAndRefresh(wallpaper.id);
                 await refreshWallpaperList();
             });
 
-            item.appendChild(title);
-            item.appendChild(meta);
-            item.appendChild(activeBadge);
+            if (wallpaper.id === currentWallpaperId) item.appendChild(activeBadge);
             item.appendChild(enabledLabel);
-            item.appendChild(selectButton);
+            item.appendChild(title);
+            if(wallpaper.enabled) item.appendChild(selectButton);
             item.appendChild(deleteButton);
             wallpaperListContainer.appendChild(item);
         });
     }
 
     rotationDiv.appendChild(rotationTitle);
+    rotationDiv.appendChild(animationDurationText);
+    rotationDiv.appendChild(animationDuration);
     rotationDiv.appendChild(rotationToggleLabel);
     rotationDiv.appendChild(intervalLabel);
     rotationDiv.appendChild(rotateNowButton);
@@ -684,8 +731,6 @@ async function addContext(modal, msg) {
     workspaceDiv.appendChild(workspaceBlur);
     workspaceDiv.appendChild(workspaceOpacityText);
     workspaceDiv.appendChild(workspaceOpacity);
-    workspaceDiv.appendChild(animationDurationText);
-    workspaceDiv.appendChild(animationDuration);
 
     modal.appendChild(workspaceDiv);
     modal.appendChild(rotationDiv);
@@ -710,6 +755,7 @@ async function resizeWorkspaceBackground() {
                 case 'stretch':
                     bgImage.style.width = workspaceWidth;
                     bgImage.style.height = workspaceHeight;
+                    bgImage.style.objectFit = 'fill';
                     break;
                 case 'height-priority':
                     bgImage.style.height = workspaceHeight;
@@ -756,11 +802,17 @@ async function refreshWorkSpaceBackground() {
                     if (refreshToken !== wallpaperRefreshToken) return;
                     existingBg.remove();
                     document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+                    // Restore original UI colors
+                    document.documentElement.style.setProperty('--ui-primary', originalPrimary);
+                    document.documentElement.style.setProperty('--ui-secondary', originalSecondary);
                     wallpaperTransitionTimeout = null;
                     isRefreshingBG = false;
                 }, animationDuration);
             } else {
                 document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
+                // Restore original UI colors
+                document.documentElement.style.setProperty('--ui-primary', originalPrimary);
+                document.documentElement.style.setProperty('--ui-secondary', originalSecondary);
                 isRefreshingBG = false;
             }
             return;
@@ -814,6 +866,24 @@ async function createNewBackground(wallpaper, workspace, animationDuration) {
     background.style.position = 'absolute';
     background.draggable = false;
     background.style.transition = `opacity ${animationDuration}ms ease-in`; // Add transition for fade in
+
+    // // Extract theme color when image loads
+    // background.onload = async () => {
+    //     try {
+    //         const themeColor = await extractThemeColor(wallpaper.link);
+    //         if (themeColor) {
+    //             const primaryColor = themeColor;
+    //             const secondaryColor = adjustColorBrightness(themeColor, -20); // Darker for secondary
+    //             document.documentElement.style.setProperty('--menu-bar-background', primaryColor);
+    //             document.documentElement.style.setProperty('--looks-secondary', primaryColor);
+    //             document.documentElement.style.setProperty('--looks-transparent', rgbToHex(primaryColor) + '80');
+    //             document.documentElement.style.setProperty('--motion-primary-transparent', rgbToHex(primaryColor) + 'cc');
+    //             document.documentElement.style.setProperty('--looks-light-transparent', rgbToHex(primaryColor) + '40');
+    //         }
+    //     } catch (e) {
+    //         console.warn('Failed to extract theme color:', e);
+    //     }
+    // };
 
     workspace.prepend(background);
     await resizeWorkspaceBackground();

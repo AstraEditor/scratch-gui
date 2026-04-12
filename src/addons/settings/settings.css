@@ -65,7 +65,7 @@ a:active, a:focus {
     border-radius: 4px;
     pointer-events: auto;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
 }
 @keyframes conflict-appear {
@@ -82,7 +82,7 @@ a:active, a:focus {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+    filter: $filter-icon-black;
 }
 .conflict-banner-text {
     font-weight: bold;
@@ -295,8 +295,7 @@ a:active, a:focus {
 }
 .pending-indicator {
     font-size: 10px;
-    color: #dc3545;
-    background: rgba(220, 53, 69, 0.1);
+    background: #dc3545;
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: bold;
