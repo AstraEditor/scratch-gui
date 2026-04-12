@@ -484,19 +484,12 @@ export default async ({ addon, msg, console }) => {
       markAsSeen: true
     });
 
-    // 尝试查找 SPA 插件的位置
-    const spaButton = document.querySelector('.sa-analyze-button');
-    let targetElement;
+    // 等待 bookmarkContainer 出现
+    const bookmarkContainer = await addon.tab.waitForElement('.bookmarkContainer', {
+      markAsSeen: true
+    });
 
-    if (spaButton) {
-      // 如果 SPA 按钮存在，在其右边添加按钮
-      targetElement = spaButton.parentElement;
-    } else {
-      // 否则，使用标签栏
-      targetElement = tabBar;
-    }
-
-    if (!targetElement) return;
+    if (!bookmarkContainer) return;
 
     bookmarkButton = document.createElement('li');
     bookmarkButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
@@ -542,16 +535,9 @@ export default async ({ addon, msg, console }) => {
     if (VSCodeLayout) {
       // VSCodeLayout 下，按钮应该插入到标签栏（TabList）中
       tabBar.appendChild(bookmarkButton);
-    } else if (spaButton) {
-      // 在 SPA 按钮右边添加
-      if (spaButton.nextSibling) {
-        targetElement.insertBefore(bookmarkButton, spaButton.nextSibling);
-      } else {
-        targetElement.appendChild(bookmarkButton);
-      }
     } else {
-      // 在标签栏最右方添加
-      targetElement.appendChild(bookmarkButton);
+      // 普通布局下，插入到 bookmarkContainer
+      bookmarkContainer.appendChild(bookmarkButton);
     }
   };
 

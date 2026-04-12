@@ -557,6 +557,18 @@ const GUIComponent = props => {
                                     } : {}}>
                                         {/*这里是搜索栏*/}
                                     </div>
+                                    <div className='spaContainer' style={!vscodeLayoutRef ? {
+                                        marginTop: "auto",
+                                        marginBottom: "auto",
+                                    } : {}}>
+                                        {/*这里是项目分析器*/}
+                                    </div>
+                                    <div className='bookmarkContainer' style={!vscodeLayoutRef ? {
+                                        marginTop: "auto",
+                                        marginBottom: "auto",
+                                    } : {}}>
+                                        {/*这里是书签*/}
+                                    </div>
                                     {canShowReadme &&
                                         <button
                                             className={styles.readmeButton}

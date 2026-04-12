@@ -48,19 +48,12 @@ export default async function ({ addon, msg, safeMsg, console }) {
         markAsSeen: true
       });
 
-      // 尝试查找 find-bar 插件的位置
-      const findBar = document.querySelector('.react-tabs');
-      let targetElement;
+      // 等待 spaContainer 出现
+      const spaContainer = await addon.tab.waitForElement('.spaContainer', {
+        markAsSeen: true
+      });
 
-      if (findBar) {
-        // 如果 find-bar 存在，在其右边添加按钮
-        targetElement = findBar.parentElement;
-      } else {
-        // 否则，使用标签栏
-        targetElement = tabBar;
-      }
-
-      if (!targetElement) return;
+      if (!spaContainer) return;
 
       this.analyzeButton = document.createElement('button');
       this.analyzeButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
@@ -106,12 +99,9 @@ export default async function ({ addon, msg, safeMsg, console }) {
       if (this.isVSCodeLayout) {
         // VSCodeLayout 下，按钮应该插入到标签栏（TabList）中
         tabBar.appendChild(this.analyzeButton);
-      } else if (findBar) {
-        // 在 find-bar 右边添加
-        targetElement.insertBefore(this.analyzeButton, findBar.nextSibling);
       } else {
-        // 在标签栏最右方添加
-        targetElement.appendChild(this.analyzeButton);
+        // 普通布局下，插入到 spaContainer
+        spaContainer.appendChild(this.analyzeButton);
       }
     }
 
