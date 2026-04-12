@@ -173,6 +173,7 @@ let bgDB;
 let isRefreshingBG = false;
 let wallpaperTransitionTimeout = null;
 let wallpaperRefreshToken = 0;
+let isRefreshingModalBG = false;
 
 import close from './close.svg';
 
@@ -248,6 +249,70 @@ async function getSetting(id) {
     } catch (e) {
         throw new Error(e);
     }
+}
+
+function applyBackgroundLayout({
+    image,
+    containerWidth,
+    containerHeight,
+    mode = 'stretch',
+    offsetX = 0,
+    offsetY = 0
+}) {
+    if (!image || !containerWidth || !containerHeight) return;
+
+    image.style.objectFit = 'none';
+    image.style.width = 'auto';
+    image.style.height = 'auto';
+    image.style.left = '0';
+    image.style.top = '0';
+    image.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+    switch (mode) {
+        case 'stretch':
+            image.style.width = `${containerWidth}px`;
+            image.style.height = `${containerHeight}px`;
+            image.style.objectFit = 'fill';
+            break;
+        case 'height-priority':
+            image.style.height = `${containerHeight}px`;
+            break;
+        case 'width-priority':
+            image.style.width = `${containerWidth}px`;
+            break;
+        case 'fit':
+            image.style.width = `${containerWidth}px`;
+            image.style.height = `${containerHeight}px`;
+            image.style.objectFit = 'cover';
+            break;
+    }
+}
+
+function getModalContainers() {
+    return Array.from(document.querySelectorAll('[class*="modal_modal-content"]'));
+}
+
+function removeModalBackgroundLayers() {
+    getModalContainers().forEach((modalContainer) => {
+        modalContainer.classList.remove('sa-modal-background-enabled');
+        modalContainer.querySelectorAll('.sa-modal-background-layer').forEach((layer) => layer.remove());
+    });
+}
+
+async function getModalBackgroundConfig() {
+    const settings = await bgDB.getSetting('settings') || {};
+    if (settings.EnableModalBG === false || !settings.ModalBGLink) {
+        return null;
+    }
+
+    return {
+        link: settings.ModalBGLink,
+        layout: settings.ModalBGLayout || 'fit',
+        blur: Number(settings.ModalBGBlur) || 0,
+        opacity: typeof settings.ModalBGOpacity === 'number' ? settings.ModalBGOpacity : 0.35,
+        offsetX: Number(settings.ModalBGOffsetX) || 0,
+        offsetY: Number(settings.ModalBGOffsetY) || 0
+    };
 }
 
 let wallpaperRotationTimer = null;
@@ -424,7 +489,19 @@ export default async function ({ addon, msg }) {
 
     // 加载保存的背景
     await refreshWorkSpaceBackground();
+    await refreshModalBackground();
     await initializeWallpaperRotation();
+
+    const watchModalBackground = async () => {
+        while (true) {
+            await addon.tab.waitForElement('[class*="modal_modal-content"]', {
+                markAsSeen: true
+            });
+            await refreshModalBackground();
+        }
+    };
+
+    watchModalBackground();
 
     /**  
     * 监听工作区，防止blocks重绘时把我刚刚放进去的img干丢了
@@ -450,6 +527,7 @@ export default async function ({ addon, msg }) {
 
     window.addEventListener('resize', () => {
         resizeWorkspaceBackground();
+        resizeModalBackground();
     });
 
     while (true) {
@@ -549,6 +627,9 @@ async function addContext(modal, msg) {
     const workspaceTitle = document.createElement('h1');
     workspaceTitle.textContent = msg('background-workspace');
 
+    const modalTitle = document.createElement('h1');
+    modalTitle.textContent = msg('background-modal');
+
     // Layout
     const workspaceImageLayout = document.createElement('select');
     workspaceImageLayout.value = await getSetting('WorkSpaceBGLayout') || 'stretch';
@@ -591,6 +672,113 @@ async function addContext(modal, msg) {
         await refreshWorkSpaceBackground();
     });
 
+    const modalAddButton = document.createElement("button");
+    modalAddButton.className = "sa-background-add";
+    modalAddButton.textContent = msg("add");
+    const modalClearButton = document.createElement("button");
+    modalClearButton.className = "sa-background-add";
+    modalClearButton.textContent = msg("clear");
+    const modalAddPicInput = document.createElement("input");
+    modalAddPicInput.type = "file";
+    modalAddPicInput.accept = ".png, .bmp, .jpg, .jpeg";
+    modalAddPicInput.addEventListener('change', async (e) => {
+        const [file] = Array.from(e.target.files || []);
+        if (!file) return;
+
+        await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (loadEvent) => {
+                try {
+                    await applySettings('ModalBGLink', loadEvent.target.result);
+                    await applySettings('ModalBGName', file.name);
+                    await applySettings('EnableModalBG', true);
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        });
+
+        await refreshModalBackground();
+        modalAddPicInput.value = '';
+    });
+    modalAddButton.addEventListener('click', () => {
+        modalAddPicInput.click();
+    });
+    modalClearButton.addEventListener('click', async () => {
+        await applySettings('EnableModalBG', false);
+        await applySettings('ModalBGLink', null);
+        await applySettings('ModalBGName', null);
+        await refreshModalBackground();
+    });
+
+    const modalImageLayout = document.createElement('select');
+    modalImageLayout.value = await getSetting('ModalBGLayout') || 'fit';
+    modalImageLayout.className = 'sa-background-layout';
+    [
+        { name: msg('background-layout-stretch'), value: 'stretch' },
+        { name: msg('background-layout-height-priority'), value: 'height-priority' },
+        { name: msg('background-layout-width-priority'), value: 'width-priority' },
+        { name: msg('background-layout-fit'), value: 'fit' },
+    ].forEach(layout => {
+        const option = document.createElement('option');
+        option.value = layout.value;
+        option.textContent = layout.name;
+        modalImageLayout.appendChild(option);
+    });
+    modalImageLayout.addEventListener('change', async (e) => {
+        await applySettings('ModalBGLayout', e.target.value);
+        await resizeModalBackground();
+    });
+
+    const modalBlur = document.createElement('input');
+    modalBlur.type = 'range';
+    modalBlur.min = 0;
+    modalBlur.max = 20;
+    modalBlur.value = await getSetting('ModalBGBlur') || 0;
+    modalBlur.className = 'sa-background-blur';
+    modalBlur.addEventListener('input', async () => {
+        await applySettings('ModalBGBlur', Number(modalBlur.value));
+        await refreshModalBackground();
+    });
+
+    const modalOpacity = document.createElement('input');
+    modalOpacity.type = 'range';
+    modalOpacity.min = 0;
+    modalOpacity.max = 100;
+    modalOpacity.value = (await getSetting('ModalBGOpacity')) * 100 || 35;
+    modalOpacity.className = 'sa-background-opacity';
+    modalOpacity.addEventListener('input', async () => {
+        await applySettings('ModalBGOpacity', modalOpacity.value / 100);
+        await refreshModalBackground();
+    });
+
+    const modalOffsetX = document.createElement('input');
+    modalOffsetX.type = 'number';
+    modalOffsetX.min = '-500';
+    modalOffsetX.max = '500';
+    modalOffsetX.step = '1';
+    modalOffsetX.value = await getSetting('ModalBGOffsetX') || 0;
+    modalOffsetX.className = 'sa-background-offset';
+    modalOffsetX.addEventListener('input', async () => {
+        await applySettings('ModalBGOffsetX', Number(modalOffsetX.value) || 0);
+        await resizeModalBackground();
+    });
+
+    const modalOffsetY = document.createElement('input');
+    modalOffsetY.type = 'number';
+    modalOffsetY.min = '-500';
+    modalOffsetY.max = '500';
+    modalOffsetY.step = '1';
+    modalOffsetY.value = await getSetting('ModalBGOffsetY') || 0;
+    modalOffsetY.className = 'sa-background-offset';
+    modalOffsetY.addEventListener('input', async () => {
+        await applySettings('ModalBGOffsetY', Number(modalOffsetY.value) || 0);
+        await resizeModalBackground();
+    });
+
     // Animation Duration
     const animationDuration = document.createElement('input');
     animationDuration.type = 'range';
@@ -609,8 +797,18 @@ async function addContext(modal, msg) {
     workspaceBlurText.textContent = msg('background-blur');
     const workspaceOpacityText = document.createElement('span');
     workspaceOpacityText.textContent = msg('background-opacity');
+    const modalBlurText = document.createElement('span');
+    modalBlurText.textContent = msg('background-blur');
+    const modalOpacityText = document.createElement('span');
+    modalOpacityText.textContent = msg('background-opacity');
+    const modalOffsetXText = document.createElement('span');
+    modalOffsetXText.textContent = msg('background-offset-x');
+    const modalOffsetYText = document.createElement('span');
+    modalOffsetYText.textContent = msg('background-offset-y');
     const animationDurationText = document.createElement('span');
     animationDurationText.textContent = msg('animation-duration');
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'sa-background-blur-wrapper';
 
 
     // Rotation UI
@@ -732,8 +930,23 @@ async function addContext(modal, msg) {
     workspaceDiv.appendChild(workspaceOpacityText);
     workspaceDiv.appendChild(workspaceOpacity);
 
+    modalDiv.appendChild(modalTitle);
+    modalDiv.appendChild(modalImageLayout);
+    modalDiv.appendChild(modalAddButton);
+    modalDiv.appendChild(modalClearButton);
+    modalDiv.appendChild(modalBlurText);
+    modalDiv.appendChild(modalBlur);
+    modalDiv.appendChild(modalOpacityText);
+    modalDiv.appendChild(modalOpacity);
+    modalDiv.appendChild(modalOffsetXText);
+    modalDiv.appendChild(modalOffsetX);
+    modalDiv.appendChild(modalOffsetYText);
+    modalDiv.appendChild(modalOffsetY);
+
     modal.appendChild(workspaceDiv);
+    modal.appendChild(modalDiv);
     modal.appendChild(rotationDiv);
+
     await refreshWallpaperList();
 }
 
@@ -746,31 +959,15 @@ async function saveLayout(layout) {
 async function resizeWorkspaceBackground() {
     try {
         const mode = await getSetting('WorkSpaceBGLayout') || 'stretch';
-        const workspaceWidth = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).width;
-        const workspaceHeight = getComputedStyle(document.querySelector('[class*=gui_blocks-wrapper]')).height;
+        const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
         const bgImage = document.querySelector('.sa-background-image');
-        if (bgImage) {
-            bgImage.style.objectFit = 'none';
-            switch (mode) {
-                case 'stretch':
-                    bgImage.style.width = workspaceWidth;
-                    bgImage.style.height = workspaceHeight;
-                    bgImage.style.objectFit = 'fill';
-                    break;
-                case 'height-priority':
-                    bgImage.style.height = workspaceHeight;
-                    bgImage.style.width = 'auto';
-                    break;
-                case 'width-priority':
-                    bgImage.style.width = workspaceWidth;
-                    bgImage.style.height = 'auto';
-                    break;
-                case 'fit':
-                    bgImage.style.width = workspaceWidth;
-                    bgImage.style.height = workspaceHeight;
-                    bgImage.style.objectFit = 'cover';
-                    break;
-            }
+        if (bgImage && workspace) {
+            applyBackgroundLayout({
+                image: bgImage,
+                containerWidth: workspace.clientWidth,
+                containerHeight: workspace.clientHeight,
+                mode
+            });
         } else {
             console.warn('Cannot find background image element, try to spawn again');
             await refreshWorkSpaceBackground();
@@ -779,6 +976,31 @@ async function resizeWorkspaceBackground() {
         console.warn('Failed to resize background image:', e);
     }
 
+}
+
+async function resizeModalBackground() {
+    try {
+        const modalConfig = await getModalBackgroundConfig();
+        if (!modalConfig) {
+            removeModalBackgroundLayers();
+            return;
+        }
+
+        getModalContainers().forEach((modalContainer) => {
+            const bgImage = modalContainer.querySelector('.sa-modal-background-image');
+            if (!bgImage) return;
+            applyBackgroundLayout({
+                image: bgImage,
+                containerWidth: modalContainer.clientWidth,
+                containerHeight: modalContainer.clientHeight,
+                mode: modalConfig.layout,
+                offsetX: modalConfig.offsetX,
+                offsetY: modalConfig.offsetY
+            });
+        });
+    } catch (e) {
+        console.warn('Failed to resize modal background image:', e);
+    }
 }
 
 
@@ -892,4 +1114,51 @@ async function createNewBackground(wallpaper, workspace, animationDuration) {
     requestAnimationFrame(async () => {
         background.style.opacity = `${await getSetting('WorkSpaceBGOpacity') || 0.5}`;
     });
+}
+
+async function refreshModalBackground() {
+    if (isRefreshingModalBG) return;
+    isRefreshingModalBG = true;
+
+    try {
+        const modalConfig = await getModalBackgroundConfig();
+        if (!modalConfig) {
+            removeModalBackgroundLayers();
+            isRefreshingModalBG = false;
+            return;
+        }
+
+        const modalContainers = getModalContainers();
+        if (!modalContainers.length) {
+            isRefreshingModalBG = false;
+            return;
+        }
+
+        modalContainers.forEach((modalContainer) => {
+            let backgroundLayer = modalContainer.querySelector('.sa-modal-background-layer');
+            let backgroundImage = modalContainer.querySelector('.sa-modal-background-image');
+
+            modalContainer.classList.add('sa-modal-background-enabled');
+
+            if (!backgroundLayer) {
+                backgroundLayer = document.createElement('div');
+                backgroundLayer.className = 'sa-modal-background-layer';
+                backgroundImage = document.createElement('img');
+                backgroundImage.className = 'sa-modal-background-image';
+                backgroundImage.draggable = false;
+                backgroundLayer.appendChild(backgroundImage);
+                modalContainer.prepend(backgroundLayer);
+            }
+
+            backgroundImage.src = modalConfig.link;
+            backgroundImage.style.filter = `blur(${modalConfig.blur}px)`;
+            backgroundImage.style.opacity = `${modalConfig.opacity}`;
+        });
+
+        await resizeModalBackground();
+    } catch (e) {
+        console.warn('Failed to refresh modal background:', e);
+    } finally {
+        isRefreshingModalBG = false;
+    }
 }

@@ -482,22 +482,20 @@ a:active, a:focus {
     padding: 10px;
     border-radius: 5px;
     margin: 10px 0;
-    background: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.3);
+    background: #dc3545;
     font-size: 13px;
 }
 .incompatible-label {
     font-weight: bold;
-    color: #dc3545;
+    color: black;
     margin-right: 8px;
 }
 .incompatible-list {
-    color: #dc3545;
+    color: black;
 }
 
 .editor-incompatible {
-    background: rgba(220, 53, 69, 0.2);
-    border: 1px solid #dc3545;
+    background: #dc3545;
 }
 
 .notice {

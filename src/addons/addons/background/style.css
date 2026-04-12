@@ -8,6 +8,7 @@
 }
 .sa-background-content{
     padding: 1rem;
+    overflow-y: auto !important;
 }
 .sa-background-blur-wrapper{
     display: flex;
@@ -41,6 +42,9 @@
     gap: 4px;
     margin-bottom: 5px;
 }
+.sa-background-offset{
+    max-width: 8rem;
+}
 /*让工作区透明*/
 .blocklySvg{
     background-color: var(--enable-workspace-background) !important;
@@ -48,4 +52,35 @@
 /*不让左边那框产生“空隙”（原来的颜色是透明的不知道咋想的）*/
 .injectionDiv{
     border: 1px solid var(--ui-secondary) !important
+}
+.sa-modal-background-enabled{
+    position: relative;
+    isolation: isolate;
+    background: transparent !important;
+}
+.sa-modal-background-enabled > :not(.sa-modal-background-layer){
+    position: relative;
+    z-index: 1;
+}
+.sa-modal-background-enabled > [class*="modal_header"]{
+    background-color: color-mix(in srgb, var(--ui-modal-header-background) 88%, transparent) !important;
+}
+.sa-modal-background-enabled > :not([class*="modal_header"]):not(.sa-modal-background-layer){
+    background-color: color-mix(in srgb, var(--ui-modal-background) 78%, transparent) !important;
+}
+.sa-modal-background-layer{
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+}
+.sa-modal-background-image{
+    position: absolute;
+    top: 0;
+    left: 0;
+    clip-path: inset(0);
+    transform-origin: top left;
+    transition: opacity 0.2s ease-out;
 }
