@@ -1,4 +1,5 @@
 import reduxInstance from '../../redux.js';
+import './bottom-panel.css';
 
 /**
  * 工作区下方面板组件 - 简化版
@@ -64,14 +65,16 @@ class BottomPanelInternal {
         `;
         this.element.appendChild(this.contentContainer);
 
+        // 拖拽手柄现在放在按钮栏的上边缘
         this.resizeHandle = document.createElement("div");
         this.resizeHandle.style.cssText = `
             position: absolute;
-            top: 0;
+            top: -2px;
             left: 0;
             width: 100%;
             height: 4px;
             cursor: ns-resize;
+            pointer-events: none;
             background: transparent;
             z-index: 10;
         `;
@@ -85,11 +88,17 @@ class BottomPanelInternal {
         this._boundDoResize = (e) => this.doResize(e);
         this._boundEndResize = () => this.endResize();
         this._boundHandleMouseEnter = () => {
-            this.resizeHandle.style.background = "var(--ui-primary)";
+            this.resizeHandle.style.background = "var(--looks-secondary)";
         };
         this._boundHandleMouseLeave = () => {
-            if (!this.isResizing) {
+            // 检查是否正在角落拖拽（通过检查 Sidebar 的状态）
+            const isCornerResizing = window.aeResizeHandles?.sideBar?.instance?._cornerResizing;
+            if (!this.isResizing && !isCornerResizing) {
                 this.resizeHandle.style.background = "transparent";
+            }
+            // 确保在角落拖拽时保持高亮
+            if (isCornerResizing) {
+                this.resizeHandle.style.background = "var(--looks-secondary)";
             }
         };
 
@@ -99,7 +108,29 @@ class BottomPanelInternal {
         document.addEventListener("mousemove", this._boundDoResize);
         document.addEventListener("mouseup", this._boundEndResize);
 
-        this.element.appendChild(this.resizeHandle);
+        // 将拖拽手柄添加到按钮栏，而不是主面板
+        this.buttonBar.appendChild(this.resizeHandle);
+
+        // 注册到全局对象以支持角落检测
+        if (!window.aeResizeHandles) {
+            window.aeResizeHandles = {};
+        }
+        window.aeResizeHandles.bottomPanel = {
+            instance: this,
+            isOpen: () => this.isOpen(),
+            resize: (deltaY) => {
+                this.currentHeight = Math.max(
+                    this.MIN_HEIGHT,
+                    Math.min(this.MAX_HEIGHT, this.currentHeight + deltaY)
+                );
+                this.element.style.height = `${this.currentHeight}px`;
+                this.element.style.maxHeight = `${this.currentHeight}px`;
+            }
+        };
+
+        // 角落检测相关的状态
+        this._inCorner = false;
+        this._cornerResizing = false;
 
         // 监听标签页切换
         this._boundHandleTabChange = () => {
@@ -261,7 +292,12 @@ class BottomPanelInternal {
             this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
             document.removeEventListener("mousemove", this._boundDoResize);
             document.removeEventListener("mouseup", this._boundEndResize);
-    
+
+            // 从全局对象中移除 BottomPanel 的引用
+            if (window.aeResizeHandles && window.aeResizeHandles.bottomPanel) {
+                delete window.aeResizeHandles.bottomPanel;
+            }
+
             // 停止 MutationObserver
                     if (this._tabObserver) {
                         this._tabObserver.disconnect();
@@ -280,15 +316,25 @@ class BottomPanelInternal {
                     }
                 }
     startResize(e) {
+        // 面板折叠时不允许拖拽
+        if (!this.isOpen()) {
+            return;
+        }
+
         this.isResizing = true;
         this.startY = e.clientY;
         this.startHeight = this.currentHeight;
-        this.resizeHandle.style.background = "var(--ui-primary)";
+        this.resizeHandle.style.background = "var(--looks-secondary)";
         document.body.style.cursor = "ns-resize";
         document.body.style.userSelect = "none";
     }
 
     doResize(e) {
+        // 角落拖拽由 Sidebar 处理，完全退出
+        if (window.aeResizeHandles?.sideBar?.instance?._cornerResizing) {
+            return;
+        }
+
         if (!this.isResizing) return;
 
         const deltaY = this.startY - e.clientY;
@@ -301,6 +347,11 @@ class BottomPanelInternal {
     }
 
     endResize() {
+        // 角落拖拽由 Sidebar 处理，完全退出
+        if (window.aeResizeHandles?.sideBar?.instance?._cornerResizing) {
+            return;
+        }
+
         if (this.isResizing) {
             this.isResizing = false;
             this.resizeHandle.style.background = "transparent";
@@ -318,6 +369,9 @@ class BottomPanelInternal {
         this.buttonBar.classList.add('bottom-panel-open');
         this.buttonBar.style.borderTop = "none";
         this.buttonBar.style.borderBottom = "1px solid var(--ui-black-transparent)";
+        // 启用拖拽手柄
+        this.resizeHandle.style.pointerEvents = "auto";
+        this.resizeHandle.style.cursor = "ns-resize";
         window.dispatchEvent(new Event("resize"));
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelOpened'));
@@ -329,6 +383,9 @@ class BottomPanelInternal {
         this.buttonBar.classList.remove('bottom-panel-open');
         this.buttonBar.style.borderTop = "1px solid var(--ui-black-transparent)";
         this.buttonBar.style.borderBottom = "none";
+        // 禁用拖拽手柄
+        this.resizeHandle.style.pointerEvents = "none";
+        this.resizeHandle.style.cursor = "default";
         window.dispatchEvent(new Event("resize"));
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelClosed'));

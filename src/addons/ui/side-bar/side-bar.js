@@ -1,4 +1,5 @@
 import reduxInstance from '../../redux.js';
+import './side-bar.css';
 
 const getSideBar = () => {
     return document.querySelectorAll("[class*=gui_tab-panel]")[0];
@@ -244,10 +245,10 @@ class SideBarInternal {
         this._boundDoResize = (e) => this.doResize(e);
         this._boundEndResize = () => this.endResize();
         this._boundHandleMouseEnter = () => {
-            this.resizeHandle.style.background = "var(--ui-primary)";
+            this.resizeHandle.style.background = "var(--looks-secondary)";
         };
         this._boundHandleMouseLeave = () => {
-            if (!this.isResizing) {
+            if (!this.isResizing && !this._cornerResizing) {
                 this.resizeHandle.style.background = "transparent";
             }
         };
@@ -259,6 +260,33 @@ class SideBarInternal {
         document.addEventListener("mouseup", this._boundEndResize);
 
         this.element.appendChild(this.resizeHandle);
+
+        // 注册到全局对象以支持角落检测
+        if (!window.aeResizeHandles) {
+            window.aeResizeHandles = {};
+        }
+        window.aeResizeHandles.sideBar = {
+            instance: this,
+            isOpen: () => this.isOpen(),
+            resize: (deltaX) => {
+                this.currentWidth = Math.max(
+                    this.MIN_WIDTH,
+                    Math.min(this.MAX_WIDTH, this.currentWidth + deltaX)
+                );
+                this.element.style.width = `${this.currentWidth}px`;
+                if (this.extensionButton) {
+                    this.extensionButton.style.marginLeft = this.currentWidth + "px";
+                }
+            }
+        };
+
+        // 角落检测相关的状态
+        this._inCorner = false;
+        this._cornerResizing = false;
+        this._cornerStartX = 0;
+        this._cornerStartY = 0;
+        this._cornerStartWidth = 0;
+        this._cornerStartHeight = 0;
 
         // 监听标签页切换
         this._boundHandleTabChange = () => {
@@ -328,6 +356,43 @@ class SideBarInternal {
             }
         };
         reduxInstance.addEventListener('statechanged', this._boundHandleProjectLoad);
+
+        // 全局角落检测
+        this._boundGlobalMouseMove = (e) => {
+            if (this._cornerResizing) {
+                return; // 正在角落拖拽中，交给 doCornerResize 处理
+            }
+
+            if (this.isResizing) {
+                return; // 正在拖拽中，不需要检测
+            }
+
+            const inCorner = this.isInCorner(e.clientX, e.clientY);
+            if (inCorner && !this._inCorner) {
+                this._inCorner = true;
+                document.body.style.cursor = "crosshair";
+            } else if (!inCorner && this._inCorner) {
+                this._inCorner = false;
+                document.body.style.cursor = "";
+            }
+        };
+
+        this._boundGlobalMouseDown = (e) => {
+            if (this._inCorner) {
+                e.preventDefault();
+                this.startCornerResize(e);
+            }
+        };
+
+        this._boundGlobalMouseUp = (e) => {
+            if (this._cornerResizing) {
+                this.endCornerResize();
+            }
+        };
+
+        document.addEventListener("mousemove", this._boundGlobalMouseMove);
+        document.addEventListener("mousedown", this._boundGlobalMouseDown);
+        document.addEventListener("mouseup", this._boundGlobalMouseUp);
     }
 
     /**
@@ -346,6 +411,106 @@ class SideBarInternal {
 
         // 触发一次重排，让浏览器重新计算布局
         void this.element.offsetHeight;
+    }
+
+    /**
+     * 检测鼠标是否在角落区域
+     */
+    isInCorner(mouseX, mouseY) {
+        if (!this.isOpen()) return false;
+
+        const sidebarRect = this.element.getBoundingClientRect();
+        const bottomPanel = window.aeResizeHandles?.bottomPanel?.instance;
+
+        if (!bottomPanel || !bottomPanel.isOpen()) return false;
+
+        const bottomPanelRect = bottomPanel.buttonBar.getBoundingClientRect();
+
+        // 检查鼠标是否在 Sidebar 的右边缘附近
+        const nearSidebarRight = mouseX >= sidebarRect.right - 8 && mouseX <= sidebarRect.right + 4;
+
+        // 检查鼠标是否在 BottomPanel 的上边缘附近（调整为 4px）
+        const nearBottomPanelTop = mouseY >= bottomPanelRect.top - 6 && mouseY <= bottomPanelRect.top + 2;
+
+        return nearSidebarRight && nearBottomPanelTop;
+    }
+
+    /**
+     * 开始角落拖拽
+     */
+    startCornerResize(e) {
+        this._cornerResizing = true;
+        this._inCorner = true; // 确保 _inCorner 状态正确
+        this._cornerStartX = e.clientX;
+        this._cornerStartY = e.clientY;
+        this._cornerStartWidth = this.currentWidth;
+
+        const bottomPanel = window.aeResizeHandles?.bottomPanel?.instance;
+        if (bottomPanel) {
+            this._cornerStartHeight = bottomPanel.currentHeight;
+        }
+
+        document.body.style.cursor = "crosshair";
+        document.body.style.userSelect = "none";
+
+        this.resizeHandle.style.background = "var(--looks-secondary)";
+        if (bottomPanel && bottomPanel.resizeHandle) {
+            bottomPanel.resizeHandle.style.background = "var(--looks-secondary)";
+        }
+    }
+
+    /**
+     * 执行角落拖拽
+     */
+    doCornerResize(e) {
+        if (!this._cornerResizing) return;
+
+        const deltaX = e.clientX - this._cornerStartX;
+        const deltaY = this._cornerStartY - e.clientY; // 注意：BottomPanel 的高度是向上拖拽增加
+
+        // 调整 Sidebar 宽度
+        this.currentWidth = Math.max(
+            this.MIN_WIDTH,
+            Math.min(this.MAX_WIDTH, this._cornerStartWidth + deltaX)
+        );
+        this.element.style.width = `${this.currentWidth}px`;
+        if (this.extensionButton) {
+            this.extensionButton.style.marginLeft = this.currentWidth + "px";
+        }
+
+        // 调整 BottomPanel 高度
+        const bottomPanel = window.aeResizeHandles?.bottomPanel?.instance;
+        if (bottomPanel) {
+            bottomPanel.currentHeight = Math.max(
+                bottomPanel.MIN_HEIGHT,
+                Math.min(bottomPanel.MAX_HEIGHT, this._cornerStartHeight + deltaY)
+            );
+            bottomPanel.element.style.height = `${bottomPanel.currentHeight}px`;
+            bottomPanel.element.style.maxHeight = `${bottomPanel.currentHeight}px`;
+        }
+    }
+
+    /**
+     * 结束角落拖拽
+     */
+    endCornerResize() {
+        if (!this._cornerResizing) return;
+
+        this._cornerResizing = false;
+        this._inCorner = false; // 清理 _inCorner 状态
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+
+        this.resizeHandle.style.background = "transparent";
+        const bottomPanel = window.aeResizeHandles?.bottomPanel?.instance;
+        if (bottomPanel && bottomPanel.resizeHandle) {
+            bottomPanel.resizeHandle.style.background = "transparent";
+            // 确保 BottomPanel 的 isResizing 状态也被清理
+            bottomPanel.isResizing = false;
+        }
+
+        window.dispatchEvent(new Event("resize"));
+        window.dispatchEvent(new CustomEvent('bottomPanelResized', { detail: { height: bottomPanel?.currentHeight || 200 } }));
     }
 
     /**
@@ -397,6 +562,16 @@ class SideBarInternal {
         document.removeEventListener("mousemove", this._boundDoResize);
         document.removeEventListener("mouseup", this._boundEndResize);
 
+        // 移除全局角落检测监听器
+        document.removeEventListener("mousemove", this._boundGlobalMouseMove);
+        document.removeEventListener("mousedown", this._boundGlobalMouseDown);
+        document.removeEventListener("mouseup", this._boundGlobalMouseUp);
+
+        // 从全局对象中移除 Sidebar 的引用
+        if (window.aeResizeHandles && window.aeResizeHandles.sideBar) {
+            delete window.aeResizeHandles.sideBar;
+        }
+
         // 停止 MutationObserver
         if (this._tabObserver) {
             this._tabObserver.disconnect();
@@ -437,12 +612,18 @@ class SideBarInternal {
         this.isResizing = true;
         this.startX = e.clientX;
         this.startWidth = this.currentWidth;
-        this.resizeHandle.style.background = "var(--ui-primary)";
+        this.resizeHandle.style.background = "var(--looks-secondary)";
         document.body.style.cursor = "ew-resize";
         document.body.style.userSelect = "none";
     }
 
     doResize(e) {
+        // 如果正在角落拖拽，交给 cornerResize 处理
+        if (this._cornerResizing) {
+            this.doCornerResize(e);
+            return;
+        }
+
         if (!this.isResizing) return;
 
         const deltaX = e.clientX - this.startX;
@@ -457,6 +638,11 @@ class SideBarInternal {
     }
 
     endResize() {
+        if (this._cornerResizing) {
+            this.endCornerResize();
+            return;
+        }
+
         if (this.isResizing) {
             this.isResizing = false;
             this.resizeHandle.style.background = "transparent";

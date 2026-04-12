@@ -47,13 +47,13 @@
   background: var(--ui-white);
 }
 
-/* 调整手柄 */
-.addons-bottom-panel .resize-handle {
+/* 调整手柄 - 现在位于按钮栏的上边缘 */
+.addons-bottom-panel-button-bar .resize-handle {
   cursor: ns-resize;
   background: transparent;
   transition: background 0.2s;
 }
 
-.addons-bottom-panel .resize-handle:hover {
-  background: var(--ui-primary);
+.addons-bottom-panel-button-bar .resize-handle:hover {
+  background: var(--looks-secondary);
 }
