@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
 import ReactModal from 'react-modal';
-import {FormattedMessage} from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 
 import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
@@ -17,6 +17,7 @@ const ModalComponent = props => (
     <ReactModal
         isOpen
         className={classNames(styles.modalContent, props.className, {
+            'sa-modal-shell-fullscreen': props.fullScreen,
             [styles.fullScreen]: props.fullScreen
         })}
         contentLabel={props.contentLabel}
@@ -90,7 +91,9 @@ const ModalComponent = props => (
                     )}
                 </div>
             </div>
-            {props.children}
+            <div className='modal_content'>
+                {props.children}
+            </div>
         </Box>
     </ReactModal>
 );

@@ -41,7 +41,7 @@ export const createEditorModal = (tab, title, {isOpen = false} = {}) => {
         })
     );
     const content = Object.assign(document.createElement('div'), {
-        className: styles.modalContent
+        className: `${styles.modalContent} modal_content`
     });
     modal.appendChild(content);
     return {

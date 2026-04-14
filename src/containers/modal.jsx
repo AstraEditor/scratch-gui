@@ -1,12 +1,12 @@
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 
 import ModalComponent from '../components/modal/modal.jsx';
 
 class Modal extends React.Component {
-    constructor (props) {
+    constructor(props) {
         super(props);
         bindAll(this, [
             'addEventListeners',
@@ -16,32 +16,33 @@ class Modal extends React.Component {
         ]);
         this.addEventListeners();
     }
-    componentDidMount () {
+    componentDidMount() {
         // Add a history event only if it's not currently for our modal. This
         // avoids polluting the history with many entries. We only need one.
         this.pushHistory(this.id, (history.state === null || history.state !== this.id));
     }
-    componentWillUnmount () {
+    componentWillUnmount() {
         this.removeEventListeners();
     }
-    addEventListeners () {
+    addEventListeners() {
         window.addEventListener('popstate', this.handlePopState);
     }
-    removeEventListeners () {
+    removeEventListeners() {
         window.removeEventListener('popstate', this.handlePopState);
     }
-    handlePopState () {
+    handlePopState() {
         // Whenever someone navigates, we want to be closed
         this.props.onRequestClose();
     }
-    get id () {
+    get id() {
         return `modal-${this.props.id}`;
     }
-    pushHistory (state, push) {
+    pushHistory(state, push) {
         if (push) return history.pushState(state, this.id, null);
         history.replaceState(state, this.id, null);
     }
-    render () {
+    render() {
+        window.dispatchEvent(new CustomEvent('modal-opened', { detail: { id: this.id } }));
         return <ModalComponent {...this.props} />;
     }
 }

@@ -23,7 +23,7 @@ import addons from './generated/addon-manifests';
 import addonMessages from './addons-l10n/en.json';
 import l10nEntries from './generated/l10n-entries';
 import addonEntries from './generated/addon-entries';
-import {addContextMenu} from './contextmenu';
+import { addContextMenu } from './contextmenu';
 import * as modal from './modal';
 import * as textColorHelpers from './libraries/common/cs/text-color.esm.js';
 import * as conditionalStyles from './conditional-style';
@@ -192,13 +192,13 @@ updateClasses();
 const getInternalKey = element => Object.keys(element).find(key => key.startsWith('__reactInternalInstance$'));
 
 class Tab extends EventTargetShim {
-    constructor (id) {
+    constructor(id) {
         super();
         this._id = id;
         this._seenElements = new WeakSet();
         // traps is public API
         this.traps = {
-            get vm () {
+            get vm() {
                 return reduxInstance.state.scratchGui.vm;
             },
             getBlockly: () => {
@@ -244,11 +244,11 @@ class Tab extends EventTargetShim {
         };
     }
 
-    get redux () {
+    get redux() {
         return reduxInstance;
     }
 
-    waitForElement (selector, {markAsSeen = false, condition, reduxCondition, reduxEvents} = {}) {
+    waitForElement(selector, { markAsSeen = false, condition, reduxCondition, reduxEvents } = {}) {
         let externalEventSatisfied = true;
         const evaluateCondition = () => {
             if (!externalEventSatisfied) return false;
@@ -269,7 +269,7 @@ class Tab extends EventTargetShim {
         let reduxListener;
         if (reduxEvents) {
             externalEventSatisfied = false;
-            reduxListener = ({detail}) => {
+            reduxListener = ({ detail }) => {
                 const type = detail.action.type;
                 // As addons can't run before DOM exists here, ignore fontsLoaded/SET_FONTS_LOADED
                 // Otherwise, as our font loading is very async, we could activate more often than required.
@@ -302,7 +302,7 @@ class Tab extends EventTargetShim {
         });
     }
 
-    appendToSharedSpace ({space, element, order, scope}) {
+    appendToSharedSpace({ space, element, order, scope }) {
         const q = document.querySelector.bind(document);
         const SHARED_SPACES = {
             stageHeader: {
@@ -383,22 +383,22 @@ class Tab extends EventTargetShim {
             paintEditorZoomControls: {
                 element: () => (
                     q('.sa-paintEditorZoomControls-wrapper') ||
-                      (() => {
-                          const wrapper = Object.assign(document.createElement('div'), {
-                              className: 'sa-paintEditorZoomControls-wrapper'
-                          });
-          
-                          wrapper.style.display = 'flex';
-                          wrapper.style.flexDirection = 'row-reverse';
-                          wrapper.style.height = 'calc(1.95rem + 2px)';
-          
-                          const zoomControls = q("[class^='paint-editor_zoom-controls']");
-          
-                          zoomControls.replaceWith(wrapper);
-                          wrapper.appendChild(zoomControls);
-          
-                          return wrapper;
-                      })()
+                    (() => {
+                        const wrapper = Object.assign(document.createElement('div'), {
+                            className: 'sa-paintEditorZoomControls-wrapper'
+                        });
+
+                        wrapper.style.display = 'flex';
+                        wrapper.style.flexDirection = 'row-reverse';
+                        wrapper.style.height = 'calc(1.95rem + 2px)';
+
+                        const zoomControls = q("[class^='paint-editor_zoom-controls']");
+
+                        zoomControls.replaceWith(wrapper);
+                        wrapper.appendChild(zoomControls);
+
+                        return wrapper;
+                    })()
                 ),
                 from: () => [],
                 until: () => []
@@ -475,7 +475,7 @@ class Tab extends EventTargetShim {
         return true;
     }
 
-    addBlock (procedureCode, {args, displayName, callback}) {
+    addBlock(procedureCode, { args, displayName, callback }) {
         const procCodeArguments = parseArguments(procedureCode);
         if (args.length !== procCodeArguments.length) {
             throw new Error('Procedure code and argument list do not match');
@@ -546,13 +546,13 @@ class Tab extends EventTargetShim {
         }
     }
 
-    getCustomBlock (procedureCode) {
+    getCustomBlock(procedureCode) {
         const vm = this.traps.vm;
         return vm.getAddonBlock(procedureCode);
     }
 
-    createBlockContextMenu (callback, {workspace = false, blocks = false, flyout = false, comments = false} = {}) {
-        contextMenuCallbacks.push({addonId: this._id, callback, workspace, blocks, flyout, comments});
+    createBlockContextMenu(callback, { workspace = false, blocks = false, flyout = false, comments = false } = {}) {
+        contextMenuCallbacks.push({ addonId: this._id, callback, workspace, blocks, flyout, comments });
         contextMenuCallbacks.sort((b, a) => (
             CONTEXT_MENU_ORDER.indexOf(b.addonId) - CONTEXT_MENU_ORDER.indexOf(a.addonId)
         ));
@@ -567,7 +567,7 @@ class Tab extends EventTargetShim {
                 const block = gesture.targetBlock_;
 
                 // eslint-disable-next-line no-shadow
-                for (const {callback, workspace, blocks, flyout, comments} of contextMenuCallbacks) {
+                for (const { callback, workspace, blocks, flyout, comments } of contextMenuCallbacks) {
                     const injectMenu =
                         // Workspace
                         (workspace && !block && !gesture.flyout_ && !gesture.startBubble_) ||
@@ -601,11 +601,11 @@ class Tab extends EventTargetShim {
         });
     }
 
-    createEditorContextMenu (callback, options) {
+    createEditorContextMenu(callback, options) {
         addContextMenu(this, callback, options);
     }
 
-    copyImage (dataURL) {
+    copyImage(dataURL) {
         if (!navigator.clipboard.write) {
             return Promise.reject(new Error('Clipboard API not supported'));
         }
@@ -618,16 +618,16 @@ class Tab extends EventTargetShim {
         return navigator.clipboard.write(items);
     }
 
-    scratchMessage (id) {
+    scratchMessage(id) {
         return reduxInstance.state.locales.messages[id];
     }
 
-    scratchClassReady () {
+    scratchClassReady() {
         // they are always ready
         return Promise.resolve();
     }
 
-    scratchClass (...args) {
+    scratchClass(...args) {
         const scratchClasses = getScratchClassNames();
         const classes = [];
         for (const arg of args) {
@@ -650,11 +650,11 @@ class Tab extends EventTargetShim {
         return classes.join(' ');
     }
 
-    get editorMode () {
+    get editorMode() {
         return getEditorMode();
     }
 
-    displayNoneWhileDisabled (el, options) {
+    displayNoneWhileDisabled(el, options) {
         el.classList.add(getDisplayNoneWhileDisabledClass(this._id));
 
         if (options && options.display) {
@@ -662,23 +662,24 @@ class Tab extends EventTargetShim {
         }
     }
 
-    get direction () {
+    get direction() {
         return this.redux.state.locales.isRtl ? 'rtl' : 'ltr';
     }
 
-    createModal (title, {isOpen = false} = {}) {
-        return modal.createEditorModal(this, title, {isOpen});
+    createModal(title, { isOpen = false } = {}) {
+        window.dispatchEvent(new CustomEvent('modal-opened', { detail: { id: this.id } }));
+        return modal.createEditorModal(this, title, { isOpen });
     }
 
-    confirm (...args) {
+    confirm(...args) {
         return modal.confirm(this, ...args);
     }
 
-    prompt (...args) {
+    prompt(...args) {
         return modal.prompt(this, ...args);
     }
 
-    recolorable () {
+    recolorable() {
         // this is some pretty awful code that makes a *lot* of assumptions about how addons work
 
         const image = document.createElement('img');
@@ -712,19 +713,19 @@ class Tab extends EventTargetShim {
 }
 
 class Settings extends EventTargetShim {
-    constructor (addonId, manifest) {
+    constructor(addonId, manifest) {
         super();
         this._addonId = addonId;
         this._manifest = manifest;
     }
 
-    get (id) {
+    get(id) {
         return SettingsStore.getAddonSetting(this._addonId, id);
     }
 }
 
 class Self extends EventTargetShim {
-    constructor (id, getResource) {
+    constructor(id, getResource) {
         super();
         this.id = id;
         this.disabled = false;
@@ -733,7 +734,7 @@ class Self extends EventTargetShim {
 }
 
 class AddonRunner {
-    constructor (id) {
+    constructor(id) {
         AddonRunner.instances.push(this);
         const manifest = addons[id];
 
@@ -760,7 +761,7 @@ class AddonRunner {
         };
     }
 
-    _msg (key, vars, handler) {
+    _msg(key, vars, handler) {
         const namespacedKey = key.startsWith('/') ? key.substring(1) : `${this.id}/${key}`;
         if (this.messageCache[namespacedKey]) {
             return this.messageCache[namespacedKey].format(vars);
@@ -777,15 +778,15 @@ class AddonRunner {
         return messageFormat.format(vars);
     }
 
-    msg (key, vars) {
+    msg(key, vars) {
         return this._msg(key, vars, null);
     }
 
-    safeMsg (key, vars) {
+    safeMsg(key, vars) {
         return this._msg(key, vars, escapeHTML);
     }
 
-    getResource (path) {
+    getResource(path) {
         const withoutSlash = path.substring(1);
         const url = this.resources[withoutSlash];
         if (typeof url !== 'string') {
@@ -794,12 +795,12 @@ class AddonRunner {
         return url;
     }
 
-    updateAllStyles () {
+    updateAllStyles() {
         conditionalStyles.updateAll();
         this.updateCssVariables();
     }
 
-    updateCssVariables () {
+    updateCssVariables() {
         const addonId = kebabCaseToCamelCase(this.id);
 
         if (this.manifest.settings) {
@@ -822,71 +823,71 @@ class AddonRunner {
         }
     }
 
-    evaluateCustomCssVariable (variable) {
+    evaluateCustomCssVariable(variable) {
         if (typeof variable !== 'object' || variable === null) {
             return variable;
         }
         switch (variable.type) {
-        case 'alphaBlend': {
-            const opaqueSource = this.evaluateCustomCssVariable(variable.opaqueSource);
-            const transparentSource = this.evaluateCustomCssVariable(variable.transparentSource);
-            return textColorHelpers.alphaBlend(opaqueSource, transparentSource);
-        }
-        case 'alphaThreshold': {
-            const source = this.evaluateCustomCssVariable(variable.source);
-            const alpha = textColorHelpers.parseHex(source).a;
-            const threshold = this.evaluateCustomCssVariable(variable.threshold) || 0.5;
-            if (alpha >= threshold) {
-                return this.evaluateCustomCssVariable(variable.opaque);
+            case 'alphaBlend': {
+                const opaqueSource = this.evaluateCustomCssVariable(variable.opaqueSource);
+                const transparentSource = this.evaluateCustomCssVariable(variable.transparentSource);
+                return textColorHelpers.alphaBlend(opaqueSource, transparentSource);
             }
-            return this.evaluateCustomCssVariable(variable.transparent);
-        }
-        case 'brighten': {
-            const source = this.evaluateCustomCssVariable(variable.source);
-            return textColorHelpers.brighten(source, variable);
-        }
-        case 'makeHsv': {
-            const h = this.evaluateCustomCssVariable(variable.h);
-            const s = this.evaluateCustomCssVariable(variable.s);
-            const v = this.evaluateCustomCssVariable(variable.v);
-            return textColorHelpers.makeHsv(h, s, v);
-        }
-        case 'map': {
-            return variable.options[this.evaluateCustomCssVariable(variable.source)];
-        }
-        case 'multiply': {
-            const hex = this.evaluateCustomCssVariable(variable.source);
-            return textColorHelpers.multiply(hex, variable);
-        }
-        case 'recolorFilter': {
-            const source = this.evaluateCustomCssVariable(variable.source);
-            return textColorHelpers.recolorFilter(source);
-        }
-        case 'settingValue': {
-            return this.publicAPI.addon.settings.get(variable.settingId);
-        }
-        case 'ternary': {
-            const condition = this.evaluateCustomCssVariable(variable.source);
-            return this.evaluateCustomCssVariable(condition ? variable.true : variable.false);
-        }
-        case 'textColor': {
-            const hex = this.evaluateCustomCssVariable(variable.source);
-            const black = this.evaluateCustomCssVariable(variable.black);
-            const white = this.evaluateCustomCssVariable(variable.white);
-            const threshold = this.evaluateCustomCssVariable(variable.threshold);
-            return textColorHelpers.textColor(hex, black, white, threshold);
-        }
+            case 'alphaThreshold': {
+                const source = this.evaluateCustomCssVariable(variable.source);
+                const alpha = textColorHelpers.parseHex(source).a;
+                const threshold = this.evaluateCustomCssVariable(variable.threshold) || 0.5;
+                if (alpha >= threshold) {
+                    return this.evaluateCustomCssVariable(variable.opaque);
+                }
+                return this.evaluateCustomCssVariable(variable.transparent);
+            }
+            case 'brighten': {
+                const source = this.evaluateCustomCssVariable(variable.source);
+                return textColorHelpers.brighten(source, variable);
+            }
+            case 'makeHsv': {
+                const h = this.evaluateCustomCssVariable(variable.h);
+                const s = this.evaluateCustomCssVariable(variable.s);
+                const v = this.evaluateCustomCssVariable(variable.v);
+                return textColorHelpers.makeHsv(h, s, v);
+            }
+            case 'map': {
+                return variable.options[this.evaluateCustomCssVariable(variable.source)];
+            }
+            case 'multiply': {
+                const hex = this.evaluateCustomCssVariable(variable.source);
+                return textColorHelpers.multiply(hex, variable);
+            }
+            case 'recolorFilter': {
+                const source = this.evaluateCustomCssVariable(variable.source);
+                return textColorHelpers.recolorFilter(source);
+            }
+            case 'settingValue': {
+                return this.publicAPI.addon.settings.get(variable.settingId);
+            }
+            case 'ternary': {
+                const condition = this.evaluateCustomCssVariable(variable.source);
+                return this.evaluateCustomCssVariable(condition ? variable.true : variable.false);
+            }
+            case 'textColor': {
+                const hex = this.evaluateCustomCssVariable(variable.source);
+                const black = this.evaluateCustomCssVariable(variable.black);
+                const white = this.evaluateCustomCssVariable(variable.white);
+                const threshold = this.evaluateCustomCssVariable(variable.threshold);
+                return textColorHelpers.textColor(hex, black, white, threshold);
+            }
         }
         console.warn(`Unknown customCssVariable`, variable);
         return '#000000';
     }
 
-    settingsChanged () {
+    settingsChanged() {
         this.updateAllStyles();
         this.publicAPI.addon.settings.dispatchEvent(new CustomEvent('change'));
     }
 
-    dynamicEnable () {
+    dynamicEnable() {
         if (this.loading) {
             return;
         }
@@ -899,7 +900,7 @@ class AddonRunner {
         this.publicAPI.addon.self.dispatchEvent(new CustomEvent('reenabled'));
     }
 
-    dynamicDisable () {
+    dynamicDisable() {
         if (this.loading) {
             return;
         }
@@ -910,7 +911,7 @@ class AddonRunner {
         this.publicAPI.addon.self.dispatchEvent(new CustomEvent('disabled'));
     }
 
-    async run () {
+    async run() {
         if (this.manifest.editorOnly) {
             await untilInEditor();
         }
