@@ -74,6 +74,8 @@
     margin-right: calc(var(--sa-modal-bg-pad-right, 0px) * -1);
     margin-bottom: calc(var(--sa-modal-bg-pad-top, 0px) - var(--sa-modal-bg-height, 0px));
     margin-left: calc(var(--sa-modal-bg-pad-left, 0px) * -1);
+    transform-origin: top left;
+    transform: scale(var(--sa-modal-bg-modalsize, 1));
     border-radius: inherit;
     background-image: var(--sa-modal-bg-image);
     background-size: var(--sa-modal-bg-size, cover);
@@ -106,4 +108,18 @@
 }
 .sa-modal-background-enabled .blocklySvg{
     background-color: transparent !important;
+}
+
+
+.sa-background-section-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0.5rem 0 0 0;
+    font-weight: bold;
+}
+.sa-background-divider {
+    flex-grow: 1;
+    margin-left: 1rem;
+    border-top: 1px dashed var(--ui-tertiary);
 }

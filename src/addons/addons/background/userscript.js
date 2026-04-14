@@ -601,11 +601,27 @@ async function addContext(modal, msg) {
         await refreshWallpaperList();
         workspaceAddPicInput.value = '';
     });
-    const workspaceTitle = document.createElement('h1');
-    workspaceTitle.textContent = msg('background-workspace');
 
-    const modalTitle = document.createElement('h1');
-    modalTitle.textContent = msg('background-modal');
+    // Helper function to create section headers similar to settings modal
+    const createHeader = (title) => {
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'sa-background-section-header';
+                
+        const titleElement = document.createElement('span');
+        titleElement.className = 'sa-background-section-title';
+        titleElement.textContent = title;
+
+        const divider = document.createElement('div');
+        divider.className = 'sa-background-divider';
+
+        headerDiv.appendChild(titleElement);
+        headerDiv.appendChild(divider);
+        
+        return headerDiv;
+    };
+
+    const workspaceTitle = createHeader(msg('background-workspace'));
+    const modalTitle = createHeader(msg('background-modal'));
 
     // Layout
     const workspaceImageLayout = document.createElement('select');
@@ -647,6 +663,36 @@ async function addContext(modal, msg) {
     workspaceOpacity.className = 'sa-background-opacity';
     workspaceOpacity.addEventListener('input', async () => {
         applySettings('WorkSpaceBGOpacity', workspaceOpacity.value / 100);
+        await refreshWorkSpaceBackground();
+    });
+
+    // Offset X
+    const workspaceOffsetXText = document.createElement('span');
+    workspaceOffsetXText.textContent = msg('background-offset-x');
+    const workspaceOffsetX = document.createElement('input');
+    workspaceOffsetX.type = 'number';
+    workspaceOffsetX.min = '-500';
+    workspaceOffsetX.max = '500';
+    workspaceOffsetX.step = '1';
+    workspaceOffsetX.value = await getSetting('WorkSpaceBGOffsetX') || 0;
+    workspaceOffsetX.className = 'sa-background-offset';
+    workspaceOffsetX.addEventListener('input', async () => {
+        applySettings('WorkSpaceBGOffsetX', Number(workspaceOffsetX.value));
+        await refreshWorkSpaceBackground();
+    });
+
+    // Offset Y
+    const workspaceOffsetYText = document.createElement('span');
+    workspaceOffsetYText.textContent = msg('background-offset-y');
+    const workspaceOffsetY = document.createElement('input');
+    workspaceOffsetY.type = 'number';
+    workspaceOffsetY.min = '-500';
+    workspaceOffsetY.max = '500';
+    workspaceOffsetY.step = '1';
+    workspaceOffsetY.value = await getSetting('WorkSpaceBGOffsetY') || 0;
+    workspaceOffsetY.className = 'sa-background-offset';
+    workspaceOffsetY.addEventListener('input', async () => {
+        applySettings('WorkSpaceBGOffsetY', Number(workspaceOffsetY.value));
         await refreshWorkSpaceBackground();
     });
 
@@ -974,6 +1020,10 @@ async function addContext(modal, msg) {
     workspaceDiv.appendChild(workspaceBlur);
     workspaceDiv.appendChild(workspaceOpacityText);
     workspaceDiv.appendChild(workspaceOpacity);
+    workspaceDiv.appendChild(workspaceOffsetXText);
+    workspaceDiv.appendChild(workspaceOffsetX);
+    workspaceDiv.appendChild(workspaceOffsetYText);
+    workspaceDiv.appendChild(workspaceOffsetY);
 
     modalDiv.appendChild(modalTitle);
     modalDiv.appendChild(modalImageLayout);
@@ -1039,6 +1089,7 @@ async function testModalBackground() {
             target.style.removeProperty('--sa-modal-bg-blur');
             target.style.removeProperty('--sa-modal-bg-opacity');
             target.style.removeProperty('--sa-modal-bg-height');
+            target.style.removeProperty('--sa-modal-bg-modalsize');
             target.style.removeProperty('--sa-modal-bg-pad-top');
             target.style.removeProperty('--sa-modal-bg-pad-right');
             target.style.removeProperty('--sa-modal-bg-pad-bottom');
@@ -1052,9 +1103,11 @@ async function testModalBackground() {
 
         const modalSizeValue = Number.isFinite(config.modalSize) ? config.modalSize : 100;
         const isNoFit = modalSizeValue === 0;
+        let modalSizeFactor = isNoFit ? 1 : Math.max(modalSizeValue, 10) / 100;
         let backgroundSize;
         if (config.layout === 'fixed') {
-            backgroundSize = `${modalSizeValue}%`;
+            backgroundSize = `${modalSizeValue}px`;
+            modalSizeFactor = 1; // no scale for fixed
         } else {
             let backgroundLayout = 'cover';
             switch (config.layout) {
@@ -1066,6 +1119,9 @@ async function testModalBackground() {
                     break;
                 case 'width-priority':
                     backgroundLayout = '100% auto';
+                    break;
+                case 'fit':
+                    backgroundLayout = 'cover';
                     break;
             }
             backgroundSize = isNoFit ? 'auto' : backgroundLayout;
@@ -1084,6 +1140,7 @@ async function testModalBackground() {
             bg.style.setProperty('--sa-modal-bg-blur', `${config.blur}px`);
             bg.style.setProperty('--sa-modal-bg-opacity', `${config.opacity}`);
             bg.style.setProperty('--sa-modal-bg-height', `${bg.clientHeight}px`);
+            bg.style.setProperty('--sa-modal-bg-modalsize', `${modalSizeFactor}`);
             bg.style.setProperty('--sa-modal-bg-pad-top', modalStyle.paddingTop);
             bg.style.setProperty('--sa-modal-bg-pad-right', modalStyle.paddingRight);
             bg.style.setProperty('--sa-modal-bg-pad-bottom', modalStyle.paddingBottom);
@@ -1100,6 +1157,8 @@ async function testModalBackground() {
 async function resizeWorkspaceBackground() {
     try {
         const mode = await getSetting('WorkSpaceBGLayout') || 'stretch';
+        const offsetX = await getSetting('WorkSpaceBGOffsetX') || 0;
+        const offsetY = await getSetting('WorkSpaceBGOffsetY') || 0;
         const workspace = document.querySelector('[class*=gui_blocks-wrapper]');
         const bgImage = document.querySelector('.sa-background-image');
         if (bgImage && workspace) {
@@ -1107,7 +1166,9 @@ async function resizeWorkspaceBackground() {
                 image: bgImage,
                 containerWidth: workspace.clientWidth,
                 containerHeight: workspace.clientHeight,
-                mode
+                mode,
+                offsetX,
+                offsetY
             });
         } else {
             console.warn('Cannot find background image element, try to spawn again');
