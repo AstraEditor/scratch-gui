@@ -1,12 +1,232 @@
 import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
+import SideBar from "../../ui/side-bar/side-bar.js";
 import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 import { setup as setupDebugger, setPaused as setPausedDebugger } from "../debugger/module.js";
 
 export default async function ({ addon, console, msg }) {
   const vm = addon.tab.traps.vm;
-  
+
   // 初始化debugger模块
   setupDebugger(addon);
+
+  // Terminal 位置类型
+  const POSITION_TYPES = {
+    SIDEBAR: 'sidebar',
+    BOTTOM_PANEL: 'bottom',
+    WINDOW: 'window'
+  };
+
+  // 当前 Terminal 位置
+  let currentPosition = POSITION_TYPES.BOTTOM_PANEL;
+
+  // 检测是否启用 VSCode 布局
+  function isVSCodeLayoutEnabled() {
+    try {
+      const settings = localStorage.getItem("AESettings");
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        return parsed.EnableVSCodeLayout === true;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return false;
+  }
+
+  // 独立窗口相关变量
+  let floatingWindow = null;
+  let isDraggingWindow = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+  let windowCloseButton = null;
+
+  // 创建独立窗口
+  function createFloatingWindow() {
+    if (floatingWindow) return floatingWindow;
+
+    floatingWindow = document.createElement("div");
+    floatingWindow.className = "sa-terminal-floating-window";
+    floatingWindow.style.cssText = `
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 600px;
+      height: 400px;
+      min-width: 400px;
+      min-height: 300px;
+      background-color: var(--ui-white);
+      border: 1px solid var(--ui-black-transparent);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `;
+
+    // 创建关闭按钮
+    windowCloseButton = document.createElement("button");
+    windowCloseButton.className = "sa-terminal-window-close-button";
+    windowCloseButton.textContent = "×";
+    windowCloseButton.style.cssText = `
+      background: none;
+      border: none;
+      color: inherit;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      margin-left: 8px;
+    `;
+    windowCloseButton.style.display = "none"; // 默认隐藏，只在独立窗口模式显示
+    windowCloseButton.addEventListener("click", () => {
+      toggleTerminal(false);
+    });
+
+    document.body.appendChild(floatingWindow);
+    return floatingWindow;
+  }
+
+  function handleWindowDrag(e) {
+    if (!isDraggingWindow) return;
+    const x = e.clientX - dragOffsetX;
+    const y = e.clientY - dragOffsetY;
+    floatingWindow.style.left = Math.max(0, x) + "px";
+    floatingWindow.style.top = Math.max(0, y) + "px";
+  }
+
+  function stopWindowDrag() {
+    isDraggingWindow = false;
+    document.removeEventListener("mousemove", handleWindowDrag);
+    document.removeEventListener("mouseup", stopWindowDrag);
+  }
+
+  // 切换 Terminal 位置
+  function switchTerminalPosition(newPosition) {
+    if (newPosition === currentPosition) return;
+
+    // 先关闭当前位置
+    closeTerminalAtPosition(currentPosition);
+
+    // 切换到新位置
+    currentPosition = newPosition;
+    openTerminalAtPosition(newPosition);
+
+    // 更新切换按钮状态
+    updatePositionSwitchButton();
+
+    // 更新启用按钮位置
+    updateToggleButtonPosition();
+
+    // 发送 resize 事件
+    window.dispatchEvent(new Event("resize"));
+  }
+
+  // 在指定位置打开 Terminal
+  function openTerminalAtPosition(position) {
+    switch (position) {
+      case POSITION_TYPES.SIDEBAR:
+        SideBar.switchTo('terminal');
+        break;
+      case POSITION_TYPES.BOTTOM_PANEL:
+        BottomPanel.switchTo('terminal');
+        break;
+      case POSITION_TYPES.WINDOW:
+        const window = createFloatingWindow();
+        window.style.display = "flex";
+
+        // 添加 terminalContainer 到窗口
+        window.appendChild(terminalContainer);
+        terminalContainer.style.flex = "1";
+        terminalContainer.style.overflow = "auto";
+
+        // 在独立窗口模式下，terminalHeader 作为拖拽标题栏
+        terminalHeader.style.cursor = "move";
+        terminalHeader.style.userSelect = "none";
+
+        // 显示关闭按钮
+        if (windowCloseButton) {
+          windowCloseButton.style.display = "block";
+          terminalHeader.appendChild(windowCloseButton);
+        }
+
+        // 启用拖拽功能
+        terminalHeader.addEventListener("mousedown", handleWindowDragStart);
+        break;
+    }
+  }
+
+  // 关闭指定位置的 Terminal
+  function closeTerminalAtPosition(position) {
+    switch (position) {
+      case POSITION_TYPES.SIDEBAR:
+        SideBar.close();
+        break;
+      case POSITION_TYPES.BOTTOM_PANEL:
+        BottomPanel.close();
+        break;
+      case POSITION_TYPES.WINDOW:
+        if (floatingWindow) {
+          if (terminalContainer.parentNode === floatingWindow) {
+            floatingWindow.removeChild(terminalContainer);
+          }
+          floatingWindow.style.display = "none";
+
+          // 恢复 terminalHeader 样式
+          terminalHeader.style.cursor = "";
+          terminalHeader.style.userSelect = "";
+
+          // 隐藏并移除关闭按钮
+          if (windowCloseButton && windowCloseButton.parentNode === terminalHeader) {
+            windowCloseButton.style.display = "none";
+            terminalHeader.removeChild(windowCloseButton);
+          }
+
+          // 禁用拖拽功能
+          terminalHeader.removeEventListener("mousedown", handleWindowDragStart);
+        }
+        break;
+    }
+  }
+
+  // 处理窗口拖拽开始
+  function handleWindowDragStart(e) {
+    // 不在拖拽按钮上开始拖拽
+    if (e.target.tagName === "BUTTON") return;
+
+    isDraggingWindow = true;
+    dragOffsetX = e.clientX - floatingWindow.offsetLeft;
+    dragOffsetY = e.clientY - floatingWindow.offsetTop;
+    document.addEventListener("mousemove", handleWindowDrag);
+    document.addEventListener("mouseup", stopWindowDrag);
+  }
+
+  // 切换 Terminal 显示/隐藏
+  function toggleTerminal(show) {
+    if (show === undefined) {
+      show = !isTerminalVisible();
+    }
+
+    if (show) {
+      openTerminalAtPosition(currentPosition);
+    } else {
+      closeTerminalAtPosition(currentPosition);
+    }
+  }
+
+  // 检查 Terminal 是否可见
+  function isTerminalVisible() {
+    switch (currentPosition) {
+      case POSITION_TYPES.SIDEBAR:
+        return SideBar.isOpen() && SideBar.getActivePlugin() === 'terminal';
+      case POSITION_TYPES.BOTTOM_PANEL:
+        return BottomPanel.isOpen() && BottomPanel.getActivePlugin() === 'terminal';
+      case POSITION_TYPES.WINDOW:
+        return floatingWindow && floatingWindow.style.display !== "none";
+      default:
+        return false;
+    }
+  }
 
   // 等待项目加载完成
   await new Promise((resolve, reject) => {
@@ -110,14 +330,108 @@ export default async function ({ addon, console, msg }) {
   continueButton.innerHTML = "▶ 继续执行";
   // continueButton.title = "继续运行";
   continueButton.style.display = "none";
-  
+
   continueButton.addEventListener("click", () => {
     setPausedDebugger(false);
     continueButton.style.display = "none";
   });
 
+  // 创建位置切换按钮容器
+  const positionSwitchContainer = document.createElement("div");
+  positionSwitchContainer.className = "sa-terminal-position-switch";
+  positionSwitchContainer.style.cssText = `
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  `;
+
+  // 创建位置切换按钮
+  const createPositionButton = (type, icon, title) => {
+    const button = document.createElement("button");
+    button.className = "sa-terminal-position-button";
+    button.innerHTML = icon;
+    button.title = title;
+    button.dataset.position = type;
+    button.style.cssText = `
+      background: none;
+      border: 1px solid var(--ui-black-transparent);
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--ui-text-primary);
+      transition: all 0.2s;
+    `;
+
+    button.addEventListener("mouseenter", () => {
+      if (button.dataset.position !== currentPosition) {
+        button.style.backgroundColor = "var(--ui-primary-transparent)";
+      }
+    });
+
+    button.addEventListener("mouseleave", () => {
+      if (button.dataset.position !== currentPosition) {
+        button.style.backgroundColor = "none";
+      }
+    });
+
+    button.addEventListener("click", () => {
+      const targetPosition = button.dataset.position;
+      if (targetPosition !== currentPosition) {
+        switchTerminalPosition(targetPosition);
+      }
+    });
+
+    return button;
+  };
+
+  const sidebarButton = createPositionButton(
+    POSITION_TYPES.SIDEBAR,
+    "╠",
+    "切换到侧边栏"
+  );
+
+  const bottomButton = createPositionButton(
+    POSITION_TYPES.BOTTOM_PANEL,
+    "╩",
+    "切换到底部面板"
+  );
+
+  const windowButton = createPositionButton(
+    POSITION_TYPES.WINDOW,
+    "⬚",
+    "切换到独立窗口"
+  );
+
+  positionSwitchContainer.appendChild(sidebarButton);
+  positionSwitchContainer.appendChild(bottomButton);
+  positionSwitchContainer.appendChild(windowButton);
+
+  // 更新位置切换按钮状态
+  function updatePositionSwitchButton() {
+    const buttons = positionSwitchContainer.querySelectorAll(".sa-terminal-position-button");
+    buttons.forEach(button => {
+      if (button.dataset.position === currentPosition) {
+        button.style.backgroundColor = "var(--ui-primary)";
+        button.style.color = "white";
+        button.style.borderColor = "var(--ui-primary)";
+      } else {
+        button.style.backgroundColor = "";
+        button.style.color = "";
+        button.style.borderColor = "var(--ui-black-transparent)";
+      }
+    });
+
+    // 更新侧边栏按钮的可用状态
+    const useVSCodeLayout = isVSCodeLayoutEnabled();
+    sidebarButton.disabled = !useVSCodeLayout;
+    sidebarButton.style.opacity = useVSCodeLayout ? "1" : "0.3";
+    sidebarButton.style.cursor = useVSCodeLayout ? "pointer" : "not-allowed";
+  }
+
   terminalHeader.appendChild(terminalTitle);
   terminalHeader.appendChild(continueButton);
+  terminalHeader.appendChild(positionSwitchContainer);
   terminalContainer.appendChild(terminalHeader);
 
   // 创建终端输出区域
@@ -693,7 +1007,33 @@ export default async function ({ addon, console, msg }) {
 
   addon.tab.displayNoneWhileDisabled(toggleButton);
 
+  // 创建舞台头部的 Terminal 按钮（用于独立窗口模式）
+  const stageHeaderButton = document.createElement("div");
+  stageHeaderButton.className = "sa-terminal-stage-header-button";
+  const stageHeaderBtnInner = document.createElement("div");
+  stageHeaderBtnInner.className = addon.tab.scratchClass("button_outlined-button", "stage-header_stage-button");
+  const stageHeaderBtnContent = document.createElement("div");
+  stageHeaderBtnContent.className = addon.tab.scratchClass("button_content");
+  const stageHeaderBtnIcon = document.createElement("img");
+  stageHeaderBtnIcon.className = addon.tab.scratchClass("stage-header_stage-button-icon");
+  stageHeaderBtnIcon.draggable = false;
+  stageHeaderBtnIcon.src = icon();
+  stageHeaderBtnIcon.style.filter = "grayscale(100%)";
+  stageHeaderBtnContent.appendChild(stageHeaderBtnIcon);
+  stageHeaderBtnInner.appendChild(stageHeaderBtnContent);
+  stageHeaderButton.appendChild(stageHeaderBtnInner);
+
   // 注册面板插件
+  SideBar.register('terminal', terminalContainer, {
+    onActivate: () => {
+      terminalInput.focus();
+      toggleButton.classList.add("sa-terminal-toggle-active");
+    },
+    onDeactivate: () => {
+      toggleButton.classList.remove("sa-terminal-toggle-active");
+    }
+  });
+
   BottomPanel.register('terminal', terminalContainer, {
     onActivate: () => {
       terminalInput.focus();
@@ -714,14 +1054,17 @@ export default async function ({ addon, console, msg }) {
     }
   });
 
-  // 按钮点击事件
-  toggleButton.addEventListener("click", () => {
-    if (BottomPanel.isOpen() && BottomPanel.getActivePlugin() === 'terminal') {
-      BottomPanel.close();
+  // 按钮点击事件（通用）
+  const handleToggleButtonClick = () => {
+    if (isTerminalVisible()) {
+      toggleTerminal(false);
     } else {
-      BottomPanel.switchTo('terminal');
+      toggleTerminal(true);
     }
-  });
+  };
+
+  toggleButton.addEventListener("click", handleToggleButtonClick);
+  stageHeaderButton.addEventListener("click", handleToggleButtonClick);
 
   // 监听 Bottom Panel 打开事件，确保 Terminal 激活时移除边框
   window.addEventListener('bottomPanelOpened', () => {
@@ -733,7 +1076,51 @@ export default async function ({ addon, console, msg }) {
     }
   });
 
-  // 将按钮添加到BottomPanel的按钮栏
+  // 更新启用按钮位置
+  function updateToggleButtonPosition() {
+    // 先移除所有位置的按钮
+    if (toggleButton.parentNode) {
+      toggleButton.parentNode.removeChild(toggleButton);
+    }
+    if (stageHeaderButton.parentNode) {
+      stageHeaderButton.parentNode.removeChild(stageHeaderButton);
+    }
+
+    // 根据当前位置添加按钮
+    switch (currentPosition) {
+      case POSITION_TYPES.SIDEBAR:
+        // Sidebar 模式：添加到 Sidebar 按钮栏（如果存在）
+        // 注意：Sidebar 目前可能没有按钮栏，这里暂时跳过
+        // 如果将来 Sidebar 添加按钮栏，可以在这里添加
+        break;
+      case POSITION_TYPES.BOTTOM_PANEL:
+        // Bottom Panel 模式：添加到 Bottom Panel 按钮栏
+        const bottomBarButtonBar = BottomPanel.getButtonBar();
+        if (bottomBarButtonBar) {
+          bottomBarButtonBar.appendChild(toggleButton);
+        }
+        break;
+      case POSITION_TYPES.WINDOW:
+        // 独立窗口模式：添加到舞台头部
+        addon.tab.appendToSharedSpace({
+          space: "stageHeader",
+          element: stageHeaderButton,
+          order: 0
+        });
+        break;
+    }
+
+    // 更新按钮激活状态
+    if (isTerminalVisible()) {
+      toggleButton.classList.add("sa-terminal-toggle-active");
+      stageHeaderBtnInner.classList.add("sa-terminal-toggle-active");
+    } else {
+      toggleButton.classList.remove("sa-terminal-toggle-active");
+      stageHeaderBtnInner.classList.remove("sa-terminal-toggle-active");
+    }
+  }
+
+  // 将按钮添加到BottomPanel的按钮栏（初始位置）
   while (true) {
     const buttonBar = BottomPanel.getButtonBar();
     if (buttonBar) {
@@ -774,4 +1161,25 @@ export default async function ({ addon, console, msg }) {
 
   // 监听主题变化
   window.addEventListener('tw:theme-changed', updateButtonTextColor);
+
+  // 监听布局变化
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'AESettings') {
+      const newSettings = JSON.parse(e.newValue);
+      const oldSettings = JSON.parse(e.oldValue);
+
+      if (newSettings.EnableVSCodeLayout !== oldSettings.EnableVSCodeLayout) {
+        // 更新侧边栏按钮的可用状态
+        updatePositionSwitchButton();
+
+        // 如果当前在侧边栏模式且布局被禁用，切换到底部面板
+        if (currentPosition === POSITION_TYPES.SIDEBAR && !newSettings.EnableVSCodeLayout) {
+          switchTerminalPosition(POSITION_TYPES.BOTTOM_PANEL);
+        }
+      }
+    }
+  });
+
+  // 初始化位置切换按钮状态
+  updatePositionSwitchButton();
 }
