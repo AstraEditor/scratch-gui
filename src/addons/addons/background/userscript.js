@@ -190,7 +190,7 @@ function scheduleModalBackgroundUpdate() {
     modalBackgroundUpdateScheduled = true;
     window.requestAnimationFrame(async () => {
         modalBackgroundUpdateScheduled = false;
-        await testModalBackground();
+        await addModalBackground();
     });
 }
 
@@ -522,7 +522,7 @@ function showBgModal(addon, msg) {
     content.classList.add('sa-background-content');
 
     addContext(content, msg).then(() => {
-        testModalBackground();
+        addModalBackground();
     });
 
     backdrop.addEventListener("click", remove);
@@ -606,7 +606,7 @@ async function addContext(modal, msg) {
     const createHeader = (title) => {
         const headerDiv = document.createElement('div');
         headerDiv.className = 'sa-background-section-header';
-                
+
         const titleElement = document.createElement('span');
         titleElement.className = 'sa-background-section-title';
         titleElement.textContent = title;
@@ -616,7 +616,7 @@ async function addContext(modal, msg) {
 
         headerDiv.appendChild(titleElement);
         headerDiv.appendChild(divider);
-        
+
         return headerDiv;
     };
 
@@ -718,7 +718,7 @@ async function addContext(modal, msg) {
                     await applySettings('ModalBGLink', modalSettings.link);
                     await applySettings('ModalBGName', file.name);
                     await applySettings('EnableModalBG', modalSettings.enabled);
-                    await testModalBackground();
+                    await addModalBackground();
                     resolve();
                 } catch (err) {
                     reject(err);
@@ -738,7 +738,7 @@ async function addContext(modal, msg) {
         await applySettings('EnableModalBG', modalSettings.enabled);
         await applySettings('ModalBGLink', null);
         await applySettings('ModalBGName', null);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalImageLayout = document.createElement('select');
@@ -759,7 +759,7 @@ async function addContext(modal, msg) {
     modalImageLayout.addEventListener('change', async (e) => {
         modalSettings.layout = e.target.value;
         await applySettings('ModalBGLayout', modalSettings.layout);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalBlur = document.createElement('input');
@@ -771,7 +771,7 @@ async function addContext(modal, msg) {
     modalBlur.addEventListener('input', async () => {
         modalSettings.blur = Number(modalBlur.value);
         await applySettings('ModalBGBlur', modalSettings.blur);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalOpacity = document.createElement('input');
@@ -783,7 +783,7 @@ async function addContext(modal, msg) {
     modalOpacity.addEventListener('input', async () => {
         modalSettings.opacity = Number(modalOpacity.value) / 100;
         await applySettings('ModalBGOpacity', modalSettings.opacity);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalOffsetX = document.createElement('input');
@@ -796,7 +796,7 @@ async function addContext(modal, msg) {
     modalOffsetX.addEventListener('input', async () => {
         modalSettings.offsetX = Number(modalOffsetX.value) || 0;
         await applySettings('ModalBGOffsetX', modalSettings.offsetX);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalOffsetY = document.createElement('input');
@@ -809,7 +809,7 @@ async function addContext(modal, msg) {
     modalOffsetY.addEventListener('input', async () => {
         modalSettings.offsetY = Number(modalOffsetY.value) || 0;
         await applySettings('ModalBGOffsetY', modalSettings.offsetY);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalSize = document.createElement('input');
@@ -823,7 +823,7 @@ async function addContext(modal, msg) {
         const value = Number(modalSize.value);
         modalSettings.modalSize = Number.isFinite(value) ? value : 100;
         await applySettings('ModalBGSize', modalSettings.modalSize);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalAlignX = document.createElement('select');
@@ -842,7 +842,7 @@ async function addContext(modal, msg) {
     modalAlignX.addEventListener('change', async (e) => {
         modalSettings.alignX = e.target.value;
         await applySettings('ModalBGAlignX', modalSettings.alignX);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     const modalAlignY = document.createElement('select');
@@ -861,7 +861,7 @@ async function addContext(modal, msg) {
     modalAlignY.addEventListener('change', async (e) => {
         modalSettings.alignY = e.target.value;
         await applySettings('ModalBGAlignY', modalSettings.alignY);
-        await testModalBackground();
+        await addModalBackground();
     });
 
     // Animation Duration
@@ -1069,7 +1069,7 @@ function getModalBackgroundPosition(alignX, alignY, offsetX, offsetY) {
     return `${normalize(alignX, offsetX, 'x')} ${normalize(alignY, offsetY, 'y')}`;
 }
 
-async function testModalBackground() {
+async function addModalBackground() {
     try {
         const config = await getModalBackgroundConfig();
         const modalContents = Array.from(document.querySelectorAll('[class*=\"modal_content\"]'));
@@ -1146,7 +1146,7 @@ async function testModalBackground() {
             bg.style.setProperty('--sa-modal-bg-pad-bottom', modalStyle.paddingBottom);
             bg.style.setProperty('--sa-modal-bg-pad-left', modalStyle.paddingLeft);
 
-            bg.style.backgroundColor = 'var(--ui-secondary) !important';
+            bg.style.backgroundColor = 'var(--ui-modal-background) !important';
         });
 
     } catch (e) {

@@ -1,7 +1,7 @@
 const version = {
-    version: '1.1.3',
+    version: '1.2.0',
     date: '2026-03-23',
-    webBuild: '1',
+    webBuild: '3',
     webUpdate: [
         '修复Monitor的一系列问题',
         '简单调整了UI',
