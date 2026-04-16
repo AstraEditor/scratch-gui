@@ -5,6 +5,9 @@ ignoredBuiltDependencies:
   - chromedriver
   - core-js
 onlyBuiltDependencies:
-  - scratch-blocks
-  - scratch-vm
+  - '@parcel/watcher'
+  - core-js-pure
   - react-markdown
+  - scratch-blocks
+  - scratch-extension-editor
+  - scratch-vm

@@ -37,7 +37,7 @@
         }
 
         .splash-screen[data-theme="dark"] {
-          background-color: #333;
+          background-color: #000;
           color: white;
         }
 
@@ -137,13 +137,17 @@
 
         .splash-errors {
           font-family: monospace;
-          max-width: 40%;
+          max-height: 50vh;
+          max-width: 50vw;
+          overflow: auto;
+          z-index: 9999;
           margin-left: auto;
           margin-top: 20px;
           margin-bottom: 20px;
           background-color: #ffffff44;
           padding: 5px;
           border-radius: 10px;
+          position: relative;
         }
 
         .splash-error-list {
@@ -173,7 +177,7 @@
         <h1>
           <%= htmlWebpackPlugin.options.APP_NAME %> requires JavaScript
         </h1>
-        <p>Consider using <a href="https://desktop.turbowarp.org/">TurboWarp Desktop</a> if you are afraid of remote
+        <p>Consider using <a href="https://editors.astras.top/">AstraEditor Desktop</a> if you are afraid of remote
           JavaScript.</p>
       </div>
     </div>
@@ -186,9 +190,11 @@
       <div class="circle" id="circle_3"></div>
     </div>
     <div>
-      <div class="splash-error-title" hidden><span class="splash-error-title-text1">Something went wrong. </span><a class="splash-error-link"
-          href="https://github.com/AstraEditor/scratch-gui/issues" target="_blank" rel="noreferrer">Please report</a>
-        <span class="splash-error-title-text2">with the information below.</span></div>
+      <div class="splash-error-title" hidden><span class="splash-error-title-text1">Something went wrong. </span><a
+          class="splash-error-link" href="https://github.com/AstraEditor/scratch-gui/issues" target="_blank"
+          rel="noreferrer">Please report</a>
+        <span class="splash-error-title-text2">with the information below.</span>
+      </div>
       <div class="splash-errors" hidden></div>
       <button class="splash-reset" hidden>Click here to reset caches (can fix some errors)</button>
     </div>
@@ -278,11 +284,24 @@
         theme = 'dark';
       } else if (themeSetting) {
         try {
+          theme = 'dark'; // 默认是dark配色
           var parsed = JSON.parse(themeSetting);
           if (parsed.accent === 'purple') {
             accent = '#855cd6';
           } else if (parsed.accent === 'blue') {
             accent = '#4c97ff';
+          } else if (parsed.accent === 'red') {
+            accent = '#ff4c4c';
+          } else if (parsed.accent === 'rainbow') {
+            accent = '#ff4c4c';
+          } else if (parsed.accent === 'ce') {
+            accent = '#ff9b86';
+          } else if (parsed.accent === 'ty') {
+            accent = '#66ccff';
+          } else if (parsed.accent === 'miku') {
+            accent = '#39c5bb';
+          } else if (parsed.accent === 'astraeditor') {
+            accent = '#0099ff';
           } else {
             accent = '#0099ff';
           }
@@ -302,6 +321,7 @@
       var logo = document.getElementsByClassName('circle');
       splash.setAttribute('data-theme', theme);
 
+      console.log(theme)
       if (theme !== 'dark' && !!theme) {
         for (let element = 0; element < logo.length; element += 1) {
           logo[element].style.backgroundColor = '#ffffff50';
@@ -314,9 +334,11 @@
           splash.style.color = accent;
           <% } %>
        } else {
+        splash.style.backgroundColor = '#000000';
+        splash.style.color = 'white';
         for (let element = 0; element < logo.length; element += 1) {
-          logo[element].style.backgroundColor = accent + '50';
-          logo[element].style.borderColor = accent + '10';
+          logo[element].style.backgroundColor = '#ffffff50';
+          logo[element].style.borderColor = '#ffffff10';
         };
       }
 
@@ -345,6 +367,8 @@
         splashError.appendChild(el);
         logoAll.style.transform = 'scale(6, 6) translate(20px, 40px)';
         splash.style.backgroundColor = '#ff8888';
+        splash.style.color = 'white';
+        splashErrorTitle.style.color = 'white';
         for (let element = 0; element < logo.length; element += 1) {
           logo[element].style.backgroundColor = '#ffffff50';
           logo[element].style.borderColor = '#ffffff10';

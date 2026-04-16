@@ -1,3 +1,4 @@
+import deleteIcon from './delete.svg';
 /**
  * IndexedDB by AI （嘿嘿）
  */
@@ -555,8 +556,9 @@ async function addContext(modal, msg) {
         applySettings('EnableWorkSpaceBG', true);
     });
     const workspaceClearButton = document.createElement("button");
-    workspaceClearButton.className = "sa-background-add";
-    workspaceClearButton.textContent = msg("clear");
+    workspaceClearButton.className = "sa-background-clear";
+    const base64Data = deleteIcon.split(',')[1]; //Base64
+    workspaceClearButton.innerHTML = atob(base64Data);
     workspaceClearButton.addEventListener('click', async () => {
         await bgDB.deleteWallpaper('WorkSpaceBG');
         await applySettings('EnableWorkSpaceBG', false);
@@ -905,8 +907,6 @@ async function addContext(modal, msg) {
     // Rotation UI
     const rotationDiv = document.createElement('div');
     rotationDiv.className = 'sa-background-rotation-wrapper';
-    const rotationTitle = document.createElement('h2');
-    rotationTitle.textContent = msg('rotation');
 
     const rotationToggleLabel = document.createElement('label');
     rotationToggleLabel.className = 'sa-background-rotation-label';
@@ -954,17 +954,24 @@ async function addContext(modal, msg) {
         const currentWallpaperId = activeWallpaper ? activeWallpaper.id : await getSetting('currentWallpaperId');
         const wallpapers = await bgDB.listWallpapers();
         wallpaperListContainer.innerHTML = '';
-        wallpapers.forEach((wallpaper) => {
-            const item = document.createElement('div');
-            item.className = 'sa-background-wallpaper-item';
+        wallpapers.forEach((wallpaper, index) => {
+            const right = document.createElement('div');
+            right.className = 'sa-background-wallpaper-item';
 
             const title = document.createElement('span');
             title.textContent = wallpaper.name || wallpaper.id;
             title.className = wallpaper.enabled ? 'sa-background-wallpaper-title' : 'sa-background-wallpaper-title disabled';
 
-            const activeBadge = document.createElement('span');
-            activeBadge.textContent = msg('active');
-            activeBadge.className = 'sa-background-wallpaper-active';
+            const selectButton = document.createElement('button');
+            if (wallpaper.id === currentWallpaperId) selectButton.className = 'sa-background-wallpaper-active';
+            else selectButton.className = 'sa-background-wallpaper-not-active';
+            selectButton.textContent = msg('active');
+            selectButton.disabled = wallpaper.id === currentWallpaperId;
+            selectButton.addEventListener('click', async () => {
+                await setCurrentWallpaperId(wallpaper.id);
+                await refreshWallpaperList();
+            });
+
 
             const enabledLabel = document.createElement('label');
             enabledLabel.className = 'sa-background-wallpaper-enabled-label';
@@ -977,15 +984,6 @@ async function addContext(modal, msg) {
             });
             enabledLabel.appendChild(enabledInput);
 
-            const selectButton = document.createElement('button');
-            selectButton.className = 'sa-background-add';
-            selectButton.textContent = msg('set-current');
-            selectButton.disabled = wallpaper.id === currentWallpaperId;
-            selectButton.addEventListener('click', async () => {
-                await setCurrentWallpaperId(wallpaper.id);
-                await refreshWallpaperList();
-            });
-
             const deleteButton = document.createElement('button');
             deleteButton.textContent = '×';
             deleteButton.className = 'sa-background-delete';
@@ -994,16 +992,26 @@ async function addContext(modal, msg) {
                 await refreshWallpaperList();
             });
 
-            if (wallpaper.id === currentWallpaperId) item.appendChild(activeBadge);
-            item.appendChild(enabledLabel);
-            item.appendChild(title);
-            if (wallpaper.enabled) item.appendChild(selectButton);
-            item.appendChild(deleteButton);
-            wallpaperListContainer.appendChild(item);
+            const left = document.createElement('div');
+            left.className = 'sa-background-left'
+
+            left.appendChild(selectButton);
+
+            left.appendChild(enabledLabel);
+            left.appendChild(title);
+            right.appendChild(deleteButton);
+
+            const content = document.createElement('div');
+            content.className = 'sa-background-list-content';
+            content.style.animationDelay = `${index * 100}ms`;
+            content.style.opacity = 0;
+            content.appendChild(left)
+            content.appendChild(right);
+
+            wallpaperListContainer.appendChild(content)
         });
     }
 
-    rotationDiv.appendChild(rotationTitle);
     rotationDiv.appendChild(animationDurationText);
     rotationDiv.appendChild(animationDuration);
     rotationDiv.appendChild(rotationToggleLabel);
@@ -1014,8 +1022,6 @@ async function addContext(modal, msg) {
     // All
     workspaceDiv.appendChild(workspaceTitle);
     workspaceDiv.appendChild(workspaceImageLayout);
-    workspaceDiv.appendChild(workspaceAddButton);
-    workspaceDiv.appendChild(workspaceClearButton);
     workspaceDiv.appendChild(workspaceBlurText);
     workspaceDiv.appendChild(workspaceBlur);
     workspaceDiv.appendChild(workspaceOpacityText);
@@ -1024,7 +1030,12 @@ async function addContext(modal, msg) {
     workspaceDiv.appendChild(workspaceOffsetX);
     workspaceDiv.appendChild(workspaceOffsetYText);
     workspaceDiv.appendChild(workspaceOffsetY);
-
+    const workspaceAddClearWrapper = document.createElement('div');
+    workspaceAddClearWrapper.className = 'sa-background-add-clear-wrapper';
+    workspaceAddClearWrapper.appendChild(workspaceAddButton);
+    workspaceAddClearWrapper.appendChild(workspaceClearButton);
+    workspaceDiv.appendChild(workspaceAddClearWrapper)
+    
     modalDiv.appendChild(modalTitle);
     modalDiv.appendChild(modalImageLayout);
     modalDiv.appendChild(modalAddButton);

@@ -1,6 +1,7 @@
-:root{
+:root {
     --enable-workspace-background: transparent;
 }
+
 .sa-background-popup {
     box-sizing: border-box;
     width: 48vw;
@@ -9,60 +10,90 @@
     flex: 1;
     flex-direction: column;
 }
-.sa-background-content{
+
+.sa-background-content,
+.sa-background-list-content {
     padding: 1rem;
     overflow-y: auto !important;
 }
-.sa-background-blur-wrapper{
+
+.sa-background-blur-wrapper {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
-.sa-background-wallpaper-active{
+
+.sa-background-wallpaper-active {
     margin-right: 4px;
     background-color: var(--ui-secondary);
     padding: 5px;
     border-radius: 5px;
+    width: 50px;
+    text-align: center;
+    border: none;
 }
-.sa-background-wallpaper-title{
+
+.sa-background-wallpaper-not-active {
+    margin-right: 4px;
+    background-color: color-mix(in srgb, var(--ui-secondary) 20%, transparent 80%);
+    padding: 5px;
+    width: 50px;
+    border-radius: 5px;
+    border: none;
+}
+
+.sa-background-wallpaper-title {
     margin: 0 4px;
 }
-.sa-background-wallpaper-enabled-label{
+
+.sa-background-wallpaper-list {
+    padding: 10px;
+}
+
+.sa-background-wallpaper-enabled-label {
     align-items: center;
     margin: 0 4px;
 }
-.sa-background-wallpaper-title.disabled{
+
+.sa-background-wallpaper-title.disabled {
     opacity: 0.5;
 }
-.sa-background-delete{
+
+.sa-background-delete {
     padding: 5px 10px;
     border-radius: 100px;
     border: none;
 }
-.sa-background-wallpaper-item{
+
+.sa-background-wallpaper-item {
     display: flex;
     align-items: center;
     gap: 4px;
     margin-bottom: 5px;
 }
-.sa-background-offset{
+
+.sa-background-offset {
     max-width: 8rem;
 }
+
 /*让工作区透明*/
-.blocklySvg{
+.blocklySvg {
     background-color: var(--enable-workspace-background) !important;
 }
+
 /*不让左边那框产生“空隙”（原来的颜色是透明的不知道咋想的）*/
-.injectionDiv{
+.injectionDiv {
     border: 1px solid var(--ui-secondary) !important
 }
-.sa-modal-background-enabled{
+
+.sa-modal-background-enabled {
     position: relative;
     isolation: isolate;
     overflow: hidden;
     background-color: color-mix(in srgb, var(--ui-modal-background) 72%, transparent) !important;
 }
-.sa-modal-background-enabled::before{
+
+.sa-modal-background-enabled::before {
     content: "";
     position: sticky;
     top: calc(var(--sa-modal-bg-pad-top, 0px) * -1);
@@ -85,7 +116,8 @@
     pointer-events: none;
     z-index: 0;
 }
-.sa-modal-background-enabled.sa-modal-background-fullscreen::before{
+
+.sa-modal-background-enabled.sa-modal-background-fullscreen::before {
     position: absolute;
     top: calc((var(--sa-modal-bg-pad-top, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
     right: calc((var(--sa-modal-bg-pad-right, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
@@ -95,18 +127,22 @@
     height: auto;
     margin: 0;
 }
-.sa-modal-background-enabled > *{
+
+.sa-modal-background-enabled>* {
     position: relative;
     z-index: 1;
 }
+
 .sa-modal-background-enabled[class*="_body"],
-.sa-modal-background-enabled > [class*="_body"]{
+.sa-modal-background-enabled>[class*="_body"] {
     background-color: transparent !important;
 }
-.sa-modal-background-enabled > [class*="_workspace"]{
+
+.sa-modal-background-enabled>[class*="_workspace"] {
     background-color: transparent !important;
 }
-.sa-modal-background-enabled .blocklySvg{
+
+.sa-modal-background-enabled .blocklySvg {
     background-color: transparent !important;
 }
 
@@ -118,8 +154,55 @@
     margin: 0.5rem 0 0 0;
     font-weight: bold;
 }
+
 .sa-background-divider {
     flex-grow: 1;
     margin-left: 1rem;
     border-top: 1px dashed var(--ui-tertiary);
+}
+
+.sa-background-wallpaper-list {
+    border: 1px dashed var(--ui-tertiary);
+    border-radius: 5px;
+}
+
+.sa-background-content,
+.sa-background-list-content {
+    display: flex;
+}
+
+.sa-background-content {
+    justify-content: center;
+}
+
+.sa-background-list-content {
+    justify-content: space-between;
+}
+
+.sa-background-list-content {
+    animation: sa-background-content-enter 0.3s cubic-bezier(0, 0, 0, 1) forwards;
+}
+
+@keyframes sa-background-content-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+        padding-top: 0;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sa-background-clear{
+    color: var(--ui-modal-foreground);
+    display: flex;
+    align-items: center;
+}
+
+.sa-background-add-clear-wrapper{
+    display: flex;
+    flex: 1;
 }

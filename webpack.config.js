@@ -27,6 +27,12 @@ const htmlWebpackPluginCommon = {
 
 // When this changes, the path for all JS files will change, bypassing any HTTP caches
 const CACHE_EPOCH = 'pentapod';
+const refractorPath = request => path.resolve(
+    __dirname,
+    request === 'core' || request === 'all' ?
+        `node_modules/refractor/lib/${request}.js` :
+        `node_modules/refractor/lang/${request}.js`
+);
 
 const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -130,6 +136,9 @@ const base = {
         }]
     },
     plugins: [
+        new webpack.NormalModuleReplacementPlugin(/^refractor\/(.+)$/, resource => {
+            resource.request = refractorPath(resource.request.slice('refractor/'.length));
+        }),
         new CopyWebpackPlugin({
             patterns: [
                 {

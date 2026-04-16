@@ -1,4 +1,4 @@
-import {defineMessages} from 'react-intl';
+import { defineMessages } from 'react-intl';
 import sharedMessages from '../shared-messages';
 
 let messages = defineMessages({
@@ -9,7 +9,7 @@ let messages = defineMessages({
     }
 });
 
-messages = {...messages, ...sharedMessages};
+messages = { ...messages, ...sharedMessages };
 
 // use the default message if a translation function is not passed
 const defaultTranslator = msgObj => msgObj.defaultMessage;
@@ -39,7 +39,7 @@ const projectData = translateFunction => {
                 costumes: [
                     {
                         assetId: 'cd21514d0531fdffb22204e0ec5ed84a',
-                        name: translator(messages.backdrop, {index: 1}),
+                        name: translator(messages.backdrop, { index: 1 }),
                         md5ext: 'cd21514d0531fdffb22204e0ec5ed84a.svg',
                         dataFormat: 'svg',
                         rotationCenterX: 240,
@@ -56,7 +56,17 @@ const projectData = translateFunction => {
                 lists: {},
                 broadcasts: {},
                 blocks: {},
-                comments: {},
+                comments: {
+                    abc: {
+                        "text": "#README #欢迎！\n\n# 欢迎使用AstraEditor！\n\n...还能写什么",
+                        "x": 0,
+                        "y": 0,
+                        "width": 891.8519287109375,
+                        "height": 585.1852416992188,
+                        "minimized": false,
+                        "blockId": null
+                    }
+                },
                 currentCostume: 0,
                 costumes: [
                     {

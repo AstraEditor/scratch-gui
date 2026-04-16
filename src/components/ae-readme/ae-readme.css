@@ -10,12 +10,25 @@
 }
 .body {
     background: $ui-modal-background;
-    padding: 0.5rem 2.0rem;
+    padding: 0.5rem;
     min-height: 200px;
     max-height: calc(100vh - 250px);
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+}
+
+.body pre {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+    font-family: Inconsolata, Monaco, Consolas, "Courier New", Courier, monospace !important;
+}
+
+.body pre > code[class*="language-"] {
+    display: block !important;
+    width: max-content;
+    min-width: 100%;
+    font-family: inherit !important;
 }
 
 .tab-button-enable,
@@ -164,4 +177,74 @@
     border-radius: 4px;
     background: rgb(233, 233, 53);
     color: $text-primary-default;
+}
+
+/* Content CSS of README */
+.body blockquote{
+    border-left: 4px solid $looks-secondary;
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+}
+
+.readme-alert {
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid #6e7781;
+    background: #f6f8fa;
+    color: #24292f;
+}
+
+.readme-alert > :last-child {
+    margin-bottom: 0;
+}
+
+.readme-alert-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: bold;
+}
+
+.readme-alert-note {
+    border-left-color: #0969da;
+    background: #ddf4ff;
+}
+
+.readme-alert-note .readme-alert-title {
+    color: #0969da;
+}
+
+.readme-alert-tip {
+    border-left-color: #1a7f37;
+    background: #dafbe1;
+}
+
+.readme-alert-tip .readme-alert-title {
+    color: #1a7f37;
+}
+
+.readme-alert-important {
+    border-left-color: #8250df;
+    background: #fbefff;
+}
+
+.readme-alert-important .readme-alert-title {
+    color: #8250df;
+}
+
+.readme-alert-warning {
+    border-left-color: #9a6700;
+    background: #fff8c5;
+}
+
+.readme-alert-warning .readme-alert-title {
+    color: #9a6700;
+}
+
+.readme-alert-caution {
+    border-left-color: #cf222e;
+    background: #ffebe9;
+}
+
+.readme-alert-caution .readme-alert-title {
+    color: #cf222e;
 }

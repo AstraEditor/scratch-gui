@@ -1,21 +1,176 @@
 
-import { defineMessages, FormattedMessage, intlShape, injectIntl, useRef } from 'react-intl';
+import { intlShape, injectIntl } from 'react-intl';
 import React, { useEffect, useState } from 'react';
 import Modal from '../../containers/modal.jsx';
 import PropTypes from 'prop-types';
 import Box from '../box/box.jsx';
 import styles from './ae-readme.css';
-import classNames from 'classnames';
 import ReactMarkdown from 'react-markdown/with-html';
-import {AESettings} from '../../lib/settings.js';
+import { AESettings } from '../../lib/settings.js';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialLight, materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 
 const settings = new AESettings();
+const README_ALERT_TYPES = {
+    NOTE: {
+        label: 'Note',
+        className: styles.readmeAlertNote
+    },
+    TIP: {
+        label: 'Tip',
+        className: styles.readmeAlertTip
+    },
+    IMPORTANT: {
+        label: 'Important',
+        className: styles.readmeAlertImportant
+    },
+    WARNING: {
+        label: 'Warning',
+        className: styles.readmeAlertWarning
+    },
+    CAUTION: {
+        label: 'Caution',
+        className: styles.readmeAlertCaution
+    }
+};
 
 var data = null;
 
 export function loadData(loadData) {
     data = loadData;
 }
+
+const editorTheme = () => {
+    let theme = 'dark'
+    switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
+        case undefined:
+            theme = 'dark';
+            break
+        case 'dark':
+            theme = 'dark';
+            break
+        case 'light':
+            theme = 'light';
+            break
+        default:
+            theme = 'dark'
+    }
+    return theme
+}
+
+const splitReadmeBlocks = markdown => {
+    const lines = markdown.split(/\r?\n/);
+    const segments = [];
+    let markdownLines = [];
+
+    const flushMarkdown = () => {
+        if (markdownLines.some(line => line.trim() !== '')) {
+            segments.push({
+                type: 'markdown',
+                text: markdownLines.join('\n')
+            });
+        }
+        markdownLines = [];
+    };
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const matchedType = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i.exec(lines[index]);
+
+        if (!matchedType) {
+            markdownLines.push(lines[index]);
+            continue;
+        }
+
+        flushMarkdown();
+
+        const alertLines = [];
+        index += 1;
+
+        while (index < lines.length && /^>\s?/.test(lines[index])) {
+            alertLines.push(lines[index].replace(/^>\s?/, ''));
+            index += 1;
+        }
+
+        while (alertLines.length > 0 && alertLines[0].trim() === '') {
+            alertLines.shift();
+        }
+
+        while (alertLines.length > 0 && alertLines[alertLines.length - 1].trim() === '') {
+            alertLines.pop();
+        }
+
+        segments.push({
+            type: 'alert',
+            alertType: matchedType[1].toUpperCase(),
+            text: alertLines.join('\n')
+        });
+        index -= 1;
+    }
+
+    flushMarkdown();
+    return segments;
+};
+
+const renderMarkdownBlock = (text, escapeHtml, key) => (
+    <ReactMarkdown
+        key={key}
+        escapeHtml={escapeHtml}
+        renderers={{
+            code({ language, value }) {
+                if (!language) {
+                    return (
+                        <pre>
+                            <code>{value}</code>
+                        </pre>
+                    );
+                }
+
+                return (
+                    <SyntaxHighlighter
+                        style={
+                            editorTheme() == 'dark' ?
+                                materialDark : materialLight
+                        }
+                        language={language}
+                    >
+                        {value.replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                );
+            }
+        }}
+    >
+        {text}
+    </ReactMarkdown>
+);
+
+const renderAlertBlock = (segment, escapeHtml, key) => {
+    const alert = README_ALERT_TYPES[segment.alertType];
+
+    return (
+        <div
+            key={key}
+            className={[styles.readmeAlert, alert.className].join(' ')}
+        >
+            <div className={styles.readmeAlertTitle}>{alert.label}</div>
+            {segment.text ? renderMarkdownBlock(segment.text, escapeHtml, `${key}-content`) : null}
+        </div>
+    );
+};
+
+const renderReadmeContent = (markdown, escapeHtml) => {
+    const segments = splitReadmeBlocks(markdown);
+
+    if (segments.length === 0) {
+        return renderMarkdownBlock(markdown, escapeHtml, 'markdown');
+    }
+
+    return segments.map((segment, index) => (
+        segment.type === 'alert' ?
+            renderAlertBlock(segment, escapeHtml, `alert-${index}`) :
+            renderMarkdownBlock(segment.text, escapeHtml, `markdown-${index}`)
+    ));
+};
 
 const CustomModalComponent = (props) => {
     try {
@@ -67,6 +222,7 @@ const CustomModalComponent = (props) => {
             data = null;
             props.onClose();
         };
+        const escapeHtml = settings.get('enableHTMLSupportInREADME') ? false : true;
         return (
             <Modal
                 className={styles.modalContent}
@@ -99,9 +255,9 @@ const CustomModalComponent = (props) => {
                             ))}
                         </div>
                     }
-                    <ReactMarkdown className={styles.body} escapeHtml={settings.get('enableHTMLSupportInREADME') ? false : true}>
-                        {readMe[nowTab].text.replaceAll('\n', '\n\n')}
-                    </ReactMarkdown>
+                    <div className={styles.body}>
+                        {renderReadmeContent(readMe[nowTab].text, escapeHtml)}
+                    </div>
                 </Box>
 
             </Modal >
