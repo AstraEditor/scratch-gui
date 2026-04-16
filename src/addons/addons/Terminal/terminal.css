@@ -173,6 +173,41 @@
   background: var(--ui-white) !important;
 }
 
+/* VSCode 布局下的侧边栏按钮样式 - 与 SPA、bookmark 一致 */
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab {
+  width: 40px;
+  height: 40px;
+  font-size: 0;
+  background-color: #00000000;
+  border: 0;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab img {
+  width: 22px;
+  height: auto;
+  filter: grayscale(100%);
+}
+
+/* VSCode 布局下按钮激活状态 */
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.sa-terminal-toggle-active,
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.is-selected {
+  background-color: var(--ui-white) !important;
+  box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
+}
+
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.sa-terminal-toggle-active img,
+[class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.is-selected img {
+  filter: grayscale(0%);
+}
+
 @media (prefers-color-scheme: dark) {
   .addons-bottom-panel-button-bar .sa-terminal-toggle-button {
     background: var(--ui-dark) !important;
@@ -188,6 +223,11 @@
 
   .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active:hover {
     background: var(--ui-dark) !important;
+  }
+
+  [class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.sa-terminal-toggle-active,
+  [class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.is-selected {
+    background-color: var(--ui-dark) !important;
   }
 }
 
@@ -317,9 +357,11 @@
   display: flex;
   gap: 4px;
   align-items: center;
+  position: relative;
 }
 
-.sa-terminal-position-button {
+/* 轮换按钮样式 */
+.sa-terminal-rotate-button {
   background: none;
   border: 1px solid var(--ui-black-transparent);
   border-radius: 4px;
@@ -329,15 +371,80 @@
   color: var(--ui-text-primary);
   transition: all 0.2s;
   font-family: inherit;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sa-terminal-position-button:hover:not(:disabled) {
+/* 轮换按钮图标样式 */
+.sa-terminal-rotate-button img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sa-terminal-rotate-button:hover {
   background-color: var(--ui-primary-transparent);
 }
 
-.sa-terminal-position-button:disabled {
+.sa-terminal-rotate-button:active {
+  transform: scale(0.95);
+}
+
+/* 浮窗容器样式 */
+.sa-terminal-position-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--ui-white);
+  border: 1px solid var(--ui-black-transparent);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 1000;
+  min-width: 120px;
+}
+
+/* 浮窗按钮样式 */
+.sa-terminal-popup-button {
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ui-text-primary);
+  text-align: left;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+}
+
+/* 浮窗按钮图标样式 */
+.sa-terminal-popup-button img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sa-terminal-popup-button:hover:not(:disabled) {
+  background-color: var(--ui-primary-transparent);
+}
+
+.sa-terminal-popup-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.sa-terminal-popup-button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* Sidebar 模式样式 */
@@ -422,11 +529,24 @@
     border-color: #3c3c3c;
   }
 
-  .sa-terminal-position-button {
+  .sa-terminal-position-popup {
+    background-color: #2d2d2d;
+    border-color: #3c3c3c;
+  }
+
+  .sa-terminal-rotate-button {
     color: #d4d4d4;
   }
 
-  .sa-terminal-position-button:hover:not(:disabled) {
+  .sa-terminal-rotate-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sa-terminal-popup-button {
+    color: #d4d4d4;
+  }
+
+  .sa-terminal-popup-button:hover:not(:disabled) {
     background-color: rgba(255, 255, 255, 0.1);
   }
 }
