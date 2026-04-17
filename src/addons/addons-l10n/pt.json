@@ -231,5 +231,15 @@
     "swap-local-global/edit-variable-option": "Renomear ou editar variável",
     "swap-local-global/to-global": "Converter para \"Para todos os atores\"",
     "swap-local-global/to-local": "Converter para \"Apenas para este ator\"",
-    "hide-stage/hide-stage": "Esconder palco"
+    "hide-stage/hide-stage": "Esconder palco",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }

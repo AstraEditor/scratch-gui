@@ -258,5 +258,15 @@
     "swap-local-global/edit-variable-option": "이름을 변경하거나 리스트를 편집하기",
     "swap-local-global/to-global": "\"모든 스프라이트에서 사용\"으로 바꾸기",
     "swap-local-global/to-local": "\"이 스프라이트에서만 사용\"으로 바꾸기",
-    "hide-stage/hide-stage": "무대 숨기기"
+    "hide-stage/hide-stage": "무대 숨기기",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }

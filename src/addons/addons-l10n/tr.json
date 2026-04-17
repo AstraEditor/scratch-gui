@@ -265,5 +265,15 @@
     "swap-local-global/to-global": "\"Tüm kuklalar için\" ayarına dönüştür",
     "swap-local-global/to-local": "\"Yalnızca bu kukla için” ayarına dönüştür",
     "hide-stage/hide-stage": "Sahneyi gizle",
-    "jump-to-def/jump_to_definition": "tanıma atla"
+    "jump-to-def/jump_to_definition": "tanıma atla",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }

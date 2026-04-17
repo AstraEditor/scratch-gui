@@ -244,5 +244,15 @@
     "swap-local-global/edit-variable-option": "Variabele hernoemen of bewerken",
     "swap-local-global/to-global": "Veranderen naar \"Voor alle sprites\"",
     "swap-local-global/to-local": "Veranderen naar \"Alleen voor deze sprite\"",
-    "hide-stage/hide-stage": "Speelveld verbergen"
+    "hide-stage/hide-stage": "Speelveld verbergen",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }

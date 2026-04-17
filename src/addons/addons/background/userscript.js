@@ -1,4 +1,3 @@
-import deleteIcon from './delete.svg';
 /**
  * IndexedDB by AI （嘿嘿）
  */
@@ -328,15 +327,15 @@ async function syncWallpaperSelection({ preferredId = null, settings = null } = 
 
     let selectedId = preferredId;
     if (!selectedId || !list.includes(selectedId)) {
-        const savedIndex = Number(resolvedSettings.WallpaperRotationIndex);
-        if (Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < list.length) {
-            selectedId = list[savedIndex];
-        }
-    }
-    if (!selectedId || !list.includes(selectedId)) {
         const savedCurrentWallpaperId = resolvedSettings.currentWallpaperId;
         if (savedCurrentWallpaperId && list.includes(savedCurrentWallpaperId)) {
             selectedId = savedCurrentWallpaperId;
+        }
+    }
+    if (!selectedId || !list.includes(selectedId)) {
+        const savedIndex = Number(resolvedSettings.WallpaperRotationIndex);
+        if (Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < list.length) {
+            selectedId = list[savedIndex];
         }
     }
     if (!selectedId || !list.includes(selectedId)) {
@@ -408,6 +407,7 @@ async function setCurrentWallpaperId(id) {
     await applySettings('currentWallpaperId', id);
     await applySettings('EnableWorkSpaceBG', true);
     await syncWallpaperSelection({ preferredId: id });
+    document.documentElement.style.setProperty('--enable-workspace-background', 'transparent');
     await refreshWorkSpaceBackground();
 }
 
@@ -556,13 +556,10 @@ async function addContext(modal, msg) {
         applySettings('EnableWorkSpaceBG', true);
     });
     const workspaceClearButton = document.createElement("button");
-    workspaceClearButton.className = "sa-background-clear";
-    const base64Data = deleteIcon.split(',')[1]; //Base64
-    workspaceClearButton.innerHTML = atob(base64Data);
+    workspaceClearButton.className = "sa-background-add";
+    workspaceClearButton.innerHTML = msg('disable');
     workspaceClearButton.addEventListener('click', async () => {
-        await bgDB.deleteWallpaper('WorkSpaceBG');
         await applySettings('EnableWorkSpaceBG', false);
-        await applySettings('currentWallpaperId', null);
         document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
         await refreshWorkSpaceBackground();
         await refreshWallpaperList();
@@ -715,12 +712,18 @@ async function addContext(modal, msg) {
         preview.image.alt = altText;
     };
 
+    const setPreviewAppearance = (preview, { blur = 0, opacity = 1 } = {}) => {
+        preview.image.style.filter = `blur(${blur}px)`;
+        preview.image.style.opacity = `${opacity}`;
+    };
+
     const workspaceTitle = createHeader(msg('background-workspace'));
+    const rotateTitle = createHeader(msg('background-rotate'));
     const modalTitle = createHeader(msg('background-modal'));
 
     // Layout
     const workspaceImageLayout = document.createElement('select');
-    workspaceImageLayout.value = await getSetting('WorkSpaceBGLayout') || 'stretch';
+    const workspaceImageLayoutValue = await getSetting('WorkSpaceBGLayout') || 'stretch';
     workspaceImageLayout.className = 'sa-background-layout';
     [
         { name: msg('background-layout-stretch'), value: 'stretch' },
@@ -733,6 +736,7 @@ async function addContext(modal, msg) {
         option.textContent = layout.name;
         workspaceImageLayout.appendChild(option);
     });
+    workspaceImageLayout.value = workspaceImageLayoutValue;
     workspaceImageLayout.addEventListener('change', async (e) => {
         await applySettings('WorkSpaceBGLayout', e.target.value);
         resizeWorkspaceBackground();
@@ -748,6 +752,7 @@ async function addContext(modal, msg) {
     workspaceBlur.addEventListener('input', async () => {
         applySettings('WorkSpaceBGBlur', workspaceBlur.value);
         await refreshWorkSpaceBackground();
+        await refreshPreviews();
     });
     // Opacity
     const workspaceOpacity = document.createElement('input');
@@ -759,6 +764,7 @@ async function addContext(modal, msg) {
     workspaceOpacity.addEventListener('input', async () => {
         applySettings('WorkSpaceBGOpacity', workspaceOpacity.value / 100);
         await refreshWorkSpaceBackground();
+        await refreshPreviews();
     });
     const workspaceBlurControl = createRangeControl(workspaceBlur, (value) => `${value}px`);
     const workspaceOpacityControl = createRangeControl(workspaceOpacity, (value) => `${value}%`);
@@ -841,20 +847,21 @@ async function addContext(modal, msg) {
     });
 
     const modalImageLayout = document.createElement('select');
-    modalImageLayout.value = modalSettings.layout;
+    const modalImageLayoutValue = modalSettings.layout;
     modalImageLayout.className = 'sa-background-layout';
     [
         { name: msg('background-layout-stretch'), value: 'stretch' },
         { name: msg('background-layout-height-priority'), value: 'height-priority' },
         { name: msg('background-layout-width-priority'), value: 'width-priority' },
         { name: msg('background-layout-fit'), value: 'fit' },
-        { name: msg('background-layout-fixed') || 'Fixed', value: 'fixed' },
+        { name: msg('background-layout-fixed'), value: 'fixed' },
     ].forEach(layout => {
         const option = document.createElement('option');
         option.value = layout.value;
         option.textContent = layout.name;
         modalImageLayout.appendChild(option);
     });
+    modalImageLayout.value = modalImageLayoutValue;
     modalImageLayout.addEventListener('change', async (e) => {
         modalSettings.layout = e.target.value;
         await applySettings('ModalBGLayout', modalSettings.layout);
@@ -871,6 +878,7 @@ async function addContext(modal, msg) {
         modalSettings.blur = Number(modalBlur.value);
         await applySettings('ModalBGBlur', modalSettings.blur);
         await addModalBackground();
+        await refreshPreviews();
     });
 
     const modalOpacity = document.createElement('input');
@@ -883,6 +891,7 @@ async function addContext(modal, msg) {
         modalSettings.opacity = Number(modalOpacity.value) / 100;
         await applySettings('ModalBGOpacity', modalSettings.opacity);
         await addModalBackground();
+        await refreshPreviews();
     });
     const modalBlurControl = createRangeControl(modalBlur, (value) => `${value}px`);
     const modalOpacityControl = createRangeControl(modalOpacity, (value) => `${value}%`);
@@ -928,18 +937,19 @@ async function addContext(modal, msg) {
     });
 
     const modalAlignX = document.createElement('select');
-    modalAlignX.value = modalSettings.alignX;
+    const modalAlignXValue = modalSettings.alignX;
     modalAlignX.className = 'sa-background-layout';
     [
-        { name: msg('background-align-left') || 'Left', value: 'left' },
-        { name: msg('background-align-center') || 'Center', value: 'center' },
-        { name: msg('background-align-right') || 'Right', value: 'right' }
+        { name: msg('background-align-left'), value: 'left' },
+        { name: msg('background-align-center'), value: 'center' },
+        { name: msg('background-align-right'), value: 'right' }
     ].forEach((optionData) => {
         const option = document.createElement('option');
         option.value = optionData.value;
         option.textContent = optionData.name;
         modalAlignX.appendChild(option);
     });
+    modalAlignX.value = modalAlignXValue;
     modalAlignX.addEventListener('change', async (e) => {
         modalSettings.alignX = e.target.value;
         await applySettings('ModalBGAlignX', modalSettings.alignX);
@@ -947,18 +957,19 @@ async function addContext(modal, msg) {
     });
 
     const modalAlignY = document.createElement('select');
-    modalAlignY.value = modalSettings.alignY;
+    const modalAlignYValue = modalSettings.alignY;
     modalAlignY.className = 'sa-background-layout';
     [
-        { name: msg('background-align-top') || 'Top', value: 'top' },
-        { name: msg('background-align-center') || 'Center', value: 'center' },
-        { name: msg('background-align-bottom') || 'Bottom', value: 'bottom' }
+        { name: msg('background-align-top'), value: 'top' },
+        { name: msg('background-align-center'), value: 'center' },
+        { name: msg('background-align-bottom'), value: 'bottom' }
     ].forEach((optionData) => {
         const option = document.createElement('option');
         option.value = optionData.value;
         option.textContent = optionData.name;
         modalAlignY.appendChild(option);
     });
+    modalAlignY.value = modalAlignYValue;
     modalAlignY.addEventListener('change', async (e) => {
         modalSettings.alignY = e.target.value;
         await applySettings('ModalBGAlignY', modalSettings.alignY);
@@ -995,12 +1006,12 @@ async function addContext(modal, msg) {
     const modalSizeText = document.createElement('span');
     modalSizeText.textContent = msg('background-size');
     const modalAlignXText = document.createElement('span');
-    modalAlignXText.textContent = msg('background-align-horizontal') || 'Horizontal align';
+    modalAlignXText.textContent = msg('background-align-horizontal');
     const modalAlignYText = document.createElement('span');
-    modalAlignYText.textContent = msg('background-align-vertical') || 'Vertical align';
+    modalAlignYText.textContent = msg('background-align-vertical');
     const animationDurationText = document.createElement('span');
     animationDurationText.textContent = msg('animation-duration');
-    const previewEmptyText = msg('background-preview-empty') || 'No wallpaper selected';
+    const previewEmptyText = msg('background-preview-empty');
     const workspacePreview = createPreview(previewEmptyText);
     const modalPreview = createPreview(previewEmptyText);
     const modalDiv = document.createElement('section');
@@ -1017,6 +1028,7 @@ async function addContext(modal, msg) {
     rotationToggle.type = 'checkbox';
     rotationToggle.checked = await getSetting('WallpaperRotationEnabled') || false;
     rotationToggle.addEventListener('change', async () => {
+        document.querySelector('.sa-background-rotation-all').style.display = rotationToggle.checked ? 'block' : 'none';
         await applySettings('WallpaperRotationEnabled', rotationToggle.checked);
         await syncWallpaperSelection();
         await initializeWallpaperRotation();
@@ -1057,14 +1069,24 @@ async function addContext(modal, msg) {
             activeWallpaper && activeWallpaper.link ? activeWallpaper.link : null,
             activeWallpaper && activeWallpaper.name ? activeWallpaper.name : msg('background-workspace')
         );
+        setPreviewAppearance(workspacePreview, {
+            blur: Number(workspaceBlur.value) || 0,
+            opacity: (Number(workspaceOpacity.value) || 0) / 100
+        });
         setPreviewSource(
             modalPreview,
             modalSettings.enabled && modalSettings.link ? modalSettings.link : null,
             msg('background-modal')
         );
+        setPreviewAppearance(modalPreview, {
+            blur: Number(modalBlur.value) || 0,
+            opacity: (Number(modalOpacity.value) || 0) / 100
+        });
     }
 
     async function refreshWallpaperList() {
+        const settings = await bgDB.getSetting('settings') || {};
+        const isBackgroundVisible = settings.EnableWorkSpaceBG !== false;
         const activeWallpaper = await getActiveWorkspaceWallpaper();
         const currentWallpaperId = activeWallpaper ? activeWallpaper.id : await getSetting('currentWallpaperId');
         const wallpapers = await bgDB.listWallpapers();
@@ -1081,7 +1103,7 @@ async function addContext(modal, msg) {
             if (wallpaper.id === currentWallpaperId) selectButton.className = 'sa-background-wallpaper-active';
             else selectButton.className = 'sa-background-wallpaper-not-active';
             selectButton.textContent = msg('active');
-            selectButton.disabled = wallpaper.id === currentWallpaperId;
+            selectButton.disabled = wallpaper.id === currentWallpaperId && isBackgroundVisible;
             selectButton.addEventListener('click', async () => {
                 await setCurrentWallpaperId(wallpaper.id);
                 await refreshWallpaperList();
@@ -1162,16 +1184,20 @@ async function addContext(modal, msg) {
     modalForm.appendChild(createControlRow(modalOffsetXText, modalOffsetX));
     modalForm.appendChild(createControlRow(modalOffsetYText, modalOffsetY));
 
-    rotationForm.appendChild(createControlRow(animationDurationText, animationDurationControl.element));
     rotationForm.appendChild(createFullRow(rotationToggleLabel));
-    rotationForm.appendChild(createControlRow(intervalLabel, intervalInput));
-    rotationForm.appendChild(createFullRow(rotateNowButton));
-    rotationForm.appendChild(createFullRow(rotationListShell));
+    const rotationAllDiv = document.createElement('div');
+    rotationAllDiv.className = 'sa-background-rotation-all';
+    rotationAllDiv.appendChild(createControlRow(animationDurationText, animationDurationControl.element));
+    rotationAllDiv.appendChild(createControlRow(intervalLabel, intervalInput));
+    rotationAllDiv.appendChild(createFullRow(rotateNowButton));
+    rotationAllDiv.appendChild(createFullRow(rotationListShell));
+    rotationForm.append(rotationAllDiv);
 
     workspaceDiv.appendChild(workspaceTitle);
     workspaceDiv.appendChild(workspacePreview.wrapper);
     workspaceDiv.appendChild(workspaceForm);
 
+    rotationDiv.appendChild(rotateTitle);
     rotationDiv.appendChild(rotationForm);
 
     modalDiv.appendChild(modalTitle);
@@ -1322,6 +1348,11 @@ async function refreshWorkSpaceBackground() {
     const refreshToken = ++wallpaperRefreshToken;
     try {
         const animationDuration = await getSetting('WorkSpaceBGAnimationDuration') || 500;
+        const isWorkspaceBackgroundEnabled = await getSetting('EnableWorkSpaceBG');
+        document.documentElement.style.setProperty(
+            '--enable-workspace-background',
+            isWorkspaceBackgroundEnabled === false ? 'var(--ui-secondary)' : 'transparent'
+        );
         clearWallpaperTransitionTimeout();
         const wallpaper = await getActiveWorkspaceWallpaper();
         const existingBackgrounds = Array.from(document.querySelectorAll('.sa-background-image'));

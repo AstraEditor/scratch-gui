@@ -253,5 +253,15 @@
     "swap-local-global/edit-variable-option": "Renommer ou modifier la variable",
     "swap-local-global/to-global": "Convertir en \"Pour tous les sprites\"",
     "swap-local-global/to-local": "Convertir en \"Pour ce sprite uniquement\"",
-    "hide-stage/hide-stage": "Cacher la scène"
+    "hide-stage/hide-stage": "Cacher la scène",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }

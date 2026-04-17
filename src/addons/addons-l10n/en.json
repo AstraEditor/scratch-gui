@@ -434,6 +434,9 @@
     "background/delete": "Delete",
     "background/animation-duration": "Animation Duration (ms)",
     "background/background-layout-fixed": "Fixed",
-    "background/background-size": "Size"
+    "background/background-size": "Size",
+    "background/background-layout": "Layout",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate",
+    "background/disable": "Disable"
 }
-

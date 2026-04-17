@@ -228,5 +228,15 @@
     "swap-local-global/to-global": "轉換成「適用於所有角色」",
     "swap-local-global/to-local": "轉換成「僅適用當前角色」",
     "hide-stage/hide-stage": "隱藏舞台",
-    "jump-to-def/jump_to_definition": "跳轉到定義"
+    "jump-to-def/jump_to_definition": "跳轉到定義",
+    "background/background-layout-fixed": "固定",
+    "background/background-align-left": "左",
+    "background/background-align-center": "中",
+    "background/background-align-right": "右",
+    "background/background-align-top": "上",
+    "background/background-align-bottom": "下",
+    "background/background-align-horizontal": "水平對齊",
+    "background/background-align-vertical": "垂直對齊",
+    "background/background-preview-empty": "尚未選擇桌布",
+    "background/background-rotate": "輪換"
 }

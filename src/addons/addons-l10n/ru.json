@@ -258,5 +258,15 @@
     "swap-local-global/edit-variable-option": "Переименовать или изменить переменную",
     "swap-local-global/to-global": "Конвертировать в \"Для всех спрайтов\"",
     "swap-local-global/to-local": "Конвертировать в \"Для всех спрайтов\"",
-    "hide-stage/hide-stage": "Скрыть сцену"
+    "hide-stage/hide-stage": "Скрыть сцену",
+    "background/background-layout-fixed": "Fixed",
+    "background/background-align-left": "Left",
+    "background/background-align-center": "Center",
+    "background/background-align-right": "Right",
+    "background/background-align-top": "Top",
+    "background/background-align-bottom": "Bottom",
+    "background/background-align-horizontal": "Horizontal align",
+    "background/background-align-vertical": "Vertical align",
+    "background/background-preview-empty": "No wallpaper selected",
+    "background/background-rotate": "Rotate"
 }
