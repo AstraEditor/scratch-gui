@@ -1141,11 +1141,16 @@ export default async function ({ addon, console, msg }) {
   toggleBtnIcon.draggable = false;
   toggleBtnIcon.src = icon();
   toggleBtnIcon.style.filter = "grayscale(100%)";
-  toggleBtnIcon.style.width = '20px';
-  toggleBtnIcon.style.height = '20px';
+  toggleBtnIcon.style.width = '25px';
+  toggleBtnIcon.style.height = 'auto';
 
-  // 只添加图标，不添加文本
+  // 创建文本元素
+  const toggleBtnText = document.createElement("span");
+  toggleBtnText.textContent = "Terminal";
+
+  // 添加图标和文本
   toggleButton.appendChild(toggleBtnIcon);
+  toggleButton.appendChild(toggleBtnText);
 
   addon.tab.displayNoneWhileDisabled(toggleButton);
 
