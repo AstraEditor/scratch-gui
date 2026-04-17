@@ -4,23 +4,28 @@
 
 .sa-background-popup {
     box-sizing: border-box;
-    width: 48vw;
+    width: min(72rem, 92vw);
+    max-width: 92vw;
+    height: min(48rem, 84vh);
     max-height: 84vh;
     display: flex;
     flex: 1;
     flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .sa-background-content,
 .sa-background-list-content {
     padding: 1rem;
-    overflow-y: auto !important;
 }
 
 .sa-background-blur-wrapper {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-width: 0;
+    min-height: 0;
 }
 
 .sa-background-wallpaper-active {
@@ -48,6 +53,8 @@
 
 .sa-background-wallpaper-list {
     padding: 10px;
+    min-height: 12rem;
+    overflow: auto;
 }
 
 .sa-background-wallpaper-enabled-label {
@@ -89,22 +96,14 @@
 .sa-modal-background-enabled {
     position: relative;
     isolation: isolate;
-    overflow: hidden;
+    overflow: clip;
     background-color: color-mix(in srgb, var(--ui-modal-background) 72%, transparent) !important;
 }
 
 .sa-modal-background-enabled::before {
     content: "";
-    position: sticky;
-    top: calc(var(--sa-modal-bg-pad-top, 0px) * -1);
-    left: 0;
-    display: block;
-    width: calc(100% + var(--sa-modal-bg-pad-left, 0px) + var(--sa-modal-bg-pad-right, 0px));
-    height: var(--sa-modal-bg-height, 0px);
-    margin-top: calc(var(--sa-modal-bg-pad-top, 0px) * -1);
-    margin-right: calc(var(--sa-modal-bg-pad-right, 0px) * -1);
-    margin-bottom: calc(var(--sa-modal-bg-pad-top, 0px) - var(--sa-modal-bg-height, 0px));
-    margin-left: calc(var(--sa-modal-bg-pad-left, 0px) * -1);
+    position: absolute;
+    inset: 0;
     transform-origin: top left;
     transform: scale(var(--sa-modal-bg-modalsize, 1));
     border-radius: inherit;
@@ -118,14 +117,7 @@
 }
 
 .sa-modal-background-enabled.sa-modal-background-fullscreen::before {
-    position: absolute;
-    top: calc((var(--sa-modal-bg-pad-top, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
-    right: calc((var(--sa-modal-bg-pad-right, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
-    bottom: calc((var(--sa-modal-bg-pad-bottom, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
-    left: calc((var(--sa-modal-bg-pad-left, 0px) + var(--sa-modal-bg-blur, 0px) * 2) * -1);
-    width: auto;
-    height: auto;
-    margin: 0;
+    inset: 0;
 }
 
 .sa-modal-background-enabled>* {
@@ -173,10 +165,16 @@
 
 .sa-background-content {
     justify-content: center;
+    overflow: auto !important;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .sa-background-list-content {
-    justify-content: space-between;
+    justify-content: stretch;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
 }
 
 .sa-background-list-content {
@@ -187,7 +185,6 @@
     from {
         opacity: 0;
         transform: translateY(10px);
-        padding-top: 0;
     }
 
     to {
@@ -205,4 +202,166 @@
 .sa-background-add-clear-wrapper{
     display: flex;
     flex: 1;
+}
+
+.sa-background-content-wrapper {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    width: 100%;
+    min-height: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.sa-background-panel,
+.sa-background-rotation-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sa-background-form-grid {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.sa-background-preview {
+    width: 100%;
+    min-height: 10rem;
+    max-height: 12rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sa-background-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.sa-background-preview-empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 10rem;
+    text-align: center;
+}
+
+.sa-background-control-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 1.2fr);
+    gap: 0.75rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.sa-background-control-row-full {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.sa-background-control-label,
+.sa-background-control-input,
+.sa-background-control-full,
+.sa-background-list-shell,
+.sa-background-left {
+    min-width: 0;
+}
+
+.sa-background-control-input,
+.sa-background-control-full,
+.sa-background-list-shell,
+.sa-background-left,
+.sa-background-rotation-label {
+    display: flex;
+    align-items: center;
+}
+
+.sa-background-control-full,
+.sa-background-list-shell {
+    width: 100%;
+}
+
+.sa-background-list-shell {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+}
+
+.sa-background-control-input > input,
+.sa-background-control-input > select,
+.sa-background-control-input > .sa-background-rotation-interval {
+    width: 100%;
+    max-width: 100%;
+}
+
+.sa-background-range-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+}
+
+.sa-background-range-value {
+    white-space: nowrap;
+}
+
+.sa-background-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.sa-background-actions > * {
+    flex: 1 1 0;
+}
+
+.sa-background-left {
+    gap: 0.5rem;
+}
+
+.sa-background-wallpaper-title {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sa-background-wallpaper-item {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.sa-background-rotation-label {
+    gap: 0.5rem;
+}
+
+@media (max-width: 1100px) {
+    .sa-background-content-wrapper {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sa-background-rotation-wrapper {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 780px) {
+    .sa-background-content-wrapper {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sa-background-control-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }

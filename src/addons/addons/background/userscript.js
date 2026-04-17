@@ -565,6 +565,7 @@ async function addContext(modal, msg) {
         await applySettings('currentWallpaperId', null);
         document.documentElement.style.setProperty('--enable-workspace-background', 'var(--ui-secondary)');
         await refreshWorkSpaceBackground();
+        await refreshWallpaperList();
     });
     const workspaceAddPicInput = document.createElement("input");
     workspaceAddPicInput.type = "file";
@@ -622,6 +623,98 @@ async function addContext(modal, msg) {
         return headerDiv;
     };
 
+    const createControlLabel = (labelNode) => {
+        const label = document.createElement('div');
+        label.className = 'sa-background-control-label';
+        if (typeof labelNode === 'string') {
+            label.textContent = labelNode;
+        } else if (labelNode) {
+            label.appendChild(labelNode);
+        }
+        return label;
+    };
+
+    const createControlInput = (...nodes) => {
+        const input = document.createElement('div');
+        input.className = 'sa-background-control-input';
+        for (const node of nodes) {
+            if (node) input.appendChild(node);
+        }
+        return input;
+    };
+
+    const createControlRow = (labelNode, ...controlNodes) => {
+        const row = document.createElement('div');
+        row.className = 'sa-background-control-row';
+        row.appendChild(createControlLabel(labelNode));
+        row.appendChild(createControlInput(...controlNodes));
+        return row;
+    };
+
+    const createFullRow = (...nodes) => {
+        const row = document.createElement('div');
+        row.className = 'sa-background-control-row sa-background-control-row-full';
+        const content = document.createElement('div');
+        content.className = 'sa-background-control-full';
+        for (const node of nodes) {
+            if (node) content.appendChild(node);
+        }
+        row.appendChild(content);
+        return row;
+    };
+
+    const createFormGrid = () => {
+        const grid = document.createElement('div');
+        grid.className = 'sa-background-form-grid';
+        return grid;
+    };
+
+    const createRangeControl = (input, formatValue = (value) => String(value)) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sa-background-range-control';
+        const value = document.createElement('span');
+        value.className = 'sa-background-range-value';
+
+        const sync = () => {
+            value.textContent = formatValue(input.value);
+        };
+
+        input.addEventListener('input', sync);
+        sync();
+
+        wrapper.appendChild(input);
+        wrapper.appendChild(value);
+
+        return { element: wrapper, sync };
+    };
+
+    const createPreview = (emptyText) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sa-background-preview';
+
+        const image = document.createElement('img');
+        image.className = 'sa-background-preview-image';
+        image.alt = '';
+        image.draggable = false;
+
+        const empty = document.createElement('span');
+        empty.className = 'sa-background-preview-empty';
+        empty.textContent = emptyText;
+
+        wrapper.appendChild(image);
+        wrapper.appendChild(empty);
+
+        return { wrapper, image, empty };
+    };
+
+    const setPreviewSource = (preview, source, altText = '') => {
+        const hasSource = Boolean(source);
+        preview.image.hidden = !hasSource;
+        preview.empty.hidden = hasSource;
+        preview.image.src = hasSource ? source : '';
+        preview.image.alt = altText;
+    };
+
     const workspaceTitle = createHeader(msg('background-workspace'));
     const modalTitle = createHeader(msg('background-modal'));
 
@@ -667,6 +760,8 @@ async function addContext(modal, msg) {
         applySettings('WorkSpaceBGOpacity', workspaceOpacity.value / 100);
         await refreshWorkSpaceBackground();
     });
+    const workspaceBlurControl = createRangeControl(workspaceBlur, (value) => `${value}px`);
+    const workspaceOpacityControl = createRangeControl(workspaceOpacity, (value) => `${value}%`);
 
     // Offset X
     const workspaceOffsetXText = document.createElement('span');
@@ -721,6 +816,7 @@ async function addContext(modal, msg) {
                     await applySettings('ModalBGName', file.name);
                     await applySettings('EnableModalBG', modalSettings.enabled);
                     await addModalBackground();
+                    await refreshPreviews();
                     resolve();
                 } catch (err) {
                     reject(err);
@@ -741,6 +837,7 @@ async function addContext(modal, msg) {
         await applySettings('ModalBGLink', null);
         await applySettings('ModalBGName', null);
         await addModalBackground();
+        await refreshPreviews();
     });
 
     const modalImageLayout = document.createElement('select');
@@ -787,6 +884,8 @@ async function addContext(modal, msg) {
         await applySettings('ModalBGOpacity', modalSettings.opacity);
         await addModalBackground();
     });
+    const modalBlurControl = createRangeControl(modalBlur, (value) => `${value}px`);
+    const modalOpacityControl = createRangeControl(modalOpacity, (value) => `${value}%`);
 
     const modalOffsetX = document.createElement('input');
     modalOffsetX.type = 'number';
@@ -877,9 +976,10 @@ async function addContext(modal, msg) {
     animationDuration.addEventListener('input', async () => {
         applySettings('WorkSpaceBGAnimationDuration', Number(animationDuration.value));
     });
+    const animationDurationControl = createRangeControl(animationDuration, (value) => `${value}ms`);
 
-    const workspaceDiv = document.createElement('div');
-    workspaceDiv.className = 'sa-background-blur-wrapper';
+    const workspaceDiv = document.createElement('section');
+    workspaceDiv.className = 'sa-background-panel sa-background-blur-wrapper';
     const workspaceBlurText = document.createElement('span');
     workspaceBlurText.textContent = msg('background-blur');
     const workspaceOpacityText = document.createElement('span');
@@ -900,13 +1000,16 @@ async function addContext(modal, msg) {
     modalAlignYText.textContent = msg('background-align-vertical') || 'Vertical align';
     const animationDurationText = document.createElement('span');
     animationDurationText.textContent = msg('animation-duration');
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'sa-background-blur-wrapper';
+    const previewEmptyText = msg('background-preview-empty') || 'No wallpaper selected';
+    const workspacePreview = createPreview(previewEmptyText);
+    const modalPreview = createPreview(previewEmptyText);
+    const modalDiv = document.createElement('section');
+    modalDiv.className = 'sa-background-panel sa-background-blur-wrapper';
 
 
     // Rotation UI
-    const rotationDiv = document.createElement('div');
-    rotationDiv.className = 'sa-background-rotation-wrapper';
+    const rotationDiv = document.createElement('section');
+    rotationDiv.className = 'sa-background-panel sa-background-rotation-wrapper';
 
     const rotationToggleLabel = document.createElement('label');
     rotationToggleLabel.className = 'sa-background-rotation-label';
@@ -923,8 +1026,7 @@ async function addContext(modal, msg) {
     rotationToggleLabel.appendChild(rotationToggle);
     rotationToggleLabel.appendChild(document.createTextNode(' ' + msg('rotation-enable')));
 
-    const intervalLabel = document.createElement('label');
-    intervalLabel.className = 'sa-background-rotation-label';
+    const intervalLabel = document.createElement('span');
     intervalLabel.textContent = msg('rotation-interval');
     const intervalInput = document.createElement('input');
     intervalInput.type = 'number';
@@ -935,7 +1037,6 @@ async function addContext(modal, msg) {
         await applySettings('WallpaperRotationIntervalMinutes', Number(intervalInput.value) || 5);
         await initializeWallpaperRotation();
     });
-    intervalLabel.appendChild(intervalInput);
 
     const rotateNowButton = document.createElement('button');
     rotateNowButton.className = 'sa-background-add';
@@ -948,6 +1049,20 @@ async function addContext(modal, msg) {
 
     const wallpaperListContainer = document.createElement('div');
     wallpaperListContainer.className = 'sa-background-wallpaper-list';
+
+    async function refreshPreviews() {
+        const activeWallpaper = await getActiveWorkspaceWallpaper();
+        setPreviewSource(
+            workspacePreview,
+            activeWallpaper && activeWallpaper.link ? activeWallpaper.link : null,
+            activeWallpaper && activeWallpaper.name ? activeWallpaper.name : msg('background-workspace')
+        );
+        setPreviewSource(
+            modalPreview,
+            modalSettings.enabled && modalSettings.link ? modalSettings.link : null,
+            msg('background-modal')
+        );
+    }
 
     async function refreshWallpaperList() {
         const activeWallpaper = await getActiveWorkspaceWallpaper();
@@ -1010,50 +1125,58 @@ async function addContext(modal, msg) {
 
             wallpaperListContainer.appendChild(content)
         });
+        await refreshPreviews();
     }
 
-    rotationDiv.appendChild(animationDurationText);
-    rotationDiv.appendChild(animationDuration);
-    rotationDiv.appendChild(rotationToggleLabel);
-    rotationDiv.appendChild(intervalLabel);
-    rotationDiv.appendChild(rotateNowButton);
-    rotationDiv.appendChild(wallpaperListContainer);
+    const workspaceForm = createFormGrid();
+    const modalForm = createFormGrid();
+    const rotationForm = createFormGrid();
 
-    // All
-    workspaceDiv.appendChild(workspaceTitle);
-    workspaceDiv.appendChild(workspaceImageLayout);
-    workspaceDiv.appendChild(workspaceBlurText);
-    workspaceDiv.appendChild(workspaceBlur);
-    workspaceDiv.appendChild(workspaceOpacityText);
-    workspaceDiv.appendChild(workspaceOpacity);
-    workspaceDiv.appendChild(workspaceOffsetXText);
-    workspaceDiv.appendChild(workspaceOffsetX);
-    workspaceDiv.appendChild(workspaceOffsetYText);
-    workspaceDiv.appendChild(workspaceOffsetY);
     const workspaceAddClearWrapper = document.createElement('div');
-    workspaceAddClearWrapper.className = 'sa-background-add-clear-wrapper';
+    workspaceAddClearWrapper.className = 'sa-background-actions';
     workspaceAddClearWrapper.appendChild(workspaceAddButton);
     workspaceAddClearWrapper.appendChild(workspaceClearButton);
-    workspaceDiv.appendChild(workspaceAddClearWrapper)
-    
+    const modalActions = document.createElement('div');
+    modalActions.className = 'sa-background-actions';
+    modalActions.appendChild(modalAddButton);
+    modalActions.appendChild(modalClearButton);
+
+    const rotationListShell = document.createElement('div');
+    rotationListShell.className = 'sa-background-list-shell';
+    rotationListShell.appendChild(wallpaperListContainer);
+
+    workspaceForm.appendChild(createControlRow(msg('background-layout'), workspaceImageLayout));
+    workspaceForm.appendChild(createControlRow(workspaceBlurText, workspaceBlurControl.element));
+    workspaceForm.appendChild(createControlRow(workspaceOpacityText, workspaceOpacityControl.element));
+    workspaceForm.appendChild(createControlRow(workspaceOffsetXText, workspaceOffsetX));
+    workspaceForm.appendChild(createControlRow(workspaceOffsetYText, workspaceOffsetY));
+    workspaceForm.appendChild(createFullRow(workspaceAddClearWrapper));
+
+    modalForm.appendChild(createControlRow(msg('background-layout'), modalImageLayout));
+    modalForm.appendChild(createFullRow(modalActions));
+    modalForm.appendChild(createControlRow(modalBlurText, modalBlurControl.element));
+    modalForm.appendChild(createControlRow(modalOpacityText, modalOpacityControl.element));
+    modalForm.appendChild(createControlRow(modalSizeText, modalSize));
+    modalForm.appendChild(createControlRow(modalAlignXText, modalAlignX));
+    modalForm.appendChild(createControlRow(modalAlignYText, modalAlignY));
+    modalForm.appendChild(createControlRow(modalOffsetXText, modalOffsetX));
+    modalForm.appendChild(createControlRow(modalOffsetYText, modalOffsetY));
+
+    rotationForm.appendChild(createControlRow(animationDurationText, animationDurationControl.element));
+    rotationForm.appendChild(createFullRow(rotationToggleLabel));
+    rotationForm.appendChild(createControlRow(intervalLabel, intervalInput));
+    rotationForm.appendChild(createFullRow(rotateNowButton));
+    rotationForm.appendChild(createFullRow(rotationListShell));
+
+    workspaceDiv.appendChild(workspaceTitle);
+    workspaceDiv.appendChild(workspacePreview.wrapper);
+    workspaceDiv.appendChild(workspaceForm);
+
+    rotationDiv.appendChild(rotationForm);
+
     modalDiv.appendChild(modalTitle);
-    modalDiv.appendChild(modalImageLayout);
-    modalDiv.appendChild(modalAddButton);
-    modalDiv.appendChild(modalClearButton);
-    modalDiv.appendChild(modalBlurText);
-    modalDiv.appendChild(modalBlur);
-    modalDiv.appendChild(modalOpacityText);
-    modalDiv.appendChild(modalOpacity);
-    modalDiv.appendChild(modalSizeText);
-    modalDiv.appendChild(modalSize);
-    modalDiv.appendChild(modalAlignXText);
-    modalDiv.appendChild(modalAlignX);
-    modalDiv.appendChild(modalAlignYText);
-    modalDiv.appendChild(modalAlignY);
-    modalDiv.appendChild(modalOffsetXText);
-    modalDiv.appendChild(modalOffsetX);
-    modalDiv.appendChild(modalOffsetYText);
-    modalDiv.appendChild(modalOffsetY);
+    modalDiv.appendChild(modalPreview.wrapper);
+    modalDiv.appendChild(modalForm);
 
     const content = document.createElement('div');
     content.className = 'sa-background-content-wrapper';
@@ -1064,6 +1187,7 @@ async function addContext(modal, msg) {
     modal.appendChild(content);
 
     await refreshWallpaperList();
+    await refreshPreviews();
 }
 
 function getModalBackgroundPosition(alignX, alignY, offsetX, offsetY) {
