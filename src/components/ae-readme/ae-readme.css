@@ -206,7 +206,8 @@
 
 .readme-alert-note {
     border-left-color: #0969da;
-    background: #ddf4ff;
+    background: #0969da0a;
+    color: $ui-modal-foreground
 }
 
 .readme-alert-note .readme-alert-title {
@@ -215,7 +216,8 @@
 
 .readme-alert-tip {
     border-left-color: #1a7f37;
-    background: #dafbe1;
+    background: #1a7f370a;
+    color: $ui-modal-foreground
 }
 
 .readme-alert-tip .readme-alert-title {
@@ -224,7 +226,8 @@
 
 .readme-alert-important {
     border-left-color: #8250df;
-    background: #fbefff;
+    background: #8250df0a;
+    color: $ui-modal-foreground
 }
 
 .readme-alert-important .readme-alert-title {
@@ -233,7 +236,8 @@
 
 .readme-alert-warning {
     border-left-color: #9a6700;
-    background: #fff8c5;
+    background: #9a67000a;
+    color: $ui-modal-foreground
 }
 
 .readme-alert-warning .readme-alert-title {
@@ -242,7 +246,8 @@
 
 .readme-alert-caution {
     border-left-color: #cf222e;
-    background: #ffebe9;
+    background: #cf222e0a;
+    color: $ui-modal-foreground
 }
 
 .readme-alert-caution .readme-alert-title {

@@ -43,20 +43,24 @@ export function loadData(loadData) {
 
 const editorTheme = () => {
     let theme = 'dark'
-    switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
-        case undefined:
-            theme = 'dark';
-            break
-        case 'dark':
-            theme = 'dark';
-            break
-        case 'light':
-            theme = 'light';
-            break
-        default:
-            theme = 'dark'
+    try {
+        switch (JSON.parse(localStorage.getItem('tw:theme')).gui) {
+            case undefined:
+                theme = 'dark';
+                break
+            case 'dark':
+                theme = 'dark';
+                break
+            case 'light':
+                theme = 'light';
+                break
+            default:
+                theme = 'dark'
+        }
+        return theme
+    } catch (e) {
+        return theme
     }
-    return theme
 }
 
 const splitReadmeBlocks = markdown => {

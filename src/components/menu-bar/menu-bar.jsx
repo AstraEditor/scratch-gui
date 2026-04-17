@@ -280,7 +280,7 @@ class MenuBar extends React.Component {
         }
     }
     handleWindowMaximizeStateChange(isMaximized) {
-        this.setState({isMaximized: Boolean(isMaximized)});
+        this.setState({ isMaximized: Boolean(isMaximized) });
     }
     handleResize() {
         // 窗口大小变化时更新最大化状态
@@ -506,6 +506,11 @@ class MenuBar extends React.Component {
             <div
                 className={styles.controlBarInner}
             >
+                <div className={styles.accountInfoGroup}>
+                    <TWSaveStatus
+                        showSaveFilePicker={this.props.showSaveFilePicker}
+                    />
+                </div>
                 {onClickMinimize && (
                     <div
                         className={styles.controlButton}
@@ -1229,14 +1234,8 @@ class MenuBar extends React.Component {
                         </div>
                     </div>
                 </div>
-                <div className={styles.accountInfoGroup}>
-                    <TWSaveStatus
-                        showSaveFilePicker={this.props.showSaveFilePicker}
-                    />
-                </div>
                 <div className={styles.controlBar} >
                     {controlBar}
-
                 </div>
             </Box>
         );
