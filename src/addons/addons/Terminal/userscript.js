@@ -1,6 +1,9 @@
 import BottomPanel from "../../ui/bottom-panel/bottom-panel.js";
 import SideBar from "../../ui/side-bar/side-bar.js";
 import icon from "!../../../lib/tw-recolor/build!./logo.svg";
+import iconSidebar from "!../../../lib/tw-recolor/build!./icon-sidebar.svg";
+import iconBottom from "!../../../lib/tw-recolor/build!./icon-bottom.svg";
+import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
 import { setup as setupDebugger, setPaused as setPausedDebugger } from "../debugger/module.js";
 
 export default async function ({ addon, console, msg }) {
@@ -343,90 +346,227 @@ export default async function ({ addon, console, msg }) {
     display: flex;
     gap: 4px;
     align-items: center;
+    position: relative;
   `;
 
-  // 创建位置切换按钮
-  const createPositionButton = (type, icon, title) => {
+  // 位置图标映射
+  const positionIcons = {
+    [POSITION_TYPES.SIDEBAR]: iconSidebar,
+    [POSITION_TYPES.BOTTOM_PANEL]: iconBottom,
+    [POSITION_TYPES.WINDOW]: iconWindow
+  };
+
+  // 位置标题映射
+  const positionTitles = {
+    [POSITION_TYPES.SIDEBAR]: "侧边栏",
+    [POSITION_TYPES.BOTTOM_PANEL]: "底部面板",
+    [POSITION_TYPES.WINDOW]: "独立窗口"
+  };
+
+  // 创建轮换按钮
+  const rotateButton = document.createElement("button");
+  rotateButton.className = "sa-terminal-rotate-button";
+  rotateButton.title = `当前位置: ${positionTitles[currentPosition]} (点击轮换)`;
+  rotateButton.style.cssText = `
+    background: none;
+    border: 1px solid var(--ui-black-transparent);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--ui-text-primary);
+    transition: all 0.2s;
+    min-width: 32px;
+  `;
+
+  // 添加SVG图标
+  const rotateBtnIcon = document.createElement("img");
+  rotateBtnIcon.src = positionIcons[currentPosition];
+  rotateBtnIcon.style.width = "16px";
+  rotateBtnIcon.style.height = "16px";
+  rotateBtnIcon.style.filter = "grayscale(100%)";
+  rotateButton.appendChild(rotateBtnIcon);
+
+  // 点击轮换按钮切换到下一个位置
+  rotateButton.addEventListener("click", () => {
+    const positions = [POSITION_TYPES.SIDEBAR, POSITION_TYPES.BOTTOM_PANEL, POSITION_TYPES.WINDOW];
+    const currentIndex = positions.indexOf(currentPosition);
+    const nextIndex = (currentIndex + 1) % positions.length;
+    const nextPosition = positions[nextIndex];
+    
+    // 检查是否可以使用 VSCode 布局
+    if (nextPosition === POSITION_TYPES.SIDEBAR && !isVSCodeLayoutEnabled()) {
+      // 如果侧边栏不可用，跳过它
+      const nextNextIndex = (nextIndex + 1) % positions.length;
+      switchTerminalPosition(positions[nextNextIndex]);
+    } else {
+      switchTerminalPosition(nextPosition);
+    }
+  });
+
+  positionSwitchContainer.appendChild(rotateButton);
+
+  // 创建浮窗容器
+  const popupContainer = document.createElement("div");
+  popupContainer.className = "sa-terminal-position-popup";
+  popupContainer.style.cssText = `
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--ui-white);
+    border: 1px solid var(--ui-black-transparent);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 1000;
+    min-width: 120px;
+  `;
+
+  // 创建浮窗中的位置按钮
+  const createPopupButton = (type, iconUrl, title) => {
     const button = document.createElement("button");
-    button.className = "sa-terminal-position-button";
-    button.innerHTML = icon;
-    button.title = title;
+    button.className = "sa-terminal-popup-button";
     button.dataset.position = type;
     button.style.cssText = `
       background: none;
-      border: 1px solid var(--ui-black-transparent);
+      border: none;
       border-radius: 4px;
-      padding: 4px 8px;
+      padding: 6px 10px;
       cursor: pointer;
       font-size: 12px;
       color: var(--ui-text-primary);
-      transition: all 0.2s;
+      text-align: left;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      font-family: inherit;
+      gap: 8px;
     `;
 
+    // 添加SVG图标
+    const img = document.createElement("img");
+    img.src = iconUrl;
+    img.style.width = "16px";
+    img.style.height = "16px";
+    img.style.filter = "grayscale(100%)";
+    button.appendChild(img);
+
+    // 添加文本
+    const text = document.createElement("span");
+    text.textContent = title;
+    button.appendChild(text);
+
     button.addEventListener("mouseenter", () => {
-      if (button.dataset.position !== currentPosition) {
-        button.style.backgroundColor = "var(--ui-primary-transparent)";
-      }
+      button.style.backgroundColor = "var(--ui-primary-transparent)";
     });
 
     button.addEventListener("mouseleave", () => {
-      if (button.dataset.position !== currentPosition) {
-        button.style.backgroundColor = "none";
-      }
+      button.style.backgroundColor = "none";
     });
 
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (e) => {
+      e.stopPropagation(); // 防止触发轮换按钮的点击
       const targetPosition = button.dataset.position;
       if (targetPosition !== currentPosition) {
         switchTerminalPosition(targetPosition);
       }
+      // 隐藏浮窗
+      popupContainer.style.display = "none";
     });
 
     return button;
   };
 
-  const sidebarButton = createPositionButton(
+  const sidebarPopupButton = createPopupButton(
     POSITION_TYPES.SIDEBAR,
-    "╠",
-    "切换到侧边栏"
+    iconSidebar,
+    "侧边栏"
   );
 
-  const bottomButton = createPositionButton(
+  const bottomPopupButton = createPopupButton(
     POSITION_TYPES.BOTTOM_PANEL,
-    "╩",
-    "切换到底部面板"
+    iconBottom,
+    "底部面板"
   );
 
-  const windowButton = createPositionButton(
+  const windowPopupButton = createPopupButton(
     POSITION_TYPES.WINDOW,
-    "⬚",
-    "切换到独立窗口"
+    iconWindow,
+    "独立窗口"
   );
 
-  positionSwitchContainer.appendChild(sidebarButton);
-  positionSwitchContainer.appendChild(bottomButton);
-  positionSwitchContainer.appendChild(windowButton);
+  popupContainer.appendChild(sidebarPopupButton);
+  popupContainer.appendChild(bottomPopupButton);
+  popupContainer.appendChild(windowPopupButton);
+  positionSwitchContainer.appendChild(popupContainer);
+
+  // 鼠标悬浮显示浮窗
+  let popupTimeout = null;
+
+  rotateButton.addEventListener("mouseenter", () => {
+    clearTimeout(popupTimeout);
+    popupContainer.style.display = "flex";
+  });
+
+  positionSwitchContainer.addEventListener("mouseleave", () => {
+    popupTimeout = setTimeout(() => {
+      popupContainer.style.display = "none";
+    }, 200);
+  });
+
+  popupContainer.addEventListener("mouseenter", () => {
+    clearTimeout(popupTimeout);
+  });
+
+  popupContainer.addEventListener("mouseleave", () => {
+    popupTimeout = setTimeout(() => {
+      popupContainer.style.display = "none";
+    }, 200);
+  });
 
   // 更新位置切换按钮状态
   function updatePositionSwitchButton() {
-    const buttons = positionSwitchContainer.querySelectorAll(".sa-terminal-position-button");
-    buttons.forEach(button => {
+    // 更新轮换按钮的图标
+    rotateBtnIcon.src = positionIcons[currentPosition];
+    rotateButton.title = `当前位置: ${positionTitles[currentPosition]} (点击轮换)`;
+
+    // 更新浮窗按钮的状态
+    const popupButtons = popupContainer.querySelectorAll(".sa-terminal-popup-button");
+    popupButtons.forEach(button => {
       if (button.dataset.position === currentPosition) {
         button.style.backgroundColor = "var(--ui-primary)";
         button.style.color = "white";
-        button.style.borderColor = "var(--ui-primary)";
+        // 更新图标颜色
+        const img = button.querySelector("img");
+        if (img) {
+          img.style.filter = "none";
+        }
       } else {
         button.style.backgroundColor = "";
         button.style.color = "";
-        button.style.borderColor = "var(--ui-black-transparent)";
+        // 更新图标颜色
+        const img = button.querySelector("img");
+        if (img) {
+          img.style.filter = "grayscale(100%)";
+        }
       }
     });
 
     // 更新侧边栏按钮的可用状态
     const useVSCodeLayout = isVSCodeLayoutEnabled();
-    sidebarButton.disabled = !useVSCodeLayout;
-    sidebarButton.style.opacity = useVSCodeLayout ? "1" : "0.3";
-    sidebarButton.style.cursor = useVSCodeLayout ? "pointer" : "not-allowed";
+    if (!useVSCodeLayout) {
+      sidebarPopupButton.style.opacity = "0.3";
+      sidebarPopupButton.style.cursor = "not-allowed";
+      sidebarPopupButton.disabled = true;
+    } else {
+      sidebarPopupButton.style.opacity = "1";
+      sidebarPopupButton.style.cursor = "pointer";
+      sidebarPopupButton.disabled = false;
+    }
   }
 
   terminalHeader.appendChild(terminalTitle);
@@ -987,6 +1127,11 @@ export default async function ({ addon, console, msg }) {
     terminalInput.focus();
   });
 
+  // 等待 TabBar 元素（用于侧边栏模式）
+  const tabBar = await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
+    markAsSeen: true
+  });
+
   // 创建底部的Terminal开关按钮
   const toggleButton = document.createElement("button");
   toggleButton.className = "sa-terminal-toggle-button";
@@ -996,14 +1141,11 @@ export default async function ({ addon, console, msg }) {
   toggleBtnIcon.draggable = false;
   toggleBtnIcon.src = icon();
   toggleBtnIcon.style.filter = "grayscale(100%)";
+  toggleBtnIcon.style.width = '20px';
+  toggleBtnIcon.style.height = '20px';
 
-  // 创建文本元素
-  const toggleBtnText = document.createElement("span");
-  toggleBtnText.innerText = "Terminal";
-
-  // 组合按钮内容
+  // 只添加图标，不添加文本
   toggleButton.appendChild(toggleBtnIcon);
-  toggleButton.appendChild(toggleBtnText);
 
   addon.tab.displayNoneWhileDisabled(toggleButton);
 
@@ -1089,14 +1231,26 @@ export default async function ({ addon, console, msg }) {
     // 根据当前位置添加按钮
     switch (currentPosition) {
       case POSITION_TYPES.SIDEBAR:
-        // Sidebar 模式：添加到 Sidebar 按钮栏（如果存在）
-        // 注意：Sidebar 目前可能没有按钮栏，这里暂时跳过
-        // 如果将来 Sidebar 添加按钮栏，可以在这里添加
+        // Sidebar 模式：添加到 TabBar，只显示图标
+        if (tabBar) {
+          // 使用与 SPA、bookmark 相同的类名
+          toggleButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
+            others: 'sa-terminal-toggle-button vscode-tab'
+          });
+          // 只显示图标
+          toggleBtnIcon.style.display = "inline";
+          toggleBtnText.style.display = "none";
+          tabBar.appendChild(toggleButton);
+        }
         break;
       case POSITION_TYPES.BOTTOM_PANEL:
         // Bottom Panel 模式：添加到 Bottom Panel 按钮栏
         const bottomBarButtonBar = BottomPanel.getButtonBar();
         if (bottomBarButtonBar) {
+          toggleButton.className = "sa-terminal-toggle-button";
+          // 显示图标和文字
+          toggleBtnIcon.style.display = "inline";
+          toggleBtnText.style.display = "inline";
           bottomBarButtonBar.appendChild(toggleButton);
         }
         break;
@@ -1125,7 +1279,8 @@ export default async function ({ addon, console, msg }) {
     const buttonBar = BottomPanel.getButtonBar();
     if (buttonBar) {
       console.log("Button bar found, adding terminal button");
-      buttonBar.appendChild(toggleButton);
+      // 使用 updateToggleButtonPosition 来正确设置按钮样式
+      updateToggleButtonPosition();
       console.log("Terminal button added to button bar");
       window.dispatchEvent(new Event("resize"));
       break;
