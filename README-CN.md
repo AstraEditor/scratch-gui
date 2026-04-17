@@ -1,35 +1,35 @@
 # AstraEditor-gui
 
-[中文](./README-CN.md)
+[English](./README.md)
 
-This scratch-gui is modified version for [AstraEditor](https://www.github.com/AstraEditor)
+此 scratch-gui 是 [AstraEditor](https：//www.github.com/AstraEditor) 的修改版本
 
-AstraEditor-gui Added more addons to TurboWarp, adjusted the layout and style to make it more modern.
+AstraEditor-gui为TurboWarp添加了更多的插件，调整了布局和风格，使其更加现代化。
 
-Try now?
+现在试试？
 
-## Get Start?
+## 开始？
 
-We use **pnpm** to manage packages, so you nee use `pnpm install` and `pnpm start` to get started.
+我们使用 **pnpm** 来管理软件包，所以你需要使用`pnpm install`和`pnpm start`来开始。
 
 ``` bash
 pnpm install
 pnpm start
 ```
 
-This will start a local debugging server.
+这将启动本地调试服务器。
 
-Use `pnpm run build` to create a static web page that can be deployed on **GitHub Pages**.
+使用`pnpm run build`创建静态网页，可以部署到 **GitHub Pages** 上。
 
-Learn more from https://editors.astras.top/document/development/getting-started to setup the complete AstraEditor environment.
+从 https://editors.astras.top/document/development/getting-started 了解更多信息，以设置完整的AstraEditor环境。
 
-## License
+## 许可证
 
-AstraEditor's modifications to TurboWarp are licensed under the GNU General Public License v3.0. 
+AstraEditor对TurboWarp的修改是根据GNU通用公共许可证v3.0授权的。
 
-See LICENSE or https://www.gnu.org/licenses/ for details.
+有关详细信息，请参阅LICENSE或 https://www.gnu.org/licenses/ 。
 
-The following is the original license for scratch-gui, which we are required to retain. This is NOT the license of this project.
+以下是scratch-gui的原始许可证，我们需要保留。这不是本项目的许可证。
 
 ```
 AstraEditor Copyright (c) 2026, AstrasTeam
