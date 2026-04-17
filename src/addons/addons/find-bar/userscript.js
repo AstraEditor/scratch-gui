@@ -11,6 +11,7 @@ function isVSCodeLayoutEnabled() {
 }
 
 export default async function ({ addon, msg, console }) {
+  const vm = addon.tab.traps.vm;
   const Blockly = await addon.tab.traps.getBlockly();
   let VSCodeLayout = isVSCodeLayoutEnabled();
   class FindBar {
@@ -127,6 +128,14 @@ export default async function ({ addon, msg, console }) {
         // 保存 sidebar 模式下的输入框引用
         this.sidebarFindInput = sidebarFindInput;
         this.sidebarDropdownOut = sidebarDropdownOut;
+
+        vm.runtime.on('PROJECT_CHANGED', () => {
+          sidebarDropdownOut.childNodes.forEach(node => {
+            if(node.tagName !== 'INPUT') node.remove();
+          });
+          sidebarDropdownOut.appendChild(this.dropdown.createDom());
+          this.showDropDownSidebar();
+        })
 
         // 注册插件内容和回调
         SideBar.register('find-bar', this.sidebarContent, {
@@ -373,10 +382,8 @@ export default async function ({ addon, msg, console }) {
         if (VSCodeLayout) {
           // VSCode 布局下，切换到 sidebar
           if (SideBar.getActivePlugin() === 'find-bar') {
-            // 如果已经激活，聚焦到输入框
             if (this.sidebarFindInput) {
-              this.sidebarFindInput.focus();
-              this.sidebarFindInput.select();
+              SideBar.close();
             }
           } else {
             // 如果未激活，显示 sidebar
