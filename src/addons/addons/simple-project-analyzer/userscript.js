@@ -1671,7 +1671,7 @@ export default async function ({ addon, msg, console }) {
   }).then(() => {
     analyzer.init();
     if(isVSCodeLayoutEnabled()) vm.runtime.on('PROJECT_CHANGED', () => {
-      analyzer.showAnalysisSidebar();
+      analyzer.analyzeProjectForSidebar();
     });
   });
 }
