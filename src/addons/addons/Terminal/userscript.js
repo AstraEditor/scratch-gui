@@ -349,12 +349,7 @@ export default async function ({ addon, console, msg }) {
     position: relative;
   `;
 
-  // 位置图标映射
-  const positionIcons = {
-    [POSITION_TYPES.SIDEBAR]: iconSidebar,
-    [POSITION_TYPES.BOTTOM_PANEL]: iconBottom,
-    [POSITION_TYPES.WINDOW]: iconWindow
-  };
+
 
   // 位置标题映射
   const positionTitles = {
@@ -362,6 +357,18 @@ export default async function ({ addon, console, msg }) {
     [POSITION_TYPES.BOTTOM_PANEL]: "底部面板",
     [POSITION_TYPES.WINDOW]: "独立窗口"
   };
+
+  // 更新位置图标映射（重新生成SVG数据）
+  function updatePositionIcons() {
+    return {
+      [POSITION_TYPES.SIDEBAR]: iconSidebar(),
+      [POSITION_TYPES.BOTTOM_PANEL]: iconBottom(),
+      [POSITION_TYPES.WINDOW]: iconWindow()
+    };
+  }
+
+  // 位置图标映射
+  let positionIcons = updatePositionIcons();
 
   // 创建轮换按钮
   const rotateButton = document.createElement("button");
@@ -427,7 +434,7 @@ export default async function ({ addon, console, msg }) {
   `;
 
   // 创建浮窗中的位置按钮
-  const createPopupButton = (type, iconUrl, title) => {
+  const createPopupButton = (type, iconFunction, title) => {
     const button = document.createElement("button");
     button.className = "sa-terminal-popup-button";
     button.dataset.position = type;
@@ -449,7 +456,7 @@ export default async function ({ addon, console, msg }) {
 
     // 添加SVG图标
     const img = document.createElement("img");
-    img.src = iconUrl;
+    img.src = iconFunction();
     img.style.width = "16px";
     img.style.height = "16px";
     img.style.filter = "grayscale(100%)";
@@ -530,6 +537,9 @@ export default async function ({ addon, console, msg }) {
 
   // 更新位置切换按钮状态
   function updatePositionSwitchButton() {
+    // 重新生成图标数据
+    positionIcons = updatePositionIcons();
+    
     // 更新轮换按钮的图标
     rotateBtnIcon.src = positionIcons[currentPosition];
     rotateButton.title = `当前位置: ${positionTitles[currentPosition]} (点击轮换)`;
@@ -1174,10 +1184,18 @@ export default async function ({ addon, console, msg }) {
   SideBar.register('terminal', terminalContainer, {
     onActivate: () => {
       terminalInput.focus();
-      toggleButton.classList.add("sa-terminal-toggle-active");
+      toggleButton.classList.add("sa-terminal-toggle-active", "is-selected");
+      // 移除图标的灰度滤镜，使其显示主题色
+      if (toggleBtnIcon) {
+        toggleBtnIcon.style.filter = "grayscale(0%)";
+      }
     },
     onDeactivate: () => {
-      toggleButton.classList.remove("sa-terminal-toggle-active");
+      toggleButton.classList.remove("sa-terminal-toggle-active", "is-selected");
+      // 恢复图标的灰度滤镜
+      if (toggleBtnIcon) {
+        toggleBtnIcon.style.filter = "grayscale(100%)";
+      }
     }
   });
 
