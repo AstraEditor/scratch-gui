@@ -4,13 +4,41 @@ import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 import iconSidebar from "!../../../lib/tw-recolor/build!./icon-sidebar.svg";
 import iconBottom from "!../../../lib/tw-recolor/build!./icon-bottom.svg";
 import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
-import { setup as setupDebugger, setPaused as setPausedDebugger } from "../debugger/module.js";
+import { setup as setupDebugger, setPaused as setPausedDebugger } from "./module.js";
 
 const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
 
+/**
+ * 节流函数 - 限制函数执行频率
+ * @param {Function} func - 要执行的函数
+ * @param {number} wait - 等待时间（毫秒）
+ * @returns {Function} 节流后的函数
+ */
+function throttle(func, wait) {
+  let timeout = null;
+  let lastExecTime = 0;
+  
+  return function(...args) {
+    const currentTime = Date.now();
+    const remaining = wait - (currentTime - lastExecTime);
+    
+    if (remaining <= 0) {
+      clearTimeout(timeout);
+      timeout = null;
+      lastExecTime = currentTime;
+      return func.apply(this, args);
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        timeout = null;
+        lastExecTime = Date.now();
+        func.apply(this, args);
+      }, remaining);
+    }
+  };
+}
+
 class TerminalVirtualList {
   constructor(options = {}) {
-    this.batchTimeout = options.batchTimeout || 16;
 
     this.rows = [];
     this.renderedStartIndex = -1;
@@ -24,7 +52,7 @@ class TerminalVirtualList {
     this.updateContentQueued = false;
     this.scrollToEndQueued = false;
     this.pendingLogs = [];
-    this.batchTimer = null;
+    this.batchScheduled = false;
 
     this.outerElement = document.createElement("div");
     this.outerElement.className = "sa-terminal-output";
@@ -33,7 +61,9 @@ class TerminalVirtualList {
     this.innerElement.className = "sa-terminal-output-inner";
     this.outerElement.appendChild(this.innerElement);
 
-    this.outerElement.addEventListener("scroll", this._handleScroll.bind(this), { passive: true });
+    // 使用节流函数优化滚动事件处理
+    this._throttledScrollHandler = throttle(this._handleScroll.bind(this), 16);
+    this.outerElement.addEventListener("scroll", this._throttledScrollHandler, { passive: true });
   }
 
   _handleScroll(e) {
@@ -184,11 +214,12 @@ class TerminalVirtualList {
   }
 
   _scheduleBatchUpdate() {
-    if (this.batchTimer === null) {
-      this.batchTimer = setTimeout(() => {
-        this.batchTimer = null;
+    if (!this.batchScheduled) {
+      this.batchScheduled = true;
+      queueMicrotask(() => {
+        this.batchScheduled = false;
         this._flushPendingLogs();
-      }, this.batchTimeout);
+      });
     }
   }
 
