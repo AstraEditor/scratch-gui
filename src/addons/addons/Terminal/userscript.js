@@ -4,7 +4,245 @@ import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 import iconSidebar from "!../../../lib/tw-recolor/build!./icon-sidebar.svg";
 import iconBottom from "!../../../lib/tw-recolor/build!./icon-bottom.svg";
 import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
-import { setup as setupDebugger, setPaused as setPausedDebugger } from "../debugger/module.js";
+import { setup as setupDebugger, setPaused as setPausedDebugger } from "./module.js";
+
+const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
+
+/**
+ * 节流函数 - 限制函数执行频率
+ * @param {Function} func - 要执行的函数
+ * @param {number} wait - 等待时间（毫秒）
+ * @returns {Function} 节流后的函数
+ */
+function throttle(func, wait) {
+  let timeout = null;
+  let lastExecTime = 0;
+  
+  return function(...args) {
+    const currentTime = Date.now();
+    const remaining = wait - (currentTime - lastExecTime);
+    
+    if (remaining <= 0) {
+      clearTimeout(timeout);
+      timeout = null;
+      lastExecTime = currentTime;
+      return func.apply(this, args);
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        timeout = null;
+        lastExecTime = Date.now();
+        func.apply(this, args);
+      }, remaining);
+    }
+  };
+}
+
+class TerminalVirtualList {
+  constructor(options = {}) {
+
+    this.rows = [];
+    this.renderedStartIndex = -1;
+    this.renderedEndIndex = -1;
+    this.visible = false;
+    this.isScrolledToEnd = true;
+    this.scrollTop = 0;
+    this.height = 0;
+    this.rowHeight = 20;
+
+    this.updateContentQueued = false;
+    this.scrollToEndQueued = false;
+    this.pendingLogs = [];
+    this.batchScheduled = false;
+
+    this.outerElement = document.createElement("div");
+    this.outerElement.className = "sa-terminal-output";
+
+    this.innerElement = document.createElement("div");
+    this.innerElement.className = "sa-terminal-output-inner";
+    this.outerElement.appendChild(this.innerElement);
+
+    // 使用节流函数优化滚动事件处理
+    this._throttledScrollHandler = throttle(this._handleScroll.bind(this), 16);
+    this.outerElement.addEventListener("scroll", this._throttledScrollHandler, { passive: true });
+  }
+
+  _handleScroll(e) {
+    this.scrollTop = e.target.scrollTop;
+    this.isScrolledToEnd = e.target.scrollHeight - e.target.scrollTop - e.target.clientHeight < 50;
+    this.height = e.target.clientHeight;
+    // 立即更新，避免异步导致的不同步
+    this._updateContent();
+  }
+
+  _queueUpdateContent() {
+    if (this.visible && !this.updateContentQueued) {
+      this.updateContentQueued = true;
+      queueMicrotask(() => {
+        this.updateContentQueued = false;
+        this._updateContent();
+      });
+    }
+  }
+
+  _queueScrollToEnd() {
+    if (this.visible && this.isScrolledToEnd && !this.scrollToEndQueued) {
+      this.scrollToEndQueued = true;
+      requestAnimationFrame(() => {
+        this.scrollToEndQueued = false;
+        if (this.isScrolledToEnd) {
+          this.outerElement.scrollTop = this.outerElement.scrollHeight;
+        }
+      });
+    }
+  }
+
+  show() {
+    this.visible = true;
+    this.height = this.outerElement.clientHeight || 400;
+    // 强制更新渲染范围，确保显示所有缓存的日志
+    this.renderedStartIndex = -1;
+    this.renderedEndIndex = -1;
+    this._updateContent();
+    if (this.isScrolledToEnd) {
+      this._queueScrollToEnd();
+    }
+  }
+
+  hide() {
+    this.visible = false;
+  }
+
+  clear() {
+    this.rows.length = 0;
+    this.innerElement.innerHTML = "";
+    this.renderedStartIndex = -1;
+    this.renderedEndIndex = -1;
+    this.scrollTop = 0;
+    this.isScrolledToEnd = true;
+  }
+
+  _updateContent() {
+    if (this.rows.length === 0) {
+      if (this.innerElement.children.length > 0) {
+        this.innerElement.innerHTML = "";
+      }
+      this.renderedStartIndex = -1;
+      this.renderedEndIndex = -1;
+      return;
+    }
+
+    let viewHeight = this.outerElement.clientHeight;
+    if (viewHeight === 0) {
+      viewHeight = this.height || 400; // 默认高度
+    }
+    this.height = viewHeight;
+    
+    const visibleRows = Math.ceil(viewHeight / this.rowHeight) + 10;
+
+    let startIndex = 0;
+    const totalHeight = this.rows.length * this.rowHeight;
+    
+    if (this.isScrolledToEnd) {
+      // 滚动到底部时，显示最后几行
+      startIndex = Math.max(0, this.rows.length - visibleRows);
+    } else if (totalHeight > 0) {
+      // 否则根据滚动位置计算
+      const scrollRatio = Math.min(1, Math.max(0, this.scrollTop / totalHeight));
+      startIndex = Math.max(0, Math.floor(scrollRatio * this.rows.length) - 5);
+    }
+
+    const endIndex = Math.min(this.rows.length, startIndex + visibleRows);
+    startIndex = Math.max(0, endIndex - visibleRows);
+
+    if (this.renderedStartIndex === startIndex && this.renderedEndIndex === endIndex) {
+      return;
+    }
+
+    this.innerElement.style.height = `${totalHeight}px`;
+
+    const existingElements = new Map();
+    for (const child of this.innerElement.children) {
+      const idx = parseInt(child.dataset.index, 10);
+      if (!isNaN(idx)) {
+        existingElements.set(idx, child);
+      }
+    }
+
+    const neededIndices = new Set();
+    for (let i = startIndex; i < endIndex; i++) {
+      neededIndices.add(i);
+    }
+
+    for (const [idx, element] of existingElements) {
+      if (!neededIndices.has(idx)) {
+        element.remove();
+      }
+    }
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const row = this.rows[i];
+      let element = existingElements.get(i);
+
+      if (!element && row.element) {
+        element = row.element;
+        element.style.position = "absolute";
+        element.style.left = "10px";
+        element.style.right = "10px";
+        element.style.boxSizing = "border-box";
+        element.style.width = "auto";
+        element.style.maxWidth = "100%";
+        element.style.overflow = "hidden";
+        element.style.textOverflow = "ellipsis";
+        element.style.whiteSpace = "pre-wrap";
+        element.style.wordWrap = "break-word";
+        this.innerElement.appendChild(element);
+      }
+
+      if (element) {
+        element.style.top = `${i * this.rowHeight}px`;
+        element.dataset.index = i;
+      }
+    }
+
+    this.renderedStartIndex = startIndex;
+    this.renderedEndIndex = endIndex;
+  }
+
+  appendLog(log) {
+    this.pendingLogs.push(log);
+    this._scheduleBatchUpdate();
+  }
+
+  _scheduleBatchUpdate() {
+    if (!this.batchScheduled) {
+      this.batchScheduled = true;
+      queueMicrotask(() => {
+        this.batchScheduled = false;
+        this._flushPendingLogs();
+      });
+    }
+  }
+
+  _flushPendingLogs() {
+    if (this.pendingLogs.length === 0) return;
+
+    const logsToAdd = this.pendingLogs;
+    this.pendingLogs = [];
+
+    for (const log of logsToAdd) {
+      this.rows.push(log);
+    }
+
+    if (this.visible) {
+      this._queueUpdateContent();
+      this._queueScrollToEnd();
+    } else {
+      // 即使面板不可见，也要更新渲染范围，确保激活时能正确显示
+      this.renderedStartIndex = -1;
+      this.renderedEndIndex = -1;
+    }
+  }
+}
 
 export default async function ({ addon, console, msg }) {
   const vm = addon.tab.traps.vm;
@@ -62,7 +300,7 @@ export default async function ({ addon, console, msg }) {
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 1000;
-      display: flex;
+      display: none; /* 初始隐藏，只在需要时显示 */
       flex-direction: column;
       overflow: hidden;
     `;
@@ -143,13 +381,21 @@ export default async function ({ addon, console, msg }) {
         terminalContainer.style.flex = "1";
         terminalContainer.style.overflow = "auto";
 
+        // 启用虚拟列表
+        virtualList.show();
+
         // 在独立窗口模式下，terminalHeader 作为拖拽标题栏
         terminalHeader.style.cursor = "move";
         terminalHeader.style.userSelect = "none";
 
-        // 显示关闭按钮
+        // 显示关闭按钮（从buttonContainer移到terminalHeader）
         if (windowCloseButton) {
           windowCloseButton.style.display = "block";
+          // 从buttonContainer移除
+          if (windowCloseButton.parentNode === buttonContainer) {
+            buttonContainer.removeChild(windowCloseButton);
+          }
+          // 添加到terminalHeader
           terminalHeader.appendChild(windowCloseButton);
         }
 
@@ -171,6 +417,7 @@ export default async function ({ addon, console, msg }) {
       case POSITION_TYPES.WINDOW:
         if (floatingWindow) {
           if (terminalContainer.parentNode === floatingWindow) {
+            virtualList.hide();
             floatingWindow.removeChild(terminalContainer);
           }
           floatingWindow.style.display = "none";
@@ -179,10 +426,15 @@ export default async function ({ addon, console, msg }) {
           terminalHeader.style.cursor = "";
           terminalHeader.style.userSelect = "";
 
-          // 隐藏并移除关闭按钮
-          if (windowCloseButton && windowCloseButton.parentNode === terminalHeader) {
+          // 隐藏并移除关闭按钮（移回buttonContainer）
+          if (windowCloseButton) {
             windowCloseButton.style.display = "none";
-            terminalHeader.removeChild(windowCloseButton);
+            // 从terminalHeader移除
+            if (windowCloseButton.parentNode === terminalHeader) {
+              terminalHeader.removeChild(windowCloseButton);
+            }
+            // 移回buttonContainer
+            buttonContainer.appendChild(windowCloseButton);
           }
 
           // 禁用拖拽功能
@@ -579,74 +831,89 @@ export default async function ({ addon, console, msg }) {
     }
   }
 
+  // 创建按钮容器（用于并排放置所有操作按钮）
+  const buttonContainer = document.createElement("div");
+  buttonContainer.className = "sa-terminal-header-buttons";
+  buttonContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+
+  // 初始化独立窗口（确保 windowCloseButton 被创建）
+  createFloatingWindow();
+
+  // 将按钮添加到容器中
+  buttonContainer.appendChild(continueButton);
+  buttonContainer.appendChild(positionSwitchContainer);
+
+  // 将关闭按钮添加到按钮容器（默认隐藏，只在独立窗口模式显示）
+  // 注意：windowCloseButton 已在 createFloatingWindow 中创建
+  if (windowCloseButton) {
+    buttonContainer.appendChild(windowCloseButton);
+  }
+
   terminalHeader.appendChild(terminalTitle);
-  terminalHeader.appendChild(continueButton);
-  terminalHeader.appendChild(positionSwitchContainer);
+  terminalHeader.appendChild(buttonContainer);
   terminalContainer.appendChild(terminalHeader);
 
-  // 创建终端输出区域
-  const terminalOutput = document.createElement("div");
-  terminalOutput.className = "sa-terminal-output";
-  
+  // 创建终端输出区域（虚拟滚动列表）
+  const virtualList = new TerminalVirtualList({
+    rowHeight: 20,
+    batchTimeout: 50
+  });
+  const terminalOutput = virtualList.outerElement;
+
   // 初始化欢迎信息
   const welcomeLine1 = document.createElement("div");
   welcomeLine1.textContent = "AstraEditor Terminal v1.0";
-  terminalOutput.appendChild(welcomeLine1);
-  
+  virtualList.appendLog({ element: welcomeLine1, contentHash: welcomeLine1.textContent });
+
   const welcomeLine2 = document.createElement("div");
   welcomeLine2.textContent = "Type 'help' for available commands.";
-  terminalOutput.appendChild(welcomeLine2);
-  
+  virtualList.appendLog({ element: welcomeLine2, contentHash: welcomeLine2.textContent });
+
   const welcomeLine3 = document.createElement("div");
-  welcomeLine3.textContent = ""; // 空行
-  terminalOutput.appendChild(welcomeLine3);
+  welcomeLine3.textContent = "";
+  virtualList.appendLog({ element: welcomeLine3, contentHash: "" });
 
   terminalContainer.appendChild(terminalOutput);
 
   // 重复内容处理
-  let lastLogElement = null;
-  let lastLogContent = "";
+  let lastLogData = null;
   let lastLogCount = 1;
 
   const addLogLine = (content, element) => {
-    // 检查是否与上一行内容相同
     const currentContent = content;
-    
-    if (currentContent === lastLogContent && lastLogElement) {
-      // 重复内容，增加计数
+
+    if (lastLogData && currentContent === lastLogData.contentHash) {
       lastLogCount++;
-      // 更新显示的计数
-      let counter = lastLogElement.querySelector('.sa-terminal-log-counter');
-      if (!counter) {
-        counter = document.createElement("span");
-        counter.className = "sa-terminal-log-counter";
-        lastLogElement.insertBefore(counter, lastLogElement.firstChild);
+      lastLogData.count = lastLogCount;
+      if (lastLogData.element && lastLogData.element.parentNode) {
+        let counter = lastLogData.element.querySelector('.sa-terminal-log-counter');
+        if (!counter) {
+          counter = document.createElement("span");
+          counter.className = "sa-terminal-log-counter";
+          lastLogData.element.insertBefore(counter, lastLogData.element.firstChild);
+        }
+        counter.textContent = lastLogCount;
       }
-      counter.textContent = lastLogCount;
     } else {
-      // 新内容，添加新行
-      if (element) {
-        terminalOutput.appendChild(element);
-      } else {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        line.textContent = content;
-        terminalOutput.appendChild(line);
+      let lineElement = element;
+      if (!lineElement) {
+        lineElement = document.createElement("div");
+        lineElement.className = "sa-terminal-log-line";
+        lineElement.textContent = content;
       }
-      
-      // 更新上一行记录
-      lastLogElement = element || terminalOutput.lastChild;
-      lastLogContent = currentContent;
+      virtualList.appendLog({ element: lineElement, contentHash: currentContent });
+      lastLogData = { contentHash: currentContent, element: lineElement, count: 1 };
       lastLogCount = 1;
     }
-    
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
   };
 
   // 重置重复内容记录（用于非积木输出的内容）
   const resetLogTracking = () => {
-    lastLogElement = null;
-    lastLogContent = "";
+    lastLogData = null;
     lastLogCount = 1;
   };
 
@@ -658,30 +925,25 @@ export default async function ({ addon, console, msg }) {
   // 添加日志行（支持重复内容合并）
   const addLogLineWithElement = (element) => {
     const contentHash = getElementContentHash(element);
-    
-    if (contentHash === lastLogContent && lastLogElement) {
-      // 重复内容，增加计数
+
+    if (lastLogData && contentHash === lastLogData.contentHash) {
       lastLogCount++;
-      // 更新显示的计数
-      let counter = lastLogElement.querySelector('.sa-terminal-log-counter');
-      if (!counter) {
-        counter = document.createElement("span");
-        counter.className = "sa-terminal-log-counter";
-        lastLogElement.insertBefore(counter, lastLogElement.firstChild);
+      lastLogData.count = lastLogCount;
+      if (lastLogData.element && lastLogData.element.parentNode) {
+        let counter = lastLogData.element.querySelector('.sa-terminal-log-counter');
+        if (!counter) {
+          counter = document.createElement("span");
+          counter.className = "sa-terminal-log-counter";
+          lastLogData.element.insertBefore(counter, lastLogData.element.firstChild);
+        }
+        counter.textContent = lastLogCount;
       }
-      counter.textContent = lastLogCount;
-      // 移除重复的元素
       element.remove();
     } else {
-      // 新内容，添加新行
-      terminalOutput.appendChild(element);
-      // 更新上一行记录
-      lastLogElement = element;
-      lastLogContent = contentHash;
+      virtualList.appendLog({ element, contentHash });
+      lastLogData = { contentHash, element, count: 1 };
       lastLogCount = 1;
     }
-    
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
   };
 
   
@@ -969,7 +1231,8 @@ export default async function ({ addon, console, msg }) {
     clear: {
       description: "Clear the terminal",
       execute: () => {
-        terminalOutput.textContent = "";
+        virtualList.clear();
+        resetLogTracking();
         return "";
       }
     },
@@ -1079,7 +1342,7 @@ export default async function ({ addon, console, msg }) {
     const commandLine = document.createElement("div");
     commandLine.className = "sa-terminal-command-line";
     commandLine.textContent = `> ${command}`;
-    terminalOutput.appendChild(commandLine);
+    virtualList.appendLog({ element: commandLine, contentHash: commandLine.textContent });
 
     if (!cmdName) {
       return;
@@ -1094,18 +1357,15 @@ export default async function ({ addon, console, msg }) {
           const resultLine = document.createElement("div");
           resultLine.className = "sa-terminal-result-line";
           resultLine.textContent = result;
-          terminalOutput.appendChild(resultLine);
+          virtualList.appendLog({ element: resultLine, contentHash: resultLine.textContent });
         }
       } catch (e) {
         const errorLine = document.createElement("div");
         errorLine.className = "sa-terminal-error-line";
         errorLine.textContent = `Error: ${e.message}`;
-        terminalOutput.appendChild(errorLine);
+        virtualList.appendLog({ element: errorLine, contentHash: errorLine.textContent });
       }
     }
-    // 不显示unknown command，允许用户输入任意内容
-
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
   };
 
   // 输入处理
@@ -1183,6 +1443,7 @@ export default async function ({ addon, console, msg }) {
   // 注册面板插件
   SideBar.register('terminal', terminalContainer, {
     onActivate: () => {
+      virtualList.show();
       terminalInput.focus();
       toggleButton.classList.add("sa-terminal-toggle-active", "is-selected");
       // 移除图标的灰度滤镜，使其显示主题色
@@ -1191,6 +1452,7 @@ export default async function ({ addon, console, msg }) {
       }
     },
     onDeactivate: () => {
+      virtualList.hide();
       toggleButton.classList.remove("sa-terminal-toggle-active", "is-selected");
       // 恢复图标的灰度滤镜
       if (toggleBtnIcon) {
@@ -1201,6 +1463,7 @@ export default async function ({ addon, console, msg }) {
 
   BottomPanel.register('terminal', terminalContainer, {
     onActivate: () => {
+      virtualList.show();
       terminalInput.focus();
       toggleButton.classList.add("sa-terminal-toggle-active");
       // 移除按钮栏的底部边框
@@ -1210,6 +1473,7 @@ export default async function ({ addon, console, msg }) {
       }
     },
     onDeactivate: () => {
+      virtualList.hide();
       toggleButton.classList.remove("sa-terminal-toggle-active");
       // 恢复按钮栏的底部边框
       const buttonBar = BottomPanel.getButtonBar();
@@ -1284,6 +1548,7 @@ export default async function ({ addon, console, msg }) {
           element: stageHeaderButton,
           order: 0
         });
+        toggleButton.style.marginRight = "2px";
         break;
     }
 
