@@ -5,7 +5,7 @@ async function loadChartJS() {
       resolve();
       return;
     }
-    
+
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.js';
     script.onload = resolve;
@@ -22,10 +22,11 @@ function isVSCodeLayoutEnabled() {
   return getSetting("EnableVSCodeLayout");
 }
 
-export default async function ({ addon, msg, safeMsg, console }) {
+export default async function ({ addon, msg, console }) {
   // 加载Chart.js库
   await loadChartJS();
-  
+  const vm = addon.tab.traps.vm;
+
   // 项目分析器类
   class SimpleProjectAnalyzer {
     constructor() {
@@ -572,7 +573,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   const label = context.label || '';
                   const rawValue = data[context.dataIndex];
                   return `${label}: ${rawValue}`;
@@ -625,7 +626,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         // 使用 vm.toJSON 获取项目数据
         const vm = addon.tab.traps.vm;
         const projectJSON = JSON.parse(vm.toJSON());
-        
+
         // 执行分析
         const analysis = this.performAnalysis(projectJSON);
 
@@ -661,36 +662,36 @@ export default async function ({ addon, msg, safeMsg, console }) {
 
       // 分析扩展
       this.analyzeExtensions(analysis, projectData);
-      
+
       // 创建扩展名称映射
       const extensionNameMap = {};
       analysis.extensions.forEach(ext => {
         extensionNameMap[ext.id] = ext.name;
       });
-      
+
       // 分析代码块
       this.analyzeBlocks(analysis, projectData, extensionNameMap);
-      
+
       // 分析精灵和舞台
       this.analyzeSprites(analysis, projectData);
-      
+
       // 分析有效积木和函数定义
       this.analyzeEffectiveBlocks(analysis, projectData);
-      
+
       return analysis;
     }
 
     // 分析代码块
     analyzeBlocks(analysis, projectData, extensionNameMap = {}) {
       const targets = projectData.targets || [];
-      
+
       targets.forEach(target => {
         const blocks = target.blocks || {};
-        
+
         Object.values(blocks).forEach(block => {
           if (block.opcode) {
             analysis.totalBlocks++;
-            
+
             const category = this.getBlockCategory(block.opcode, extensionNameMap);
             analysis.codeTypes[category] = (analysis.codeTypes[category] || 0) + 1;
           }
@@ -709,11 +710,11 @@ export default async function ({ addon, msg, safeMsg, console }) {
       if (opcode.startsWith('operator_')) return msg('operators', '运算');
       if (opcode.startsWith('data_')) return msg('data', '数据');
       if (opcode.startsWith('video_')) return msg('video', '视频');
-      
+
       // 自定义函数和参数
       if (opcode.startsWith('procedures_')) return msg('custom-functions', '自定义函数');
       if (opcode.startsWith('argument_')) return msg('custom-functions', '自定义函数');
-      
+
       // 扩展积木处理
       if (!this.isStandardBlock(opcode)) {
         const extensionId = this.getExtensionIdFromOpcode(opcode);
@@ -724,18 +725,18 @@ export default async function ({ addon, msg, safeMsg, console }) {
         // 回退到默认名称
         return this.getExtensionNameFromId(extensionId);
       }
-      
+
       return msg('other', '其他');
     }
 
     // 检查是否为标准积木
     isStandardBlock(opcode) {
       const standardCategories = [
-        'motion_', 'looks_', 'sound_', 'event_', 'control_', 
+        'motion_', 'looks_', 'sound_', 'event_', 'control_',
         'sensing_', 'operator_', 'data_', 'video_',
         'procedures_', 'argument_'
       ];
-      
+
       return standardCategories.some(category => opcode.startsWith(category));
     }
 
@@ -762,7 +763,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         'wedo2': 'LEGO WeDo 2.0',
         'boost': 'LEGO BOOST'
       };
-      
+
       return defaultExtensionNames[extensionId] || extensionId;
     }
 
@@ -770,15 +771,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
     analyzeExtensions(analysis, projectData) {
       const extensions = projectData.extensions || [];
       const extensionURLs = projectData.extensionURLs || {};
-      
+
       // 获取所有扩展积木操作码
       const extensionBlocks = this.getExtensionBlocks(projectData);
-      
+
       // 分析扩展信息
       extensions.forEach(ext => {
         let extensionName = this.getExtensionNameFromId(ext);
         let extensionColor = null;
-        
+
         const extensionInfo = {
           id: ext,
           name: extensionName,
@@ -786,10 +787,10 @@ export default async function ({ addon, msg, safeMsg, console }) {
           url: extensionURLs[ext] || null,
           blocks: extensionBlocks.filter(block => block.extensionId === ext)
         };
-        
+
         analysis.extensions.push(extensionInfo);
       });
-      
+
       // 检查画笔扩展使用情况
       const penBlocks = extensionBlocks.filter(block => block.extensionId === 'pen');
       if (penBlocks.length > 0 && !extensions.includes('pen')) {
@@ -808,7 +809,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
     getExtensionBlocks(projectData) {
       const extensionBlocks = [];
       const targets = projectData.targets || [];
-      
+
       targets.forEach(target => {
         const blocks = target.blocks || {};
         Object.values(blocks).forEach(block => {
@@ -821,7 +822,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
           }
         });
       });
-      
+
       return extensionBlocks;
     }
 
@@ -830,9 +831,9 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const targets = projectData.targets || [];
       const sprites = targets.filter(t => !t.isStage);
       const stage = targets.find(t => t.isStage);
-      
+
       analysis.sprites = sprites.length;
-      
+
       // 统计造型和声音
       targets.forEach(target => {
         if (target.costumes) {
@@ -853,7 +854,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
     // 分析有效积木和函数定义
     analyzeEffectiveBlocks(analysis, projectData) {
       const targets = projectData.targets || [];
-      
+
       targets.forEach(target => {
         const blocks = target.blocks || {};
         Object.values(blocks).forEach(block => {
@@ -862,7 +863,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
             if (!block.shadow) {
               analysis.effectiveBlocks++;
             }
-            
+
             // 统计函数定义
             if (block.opcode === 'procedures_definition') {
               analysis.functionDefinitions++;
@@ -904,7 +905,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         Object.values(blocks).forEach(block => {
           if (block.opcode) {
             blockTypes.add(block.opcode);
-            
+
             // 分类收集积木块种类
             if (block.opcode.startsWith('event_')) {
               eventBlockTypes.add(block.opcode);
@@ -960,7 +961,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasMultipleScripts = eventBlockTypes.size > 1; // 多种事件积木表示多个脚本
       const hasCustomBlocks = procedureBlockTypes.has('procedures_definition');
       const hasClones = controlBlockTypes.has('control_create_clone_of') || controlBlockTypes.has('control_start_as_clone');
-      
+
       if (hasMultipleSprites && hasMultipleScripts) {
         scores[msg('abstraction', '抽象和问题分解')] = 1; // Basic
       }
@@ -980,7 +981,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasCloneEvents = controlBlockTypes.has('control_create_clone_of');
       const hasSensorEvents = eventBlockTypes.has('event_whengreaterthan');
       const hasBackdropEvents = eventBlockTypes.has('event_whenbackdropswitchesto');
-      
+
       if (hasGreenFlag && eventBlockTypes.size > 1) {
         scores[msg('parallelism', '并行性')] = 1; // Basic - 多个绿旗脚本
       }
@@ -995,10 +996,10 @@ export default async function ({ addon, msg, safeMsg, console }) {
       // 基于不同的逻辑积木块种类
       const hasIf = controlBlockTypes.has('control_if');
       const hasIfElse = controlBlockTypes.has('control_if_else');
-      const hasLogicOps = operatorBlockTypes.has('operator_and') || 
-                         operatorBlockTypes.has('operator_or') || 
-                         operatorBlockTypes.has('operator_not');
-      
+      const hasLogicOps = operatorBlockTypes.has('operator_and') ||
+        operatorBlockTypes.has('operator_or') ||
+        operatorBlockTypes.has('operator_not');
+
       if (hasIf) {
         scores[msg('logic', '逻辑思维')] = 1; // Basic
       }
@@ -1020,7 +1021,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasWaitUntil = controlBlockTypes.has('control_wait_until');
       const hasBackdropChange = looksBlockTypes.has('looks_nextbackdrop') || looksBlockTypes.has('looks_switchbackdropto');
       const hasBroadcastAndWait = eventBlockTypes.has('event_broadcastandwait');
-      
+
       if (hasWait) {
         scores[msg('synchronization', '同步')] = 1; // Basic
       }
@@ -1036,7 +1037,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasSequence = blockTypes.size > 0; // 任何积木块都表示有序列
       const hasRepeat = controlBlockTypes.has('control_repeat') || controlBlockTypes.has('control_forever');
       const hasRepeatUntil = controlBlockTypes.has('control_repeat_until');
-      
+
       if (hasSequence) {
         scores[msg('flow-control', '流程控制')] = 1; // Basic
       }
@@ -1053,15 +1054,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasKeyPressedEvent = eventBlockTypes.has('event_whenkeypressed');
       const hasSpriteClickedEvent = eventBlockTypes.has('event_whenthisspriteclicked');
       const hasAskWait = sensingBlockTypes.has('sensing_askandwait');
-      const hasMouseBlocks = sensingBlockTypes.has('sensing_mousedown') || 
-                            sensingBlockTypes.has('sensing_mousex') || 
-                            sensingBlockTypes.has('sensing_mousey');
+      const hasMouseBlocks = sensingBlockTypes.has('sensing_mousedown') ||
+        sensingBlockTypes.has('sensing_mousex') ||
+        sensingBlockTypes.has('sensing_mousey');
       const hasSensorGreater = eventBlockTypes.has('event_whengreaterthan');
       const hasVideo = Array.from(blockTypes).some(type => type.startsWith('video_'));
-      const hasAudioInteraction = soundBlockTypes.has('sound_playuntildone') || 
-                                 soundBlockTypes.has('sound_setvolumeto') ||
-                                 soundBlockTypes.has('sound_changevolumeby');
-      
+      const hasAudioInteraction = soundBlockTypes.has('sound_playuntildone') ||
+        soundBlockTypes.has('sound_setvolumeto') ||
+        soundBlockTypes.has('sound_changevolumeby');
+
       if (hasGreenFlagEvent) {
         scores[msg('user-interactivity', '用户交互')] = 1; // Basic
       }
@@ -1077,7 +1078,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
       const hasSpriteModifiers = motionBlockTypes.size > 0 || looksBlockTypes.size > 0 || soundBlockTypes.size > 0;
       const hasVariableOperations = variableNames.size > 0 && dataBlockTypes.size > 0;
       const hasListOperations = listNames.size > 0 && Array.from(dataBlockTypes).some(type => type.includes('list'));
-      
+
       if (hasSpriteModifiers) {
         scores[msg('data-representation', '数据表示')] = 1; // Basic
       }
@@ -1094,7 +1095,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
     // 计算数学逻辑评分
     calculateMathLogicScores(projectData) {
       const targets = projectData.targets || [];
-      
+
       // 统计各类积木块数量
       let operatorCount = 0;
       let controlCount = 0;
@@ -1104,15 +1105,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
         const blocks = target.blocks || {};
         Object.values(blocks).forEach(block => {
           if (!block.opcode) return;
-          
+
           if (block.opcode.startsWith('operator_')) {
             operatorCount++;
           }
-          
+
           if (block.opcode.startsWith('control_')) {
             controlCount++;
           }
-          
+
           if (block.opcode.startsWith('data_')) {
             dataCount++;
           }
@@ -1131,11 +1132,11 @@ export default async function ({ addon, msg, safeMsg, console }) {
     // 格式化文件大小
     formatFileSize(bytes) {
       if (bytes === 0) return '0 B';
-      
+
       const k = 1024;
       const sizes = ['B', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
+
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
@@ -1249,20 +1250,20 @@ export default async function ({ addon, msg, safeMsg, console }) {
     updateAnalysisResults(analysis) {
       // 更新统计数据
       this.updateStats(analysis);
-      
+
       // 更新代码类型分布图
       this.displayCodeTypeChart(analysis);
-      
+
       // 计算并更新Dr.Scratch评分
       const vm = addon.tab.traps.vm;
       const projectJSON = JSON.parse(vm.toJSON());
       const drScratchScores = this.calculateDrScratchScores(projectJSON);
       this.displayDrScratchScores(drScratchScores);
-      
+
       // 计算并更新数学逻辑评分
       const mathLogicScores = this.calculateMathLogicScores(projectJSON);
       this.displayMathLogicScores(mathLogicScores);
-      
+
       // 更新扩展列表
       this.displayExtensions(analysis.extensions);
 
@@ -1275,7 +1276,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
     updateStats(analysis) {
       const statsGrid = document.getElementById('saStatsGrid');
       const totalExtensionBlocks = analysis.extensions.reduce((sum, ext) => sum + ext.blocks.length, 0);
-      
+
       statsGrid.innerHTML = `
         <div class="sa-analyze-stat">
           <div class="sa-analyze-stat-value">${analysis.totalBlocks}</div>
@@ -1320,9 +1321,9 @@ export default async function ({ addon, msg, safeMsg, console }) {
     displayCodeTypeChart(analysis) {
       const canvas = document.getElementById('saCodeTypeChart');
       if (!canvas) return;
-      
+
       const ctx = canvas.getContext('2d');
-      
+
       // 定义标准类别的固定顺序
       const standardOrder = [
         msg('motion', '运动'),
@@ -1335,11 +1336,11 @@ export default async function ({ addon, msg, safeMsg, console }) {
         msg('data', '数据'),
         msg('custom-functions', '自定义函数')
       ];
-      
+
       // 分离标准和扩展类别
       const standardCategories = {};
       const extensionCategories = {};
-      
+
       Object.keys(analysis.codeTypes).forEach(category => {
         if (standardOrder.includes(category)) {
           standardCategories[category] = analysis.codeTypes[category];
@@ -1347,7 +1348,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
           extensionCategories[category] = analysis.codeTypes[category];
         }
       });
-      
+
       // 按固定顺序排列标准类别
       const orderedStandard = {};
       standardOrder.forEach(category => {
@@ -1355,18 +1356,18 @@ export default async function ({ addon, msg, safeMsg, console }) {
           orderedStandard[category] = standardCategories[category];
         }
       });
-      
+
       // 按字母顺序排序扩展类别
       const sortedExtensions = {};
       Object.keys(extensionCategories).sort().forEach(category => {
         sortedExtensions[category] = extensionCategories[category];
       });
-      
+
       // 合并排序后的数据
       const sortedCodeTypes = { ...orderedStandard, ...sortedExtensions };
       const sortedLabels = Object.keys(sortedCodeTypes);
       const sortedData = Object.values(sortedCodeTypes);
-      
+
       // 定义每个类别的颜色
       const categoryColors = {
         [msg('motion', '运动')]: '#4C97FF',
@@ -1379,15 +1380,15 @@ export default async function ({ addon, msg, safeMsg, console }) {
         [msg('data', '数据')]: '#FF8C1A',
         [msg('custom-functions', '自定义函数')]: '#FF6680'
       };
-      
+
       // 为扩展生成默认颜色
       const extensionColors = [
-        '#3498DB', '#E74C3C', '#F39C12', '#27AE60', '#16A085', 
-        '#2ECC71', '#E67E22', '#95A5A6', '#34495E', '#7F8C8D', 
-        '#9B59B6', '#1ABC9C', '#2C3E50', '#F1C40F', '#D35400', 
+        '#3498DB', '#E74C3C', '#F39C12', '#27AE60', '#16A085',
+        '#2ECC71', '#E67E22', '#95A5A6', '#34495E', '#7F8C8D',
+        '#9B59B6', '#1ABC9C', '#2C3E50', '#F1C40F', '#D35400',
         '#C0392B', '#BDC3C7', '#7F8C8D', '#95A5A6'
       ];
-      
+
       // 为每个标签分配对应颜色
       const assignedColors = sortedLabels.map((label, index) => {
         if (categoryColors[label]) {
@@ -1402,13 +1403,13 @@ export default async function ({ addon, msg, safeMsg, console }) {
           return extensionColors[index % extensionColors.length];
         }
       });
-      
+
       // 销毁现有图表
       if (this.chartInstance) {
         this.chartInstance.destroy();
         this.chartInstance = null;
       }
-      
+
       // 创建新图表
       this.chartInstance = new Chart(ctx, {
         type: 'doughnut',
@@ -1435,7 +1436,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   const label = context.label || '';
                   const value = context.raw || 0;
                   const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -1453,16 +1454,16 @@ export default async function ({ addon, msg, safeMsg, console }) {
     displayDrScratchScores(scores) {
       const canvas = document.getElementById('saDrScratchChart');
       if (!canvas) return;
-      
+
       const ctx = canvas.getContext('2d');
-      
+
       const labels = Object.keys(scores);
       const data = Object.values(scores);
       const totalScore = data.reduce((sum, val) => sum + val, 0);
-      
+
       // 更新总分
       document.getElementById('saDrScratchTotalScore').textContent = totalScore;
-      
+
       // 计算等级
       let level = msg('beginner', '初学者');
       if (totalScore >= 18) {
@@ -1475,7 +1476,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         level = msg('developing', '发展中');
       }
       document.getElementById('saDrScratchScoreLevel').textContent = `${msg('evaluation-level', '评估等级')}：${level}`;
-      
+
       // 更新评分详情
       const detailsHTML = labels.map(label => `
         <div class="sa-analyze-score-item">
@@ -1486,17 +1487,17 @@ export default async function ({ addon, msg, safeMsg, console }) {
           <div class="sa-analyze-score-value">${scores[label]}/3</div>
         </div>
       `).join('');
-      
+
       const detailsContainer = document.getElementById('saDrScratchDetails');
       const summaryHTML = detailsContainer.querySelector('.sa-analyze-score-summary').outerHTML;
       detailsContainer.innerHTML = summaryHTML + detailsHTML;
-      
+
       // 销毁现有图表
       if (this.drScratchChartInstance) {
         this.drScratchChartInstance.destroy();
         this.drScratchChartInstance = null;
       }
-      
+
       // 创建雷达图
       this.drScratchChartInstance = new Chart(ctx, {
         type: 'radar',
@@ -1539,16 +1540,16 @@ export default async function ({ addon, msg, safeMsg, console }) {
     displayMathLogicScores(scores) {
       const canvas = document.getElementById('saMathLogicChart');
       if (!canvas) return;
-      
+
       const ctx = canvas.getContext('2d');
-      
+
       const labels = Object.keys(scores);
       const data = Object.values(scores);
       const totalScore = data.reduce((sum, val) => sum + val, 0);
-      
+
       // 更新总分
       document.getElementById('saMathTotalScore').textContent = totalScore;
-      
+
       // 计算等级
       let level = msg('beginner', '初级');
       if (totalScore >= 20) {
@@ -1559,7 +1560,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
         level = msg('developing', '发展中');
       }
       document.getElementById('saMathScoreLevel').textContent = `${msg('evaluation-level', '评估等级')}：${level}`;
-      
+
       // 更新评分详情
       const detailsHTML = labels.map(label => `
         <div class="sa-analyze-score-item">
@@ -1567,21 +1568,21 @@ export default async function ({ addon, msg, safeMsg, console }) {
           <div class="sa-analyze-score-value">${scores[label]} </div>
         </div>
       `).join('');
-      
+
       const detailsContainer = document.getElementById('saMathLogicDetails');
       const summaryHTML = detailsContainer.querySelector('.sa-analyze-score-summary').outerHTML;
       detailsContainer.innerHTML = summaryHTML + detailsHTML;
-      
+
       // 销毁现有图表
       if (this.mathLogicChartInstance) {
         this.mathLogicChartInstance.destroy();
         this.mathLogicChartInstance = null;
       }
-      
+
       // 数据标准化
       const maxValue = Math.max(...data, 1);
       const normalizedData = data.map(value => value / maxValue);
-      
+
       // 创建雷达图
       this.mathLogicChartInstance = new Chart(ctx, {
         type: 'radar',
@@ -1617,7 +1618,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   const label = context.label || '';
                   const rawValue = data[context.dataIndex];
                   return `${label}: ${rawValue} `;
@@ -1632,14 +1633,14 @@ export default async function ({ addon, msg, safeMsg, console }) {
     // 显示扩展列表
     displayExtensions(extensions) {
       const extensionList = document.getElementById('saExtensionList');
-      
+
       if (extensions.length === 0) {
         extensionList.innerHTML = `<p>${msg('no-extensions', '未使用扩展')}</p>`;
         return;
       }
-      
+
       let html = '<div class="sa-analyze-extensions-grid">';
-      
+
       extensions.forEach(extension => {
         const color = extension.color || '#888888';
         html += `
@@ -1650,7 +1651,7 @@ export default async function ({ addon, msg, safeMsg, console }) {
           </div>
         `;
       });
-      
+
       html += '</div>';
       extensionList.innerHTML = html;
     }
@@ -1669,5 +1670,8 @@ export default async function ({ addon, msg, safeMsg, console }) {
     markAsSeen: true
   }).then(() => {
     analyzer.init();
+    if(isVSCodeLayoutEnabled()) vm.runtime.on('PROJECT_CHANGED', () => {
+      analyzer.showAnalysisSidebar();
+    });
   });
 }
