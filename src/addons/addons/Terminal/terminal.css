@@ -26,8 +26,18 @@
   flex-shrink: 0;
 }
 
+/* 标题样式 */
 .sa-terminal-title {
   font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* 按钮容器样式 - 确保所有按钮并排靠右 */
+.sa-terminal-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* 继续按钮样式 */
@@ -68,13 +78,23 @@
   flex: 1;
   background: #1e1e1e;
   color: #d4d4d4;
-  padding: 10px;
   font-size: 13px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
   line-height: 1.4;
   min-height: 0;
+}
+
+.sa-terminal-output-inner {
+  position: relative;
+  padding: 10px;
+}
+
+.sa-terminal-log-end {
+  position: absolute;
+  width: 100%;
+  pointer-events: none;
 }
 
 /* Terminal输入行样式 */
@@ -255,6 +275,10 @@
 
 .sa-terminal-output::-webkit-scrollbar-thumb:hover {
   background: #5c5c5c;
+}
+
+.sa-terminal-output-inner::-webkit-scrollbar {
+  display: none;
 }
 
 /* 命令行样式 */
