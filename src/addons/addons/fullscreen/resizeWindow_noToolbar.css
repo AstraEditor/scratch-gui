@@ -2,14 +2,13 @@
 [class*="stage-wrapper_full-screen"] [class*="stage_stage"],
 [class*="stage-wrapper_full-screen"] [class*="stage-header_stage-menu-wrapper"],
 [class*="stage-wrapper_full-screen"] canvas {
-  width: min(calc(100vh * var(--sa-fullscreen-width) / var(--sa-fullscreen-height)), 100vw) !important;
+  width: min(calc((100vh - var(--stage-fullscreen-top, 0rem)) * var(--sa-fullscreen-width) / var(--sa-fullscreen-height)), 100vw) !important;
 }
 
 [class*="stage-wrapper_full-screen"] [class*="stage-wrapper_stage-canvas-wrapper"],
 [class*="stage-wrapper_full-screen"] [class*="stage_stage"],
-[class*="stage-wrapper_full-screen"] [class*="stage_green-flag-overlay-wrapper"],
 [class*="stage-wrapper_full-screen"] canvas {
-  height: min(100vh, calc(100vw * var(--sa-fullscreen-height) / var(--sa-fullscreen-width))) !important;
+  height: min(calc(100vh - var(--stage-fullscreen-top, 0rem)), calc(100vw * var(--sa-fullscreen-height) / var(--sa-fullscreen-width))) !important;
 }
 
 [class*="stage-wrapper_full-screen"] {
@@ -22,4 +21,13 @@
 
 [class*="stage-wrapper_full-screen"] [class*="stage_question-wrapper"] {
   width: auto !important;
+}
+
+[class*="stage-wrapper_stage-wrapper"][class*="stage-wrapper_full-screen"] {
+  top: var(--stage-fullscreen-top, 0rem) !important;
+  height: calc(100vh - var(--stage-fullscreen-top, 0rem));
+}
+
+:root[data-is-scratch-desktop='true'] [class*="gui_menu-bar-position"]{
+  z-index: 501;
 }

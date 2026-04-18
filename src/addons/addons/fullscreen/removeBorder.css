@@ -5,6 +5,6 @@
 }
 
 [class*="stage_stage-overlays_"][class*="stage_full-screen_"] {
-  top: 0;
+  top: var(--stage-fullscreen-top, 0rem);
   left: 0;
 }

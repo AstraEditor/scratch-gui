@@ -11,7 +11,7 @@
 
 .phantom-header {
   position: absolute;
-  top: 0px;
+  top: var(--stage-fullscreen-top, 0rem);
   left: 0px;
   right: 0px;
   height: 8px;

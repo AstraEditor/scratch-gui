@@ -3,7 +3,7 @@
 @import "../../css/z-index.css";
 
 :root {
-    --stage-fullscreen-top: 0;
+    --stage-fullscreen-top: 0rem;
 }
 
 :root[data-is-scratch-desktop='true'] {
