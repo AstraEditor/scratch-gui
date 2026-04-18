@@ -142,30 +142,23 @@ class CustomExtensionModal extends React.Component {
                 }
             }
 
-            const TIMEOUT_MS = 15000; // 15秒超时（GitHub Raw 等可能较慢/不稳定）
             const loadedExtensions = [];
 
-            const rawGitHubPrefix = 'https://raw.githubusercontent.com/';
-            const toTrampolineProxy = originalUrl => (
-                `https://trampoline.turbowarp.org/proxy/${originalUrl}`
-            );
+            document.addEventListener('loadExtensionDone', e => {
+                if (e.detail.state === 'error') {
+                    alert(e.detail.info);
+                }
+            }, { once: true });
 
             for (const originalUrl of urls) {
                 const candidateUrls = [originalUrl];
-                if (originalUrl.startsWith(rawGitHubPrefix)) {
-                    candidateUrls.push(toTrampolineProxy(originalUrl));
-                }
 
                 let loaded = false;
                 let lastError = null;
                 for (const candidateUrl of candidateUrls) {
                     try {
                         const loadPromise = this.props.vm.extensionManager.loadExtensionURL(candidateUrl);
-                        const timeoutPromise = new Promise((_, reject) => {
-                            setTimeout(() => reject(new Error('Timeout')), TIMEOUT_MS);
-                        });
-
-                        await Promise.race([loadPromise, timeoutPromise]);
+                        await Promise.race([loadPromise]);
                         loadedExtensions.push(candidateUrl);
                         loaded = true;
                         break;
@@ -175,9 +168,6 @@ class CustomExtensionModal extends React.Component {
                 }
 
                 if (!loaded) {
-                    const mirrorHint = originalUrl.startsWith(rawGitHubPrefix) ?
-                        `\nTip: Your network may block raw.githubusercontent.com. Try:\n${toTrampolineProxy(originalUrl)}` :
-                        '';
                     alert(`Failed to load extension: ${String(lastError || '')}`);
                     console.error('Failed to load extension:', lastError);
                 }
