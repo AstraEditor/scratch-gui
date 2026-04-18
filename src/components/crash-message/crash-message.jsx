@@ -1,10 +1,12 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import Box from '../box/box.jsx';
-import {FormattedMessage} from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 
 import styles from './crash-message.css';
 import reloadIcon from './reload.svg';
+import SB3Downloader from '../../containers/sb3-downloader.jsx'
+
 
 const CrashMessage = props => (
     <div className={styles.crashWrapper}>
@@ -57,8 +59,22 @@ const CrashMessage = props => (
                     id="gui.crashMessage.reload"
                 />
             </button>
+            <SB3Downloader>
+                {(_className, _downloadProject, {smartSave}) => (
+                    <button
+                        className={styles.reloadButton}
+                        onClick={smartSave}
+                    >
+                        <FormattedMessage
+                            defaultMessage="Try to Save Project"
+                            description="Button to try to save project"
+                            id="gui.crashMessage.saveproject"
+                        />
+                    </button>
+                )}
+            </SB3Downloader>
         </Box>
-    </div>
+    </div >
 );
 
 CrashMessage.propTypes = {

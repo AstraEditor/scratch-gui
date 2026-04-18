@@ -330,7 +330,7 @@ const GUIComponent = props => {
                 {readmeModalVisible && <AEReadMe />}
                 {extensionManagerVisible && (
                     <ExtensionManager
-                        vm={vm}
+                        vm={vma}
                         onRequestClose={onRequestCloseExtensionManager}
                         onOpenExtensionLibrary={onOpenExtensionLibrary}
                         onOpenCustomExtensionModal={onOpenCustomExtensionModal}
