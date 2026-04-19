@@ -394,6 +394,7 @@
     "Terminal/block-warn": "警告 %s",
     "Terminal/block-error": "错误 %s",
     "Terminal/block-get-input": "获取输入",
+    "Terminal/block-clear": "清空终端",
     "background/background": "背景",
     "background/clear": "清除背景",
     "background/add": "添加背景图片",

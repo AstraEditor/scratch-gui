@@ -61,16 +61,13 @@ class TerminalVirtualList {
     this.innerElement.className = "sa-terminal-output-inner";
     this.outerElement.appendChild(this.innerElement);
 
-    // 使用节流函数优化滚动事件处理
-    this._throttledScrollHandler = throttle(this._handleScroll.bind(this), 16);
-    this.outerElement.addEventListener("scroll", this._throttledScrollHandler, { passive: true });
+    this.outerElement.addEventListener("scroll", this._handleScroll.bind(this), { passive: true });
   }
 
   _handleScroll(e) {
     this.scrollTop = e.target.scrollTop;
-    this.isScrolledToEnd = e.target.scrollHeight - e.target.scrollTop - e.target.clientHeight < 50;
+    this.isScrolledToEnd = e.target.scrollTop + 5 >= e.target.scrollHeight - e.target.clientHeight;
     this.height = e.target.clientHeight;
-    // 立即更新，避免异步导致的不同步
     this._updateContent();
   }
 
@@ -84,14 +81,18 @@ class TerminalVirtualList {
     }
   }
 
+  _scrollToEnd() {
+    const scrollEnd = this.outerElement.scrollHeight - this.outerElement.offsetHeight;
+    this.outerElement.scrollTop = scrollEnd;
+    this.scrollTop = scrollEnd;
+  }
+
   _queueScrollToEnd() {
-    if (this.visible && this.isScrolledToEnd && !this.scrollToEndQueued) {
+    if (this.visible && !this.scrollToEndQueued) {
       this.scrollToEndQueued = true;
-      requestAnimationFrame(() => {
+      queueMicrotask(() => {
         this.scrollToEndQueued = false;
-        if (this.isScrolledToEnd) {
-          this.outerElement.scrollTop = this.outerElement.scrollHeight;
-        }
+        this._scrollToEnd();
       });
     }
   }
@@ -99,13 +100,10 @@ class TerminalVirtualList {
   show() {
     this.visible = true;
     this.height = this.outerElement.clientHeight || 400;
-    // 强制更新渲染范围，确保显示所有缓存的日志
     this.renderedStartIndex = -1;
     this.renderedEndIndex = -1;
     this._updateContent();
-    if (this.isScrolledToEnd) {
-      this._queueScrollToEnd();
-    }
+    this._scrollToEnd();
   }
 
   hide() {
@@ -121,6 +119,15 @@ class TerminalVirtualList {
     this.isScrolledToEnd = true;
   }
 
+  removeLastRow() {
+    if (this.rows.length === 0) return false;
+    this.rows.pop();
+    this.renderedStartIndex = -1;
+    this.renderedEndIndex = -1;
+    this._updateContent();
+    return true;
+  }
+
   _updateContent() {
     if (this.rows.length === 0) {
       if (this.innerElement.children.length > 0) {
@@ -133,32 +140,23 @@ class TerminalVirtualList {
 
     let viewHeight = this.outerElement.clientHeight;
     if (viewHeight === 0) {
-      viewHeight = this.height || 400; // 默认高度
+      viewHeight = this.height || 400;
     }
     this.height = viewHeight;
     
-    const visibleRows = Math.ceil(viewHeight / this.rowHeight) + 10;
-
-    let startIndex = 0;
     const totalHeight = this.rows.length * this.rowHeight;
-    
-    if (this.isScrolledToEnd) {
-      // 滚动到底部时，显示最后几行
-      startIndex = Math.max(0, this.rows.length - visibleRows);
-    } else if (totalHeight > 0) {
-      // 否则根据滚动位置计算
-      const scrollRatio = Math.min(1, Math.max(0, this.scrollTop / totalHeight));
-      startIndex = Math.max(0, Math.floor(scrollRatio * this.rows.length) - 5);
-    }
+    this.innerElement.style.height = `${totalHeight}px`;
 
-    const endIndex = Math.min(this.rows.length, startIndex + visibleRows);
-    startIndex = Math.max(0, endIndex - visibleRows);
+    const scrollStartIndex = Math.floor(this.scrollTop / this.rowHeight);
+    const rowsVisible = Math.ceil(viewHeight / this.rowHeight);
+    const EXTRA_ROWS_ABOVE = 5;
+    const EXTRA_ROWS_BELOW = 5;
+    const startIndex = clamp(scrollStartIndex - EXTRA_ROWS_ABOVE, 0, this.rows.length);
+    const endIndex = clamp(scrollStartIndex + rowsVisible + EXTRA_ROWS_BELOW, 0, this.rows.length);
 
     if (this.renderedStartIndex === startIndex && this.renderedEndIndex === endIndex) {
       return;
     }
-
-    this.innerElement.style.height = `${totalHeight}px`;
 
     const existingElements = new Map();
     for (const child of this.innerElement.children) {
@@ -189,12 +187,8 @@ class TerminalVirtualList {
         element.style.left = "10px";
         element.style.right = "10px";
         element.style.boxSizing = "border-box";
-        element.style.width = "auto";
-        element.style.maxWidth = "100%";
+        element.style.height = `${this.rowHeight}px`;
         element.style.overflow = "hidden";
-        element.style.textOverflow = "ellipsis";
-        element.style.whiteSpace = "pre-wrap";
-        element.style.wordWrap = "break-word";
         this.innerElement.appendChild(element);
       }
 
@@ -235,11 +229,13 @@ class TerminalVirtualList {
 
     if (this.visible) {
       this._queueUpdateContent();
-      this._queueScrollToEnd();
+      if (this.isScrolledToEnd) {
+        this._queueScrollToEnd();
+      }
     } else {
-      // 即使面板不可见，也要更新渲染范围，确保激活时能正确显示
       this.renderedStartIndex = -1;
       this.renderedEndIndex = -1;
+      this.isScrolledToEnd = true;
     }
   }
 }
@@ -948,11 +944,10 @@ export default async function ({ addon, console, msg }) {
 
   
   // 添加断点积木
-  addon.tab.addBlock("\u200B\u200Bterminal_breakpoint\u200B\u200B", {
+  addon.tab.addBlock("\u200B\u200Bbreakpoint\u200B\u200B", {
     args: [],
     displayName: msg("block-breakpoint"),
     callback: (_, thread) => {
-      // 检查是否在播放器模式下
       if (addon.tab.redux.state.scratchGui.mode.isPlayerOnly) {
         if (terminalOutput) {
           const line = document.createElement("div");
@@ -963,17 +958,18 @@ export default async function ({ addon, console, msg }) {
           mark.textContent = "[error]";
           line.appendChild(mark);
           
-          line.appendChild(document.createTextNode(" 断点积木只能在编辑器中使用。"));
+          const textSpan = document.createElement("span");
+          textSpan.className = "sa-terminal-log-text";
+          textSpan.textContent = " 断点积木只能在编辑器中使用。";
+          line.appendChild(textSpan);
           
           addLogLineWithElement(line);
         }
         return;
       }
       
-      // 使用debugger的setPaused功能暂停VM
       setPausedDebugger(true);
       
-      // 显示继续按钮
       continueButton.style.display = "inline-block";
       
       if (terminalOutput) {
@@ -985,18 +981,24 @@ export default async function ({ addon, console, msg }) {
         mark.textContent = "[breakpoint]";
         line.appendChild(mark);
         
-        line.appendChild(document.createTextNode(" 程序已暂停"));
+        const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
+        textSpan.textContent = " 程序已暂停";
+        line.appendChild(textSpan);
         
         if (thread) {
           const blockId = thread.peekStack();
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1005,35 +1007,93 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
+  addon.tab.addBlock("\u200B\u200Bclear\u200B\u200B", {
+    args: [],
+    displayName: msg("block-clear") || "Clear Terminal",
+    callback: () => {
+      virtualList.clear();
+      resetLogTracking();
+    },
+  });
+
+  addon.tab.addBlock("\u200B\u200Bdelete_last\u200B\u200B", {
+    args: [],
+    displayName: msg("block-delete-last") || "Delete Last Output",
+    callback: () => {
+      if (lastLogData && lastLogData.count > 1) {
+        lastLogData.count--;
+        lastLogCount = lastLogData.count;
+        if (lastLogData.element) {
+          const counter = lastLogData.element.querySelector('.sa-terminal-log-counter');
+          if (counter) {
+            if (lastLogData.count === 1) {
+              counter.remove();
+            } else {
+              counter.textContent = lastLogData.count;
+            }
+          }
+        }
+      } else if (lastLogData && lastLogData.count === 1) {
+        virtualList.removeLastRow();
+        lastLogData = null;
+        lastLogCount = 1;
+      }
+    },
+  });
+
+  const createLogLines = (text, thread, options = {}) => {
+    const { markClass, markText, color } = options;
+    const textStr = String(text ?? "");
+    const processedText = textStr.replace(/\\n/g, '\n');
+    const lines = processedText.split('\n');
+    const blockId = thread ? thread.peekStack() : null;
+    const targetId = thread ? thread.target.id : null;
+    const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+    
+    lines.forEach((lineContent, index) => {
+      const isLastLine = index === lines.length - 1;
+      const line = document.createElement("div");
+      line.className = "sa-terminal-log-line";
+      
+      if (markClass && markText) {
+        const mark = document.createElement("span");
+        mark.className = `sa-terminal-log-mark ${markClass}`;
+        mark.textContent = markText;
+        line.appendChild(mark);
+      }
+      
+      const textSpan = document.createElement("span");
+      textSpan.className = "sa-terminal-log-text";
+      if (color) {
+        textSpan.style.color = color;
+      }
+      const displayText = (markClass && markText) ? ` ${lineContent}` : lineContent;
+      textSpan.textContent = displayText;
+      textSpan.title = lineContent;
+      line.appendChild(textSpan);
+      
+      if (isLastLine && targetInfo && targetInfo.exists && blockId) {
+        const linkWrapper = document.createElement("span");
+        linkWrapper.className = "sa-terminal-log-link-wrapper";
+        linkWrapper.textContent = "[";
+        const link = createBlockLink(targetInfo, blockId);
+        link.className = "sa-terminal-block-link";
+        linkWrapper.appendChild(link);
+        linkWrapper.appendChild(document.createTextNode("]"));
+        line.appendChild(linkWrapper);
+      }
+      
+      addLogLineWithElement(line);
+    });
+  };
+
   // 添加输出块到 Scratch
   addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-log"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        // 添加文本内容
-        const textSpan = document.createElement("span");
-        textSpan.textContent = text;
-        line.appendChild(textSpan);
-        
-        // 添加跳转到块的链接
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread);
       }
     },
   });
@@ -1043,139 +1103,37 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-log-colored"),
     callback: ({ text, color }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        // 添加彩色文本内容
-        const textSpan = document.createElement("span");
-        textSpan.style.color = color;
-        textSpan.textContent = text;
-        line.appendChild(textSpan);
-        
-        // 添加跳转到块的链接
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            link.style.color = ""; // 重置颜色，使用CSS定义的默认颜色
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { color });
       }
     },
   });
 
-  // 添加日志积木（带 [log] 白色标记）
-  addon.tab.addBlock("\u200B\u200Bterminal_log_debug\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Blog\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-log-debug"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark log";
-        mark.textContent = "[log]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.textContent = " " + text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "log", markText: "[log]" });
       }
     },
   });
 
-  // 添加警告积木（带 [warn] 橙色标记）
-  addon.tab.addBlock("\u200B\u200Bterminal_warn\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Bwarn\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-warn"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark warn";
-        mark.textContent = "[warn]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.textContent = " " + text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "warn", markText: "[warn]" });
       }
     },
   });
 
-  // 添加错误积木（带 [error] 红色标记）
-  addon.tab.addBlock("\u200B\u200Bterminal_error\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Berror\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-error"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark error";
-        mark.textContent = "[error]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.textContent = " " + text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "error", markText: "[error]" });
       }
     },
   });
@@ -1226,14 +1184,6 @@ export default async function ({ addon, console, msg }) {
           output += `  ${name} - ${cmd.description}\n`;
         }
         return output;
-      }
-    },
-    clear: {
-      description: "Clear the terminal",
-      execute: () => {
-        virtualList.clear();
-        resetLogTracking();
-        return "";
       }
     },
     echo: {
@@ -1320,28 +1270,33 @@ export default async function ({ addon, console, msg }) {
 
   };
 
-  // 执行命令
   const executeCommand = (command) => {
     const parts = command.trim().split(" ");
     const cmdName = parts[0].toLowerCase();
     const args = parts.slice(1);
 
-    // 存储用户输入
     lastUserInput = command.trim();
 
-    // 添加到历史记录
     if (command.trim()) {
       commandHistory.push(command.trim());
       historyIndex = commandHistory.length;
     }
 
-    // 重置重复内容记录，命令行不应该触发合并
     resetLogTracking();
 
-    // 显示输入的命令 - 使用div保持格式
+    if (cmdName === "clear") {
+      virtualList.clear();
+      resetLogTracking();
+      return;
+    }
+
     const commandLine = document.createElement("div");
     commandLine.className = "sa-terminal-command-line";
-    commandLine.textContent = `> ${command}`;
+    const commandText = document.createElement("span");
+    commandText.className = "sa-terminal-command-line-text";
+    commandText.textContent = `> ${command}`;
+    commandText.title = command;
+    commandLine.appendChild(commandText);
     virtualList.appendLog({ element: commandLine, contentHash: commandLine.textContent });
 
     if (!cmdName) {
@@ -1353,16 +1308,20 @@ export default async function ({ addon, console, msg }) {
       try {
         const result = cmd.execute(args);
         if (result) {
-          // 使用pre标签保持格式
-          const resultLine = document.createElement("div");
-          resultLine.className = "sa-terminal-result-line";
-          resultLine.textContent = result;
-          virtualList.appendLog({ element: resultLine, contentHash: resultLine.textContent });
+          const lines = result.split('\n');
+          lines.forEach((lineContent, index) => {
+            const resultLine = document.createElement("div");
+            resultLine.className = "sa-terminal-result-line";
+            resultLine.textContent = lineContent;
+            resultLine.title = lineContent;
+            virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${lineContent}` });
+          });
         }
       } catch (e) {
         const errorLine = document.createElement("div");
         errorLine.className = "sa-terminal-error-line";
         errorLine.textContent = `Error: ${e.message}`;
+        errorLine.title = `Error: ${e.message}`;
         virtualList.appendLog({ element: errorLine, contentHash: errorLine.textContent });
       }
     }

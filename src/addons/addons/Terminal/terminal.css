@@ -285,19 +285,32 @@
 .sa-terminal-command-line {
   padding: 2px 0;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.sa-terminal-command-line-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 结果行样式 */
 .sa-terminal-result-line {
   padding: 2px 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-primary);
 }
 
 /* 错误行样式 */
 .sa-terminal-error-line {
   padding: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #ff6b6b;
 }
 
@@ -306,9 +319,21 @@
   padding: 2px 0;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 4px;
   position: relative;
+}
+
+.sa-terminal-log-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-terminal-log-link-wrapper {
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 
 /* 重复内容计数器 */
@@ -355,6 +380,7 @@
 
 /* 日志标记样式 */
 .sa-terminal-log-mark {
+  flex-shrink: 0;
   font-weight: bold;
   padding: 0 4px;
   border-radius: 2px;
