@@ -39,15 +39,15 @@ ReduxStore.subscribe(() => {
     PROJECT_NAME = ReduxStore.getState().scratchGui.projectTitle;
 })
 
-const createSideBarElements = (msg) => {
+const createSideBarElements = () => {
     const content = document.createElement('div');
     content.className = 'sa-todo-list';
 
     const title = document.createElement('h1');
-    title.textContent = `${PROJECT_NAME.toString()} ${msg('title')}`;
+    title.textContent = `${PROJECT_NAME.toString()} ${MSG('title')}`;
 
     const createButton = document.createElement('button');
-    createButton.textContent = msg('createTodo');
+    createButton.textContent = MSG('createTodo');
     createButton.onclick = () => {
         createCommentToStage(getFormatComment(emptyTodo))
     }
@@ -68,7 +68,7 @@ const createSideBarElements = (msg) => {
     testButton.onclick = () => {
         addNewTodo({
             mode: 2,
-            name: 'abc',
+            name: window.prompt('name?'),
             task:{
                 startTime: Date.now(),
                 endTime: Date.now() + 100000086,
@@ -104,6 +104,10 @@ const createCommentToStage = content => {
         150,
         false
     );
+
+    // 刷新一下Tab
+    SideBar.clearContent();
+    SideBar.setContent(createSideBarElements(MSG))
 }
 
 /**
@@ -124,6 +128,12 @@ const createCommentToStage = content => {
  */
 const addNewTodo = config => {
     const editTodo = getTodoListContent();
+    // 这会破坏读取,所以我们需要替换
+    // 事实上对于POINT是*不可能*不通过用户而出现的，所以就直接全替换了
+    config = JSON.parse(JSON.stringify(config).replaceAll(POINT, 
+        // 这很神秘啊
+        `Why? ${POINT} is key word, how did you found it?`
+    ));
     if (config.mode === 1) {
         // 对于group
         editTodo.groups = [
@@ -179,11 +189,10 @@ const getTodoListContent = () => {
 function isVSCodeLayout() {
     return getSetting('EnableVSCodeLayout');
 }
-function addButtonWithVSCodeLayout(msg) {
+function addButtonWithVSCodeLayout() {
     const tabs = document.querySelector('[class*="gui_tab-list"][class*="gui_vscode"]');
     const enableEffect = (ele, parent) => {
         ele.style.filter = '';
-        console.log(parent)
         parent.style.backgroundColor = 'var(--ui - white)';
         parent.style.boxShadow = 'inset 3px 0px 0px 0px var(--looks-secondary)';
     }
@@ -208,7 +217,7 @@ function addButtonWithVSCodeLayout(msg) {
                 SideBar.close()
                 unableEffect(tabbuttonIcon, tabbutton)
             } else {
-                SideBar.register(SIDEBAR_ID, createSideBarElements(msg), {
+                SideBar.register(SIDEBAR_ID, createSideBarElements(), {
                     onActivate: () => {
                         enableEffect(tabbuttonIcon, tabbutton)
                     },
@@ -227,13 +236,13 @@ function addButtonWithVSCodeLayout(msg) {
         throw new Error('Cant add list to tabs.')
     }
 }
-function addButton(msg) {
+function addButton() {
 
 }
 export default function ({ addon, msg }) {
     MSG = msg
     ADDON = addon;
-    if (isVSCodeLayout()) addButtonWithVSCodeLayout(msg)
-    else addButton(msg)
+    if (isVSCodeLayout()) addButtonWithVSCodeLayout()
+    else addButton()
 }
 
