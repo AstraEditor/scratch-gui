@@ -119,6 +119,15 @@ class TerminalVirtualList {
     this.isScrolledToEnd = true;
   }
 
+  removeLastRow() {
+    if (this.rows.length === 0) return false;
+    this.rows.pop();
+    this.renderedStartIndex = -1;
+    this.renderedEndIndex = -1;
+    this._updateContent();
+    return true;
+  }
+
   _updateContent() {
     if (this.rows.length === 0) {
       if (this.innerElement.children.length > 0) {
@@ -1004,6 +1013,31 @@ export default async function ({ addon, console, msg }) {
     callback: () => {
       virtualList.clear();
       resetLogTracking();
+    },
+  });
+
+  addon.tab.addBlock("\u200B\u200Bdelete_last\u200B\u200B", {
+    args: [],
+    displayName: msg("block-delete-last") || "Delete Last Output",
+    callback: () => {
+      if (lastLogData && lastLogData.count > 1) {
+        lastLogData.count--;
+        lastLogCount = lastLogData.count;
+        if (lastLogData.element) {
+          const counter = lastLogData.element.querySelector('.sa-terminal-log-counter');
+          if (counter) {
+            if (lastLogData.count === 1) {
+              counter.remove();
+            } else {
+              counter.textContent = lastLogData.count;
+            }
+          }
+        }
+      } else if (lastLogData && lastLogData.count === 1) {
+        virtualList.removeLastRow();
+        lastLogData = null;
+        lastLogCount = 1;
+      }
     },
   });
 
