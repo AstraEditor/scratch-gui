@@ -61,16 +61,13 @@ class TerminalVirtualList {
     this.innerElement.className = "sa-terminal-output-inner";
     this.outerElement.appendChild(this.innerElement);
 
-    // 使用节流函数优化滚动事件处理
-    this._throttledScrollHandler = throttle(this._handleScroll.bind(this), 16);
-    this.outerElement.addEventListener("scroll", this._throttledScrollHandler, { passive: true });
+    this.outerElement.addEventListener("scroll", this._handleScroll.bind(this), { passive: true });
   }
 
   _handleScroll(e) {
     this.scrollTop = e.target.scrollTop;
-    this.isScrolledToEnd = e.target.scrollHeight - e.target.scrollTop - e.target.clientHeight < 50;
+    this.isScrolledToEnd = e.target.scrollTop + 5 >= e.target.scrollHeight - e.target.clientHeight;
     this.height = e.target.clientHeight;
-    // 立即更新，避免异步导致的不同步
     this._updateContent();
   }
 
@@ -84,14 +81,18 @@ class TerminalVirtualList {
     }
   }
 
+  _scrollToEnd() {
+    const scrollEnd = this.outerElement.scrollHeight - this.outerElement.offsetHeight;
+    this.outerElement.scrollTop = scrollEnd;
+    this.scrollTop = scrollEnd;
+  }
+
   _queueScrollToEnd() {
-    if (this.visible && this.isScrolledToEnd && !this.scrollToEndQueued) {
+    if (this.visible && !this.scrollToEndQueued) {
       this.scrollToEndQueued = true;
-      requestAnimationFrame(() => {
+      queueMicrotask(() => {
         this.scrollToEndQueued = false;
-        if (this.isScrolledToEnd) {
-          this.outerElement.scrollTop = this.outerElement.scrollHeight;
-        }
+        this._scrollToEnd();
       });
     }
   }
@@ -99,13 +100,10 @@ class TerminalVirtualList {
   show() {
     this.visible = true;
     this.height = this.outerElement.clientHeight || 400;
-    // 强制更新渲染范围，确保显示所有缓存的日志
     this.renderedStartIndex = -1;
     this.renderedEndIndex = -1;
     this._updateContent();
-    if (this.isScrolledToEnd) {
-      this._queueScrollToEnd();
-    }
+    this._scrollToEnd();
   }
 
   hide() {
@@ -133,32 +131,23 @@ class TerminalVirtualList {
 
     let viewHeight = this.outerElement.clientHeight;
     if (viewHeight === 0) {
-      viewHeight = this.height || 400; // 默认高度
+      viewHeight = this.height || 400;
     }
     this.height = viewHeight;
     
-    const visibleRows = Math.ceil(viewHeight / this.rowHeight) + 10;
-
-    let startIndex = 0;
     const totalHeight = this.rows.length * this.rowHeight;
-    
-    if (this.isScrolledToEnd) {
-      // 滚动到底部时，显示最后几行
-      startIndex = Math.max(0, this.rows.length - visibleRows);
-    } else if (totalHeight > 0) {
-      // 否则根据滚动位置计算
-      const scrollRatio = Math.min(1, Math.max(0, this.scrollTop / totalHeight));
-      startIndex = Math.max(0, Math.floor(scrollRatio * this.rows.length) - 5);
-    }
+    this.innerElement.style.height = `${totalHeight}px`;
 
-    const endIndex = Math.min(this.rows.length, startIndex + visibleRows);
-    startIndex = Math.max(0, endIndex - visibleRows);
+    const scrollStartIndex = Math.floor(this.scrollTop / this.rowHeight);
+    const rowsVisible = Math.ceil(viewHeight / this.rowHeight);
+    const EXTRA_ROWS_ABOVE = 5;
+    const EXTRA_ROWS_BELOW = 5;
+    const startIndex = clamp(scrollStartIndex - EXTRA_ROWS_ABOVE, 0, this.rows.length);
+    const endIndex = clamp(scrollStartIndex + rowsVisible + EXTRA_ROWS_BELOW, 0, this.rows.length);
 
     if (this.renderedStartIndex === startIndex && this.renderedEndIndex === endIndex) {
       return;
     }
-
-    this.innerElement.style.height = `${totalHeight}px`;
 
     const existingElements = new Map();
     for (const child of this.innerElement.children) {
@@ -190,11 +179,11 @@ class TerminalVirtualList {
         element.style.right = "10px";
         element.style.boxSizing = "border-box";
         element.style.width = "auto";
-        element.style.maxWidth = "100%";
+        element.style.maxWidth = "calc(100% - 20px)";
+        element.style.height = `${this.rowHeight}px`;
         element.style.overflow = "hidden";
         element.style.textOverflow = "ellipsis";
-        element.style.whiteSpace = "pre-wrap";
-        element.style.wordWrap = "break-word";
+        element.style.whiteSpace = "nowrap";
         this.innerElement.appendChild(element);
       }
 
@@ -235,11 +224,13 @@ class TerminalVirtualList {
 
     if (this.visible) {
       this._queueUpdateContent();
-      this._queueScrollToEnd();
+      if (this.isScrolledToEnd) {
+        this._queueScrollToEnd();
+      }
     } else {
-      // 即使面板不可见，也要更新渲染范围，确保激活时能正确显示
       this.renderedStartIndex = -1;
       this.renderedEndIndex = -1;
+      this.isScrolledToEnd = true;
     }
   }
 }
@@ -1353,11 +1344,13 @@ export default async function ({ addon, console, msg }) {
       try {
         const result = cmd.execute(args);
         if (result) {
-          // 使用pre标签保持格式
-          const resultLine = document.createElement("div");
-          resultLine.className = "sa-terminal-result-line";
-          resultLine.textContent = result;
-          virtualList.appendLog({ element: resultLine, contentHash: resultLine.textContent });
+          const lines = result.split('\n');
+          lines.forEach((line, index) => {
+            const resultLine = document.createElement("div");
+            resultLine.className = "sa-terminal-result-line";
+            resultLine.textContent = line;
+            virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${line}` });
+          });
         }
       } catch (e) {
         const errorLine = document.createElement("div");
