@@ -935,7 +935,7 @@ export default async function ({ addon, console, msg }) {
 
   
   // 添加断点积木
-  addon.tab.addBlock("\u200B\u200Bterminal_breakpoint\u200B\u200B", {
+  addon.tab.addBlock("\u200B\u200Bbreakpoint\u200B\u200B", {
     args: [],
     displayName: msg("block-breakpoint"),
     callback: (_, thread) => {
@@ -998,38 +998,68 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
+  addon.tab.addBlock("\u200B\u200Bclear\u200B\u200B", {
+    args: [],
+    displayName: msg("block-clear") || "Clear Terminal",
+    callback: () => {
+      virtualList.clear();
+      resetLogTracking();
+    },
+  });
+
+  const createLogLines = (text, thread, options = {}) => {
+    const { markClass, markText, color } = options;
+    const textStr = String(text ?? "");
+    const processedText = textStr.replace(/\\n/g, '\n');
+    const lines = processedText.split('\n');
+    const blockId = thread ? thread.peekStack() : null;
+    const targetId = thread ? thread.target.id : null;
+    const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+    
+    lines.forEach((lineContent, index) => {
+      const isLastLine = index === lines.length - 1;
+      const line = document.createElement("div");
+      line.className = "sa-terminal-log-line";
+      
+      if (markClass && markText) {
+        const mark = document.createElement("span");
+        mark.className = `sa-terminal-log-mark ${markClass}`;
+        mark.textContent = markText;
+        line.appendChild(mark);
+      }
+      
+      const textSpan = document.createElement("span");
+      textSpan.className = "sa-terminal-log-text";
+      if (color) {
+        textSpan.style.color = color;
+      }
+      const displayText = (markClass && markText) ? ` ${lineContent}` : lineContent;
+      textSpan.textContent = displayText;
+      textSpan.title = lineContent;
+      line.appendChild(textSpan);
+      
+      if (isLastLine && targetInfo && targetInfo.exists && blockId) {
+        const linkWrapper = document.createElement("span");
+        linkWrapper.className = "sa-terminal-log-link-wrapper";
+        linkWrapper.textContent = "[";
+        const link = createBlockLink(targetInfo, blockId);
+        link.className = "sa-terminal-block-link";
+        linkWrapper.appendChild(link);
+        linkWrapper.appendChild(document.createTextNode("]"));
+        line.appendChild(linkWrapper);
+      }
+      
+      addLogLineWithElement(line);
+    });
+  };
+
   // 添加输出块到 Scratch
   addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-log"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = text;
-        textSpan.title = text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            line.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread);
       }
     },
   });
@@ -1039,153 +1069,37 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-log-colored"),
     callback: ({ text, color }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.style.color = color;
-        textSpan.textContent = text;
-        textSpan.title = text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            line.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { color });
       }
     },
   });
 
-  addon.tab.addBlock("\u200B\u200Bterminal_log_debug\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Blog\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-log-debug"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark log";
-        mark.textContent = "[log]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = " " + text;
-        textSpan.title = text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            line.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "log", markText: "[log]" });
       }
     },
   });
 
-  addon.tab.addBlock("\u200B\u200Bterminal_warn\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Bwarn\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-warn"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark warn";
-        mark.textContent = "[warn]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = " " + text;
-        textSpan.title = text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            line.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "warn", markText: "[warn]" });
       }
     },
   });
 
-  addon.tab.addBlock("\u200B\u200Bterminal_error\u200B\u200B %s", {
+  addon.tab.addBlock("\u200B\u200Berror\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-error"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        const line = document.createElement("div");
-        line.className = "sa-terminal-log-line";
-        
-        const mark = document.createElement("span");
-        mark.className = "sa-terminal-log-mark error";
-        mark.textContent = "[error]";
-        line.appendChild(mark);
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = " " + text;
-        textSpan.title = text;
-        line.appendChild(textSpan);
-        
-        if (thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            line.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(line);
+        createLogLines(text, thread, { markClass: "error", markText: "[error]" });
       }
     },
   });
@@ -1236,14 +1150,6 @@ export default async function ({ addon, console, msg }) {
           output += `  ${name} - ${cmd.description}\n`;
         }
         return output;
-      }
-    },
-    clear: {
-      description: "Clear the terminal",
-      execute: () => {
-        virtualList.clear();
-        resetLogTracking();
-        return "";
       }
     },
     echo: {
@@ -1343,6 +1249,12 @@ export default async function ({ addon, console, msg }) {
     }
 
     resetLogTracking();
+
+    if (cmdName === "clear") {
+      virtualList.clear();
+      resetLogTracking();
+      return;
+    }
 
     const commandLine = document.createElement("div");
     commandLine.className = "sa-terminal-command-line";

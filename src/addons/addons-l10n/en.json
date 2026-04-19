@@ -408,6 +408,7 @@
     "Terminal/block-warn": "Warn %s",
     "Terminal/block-error": "Error %s",
     "Terminal/block-get-input": "Get last input",
+    "Terminal/block-clear": "Clear Terminal",
     "background/background": "Background",
     "background/clear": "Clear background",
     "background/add": "Add background image",
