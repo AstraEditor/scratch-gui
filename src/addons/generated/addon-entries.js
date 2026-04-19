@@ -92,5 +92,6 @@ export default {
   "my-blocks-plus": () => import(/* webpackChunkName: "addon-entry-my-blocks-plus" */ "../addons/my-blocks-plus/_runtime_entry.js"),
   "astras-copilot": () => import(/* webpackChunkName: "addon-entry-astras-copilot" */ "../addons/astras-copilot/_runtime_entry.js"),
   "sprite-folders": () => import(/* webpackChunkName: "addon-entry-sprite-folders" */ "../addons/sprite-folders/_runtime_entry.js"),
-  "background": () => import(/* webpackChunkName: "addon-entry-background" */"../addons/background/_runtime_entry.js")
+  "background": () => import(/* webpackChunkName: "addon-entry-background" */"../addons/background/_runtime_entry.js"),
+  "todo": () => import(/* webpackChunkName: "addon-entry-todo" */"../addons/todo/_runtime_entry.js")
 };

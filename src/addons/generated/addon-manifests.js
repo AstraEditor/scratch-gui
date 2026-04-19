@@ -91,7 +91,8 @@ import _Terminal from "../addons/Terminal/_manifest_entry.js";
 import _myblocksplus from '../addons/my-blocks-plus/_manifest_entry.js';
 import _astras_copilot from '../addons/astras-copilot/_manifest_entry.js';
 import _sprite_folders from '../addons/sprite-folders/_manifest_entry.js';
-import _background from '../addons/background/_manifest_entry.js'
+import _background from '../addons/background/_manifest_entry.js';
+import _todo from '../addons/todo/_manifest_entry.js';
 
 export default {
   "cat-blocks": _cat_blocks,
@@ -186,5 +187,6 @@ export default {
   // "my-blocks-plus": _myblocksplus,
   // "astras-copilot": _astras_copilot,
   "sprite-folders": _sprite_folders,
-  "background": _background
+  "background": _background,
+  "todo": _todo
 };
