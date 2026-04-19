@@ -178,12 +178,8 @@ class TerminalVirtualList {
         element.style.left = "10px";
         element.style.right = "10px";
         element.style.boxSizing = "border-box";
-        element.style.width = "auto";
-        element.style.maxWidth = "calc(100% - 20px)";
         element.style.height = `${this.rowHeight}px`;
         element.style.overflow = "hidden";
-        element.style.textOverflow = "ellipsis";
-        element.style.whiteSpace = "nowrap";
         this.innerElement.appendChild(element);
       }
 
@@ -943,7 +939,6 @@ export default async function ({ addon, console, msg }) {
     args: [],
     displayName: msg("block-breakpoint"),
     callback: (_, thread) => {
-      // 检查是否在播放器模式下
       if (addon.tab.redux.state.scratchGui.mode.isPlayerOnly) {
         if (terminalOutput) {
           const line = document.createElement("div");
@@ -954,17 +949,18 @@ export default async function ({ addon, console, msg }) {
           mark.textContent = "[error]";
           line.appendChild(mark);
           
-          line.appendChild(document.createTextNode(" 断点积木只能在编辑器中使用。"));
+          const textSpan = document.createElement("span");
+          textSpan.className = "sa-terminal-log-text";
+          textSpan.textContent = " 断点积木只能在编辑器中使用。";
+          line.appendChild(textSpan);
           
           addLogLineWithElement(line);
         }
         return;
       }
       
-      // 使用debugger的setPaused功能暂停VM
       setPausedDebugger(true);
       
-      // 显示继续按钮
       continueButton.style.display = "inline-block";
       
       if (terminalOutput) {
@@ -976,18 +972,24 @@ export default async function ({ addon, console, msg }) {
         mark.textContent = "[breakpoint]";
         line.appendChild(mark);
         
-        line.appendChild(document.createTextNode(" 程序已暂停"));
+        const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
+        textSpan.textContent = " 程序已暂停";
+        line.appendChild(textSpan);
         
         if (thread) {
           const blockId = thread.peekStack();
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1005,22 +1007,25 @@ export default async function ({ addon, console, msg }) {
         const line = document.createElement("div");
         line.className = "sa-terminal-log-line";
         
-        // 添加文本内容
         const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
         textSpan.textContent = text;
+        textSpan.title = text;
         line.appendChild(textSpan);
         
-        // 添加跳转到块的链接
         if (thread) {
           const blockId = thread.peekStack();
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1037,24 +1042,26 @@ export default async function ({ addon, console, msg }) {
         const line = document.createElement("div");
         line.className = "sa-terminal-log-line";
         
-        // 添加彩色文本内容
         const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
         textSpan.style.color = color;
         textSpan.textContent = text;
+        textSpan.title = text;
         line.appendChild(textSpan);
         
-        // 添加跳转到块的链接
         if (thread) {
           const blockId = thread.peekStack();
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            link.style.color = ""; // 重置颜色，使用CSS定义的默认颜色
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1063,7 +1070,6 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
-  // 添加日志积木（带 [log] 白色标记）
   addon.tab.addBlock("\u200B\u200Bterminal_log_debug\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-log-debug"),
@@ -1078,7 +1084,9 @@ export default async function ({ addon, console, msg }) {
         line.appendChild(mark);
         
         const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
         textSpan.textContent = " " + text;
+        textSpan.title = text;
         line.appendChild(textSpan);
         
         if (thread) {
@@ -1086,11 +1094,14 @@ export default async function ({ addon, console, msg }) {
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1099,7 +1110,6 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
-  // 添加警告积木（带 [warn] 橙色标记）
   addon.tab.addBlock("\u200B\u200Bterminal_warn\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-warn"),
@@ -1114,7 +1124,9 @@ export default async function ({ addon, console, msg }) {
         line.appendChild(mark);
         
         const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
         textSpan.textContent = " " + text;
+        textSpan.title = text;
         line.appendChild(textSpan);
         
         if (thread) {
@@ -1122,11 +1134,14 @@ export default async function ({ addon, console, msg }) {
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1135,7 +1150,6 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
-  // 添加错误积木（带 [error] 红色标记）
   addon.tab.addBlock("\u200B\u200Bterminal_error\u200B\u200B %s", {
     args: ["text"],
     displayName: msg("block-error"),
@@ -1150,7 +1164,9 @@ export default async function ({ addon, console, msg }) {
         line.appendChild(mark);
         
         const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
         textSpan.textContent = " " + text;
+        textSpan.title = text;
         line.appendChild(textSpan);
         
         if (thread) {
@@ -1158,11 +1174,14 @@ export default async function ({ addon, console, msg }) {
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
           if (blockId && targetInfo.exists) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
             const link = createBlockLink(targetInfo, blockId);
             link.className = "sa-terminal-block-link";
-            line.appendChild(document.createTextNode(" ["));
-            line.appendChild(link);
-            line.appendChild(document.createTextNode("]"));
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            line.appendChild(linkWrapper);
           }
         }
         
@@ -1311,28 +1330,27 @@ export default async function ({ addon, console, msg }) {
 
   };
 
-  // 执行命令
   const executeCommand = (command) => {
     const parts = command.trim().split(" ");
     const cmdName = parts[0].toLowerCase();
     const args = parts.slice(1);
 
-    // 存储用户输入
     lastUserInput = command.trim();
 
-    // 添加到历史记录
     if (command.trim()) {
       commandHistory.push(command.trim());
       historyIndex = commandHistory.length;
     }
 
-    // 重置重复内容记录，命令行不应该触发合并
     resetLogTracking();
 
-    // 显示输入的命令 - 使用div保持格式
     const commandLine = document.createElement("div");
     commandLine.className = "sa-terminal-command-line";
-    commandLine.textContent = `> ${command}`;
+    const commandText = document.createElement("span");
+    commandText.className = "sa-terminal-command-line-text";
+    commandText.textContent = `> ${command}`;
+    commandText.title = command;
+    commandLine.appendChild(commandText);
     virtualList.appendLog({ element: commandLine, contentHash: commandLine.textContent });
 
     if (!cmdName) {
@@ -1345,17 +1363,19 @@ export default async function ({ addon, console, msg }) {
         const result = cmd.execute(args);
         if (result) {
           const lines = result.split('\n');
-          lines.forEach((line, index) => {
+          lines.forEach((lineContent, index) => {
             const resultLine = document.createElement("div");
             resultLine.className = "sa-terminal-result-line";
-            resultLine.textContent = line;
-            virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${line}` });
+            resultLine.textContent = lineContent;
+            resultLine.title = lineContent;
+            virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${lineContent}` });
           });
         }
       } catch (e) {
         const errorLine = document.createElement("div");
         errorLine.className = "sa-terminal-error-line";
         errorLine.textContent = `Error: ${e.message}`;
+        errorLine.title = `Error: ${e.message}`;
         virtualList.appendLog({ element: errorLine, contentHash: errorLine.textContent });
       }
     }
