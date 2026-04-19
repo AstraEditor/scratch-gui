@@ -25,6 +25,7 @@ import SideBar from "../../ui/side-bar/side-bar.js";
 */
 
 const SIDEBAR_ID = 'todo';
+let COMMENT_ID = 'todo'
 var ADDON = null;
 var PROJECT_NAME = '';
 var MSG; // msg函数
@@ -41,22 +42,21 @@ ReduxStore.subscribe(() => {
 
 const createSideBarElements = () => {
     const content = document.createElement('div');
-    content.className = 'sa-todo-list';
+    content.className = 'sa-todo';
 
     const title = document.createElement('h1');
     title.textContent = `${PROJECT_NAME.toString()} ${MSG('title')}`;
 
-    const createButton = document.createElement('button');
-    createButton.textContent = MSG('createTodo');
-    createButton.onclick = () => {
-        createCommentToStage(getFormatComment(emptyTodo))
-    }
-
     const todoList = document.createElement('ul');
+    todoList.className = 'sa-todo-list';
     try {
         getTodoListContent().tasks.forEach(element => {
             const todoEle = document.createElement('li');
-            todoEle.textContent = element.name;
+            todoEle.className = 'sa-todo-list-ele';
+            const todoEleName = document.createElement('span');
+            todoEleName.textContent = element.name;
+            todoEleName.className = 'sa-todo-list-ele-title';
+            todoEle.append(todoEleName);
 
             todoList.appendChild(todoEle);
         });
@@ -68,8 +68,8 @@ const createSideBarElements = () => {
     testButton.onclick = () => {
         addNewTodo({
             mode: 2,
-            name: window.prompt('name?'),
-            task:{
+            name: 'A Todo',
+            task: {
                 startTime: Date.now(),
                 endTime: Date.now() + 100000086,
                 done: false,
@@ -79,7 +79,6 @@ const createSideBarElements = () => {
     }
 
     content.appendChild(title)
-    content.appendChild(createButton)
     content.appendChild(testButton)
     content.appendChild(todoList)
     return content
@@ -93,9 +92,9 @@ ${JSON.stringify(content)}
 const createCommentToStage = content => {
     const vm = ADDON.tab.traps.vm;
     // 删除之前的comment,它实际上不会替换
-    delete vm.runtime.getTargetForStage().comments['todo']
+    delete vm.runtime.getTargetForStage().comments[COMMENT_ID]
     vm.runtime.getTargetForStage().createComment(
-        'todo',
+        COMMENT_ID,
         null,
         content,
         50,
@@ -130,7 +129,7 @@ const addNewTodo = config => {
     const editTodo = getTodoListContent();
     // 这会破坏读取,所以我们需要替换
     // 事实上对于POINT是*不可能*不通过用户而出现的，所以就直接全替换了
-    config = JSON.parse(JSON.stringify(config).replaceAll(POINT, 
+    config = JSON.parse(JSON.stringify(config).replaceAll(POINT,
         // 这很神秘啊
         `Why? ${POINT} is key word, how did you found it?`
     ));
@@ -164,7 +163,7 @@ const addNewTodo = config => {
 
 const getTodoList = () => {
     const vm = ADDON.tab.traps.vm;
-    return vm.runtime.getTargetForStage().comments['todo'] || ''
+    return vm.runtime.getTargetForStage().comments[COMMENT_ID] || ''
 }
 const getTodoListContent = () => {
     try {
@@ -242,6 +241,20 @@ function addButton() {
 export default function ({ addon, msg }) {
     MSG = msg
     ADDON = addon;
+    // 在加载的项目内寻找正确的Todo注释ID
+    // 因为它保存的ID是会！变！的！
+    // 那我这个设置‘todo’为id的意义是什么...
+    ADDON.tab.traps.vm.runtime.on("PROJECT_LOADED", () => {
+        try {
+            Object.values(ADDON.tab.traps.vm.runtime.getTargetForStage().comments).forEach(obj => {
+                if (obj.id == COMMENT_ID) return
+                if (obj.text.indexOf(POINT) != -1) { COMMENT_ID = obj.id; return }
+            })
+        } catch (e) {
+            console.warn(e);
+            // 没找到没关系
+        }
+    })
     if (isVSCodeLayout()) addButtonWithVSCodeLayout()
     else addButton()
 }
