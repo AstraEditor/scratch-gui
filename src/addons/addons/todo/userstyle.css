@@ -23,10 +23,14 @@
     list-style-type: none;
     padding: 0;
 }
+.sa-todo-list-ele-steps-li {
+    list-style-type: none;
+}
 
 .sa-todo-list-ele {
     width: 100%;
-    height: 90px;
+    height: auto;
+    transition: height 0.3s ease;
     background: var(--ui-tertiary);
     border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -35,9 +39,65 @@
     -o-border-radius: 5px;
     margin-bottom: 5px;
     padding: 10px;
+    display: flex;
+    flex-direction: column;
+    animation: list-in 0.4s cubic-bezier(0, 1, 1, 1);
+    -webkit-animation: list-in 0.4s cubic-bezier(0, 1, 1, 1);
+    -webkit-transition: height 0.3s ease;
+    -moz-transition: height 0.3s ease;
+    -ms-transition: height 0.3s ease;
+    -o-transition: height 0.3s ease;
 }
 
-.sa-todo-list-ele-title{
+@keyframes list-in {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+        -webkit-transform: translateY(30px);
+        -moz-transform: translateY(30px);
+        -ms-transform: translateY(30px);
+        -o-transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        -webkit-transform: translateY(0);
+        -moz-transform: translateY(0);
+        -ms-transform: translateY(0);
+        -o-transform: translateY(0);
+    }
+}
+
+.sa-todo-list-ele-title {
     font-weight: bolder;
     font-size: x-large;
+}
+
+.sa-todo-list-ele-titleDiv {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.sa-todo-list-ele-titleDiv-dropdown {
+    width: 20px;
+    height: 20px;
+    padding: 1px;
+    margin-left: 5px;
+    border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+    transition: transform 0.3s ease;
+    -webkit-transition: transform 0.3s ease;
+    -moz-transition: transform 0.3s ease;
+    -ms-transition: transform 0.3s ease;
+    -o-transition: transform 0.3s ease;
+}
+
+.sa-todo-list-ele-titleDiv-dropdown:hover {
+    background-color: #ffffff20;
 }
