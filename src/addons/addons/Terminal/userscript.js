@@ -1033,13 +1033,64 @@ export default async function ({ addon, console, msg }) {
             }
           }
         }
-      } else if (lastLogData && lastLogData.count === 1) {
-        virtualList.removeLastRow();
-        lastLogData = null;
-        lastLogCount = 1;
+      } else {
+        const removed = virtualList.removeLastRow();
+        if (removed) {
+          lastLogData = null;
+          lastLogCount = 1;
+        }
       }
     },
   });
+
+  const createTextWithLinks = (container, text, color) => {
+    container.innerHTML = "";
+    container.style.color = color || "";
+    
+    const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+|data:[^\s<>"{}|\\^`\[\]]+)/gi;
+    const matches = [...text.matchAll(urlRegex)];
+    
+    if (matches.length === 0) {
+      container.textContent = text;
+      return;
+    }
+    
+    let lastIndex = 0;
+    matches.forEach((match) => {
+      if (match.index > lastIndex) {
+        const textNode = document.createElement("span");
+        textNode.className = "sa-terminal-text-plain";
+        textNode.textContent = text.slice(lastIndex, match.index);
+        container.appendChild(textNode);
+      }
+      
+      const link = document.createElement("a");
+      link.className = "sa-terminal-url-link";
+      link.textContent = match[0];
+      link.title = msg("ctrl-click-to-open") || "按下 Ctrl 并单击以打开链接";
+      link.href = "#";
+      link.dataset.url = match[0];
+      link.addEventListener("click", (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const url = e.target.dataset.url;
+          if (url) {
+            window.open(url, "_blank");
+          }
+        }
+      });
+      container.appendChild(link);
+      
+      lastIndex = match.index + match[0].length;
+    });
+    
+    if (lastIndex < text.length) {
+      const textNode = document.createElement("span");
+      textNode.className = "sa-terminal-text-plain";
+      textNode.textContent = text.slice(lastIndex);
+      container.appendChild(textNode);
+    }
+  };
 
   const createLogLines = (text, thread, options = {}) => {
     const { markClass, markText, color } = options;
@@ -1064,11 +1115,8 @@ export default async function ({ addon, console, msg }) {
       
       const textSpan = document.createElement("span");
       textSpan.className = "sa-terminal-log-text";
-      if (color) {
-        textSpan.style.color = color;
-      }
       const displayText = (markClass && markText) ? ` ${lineContent}` : lineContent;
-      textSpan.textContent = displayText;
+      createTextWithLinks(textSpan, displayText, color);
       textSpan.title = lineContent;
       line.appendChild(textSpan);
       

@@ -1,4 +1,4 @@
-﻿{
+{
     "_general/blocks/anticlockwise": "anti-clockwise",
     "_general/blocks/clockwise": "clockwise",
     "_general/blocks/green-flag": "flag",
@@ -409,6 +409,8 @@
     "Terminal/block-error": "Error %s",
     "Terminal/block-get-input": "Get last input",
     "Terminal/block-clear": "Clear Terminal",
+    "Terminal/block-delete-last": "Delete Last Output",
+    "Terminal/ctrl-click-to-open": "Press Ctrl and click to open link",
     "background/background": "Background",
     "background/clear": "Clear background",
     "background/add": "Add background image",

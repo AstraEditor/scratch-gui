@@ -1,4 +1,4 @@
-﻿{
+{
     "_general/blocks/anticlockwise": "逆时针",
     "_general/blocks/clockwise": "顺时针",
     "_general/blocks/green-flag": "绿旗",
@@ -395,6 +395,8 @@
     "Terminal/block-error": "错误 %s",
     "Terminal/block-get-input": "获取输入",
     "Terminal/block-clear": "清空终端",
+    "Terminal/block-delete-last": "删除上一句输出",
+    "Terminal/ctrl-click-to-open": "按下 Ctrl 并单击以打开链接",
     "background/background": "背景",
     "background/clear": "清除背景",
     "background/add": "添加背景图片",

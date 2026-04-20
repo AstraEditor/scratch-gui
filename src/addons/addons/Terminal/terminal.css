@@ -331,6 +331,20 @@
   white-space: nowrap;
 }
 
+.sa-terminal-text-plain {
+  color: inherit;
+}
+
+.sa-terminal-url-link {
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sa-terminal-url-link:hover {
+  color: #4fc3f7;
+}
+
 .sa-terminal-log-link-wrapper {
   flex-shrink: 0;
   margin-left: 4px;
