@@ -100,6 +100,7 @@ export default async function ({ addon, msg }) {
         groups: [],
         tasks: []
     }
+    const alpha = 'a0';
 
     // 这个 ReduxStore 到底是哪里来的？？？
     ReduxStore.subscribe(() => {
@@ -114,15 +115,78 @@ ${JSON.stringify(content)}
 `
 
     const addModal = () => {
-        const addContentForModal = () => {
+        const addContentForModal = (remove) => {
+            const config = {
+                mode: 2,
+                id: generateId(),
+                name: msg('new-todo'),
+                color: '#0099ff',
+                task: {
+                    startTime: Date.now(),
+                    endTime: Date.now() + 10000086,
+                    done: false,
+                    tags: [],
+                    priority: 1,
+                    steps: [],
+                }
+            }
+
             const content = document.createElement('div');
             const preview = document.createElement('div');
             preview.className = 'sa-todo-modal-preview';
             const preview_title = document.createElement('span');
             preview_title.className = 'sa-todo-modal-preview-title';
+            const preview_date = document.createElement('span')
+            preview_date.className = 'sa-todo-modal-preview-date';
+            const preview_steps = document.createElement('ul');
 
+            const refresh = () => {
+                preview_title.textContent = config.name;
+                preview_date.textContent = getFormattedDateRange(config.task.startTime, config.task.endTime);
+                preview.style.backgroundColor = config.color + alpha;
+            }
+
+            const input = (inputType, text, key, key2 = null) => {
+                const inputContent = document.createElement('div');
+                inputContent.className = 'sa-todo-modal-input';
+                const inputText = document.createElement('span');
+                inputText.textContent = text;
+                const input = document.createElement('input');
+                if(inputType != 'input') input.type = inputType;
+                if (key2) input.value = config[key][key2];
+                else input.value = config[key];
+                input.oninput = e => {
+                    if (key2) config[key][key2] = e.target.value;
+                    else config[key] = e.target.value;
+                    refresh();
+                }
+
+                inputContent.appendChild(inputText);
+                inputContent.appendChild(input);
+
+                return inputContent
+            }
+
+
+            refresh();
+            
+
+            preview.appendChild(preview_title);
+            preview.appendChild(preview_date);
+
+            const done = document.createElement('button');
+            done.textContent = msg('done');
+            done.onclick = () => {
+                console.log(config)
+                addNewTodo(config);
+                remove()
+            }
 
             content.appendChild(preview);
+            content.appendChild(input('input', msg('name'), 'name'));
+            content.appendChild(input('color', msg('color'), 'color'));
+            content.appendChild(input('datetime-local', msg('start-time'), 'task', 'startTime'));
+            content.appendChild(done);
             return content
         }
 
@@ -135,7 +199,7 @@ ${JSON.stringify(content)}
         container.classList.add('sa-todo-popup');
         content.classList.add('sa-todo-content');
 
-        content.appendChild(addContentForModal());
+        content.appendChild(addContentForModal(remove));
 
         backdrop.addEventListener("click", remove);
         closeButton.addEventListener("click", remove);
@@ -183,7 +247,7 @@ ${JSON.stringify(content)}
                 todoEleStepsContent.appendChild(todoEleStepsContentMain);
 
                 // display
-                todoEle.style.backgroundColor = task.color + 'a0';
+                todoEle.style.backgroundColor = task.color + alpha;
 
                 // dropdown
                 const todoEleDropdown = document.createElement('img');
@@ -239,7 +303,7 @@ ${JSON.stringify(content)}
                 false
             );
         } catch (e) {
-            console.warn("Can't remove comment")
+            console.warn("Can't remove comment, may it's doesn't exist?")
         }
 
         // 刷新一下Tab
@@ -330,16 +394,15 @@ ${JSON.stringify(content)}
      * @param {1|2} config.mode - 1为加入组（group），2为加入todo（tasks）
      * @param {string} config.id - ID，用于区分
      * @param {string} config.name - 对组的配置
+     * @param {string} config.color - 显示的颜色
      * @param {object} config.task - 对todo的配置
      * @param {int} config.task.startTime - 开始时间
      * @param {int} config.task.endTime - 结束时间
      * @param {boolean} config.task.done - 是否完成
      * @param {[]} config.task.tags - 属于什么组
      * @param {int} config.task.priority - 优先级，越高越提前，默认为0
-     * @param {string} config.task.color - 显示的颜色
      * @param {[{ id: string, text: string, done: boolean }]} config.task.steps - 步骤
      * @param {object} config.group - 对组的配置
-     * @param {string} config.group.color - 显示的颜色
      */
     const addNewTodo = config => {
         const editTodo = getTodoListContent();
@@ -356,7 +419,7 @@ ${JSON.stringify(content)}
                 {
                     id: config.id || generateId(),
                     name: config.name || msg("New Group"),
-                    color: config.group.color || '#0099ff'
+                    color: config.color || '#0099ff'
                 }
             ]
         } else if (config.mode === 2) {
@@ -370,29 +433,13 @@ ${JSON.stringify(content)}
                     endTime: config.task.endTime || Date.now() + 100000086,
                     done: config.task.done || false,
                     groupId: config.task.tags || [],
-                    color: config.task.color || "#0099ff",
+                    color: config.color || "#0099ff",
                     steps: config.task.steps || []
                 }
             ]
         }
         createCommentToStage(getFormatComment(editTodo))
     }
-
-    addNewTodo({
-        mode: 2,
-        name: 'A Todo',
-        task: {
-            startTime: Date.now(),
-            endTime: Date.now() + 100000086,
-            done: false,
-            tags: [],
-            steps: [
-                { id: "s1", text: "收集数据", done: true },
-                { id: "s2", text: "收集数据2", done: false },
-                { id: "s3", text: "收集数据3", done: true }
-            ]
-        }
-    })
 
     if (isVSCodeLayout()) addButtonWithVSCodeLayout()
     else addButton()
