@@ -69,7 +69,7 @@ function getFormattedDateRange(timestamp1, timestamp2) {
     }
 }
 
-export default function ({ addon, msg }) {
+export default async function ({ addon, msg }) {
     const generateId = () => {
         return `todo-${Math.random().toString(36).substr(2, 9)}`;
     }
@@ -113,6 +113,35 @@ ${POINT}
 ${JSON.stringify(content)}
 `
 
+    const addModal = () => {
+        const addContentForModal = () => {
+            const content = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'sa-todo-modal-preview';
+            const preview_title = document.createElement('span');
+            preview_title.className = 'sa-todo-modal-preview-title';
+
+
+            content.appendChild(preview);
+            return content
+        }
+
+        const { backdrop, container, content, closeButton, remove } =
+            addon.tab.createModal(msg('create-title'), {
+                isOpen: true,
+                useEditorClasses: true
+            });
+
+        container.classList.add('sa-todo-popup');
+        content.classList.add('sa-todo-content');
+
+        content.appendChild(addContentForModal());
+
+        backdrop.addEventListener("click", remove);
+        closeButton.addEventListener("click", remove);
+    }
+
+
     const createSideBarElements = () => {
         const content = document.createElement('div');
         content.className = 'sa-todo';
@@ -137,6 +166,8 @@ ${JSON.stringify(content)}
                 todoEleDate.textContent = getFormattedDateRange(task.startTime, task.endTime);
                 // steps
                 const todoEleStepsContent = document.createElement('ul');
+                const todoEleStepsContentMain = document.createElement('li');
+                todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
                 todoEleStepsContent.className = 'sa-todo-list-ele-steps';
                 todoEleStepsContent.id = task.id;
                 task.steps.forEach(step => {
@@ -147,9 +178,10 @@ ${JSON.stringify(content)}
 
                     todoEleStep.appendChild(todoEleStep_Text);
 
-                    todoEleStepsContent.appendChild(todoEleStep);
+                    todoEleStepsContentMain.appendChild(todoEleStep);
                 })
-                
+                todoEleStepsContent.appendChild(todoEleStepsContentMain);
+
                 // display
                 todoEle.style.backgroundColor = task.color + 'a0';
 
@@ -160,7 +192,7 @@ ${JSON.stringify(content)}
                 const refreshDropdown_Steps = () => {
                     todoEleDropdown.style.transform = isHide ? 'rotate(180deg)' : 'rotate(0deg)';
                     // steps
-                    todoEleStepsContent.style.display = isHide ? 'none' : 'block';
+                    todoEleStepsContent.style.gridTemplateRows = isHide ? '0fr' : '1fr';
                 }
                 todoEleDropdown.onclick = () => {
                     isHide = !isHide;
@@ -182,21 +214,7 @@ ${JSON.stringify(content)}
         const testButton = document.createElement('button');
         testButton.textContent = 'test';
         testButton.onclick = () => {
-            addNewTodo({
-                mode: 2,
-                name: 'A Todo',
-                task: {
-                    startTime: Date.now(),
-                    endTime: Date.now() + 100000086,
-                    done: false,
-                    tags: [],
-                    steps: [
-                        { id: "s1", text: "收集数据", done: true },
-                        { id: "s2", text: "收集数据2", done: false },
-                        { id: "s3", text: "收集数据3", done: true }
-                    ]
-                }
-            })
+            addModal();
         }
 
         content.appendChild(title)
@@ -208,17 +226,21 @@ ${JSON.stringify(content)}
     const createCommentToStage = content => {
         const vm = addon.tab.traps.vm;
         // 删除之前的comment,它实际上不会替换
-        delete vm.runtime.getTargetForStage().comments[COMMENT_ID]
-        vm.runtime.getTargetForStage().createComment(
-            COMMENT_ID,
-            null,
-            content,
-            50,
-            50,
-            350,
-            150,
-            false
-        );
+        try {
+            delete vm.runtime.getTargetForStage().comments[COMMENT_ID]
+            vm.runtime.getTargetForStage().createComment(
+                COMMENT_ID,
+                null,
+                content,
+                50,
+                50,
+                350,
+                150,
+                false
+            );
+        } catch (e) {
+            console.warn("Can't remove comment")
+        }
 
         // 刷新一下Tab
         SideBar.clearContent();
@@ -356,8 +378,22 @@ ${JSON.stringify(content)}
         createCommentToStage(getFormatComment(editTodo))
     }
 
+    addNewTodo({
+        mode: 2,
+        name: 'A Todo',
+        task: {
+            startTime: Date.now(),
+            endTime: Date.now() + 100000086,
+            done: false,
+            tags: [],
+            steps: [
+                { id: "s1", text: "收集数据", done: true },
+                { id: "s2", text: "收集数据2", done: false },
+                { id: "s3", text: "收集数据3", done: true }
+            ]
+        }
+    })
 
     if (isVSCodeLayout()) addButtonWithVSCodeLayout()
     else addButton()
 }
-
