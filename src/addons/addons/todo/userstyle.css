@@ -23,8 +23,12 @@
     list-style-type: none;
     padding: 0;
 }
+
 .sa-todo-list-ele-steps-li {
     list-style-type: none;
+}
+.sa-todo-list-ele-steps-main{
+    overflow: hidden;
 }
 
 .sa-todo-list-ele {
@@ -47,6 +51,16 @@
     -moz-transition: height 0.3s ease;
     -ms-transition: height 0.3s ease;
     -o-transition: height 0.3s ease;
+}
+
+.sa-todo-list-ele-steps {
+    grid-template-rows: 0;
+    transition: grid-template-rows 0.3s ease;
+    display: grid;
+    -webkit-transition: grid-template-rows 0.3s ease;
+    -moz-transition: grid-template-rows 0.3s ease;
+    -ms-transition: grid-template-rows 0.3s ease;
+    -o-transition: grid-template-rows 0.3s ease;
 }
 
 @keyframes list-in {
@@ -100,4 +114,28 @@
 
 .sa-todo-list-ele-titleDiv-dropdown:hover {
     background-color: #ffffff20;
+}
+
+.sa-todo-popup {
+    width: 50vw;
+}
+
+.sa-todo-content {
+    padding: 5px;
+}
+
+.sa-todo-modal-preview {
+    width: 100%;
+    height: auto;
+    transition: height 0.3s ease;
+    background: var(--ui-tertiary);
+    border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+    margin-bottom: 5px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
 }
