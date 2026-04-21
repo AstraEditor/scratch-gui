@@ -253,8 +253,44 @@ export default async function ({ addon, console, msg }) {
     WINDOW: 'window'
   };
 
-  // 当前 Terminal 位置
-  let currentPosition = POSITION_TYPES.BOTTOM_PANEL;
+  // localStorage 键名
+  const POSITION_STORAGE_KEY = 'AETerminalPosition';
+
+  // 从 localStorage 读取保存的位置
+  function loadSavedPosition() {
+    try {
+      const saved = localStorage.getItem(POSITION_STORAGE_KEY);
+      if (saved && Object.values(POSITION_TYPES).includes(saved)) {
+        if (saved === POSITION_TYPES.SIDEBAR) {
+          const settings = localStorage.getItem("AESettings");
+          if (settings) {
+            const parsed = JSON.parse(settings);
+            if (parsed.EnableVSCodeLayout !== true) {
+              return POSITION_TYPES.BOTTOM_PANEL;
+            }
+          } else {
+            return POSITION_TYPES.BOTTOM_PANEL;
+          }
+        }
+        return saved;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return POSITION_TYPES.BOTTOM_PANEL;
+  }
+
+  // 保存位置到 localStorage
+  function savePosition(newPosition) {
+    try {
+      localStorage.setItem(POSITION_STORAGE_KEY, newPosition);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // 当前 Terminal 位置（从 localStorage 读取或默认底部面板）
+  let currentPosition = loadSavedPosition();
 
   // 检测是否启用 VSCode 布局
   function isVSCodeLayoutEnabled() {
@@ -276,6 +312,31 @@ export default async function ({ addon, console, msg }) {
   let dragOffsetX = 0;
   let dragOffsetY = 0;
   let windowCloseButton = null;
+  
+  // 窗口大小调整相关变量
+  let isResizing = false;
+  let resizeDirection = '';
+  let resizeStartX = 0;
+  let resizeStartY = 0;
+  let resizeStartWidth = 0;
+  let resizeStartHeight = 0;
+  let resizeStartLeft = 0;
+  let resizeStartTop = 0;
+  
+  // 调整大小的方向
+  const RESIZE_DIRECTIONS = {
+    TOP: 'top',
+    BOTTOM: 'bottom',
+    LEFT: 'left',
+    RIGHT: 'right',
+    TOP_LEFT: 'top-left',
+    TOP_RIGHT: 'top-right',
+    BOTTOM_LEFT: 'bottom-left',
+    BOTTOM_RIGHT: 'bottom-right'
+  };
+  
+  // 调整大小的阈值
+  const RESIZE_THRESHOLD = 8;
 
   // 创建独立窗口
   function createFloatingWindow() {
@@ -337,6 +398,149 @@ export default async function ({ addon, console, msg }) {
     document.removeEventListener("mousemove", handleWindowDrag);
     document.removeEventListener("mouseup", stopWindowDrag);
   }
+  
+  // 处理窗口调整大小
+  function handleWindowResize(e) {
+    if (!isResizing) return;
+    
+    const deltaX = e.clientX - resizeStartX;
+    const deltaY = e.clientY - resizeStartY;
+    
+    let newWidth = resizeStartWidth;
+    let newHeight = resizeStartHeight;
+    let newLeft = resizeStartLeft;
+    let newTop = resizeStartTop;
+    
+    // 根据调整方向计算新的大小和位置
+    switch (resizeDirection) {
+      case RESIZE_DIRECTIONS.LEFT:
+        newWidth = Math.max(400, resizeStartWidth - deltaX);
+        newLeft = resizeStartLeft + deltaX;
+        break;
+      case RESIZE_DIRECTIONS.RIGHT:
+        newWidth = Math.max(400, resizeStartWidth + deltaX);
+        break;
+      case RESIZE_DIRECTIONS.TOP:
+        newHeight = Math.max(300, resizeStartHeight - deltaY);
+        newTop = resizeStartTop + deltaY;
+        break;
+      case RESIZE_DIRECTIONS.BOTTOM:
+        newHeight = Math.max(300, resizeStartHeight + deltaY);
+        break;
+      case RESIZE_DIRECTIONS.TOP_LEFT:
+        newWidth = Math.max(400, resizeStartWidth - deltaX);
+        newHeight = Math.max(300, resizeStartHeight - deltaY);
+        newLeft = resizeStartLeft + deltaX;
+        newTop = resizeStartTop + deltaY;
+        break;
+      case RESIZE_DIRECTIONS.TOP_RIGHT:
+        newWidth = Math.max(400, resizeStartWidth + deltaX);
+        newHeight = Math.max(300, resizeStartHeight - deltaY);
+        newTop = resizeStartTop + deltaY;
+        break;
+      case RESIZE_DIRECTIONS.BOTTOM_LEFT:
+        newWidth = Math.max(400, resizeStartWidth - deltaX);
+        newHeight = Math.max(300, resizeStartHeight + deltaY);
+        newLeft = resizeStartLeft + deltaX;
+        break;
+      case RESIZE_DIRECTIONS.BOTTOM_RIGHT:
+        newWidth = Math.max(400, resizeStartWidth + deltaX);
+        newHeight = Math.max(300, resizeStartHeight + deltaY);
+        break;
+    }
+    
+    // 应用新的大小和位置
+    if (floatingWindow) {
+      floatingWindow.style.width = newWidth + "px";
+      floatingWindow.style.height = newHeight + "px";
+      floatingWindow.style.left = newLeft + "px";
+      floatingWindow.style.top = newTop + "px";
+    }
+  }
+  
+  // 停止调整大小
+  function stopWindowResize() {
+    isResizing = false;
+    resizeDirection = '';
+    document.removeEventListener("mousemove", handleWindowResize);
+    document.removeEventListener("mouseup", stopWindowResize);
+    if (floatingWindow) {
+      floatingWindow.style.cursor = "";
+    }
+  }
+  
+  // 检测调整大小的方向
+  function getResizeDirection(e) {
+    if (!floatingWindow) return '';
+    
+    const rect = floatingWindow.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // 检测边角
+    if (x <= RESIZE_THRESHOLD && y <= RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.TOP_LEFT;
+    }
+    if (x >= rect.width - RESIZE_THRESHOLD && y <= RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.TOP_RIGHT;
+    }
+    if (x <= RESIZE_THRESHOLD && y >= rect.height - RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.BOTTOM_LEFT;
+    }
+    if (x >= rect.width - RESIZE_THRESHOLD && y >= rect.height - RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.BOTTOM_RIGHT;
+    }
+    
+    // 检测边
+    if (x <= RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.LEFT;
+    }
+    if (x >= rect.width - RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.RIGHT;
+    }
+    if (y <= RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.TOP;
+    }
+    if (y >= rect.height - RESIZE_THRESHOLD) {
+      return RESIZE_DIRECTIONS.BOTTOM;
+    }
+    
+    return '';
+  }
+  
+  // 更新鼠标样式
+  function updateCursorStyle(e) {
+    if (!floatingWindow) return;
+    
+    const direction = getResizeDirection(e);
+    let cursor = "";
+    
+    switch (direction) {
+      case RESIZE_DIRECTIONS.TOP_LEFT:
+      case RESIZE_DIRECTIONS.BOTTOM_RIGHT:
+        cursor = "nwse-resize";
+        break;
+      case RESIZE_DIRECTIONS.TOP_RIGHT:
+      case RESIZE_DIRECTIONS.BOTTOM_LEFT:
+        cursor = "nesw-resize";
+        break;
+      case RESIZE_DIRECTIONS.LEFT:
+      case RESIZE_DIRECTIONS.RIGHT:
+        cursor = "ew-resize";
+        break;
+      case RESIZE_DIRECTIONS.TOP:
+      case RESIZE_DIRECTIONS.BOTTOM:
+        cursor = "ns-resize";
+        break;
+      default:
+        // 检查是否在标题栏区域
+        const rect = floatingWindow.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        cursor = (y <= 30) ? "move" : "";
+    }
+    
+    floatingWindow.style.cursor = cursor;
+  }
 
   // 切换 Terminal 位置
   function switchTerminalPosition(newPosition) {
@@ -347,6 +551,7 @@ export default async function ({ addon, console, msg }) {
 
     // 切换到新位置
     currentPosition = newPosition;
+    savePosition(newPosition);
     openTerminalAtPosition(newPosition);
 
     // 更新切换按钮状态
@@ -384,19 +589,19 @@ export default async function ({ addon, console, msg }) {
         terminalHeader.style.cursor = "move";
         terminalHeader.style.userSelect = "none";
 
-        // 显示关闭按钮（从buttonContainer移到terminalHeader）
+        // 显示关闭按钮
         if (windowCloseButton) {
           windowCloseButton.style.display = "block";
-          // 从buttonContainer移除
-          if (windowCloseButton.parentNode === buttonContainer) {
-            buttonContainer.removeChild(windowCloseButton);
-          }
-          // 添加到terminalHeader
-          terminalHeader.appendChild(windowCloseButton);
         }
 
         // 启用拖拽功能
         terminalHeader.addEventListener("mousedown", handleWindowDragStart);
+        
+        // 在整个窗口上添加 mousedown 事件监听器，用于调整大小
+        floatingWindow.addEventListener("mousedown", handleWindowDragStart);
+        
+        // 添加鼠标移动事件监听器，用于更新鼠标样式
+        floatingWindow.addEventListener("mousemove", updateCursorStyle);
         break;
     }
   }
@@ -422,19 +627,17 @@ export default async function ({ addon, console, msg }) {
           terminalHeader.style.cursor = "";
           terminalHeader.style.userSelect = "";
 
-          // 隐藏并移除关闭按钮（移回buttonContainer）
+          // 隐藏关闭按钮
           if (windowCloseButton) {
             windowCloseButton.style.display = "none";
-            // 从terminalHeader移除
-            if (windowCloseButton.parentNode === terminalHeader) {
-              terminalHeader.removeChild(windowCloseButton);
-            }
-            // 移回buttonContainer
-            buttonContainer.appendChild(windowCloseButton);
           }
 
           // 禁用拖拽功能
           terminalHeader.removeEventListener("mousedown", handleWindowDragStart);
+          floatingWindow.removeEventListener("mousedown", handleWindowDragStart);
+          
+          // 移除鼠标移动事件监听器
+          floatingWindow.removeEventListener("mousemove", updateCursorStyle);
         }
         break;
     }
@@ -444,12 +647,29 @@ export default async function ({ addon, console, msg }) {
   function handleWindowDragStart(e) {
     // 不在拖拽按钮上开始拖拽
     if (e.target.tagName === "BUTTON") return;
-
-    isDraggingWindow = true;
-    dragOffsetX = e.clientX - floatingWindow.offsetLeft;
-    dragOffsetY = e.clientY - floatingWindow.offsetTop;
-    document.addEventListener("mousemove", handleWindowDrag);
-    document.addEventListener("mouseup", stopWindowDrag);
+    
+    // 检查是否在窗口边缘（调整大小）
+    const direction = getResizeDirection(e);
+    if (direction) {
+      isResizing = true;
+      resizeDirection = direction;
+      resizeStartX = e.clientX;
+      resizeStartY = e.clientY;
+      resizeStartWidth = floatingWindow.offsetWidth;
+      resizeStartHeight = floatingWindow.offsetHeight;
+      resizeStartLeft = floatingWindow.offsetLeft;
+      resizeStartTop = floatingWindow.offsetTop;
+      
+      document.addEventListener("mousemove", handleWindowResize);
+      document.addEventListener("mouseup", stopWindowResize);
+    } else {
+      // 否则进行窗口拖拽
+      isDraggingWindow = true;
+      dragOffsetX = e.clientX - floatingWindow.offsetLeft;
+      dragOffsetY = e.clientY - floatingWindow.offsetTop;
+      document.addEventListener("mousemove", handleWindowDrag);
+      document.addEventListener("mouseup", stopWindowDrag);
+    }
   }
 
   // 切换 Terminal 显示/隐藏
@@ -630,7 +850,6 @@ export default async function ({ addon, console, msg }) {
     cursor: pointer;
     font-size: 12px;
     color: var(--ui-text-primary);
-    transition: all 0.2s;
     min-width: 32px;
   `;
 
@@ -695,7 +914,6 @@ export default async function ({ addon, console, msg }) {
       font-size: 12px;
       color: var(--ui-text-primary);
       text-align: left;
-      transition: background-color 0.2s;
       display: flex;
       align-items: center;
       font-family: inherit;
