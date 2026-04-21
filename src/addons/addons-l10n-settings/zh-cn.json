@@ -412,6 +412,7 @@
     "simple-project-analyzer/@description": "使用简单的算法在编辑器中分析您的作品！",
     "hide-menubar/@name": "隐藏工具栏",
     "hide-menubar/@description": "将工具栏隐藏，且当鼠标靠近时可自动弹出。您也可将其锁定，恢复为常驻显示。",
+    "hide-menubar/@warn": "不要在使用桌面端时启用这个插件。",
     "toolbox-category-drag/@name": "拖动调整工具箱分类",
     "toolbox-category-drag/@description": "通过长按工具箱分类图标来改变他们的分类顺序。",
     "toolbox-category-drag/@info-draggable-incompatibility": "该扩展与'双列分类菜单'插件不兼容",

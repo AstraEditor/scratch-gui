@@ -20,6 +20,13 @@ const manifest = {
     {
       "url": "style.css"
     }
-  ]
+  ],
+  "info": [
+    {
+      "type": "notice",
+      "text": "Don't enable this addon when you using desktop version.",
+      "id": "warn"
+    }
+  ],
 };
 export default manifest;
