@@ -198,3 +198,17 @@
     filter:brightness(1.2);
     -webkit-filter:brightness(1.2);
 }
+
+.sa-todo-add-todo{
+    width: 30px;
+    height: 30px;
+    background-color: var(--looks-secondary);
+    border: none;
+    color: white;
+    border-radius: 99px;
+    -webkit-border-radius: 99px;
+    -moz-border-radius: 99px;
+    -ms-border-radius: 99px;
+    -o-border-radius: 99px;
+    font-size: 20px;
+}

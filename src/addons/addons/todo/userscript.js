@@ -324,7 +324,8 @@ ${JSON.stringify(content)}
             console.warn('Todo List can\'t display: ' + e)
         }
         const addButton = document.createElement('button');
-        addButton.textContent = msg('add-todo');
+        addButton.className = 'sa-todo-add-todo'
+        addButton.textContent = '+';
         addButton.onclick = () => {
             addModal();
         }
