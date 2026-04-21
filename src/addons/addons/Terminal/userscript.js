@@ -4,6 +4,8 @@ import icon from "!../../../lib/tw-recolor/build!./logo.svg";
 import iconSidebar from "!../../../lib/tw-recolor/build!./icon-sidebar.svg";
 import iconBottom from "!../../../lib/tw-recolor/build!./icon-bottom.svg";
 import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
+import iconContinue from "!../../../lib/tw-recolor/build!./icon-continue.svg";
+import iconExport from "!../../../lib/tw-recolor/build!./icon-export.svg";
 import { setup as setupDebugger, setPaused as setPausedDebugger } from "./module.js";
 
 const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
@@ -598,7 +600,7 @@ export default async function ({ addon, console, msg }) {
         terminalHeader.addEventListener("mousedown", handleWindowDragStart);
         
         // 在整个窗口上添加 mousedown 事件监听器，用于调整大小
-        floatingWindow.addEventListener("mousedown", handleWindowDragStart);
+        floatingWindow.addEventListener("mousedown", handleWindowResizeStart);
         
         // 添加鼠标移动事件监听器，用于更新鼠标样式
         floatingWindow.addEventListener("mousemove", updateCursorStyle);
@@ -634,7 +636,7 @@ export default async function ({ addon, console, msg }) {
 
           // 禁用拖拽功能
           terminalHeader.removeEventListener("mousedown", handleWindowDragStart);
-          floatingWindow.removeEventListener("mousedown", handleWindowDragStart);
+          floatingWindow.removeEventListener("mousedown", handleWindowResizeStart);
           
           // 移除鼠标移动事件监听器
           floatingWindow.removeEventListener("mousemove", updateCursorStyle);
@@ -646,6 +648,19 @@ export default async function ({ addon, console, msg }) {
   // 处理窗口拖拽开始
   function handleWindowDragStart(e) {
     // 不在拖拽按钮上开始拖拽
+    if (e.target.tagName === "BUTTON") return;
+    
+    // 直接进行窗口拖拽
+    isDraggingWindow = true;
+    dragOffsetX = e.clientX - floatingWindow.offsetLeft;
+    dragOffsetY = e.clientY - floatingWindow.offsetTop;
+    document.addEventListener("mousemove", handleWindowDrag);
+    document.addEventListener("mouseup", stopWindowDrag);
+  }
+  
+  // 处理窗口调整大小开始（在整个窗口）
+  function handleWindowResizeStart(e) {
+    // 不在按钮上开始调整大小
     if (e.target.tagName === "BUTTON") return;
     
     // 检查是否在窗口边缘（调整大小）
@@ -662,13 +677,6 @@ export default async function ({ addon, console, msg }) {
       
       document.addEventListener("mousemove", handleWindowResize);
       document.addEventListener("mouseup", stopWindowResize);
-    } else {
-      // 否则进行窗口拖拽
-      isDraggingWindow = true;
-      dragOffsetX = e.clientX - floatingWindow.offsetLeft;
-      dragOffsetY = e.clientY - floatingWindow.offsetTop;
-      document.addEventListener("mousemove", handleWindowDrag);
-      document.addEventListener("mouseup", stopWindowDrag);
     }
   }
 
@@ -798,14 +806,64 @@ export default async function ({ addon, console, msg }) {
   // 创建继续按钮（默认隐藏）
   const continueButton = document.createElement("button");
   continueButton.className = "sa-terminal-continue-button";
-  continueButton.innerHTML = "▶ 继续执行";
-  // continueButton.title = "继续运行";
+  continueButton.title = "继续运行";
+
   continueButton.style.display = "none";
+
+  // 为继续按钮添加SVG图标
+  const continueBtnIcon = document.createElement("img");
+  // 使用正确的图标导入方式
+  continueBtnIcon.src = iconContinue();
+  continueBtnIcon.style.width = "16px";
+  continueBtnIcon.style.height = "16px";
+  continueBtnIcon.style.filter = "grayscale(100%)";
+  continueButton.appendChild(continueBtnIcon);
+
+
 
   continueButton.addEventListener("click", () => {
     setPausedDebugger(false);
     continueButton.style.display = "none";
   });
+
+  // 创建导出日志按钮
+  const exportButton = document.createElement("button");
+  exportButton.className = "sa-terminal-export-button";
+  exportButton.title = "导出日志";
+
+
+  // 为导出按钮添加SVG图标
+  const exportBtnIcon = document.createElement("img");
+  // 使用正确的图标导入方式
+  exportBtnIcon.src = iconExport();
+  exportBtnIcon.style.width = "16px";
+  exportBtnIcon.style.height = "16px";
+  exportBtnIcon.style.filter = "grayscale(100%)";
+  exportButton.appendChild(exportBtnIcon);
+
+
+
+  // 导出日志功能
+  const exportLogs = () => {
+    const logs = [];
+    for (const row of virtualList.rows) {
+      if (row.element) {
+        logs.push(row.element.textContent);
+      }
+    }
+    const content = logs.join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `terminal-log-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  exportButton.addEventListener("click", exportLogs);
 
   // 创建位置切换按钮容器
   const positionSwitchContainer = document.createElement("div");
@@ -1059,6 +1117,7 @@ export default async function ({ addon, console, msg }) {
 
   // 将按钮添加到容器中
   buttonContainer.appendChild(continueButton);
+  buttonContainer.appendChild(exportButton);
   buttonContainer.appendChild(positionSwitchContainer);
 
   // 将关闭按钮添加到按钮容器（默认隐藏，只在独立窗口模式显示）
@@ -1404,6 +1463,26 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
+  // 添加用户指令积木
+  addon.tab.addBlock("\u200B\u200Badd_user_command\u200B\u200B %s %s", {
+    args: ["name", "description"],
+    displayName: msg("block-add-user-command") || "Add User Command",
+    callback: ({ name, description }) => {
+      if (name && description) {
+        userCommands[name.trim()] = description.trim();
+      }
+    },
+  });
+
+  // 添加导出日志积木
+  addon.tab.addBlock("\u200B\u200Bexport_logs\u200B\u200B", {
+    args: [],
+    displayName: msg("block-export-logs") || "Export Logs",
+    callback: () => {
+      exportLogs();
+    },
+  });
+
   // 添加返回值积木（返回用户刚才输入的内容）
   // 直接使用 vm.addAddonBlock 创建返回值块
   vm.addAddonBlock({
@@ -1440,6 +1519,9 @@ export default async function ({ addon, console, msg }) {
   // 存储用户输入用于返回值积木
   let lastUserInput = "";
 
+  // 存储用户指令
+  const userCommands = {};
+
   // 可用命令
   const commands = {
     help: {
@@ -1449,6 +1531,16 @@ export default async function ({ addon, console, msg }) {
         for (const [name, cmd] of Object.entries(commands)) {
           output += `  ${name} - ${cmd.description}\n`;
         }
+        
+        // 显示用户指令
+        const userCommandCount = Object.keys(userCommands).length;
+        if (userCommandCount > 0) {
+          output += "\nUser Command：\n";
+          for (const [name, description] of Object.entries(userCommands)) {
+            output += ` - ${name} - ${description}\n`;
+          }
+        }
+        
         return output;
       }
     },
@@ -1560,8 +1652,8 @@ export default async function ({ addon, console, msg }) {
     commandLine.className = "sa-terminal-command-line";
     const commandText = document.createElement("span");
     commandText.className = "sa-terminal-command-line-text";
-    commandText.textContent = `> ${command}`;
     commandText.title = command;
+    createTextWithLinks(commandText, `> ${command}`);
     commandLine.appendChild(commandText);
     virtualList.appendLog({ element: commandLine, contentHash: commandLine.textContent });
 
