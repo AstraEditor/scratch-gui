@@ -19,15 +19,21 @@
     padding: 1rem;
 }
 
-.sa-todo-list {
+.sa-todo-list,
+.sa-todo-modal-preview-steps-step {
     list-style-type: none;
     padding: 0;
+}
+
+.sa-todo-modal-preview-steps {
+    margin: 0;
 }
 
 .sa-todo-list-ele-steps-li {
     list-style-type: none;
 }
-.sa-todo-list-ele-steps-main{
+
+.sa-todo-list-ele-steps-main {
     overflow: hidden;
 }
 
@@ -142,9 +148,21 @@
     flex-direction: column;
 }
 
-.sa-todo-modal-input{
+.sa-todo-modal-input {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    margin: 5px;
+    height: 40px;
+}
+
+.sa-todo-modal-input-input {
+    width: 200px;
+}
+
+.sa-todo-modal-input-input[type=color] {
+    background: transparent;
+    border: none;
+    padding: 0;
 }

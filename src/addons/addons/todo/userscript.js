@@ -138,12 +138,25 @@ ${JSON.stringify(content)}
             preview_title.className = 'sa-todo-modal-preview-title';
             const preview_date = document.createElement('span')
             preview_date.className = 'sa-todo-modal-preview-date';
-            const preview_steps = document.createElement('ul');
 
             const refresh = () => {
                 preview_title.textContent = config.name;
                 preview_date.textContent = getFormattedDateRange(config.task.startTime, config.task.endTime);
                 preview.style.backgroundColor = config.color + alpha;
+                document.querySelectorAll('.sa-todo-modal-preview-steps').forEach(ele => ele.remove())
+                const preview_steps = document.createElement('ul');
+                preview_steps.className = 'sa-todo-modal-preview-steps';
+
+                config.task.steps.forEach(step => {
+                    const preview_steps_step = document.createElement('li');
+                    preview_steps_step.id = step.id;
+                    preview_steps_step.textContent = step.text;
+                    preview_steps_step.className = 'sa-todo-modal-preview-steps-step';
+
+                    preview_steps.appendChild(preview_steps_step)
+                })
+                
+                preview.appendChild(preview_steps)
             }
 
             const input = (inputType, text, key, key2 = null) => {
@@ -152,6 +165,7 @@ ${JSON.stringify(content)}
                 const inputText = document.createElement('span');
                 inputText.textContent = text;
                 const input = document.createElement('input');
+                input.className = 'sa-todo-modal-input-input';
                 if(inputType != 'input') input.type = inputType;
                 if (key2) input.value = config[key][key2];
                 else input.value = config[key];
@@ -167,12 +181,20 @@ ${JSON.stringify(content)}
                 return inputContent
             }
 
-
-            refresh();
-            
-
             preview.appendChild(preview_title);
             preview.appendChild(preview_date);
+            refresh();
+
+            const preview_steps_create = document.createElement('button');
+            preview_steps_create.textContent = msg('new-step');
+            preview_steps_create.onclick = () => {
+                config.task.steps.push({
+                    id: generateId(),
+                    text: window.prompt(msg('step-name')),
+                    done: false
+                });
+                refresh()
+            }
 
             const done = document.createElement('button');
             done.textContent = msg('done');
@@ -186,6 +208,8 @@ ${JSON.stringify(content)}
             content.appendChild(input('input', msg('name'), 'name'));
             content.appendChild(input('color', msg('color'), 'color'));
             content.appendChild(input('datetime-local', msg('start-time'), 'task', 'startTime'));
+            content.appendChild(input('datetime-local', msg('end-time'), 'task', 'endTime'));
+            content.appendChild(preview_steps_create);
             content.appendChild(done);
             return content
         }
@@ -211,7 +235,7 @@ ${JSON.stringify(content)}
         content.className = 'sa-todo';
 
         const title = document.createElement('h1');
-        title.textContent = `${PROJECT_NAME.toString()} ${msg('title')}`;
+        title.textContent = msg('title', { project: PROJECT_NAME.toString() });
 
         const todoList = document.createElement('ul');
         todoList.className = 'sa-todo-list';
@@ -275,14 +299,14 @@ ${JSON.stringify(content)}
         } catch (e) {
             console.warn('Todo List can\'t display: ' + e)
         }
-        const testButton = document.createElement('button');
-        testButton.textContent = 'test';
-        testButton.onclick = () => {
+        const addButton = document.createElement('button');
+        addButton.textContent = msg('add-todo');
+        addButton.onclick = () => {
             addModal();
         }
 
         content.appendChild(title)
-        content.appendChild(testButton)
+        content.appendChild(addButton)
         content.appendChild(todoList)
         return content
     }

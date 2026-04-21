@@ -435,5 +435,7 @@
     "Terminal/@info-notice": "与Debugger插件同时启用的时候有概率无法加载积木。",
     "background/@name": "背景",
     "background/@description": "让你的编辑器焕然一新。",
-    "background/@info-reducePerformance": "这可能会造成一些性能问题。"
+    "background/@info-reducePerformance": "这可能会造成一些性能问题。",
+    "todo/@name": "待办",
+    "todo/@description": "记录作品的待办！"
 }

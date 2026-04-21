@@ -432,5 +432,6 @@
     "background/background-layout": "布局",
     "background/background-preview-empty": "未选择壁纸",
     "background/background-rotate": "轮换",
-    "background/disable": "禁用"
+    "background/disable": "禁用",
+    "todo/title": "{project} 的待办"
 }

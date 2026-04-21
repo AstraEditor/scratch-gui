@@ -441,5 +441,6 @@
     "background/background-layout": "Layout",
     "background/background-preview-empty": "No wallpaper selected",
     "background/background-rotate": "Rotate",
-    "background/disable": "Disable"
+    "background/disable": "Disable",
+    "todo/title": "ToDo for {project}"
 }
