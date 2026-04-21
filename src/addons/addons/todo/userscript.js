@@ -147,15 +147,36 @@ ${JSON.stringify(content)}
                 const preview_steps = document.createElement('ul');
                 preview_steps.className = 'sa-todo-modal-preview-steps';
 
-                config.task.steps.forEach(step => {
+                config.task.steps.forEach((step, index) => {
                     const preview_steps_step = document.createElement('li');
                     preview_steps_step.id = step.id;
-                    preview_steps_step.textContent = step.text;
                     preview_steps_step.className = 'sa-todo-modal-preview-steps-step';
+                    const preview_steps_step_text = document.createElement('span');
+                    preview_steps_step_text.textContent = step.text;
+                    preview_steps_step_text.style.color = 'white'; 
+                    const preview_steps_remove = document.createElement('button');
+                    preview_steps_remove.textContent = '×';
+                    preview_steps_remove.className = 'sa-todo-modal-preview-steps-step-remove';
+                    preview_steps_remove.style.backgroundColor = config.color;
+                    preview_steps_remove.style.color = 'white';
+                    const preview_steps_rename = document.createElement('button');
+                    preview_steps_rename.innerHTML = `<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="15px" width="15px" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="m15 16-4 4h10v-4zM12.06 7.19 3 16.25V20h3.75l9.06-9.06-3.75-3.75zM5.92 18H5v-.92l7.06-7.06.92.92L5.92 18zM18.71 8.04a.996.996 0 0 0 0-1.41l-2.34-2.34a1.001 1.001 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>`;
+                    preview_steps_rename.className = 'sa-todo-modal-preview-steps-step-rename';
+                    preview_steps_rename.style.backgroundColor = config.color;
+                    preview_steps_rename.style.color = 'white';
+                    preview_steps_rename.onclick = () => {
+                        const newName = prompt(msg('new-name'));
+                        if (newName) config.task.steps[index].text = newName;
+                        refresh();
+                    }
 
-                    preview_steps.appendChild(preview_steps_step)
+                    preview_steps_step.appendChild(preview_steps_remove);
+                    preview_steps_step.appendChild(preview_steps_rename);
+                    preview_steps_step.appendChild(preview_steps_step_text);
+
+                    preview_steps.appendChild(preview_steps_step);
                 })
-                
+
                 preview.appendChild(preview_steps)
             }
 
@@ -166,7 +187,7 @@ ${JSON.stringify(content)}
                 inputText.textContent = text;
                 const input = document.createElement('input');
                 input.className = 'sa-todo-modal-input-input';
-                if(inputType != 'input') input.type = inputType;
+                if (inputType != 'input') input.type = inputType;
                 if (key2) input.value = config[key][key2];
                 else input.value = config[key];
                 input.oninput = e => {
@@ -188,9 +209,10 @@ ${JSON.stringify(content)}
             const preview_steps_create = document.createElement('button');
             preview_steps_create.textContent = msg('new-step');
             preview_steps_create.onclick = () => {
-                config.task.steps.push({
+                const newName = prompt(msg('step-name'));
+                if (newName) config.task.steps.push({
                     id: generateId(),
-                    text: window.prompt(msg('step-name')),
+                    text: newName,
                     done: false
                 });
                 refresh()
@@ -251,6 +273,7 @@ ${JSON.stringify(content)}
                 todoEleName.textContent = task.name;
 
                 const todoEleDate = document.createElement('span');
+                todoEleDate.style.color = 'white';
                 todoEleDate.textContent = getFormattedDateRange(task.startTime, task.endTime);
                 // steps
                 const todoEleStepsContent = document.createElement('ul');
@@ -263,6 +286,7 @@ ${JSON.stringify(content)}
                     todoEleStep.className = 'sa-todo-list-ele-steps-li';
                     const todoEleStep_Text = document.createElement('span');
                     todoEleStep_Text.textContent = step.text;
+                    todoEleStep_Text.style.color = 'white';
 
                     todoEleStep.appendChild(todoEleStep_Text);
 

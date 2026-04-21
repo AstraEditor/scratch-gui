@@ -4,14 +4,14 @@ const guiColors = {
     'motion-tertiary': '#0066ff',
 
     'looks-secondary': '#0099ff',
-    'looks-transparent': '#0077aa59',
-    'looks-light-transparent': '#00669926',
-    'looks-secondary-dark': '#4e97b7ff',
+    'looks-transparent': '#0099ff55',
+    'looks-light-transparent': '#66ccff33',
+    'looks-secondary-dark': '#0066ff',
 
-    'extensions-primary': '#5a8ff2ff',
-    'extensions-tertiary': 'hsla(197, 85%, 40%, 1.00)',
-    'extensions-transparent': '#5abdf259',
-    'extensions-light': 'hsla(213, 58%, 85%, 1.00)',
+    'extensions-primary': '#0099ff',
+    'extensions-tertiary': '#0066ff',
+    'extensions-transparent': '#0099ff55',
+    'extensions-light': '#66ccff',
 
     'drop-highlight': '#8cd3ffff'
 };

@@ -25,6 +25,12 @@
     padding: 0;
 }
 
+.sa-todo-modal-preview-steps-step {
+    display: flex;
+    gap: 10px;
+    margin: 5px 2px;
+}
+
 .sa-todo-modal-preview-steps {
     margin: 0;
 }
@@ -94,6 +100,11 @@
     font-weight: bolder;
     font-size: x-large;
     text-shadow: #00000030 0 0 2px;
+    color: white
+}
+
+.sa-todo-modal-preview-date {
+    color: white
 }
 
 .sa-todo-list-ele-titleDiv {
@@ -165,4 +176,25 @@
     background: transparent;
     border: none;
     padding: 0;
+}
+
+.sa-todo-modal-preview-steps-step-remove,
+.sa-todo-modal-preview-steps-step-rename {
+    border-radius: 99px;
+    border: none;
+    -webkit-border-radius: 99px;
+    -moz-border-radius: 99px;
+    -ms-border-radius: 99px;
+    -o-border-radius: 99px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sa-todo-modal-preview-steps-step-remove:hover,
+.sa-todo-modal-preview-steps-step-rename:hover {
+    filter:brightness(1.2);
+    -webkit-filter:brightness(1.2);
 }
