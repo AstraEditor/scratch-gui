@@ -74,7 +74,7 @@
   width: 300px;
   height: 8px;
   border-radius: 8px;
-  background-color: $ui-modal-header-foreground ;
+  background-color: $ui-secondary;
   overflow: hidden;
   position: relative;
   margin-left: auto;
@@ -99,7 +99,7 @@
   left: 0;
   width: 0;
   height: 100%;
-  background-color: $ui-modal-header-background ;
+  background-color: $looks-secondary ;
 }
 
 .logoLoader {
