@@ -19,7 +19,6 @@
 .addons-bottom-panel-button-bar button {
   padding: 0 12px;
   border: none;
-  border-right: 1px solid var(--ui-black-transparent);
   height: 24px;
   background: var(--ui-white);
   color: var(--text-primary);

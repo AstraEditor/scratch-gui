@@ -1,6 +1,7 @@
 import { getSetting } from '../../tools/AEsettings/index'
 import logo from '!../../../lib/tw-recolor/build!./logo.svg';
 import dropdown from './dropdown-arrow.svg';
+import done from './done.svg'
 import SideBar from "../../ui/side-bar/side-bar.js";
 
 /*
@@ -153,7 +154,7 @@ ${JSON.stringify(content)}
                     preview_steps_step.className = 'sa-todo-modal-preview-steps-step';
                     const preview_steps_step_text = document.createElement('span');
                     preview_steps_step_text.textContent = step.text;
-                    preview_steps_step_text.style.color = 'white'; 
+                    preview_steps_step_text.style.color = 'white';
                     const preview_steps_remove = document.createElement('button');
                     preview_steps_remove.textContent = '×';
                     preview_steps_remove.className = 'sa-todo-modal-preview-steps-step-remove';
@@ -262,15 +263,20 @@ ${JSON.stringify(content)}
         const todoList = document.createElement('ul');
         todoList.className = 'sa-todo-list';
         try {
-            getTodoListContent().tasks.forEach(task => {
+            getTodoListContent().tasks.forEach((task, index) => {
                 let isHide = true;
                 const todoEle = document.createElement('li');
                 todoEle.className = 'sa-todo-list-ele';
-                const todoEleTile = document.createElement('div')
-                todoEleTile.className = 'sa-todo-list-ele-titleDiv';
+                const todoEle_card = document.createElement('div')
+                todoEle_card.className = 'sa-todo-list-ele-titleDiv';
                 const todoEleName = document.createElement('span');
                 todoEleName.className = 'sa-todo-list-ele-title';
                 todoEleName.textContent = task.name;
+                const todoEleSetDone = document.createElement('img');
+                todoEleSetDone.src = done;
+                todoEleSetDone.className = 'sa-todo-list-ele-done'
+                todoEleSetDone.style.backgroundColor = task.color;
+
 
                 const todoEleDate = document.createElement('span');
                 todoEleDate.style.color = 'white';
@@ -281,7 +287,7 @@ ${JSON.stringify(content)}
                 todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
                 todoEleStepsContent.className = 'sa-todo-list-ele-steps';
                 todoEleStepsContent.id = task.id;
-                task.steps.forEach(step => {
+                if (task.steps.length != 0) task.steps.forEach(step => {
                     const todoEleStep = document.createElement('li');
                     todoEleStep.className = 'sa-todo-list-ele-steps-li';
                     const todoEleStep_Text = document.createElement('span');
@@ -291,11 +297,20 @@ ${JSON.stringify(content)}
                     todoEleStep.appendChild(todoEleStep_Text);
 
                     todoEleStepsContentMain.appendChild(todoEleStep);
-                })
+                });
                 todoEleStepsContent.appendChild(todoEleStepsContentMain);
 
                 // display
                 todoEle.style.backgroundColor = task.color + alpha;
+                // 刷新选择done后的状态
+                const refreshTodoStyle = () => {
+                    const isDone = getTodoListContent().tasks[index].done;
+                    if(isDone) {
+                        todoEleName.classList.add('done');
+                    } else {
+                        todoEleName.classList.remove('done');
+                    }
+                }
 
                 // dropdown
                 const todoEleDropdown = document.createElement('img');
@@ -306,14 +321,21 @@ ${JSON.stringify(content)}
                     // steps
                     todoEleStepsContent.style.gridTemplateRows = isHide ? '0fr' : '1fr';
                 }
+                todoEleSetDone.onclick = () => {
+                    const todos = getTodoListContent();
+                    todos.tasks[index].done = !todos.tasks[index].done;
+                    createCommentToStage(getFormatComment(todos), false);
+                    refreshTodoStyle()
+                }
                 todoEleDropdown.onclick = () => {
                     isHide = !isHide;
                     refreshDropdown_Steps()
                 }
                 // spawn
-                todoEleTile.appendChild(todoEleDropdown);
-                todoEleTile.appendChild(todoEleName);
-                todoEle.appendChild(todoEleTile);
+                if (task.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
+                todoEle_card.appendChild(todoEleSetDone);
+                todoEle_card.appendChild(todoEleName);
+                todoEle.appendChild(todoEle_card);
                 todoEle.appendChild(todoEleDate);
                 todoEle.appendChild(todoEleStepsContent);
                 refreshDropdown_Steps();
@@ -336,7 +358,7 @@ ${JSON.stringify(content)}
         return content
     }
 
-    const createCommentToStage = content => {
+    const createCommentToStage = (content, needRefresh = true) => {
         const vm = addon.tab.traps.vm;
         // 删除之前的comment,它实际上不会替换
         try {
@@ -356,8 +378,10 @@ ${JSON.stringify(content)}
         }
 
         // 刷新一下Tab
-        SideBar.clearContent();
-        SideBar.setContent(createSideBarElements(msg))
+        if (needRefresh) {
+            SideBar.clearContent();
+            SideBar.setContent(createSideBarElements(msg))
+        }
     }
 
     const getTodoList = () => {

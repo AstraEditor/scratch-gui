@@ -100,7 +100,17 @@
     font-weight: bolder;
     font-size: x-large;
     text-shadow: #00000030 0 0 2px;
-    color: white
+    color: white;
+    transition: color 0.3s ease;
+    -webkit-transition: color 0.3s ease;
+    -moz-transition: color 0.3s ease;
+    -ms-transition: color 0.3s ease;
+    -o-transition: color 0.3s ease;
+}
+
+.sa-todo-list-ele-title.done {
+    color: #ffffff50;
+    text-decoration: line-through solid white;
 }
 
 .sa-todo-modal-preview-date {
@@ -193,13 +203,14 @@
     align-items: center;
     justify-content: center;
 }
+
 .sa-todo-modal-preview-steps-step-remove:hover,
 .sa-todo-modal-preview-steps-step-rename:hover {
-    filter:brightness(1.2);
-    -webkit-filter:brightness(1.2);
+    filter: brightness(1.2);
+    -webkit-filter: brightness(1.2);
 }
 
-.sa-todo-add-todo{
+.sa-todo-add-todo {
     width: 30px;
     height: 30px;
     background-color: var(--looks-secondary);
@@ -211,4 +222,17 @@
     -ms-border-radius: 99px;
     -o-border-radius: 99px;
     font-size: 20px;
+}
+
+.sa-todo-list-ele-done {
+    padding: 5px;
+    border-radius: 999px;
+    width: 20px;
+    height: 20px;
+    margin-left: 2px;
+}
+
+.sa-todo-list-ele-done:hover {
+    filter: brightness(1.2);
+    -webkit-filter: brightness(1.2);
 }
