@@ -339,7 +339,7 @@ ${JSON.stringify(content)}
                 todoEle.appendChild(todoEleDate);
                 todoEle.appendChild(todoEleStepsContent);
                 refreshDropdown_Steps();
-
+                refreshTodoStyle();
                 todoList.appendChild(todoEle);
             });
         } catch (e) {
