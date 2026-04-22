@@ -274,44 +274,55 @@
       }
 
       try {
-        var themeSetting = localStorage.getItem('tw:theme');
+        var themeSetting = JSON.parse(localStorage.getItem('tw:theme'));
+      } catch {
+        // ignore
+      }
+      
+      // dark, accent: ae
+      theme = 'dark';
+      accent = '#0099ff';
+
+      try {
+        theme = themeSetting.gui || 'dark';
+        var parsed = themeSetting.accent;
+        switch (parsed) {
+          case ('purple'):
+            accent = '#855cd6';
+            break
+          case ('blue'):
+            accent = '#4c97ff';
+            break
+          case ('red'):
+            accent = '#ff4c4c';
+            break
+          case ('rainbow'):
+            accent = '#ff4c4c';
+            break
+          case ('ce'):
+            accent = '#ff9b86';
+            break
+          case ('ty'):
+            accent = '#66ccff';
+            break
+          case ('miku'):
+            accent = '#39c5bb';
+            break
+          case ('astraeditor'):
+            accent = '#0099ff';
+            break
+          default:
+            accent = '#0099ff';
+
+        }
+
+        if (parsed.gui === 'dark' || parsed.gui === 'light') {
+          theme = parsed.gui;
+        }
       } catch (e) {
         // ignore
       }
-      if (themeSetting === 'light') {
-        theme = 'light';
-      } else if (themeSetting === 'dark') {
-        theme = 'dark';
-      } else if (themeSetting) {
-        try {
-          theme = 'dark'; // 默认是dark配色
-          var parsed = JSON.parse(themeSetting);
-          if (parsed.accent === 'purple') {
-            accent = '#855cd6';
-          } else if (parsed.accent === 'blue') {
-            accent = '#4c97ff';
-          } else if (parsed.accent === 'red') {
-            accent = '#ff4c4c';
-          } else if (parsed.accent === 'rainbow') {
-            accent = '#ff4c4c';
-          } else if (parsed.accent === 'ce') {
-            accent = '#ff9b86';
-          } else if (parsed.accent === 'ty') {
-            accent = '#66ccff';
-          } else if (parsed.accent === 'miku') {
-            accent = '#39c5bb';
-          } else if (parsed.accent === 'astraeditor') {
-            accent = '#0099ff';
-          } else {
-            accent = '#0099ff';
-          }
-          if (parsed.gui === 'dark' || parsed.gui === 'light') {
-            theme = parsed.gui;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
+
 
       if (!theme) {
         theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -327,14 +338,10 @@
           logo[element].style.backgroundColor = '#ffffff50';
           logo[element].style.borderColor = '#ffffff10';
         };
-          <% if (htmlWebpackPlugin.options.isEditor) { %>
-          splash.style.backgroundColor = accent;
-          splash.style.color = 'white';
-          <% } else { %>
-          splash.style.color = accent;
-          <% } %>
-       } else {
-        splash.style.backgroundColor = '#000000';
+        splash.style.backgroundColor = accent;
+        splash.style.color = 'white';
+      } else {
+        splash.style.backgroundColor = '#222';
         splash.style.color = 'white';
         for (let element = 0; element < logo.length; element += 1) {
           logo[element].style.backgroundColor = '#ffffff50';

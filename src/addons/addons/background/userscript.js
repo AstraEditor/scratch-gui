@@ -1256,6 +1256,7 @@ async function addModalBackground() {
             target.style.removeProperty('--sa-modal-bg-pad-bottom');
             target.style.removeProperty('--sa-modal-bg-pad-left');
         };
+        document.querySelectorAll('[class*="library_library-scroll-grid"]').forEach(ele => ele.style.background = 'transparent')
 
         if (!config) {
             modalBackgrounds.forEach(resetModalBackground);

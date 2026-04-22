@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { defineMessages, injectIntl, intlShape, FormattedMessage } from 'react-intl';
 
 import add from './add.svg';
-import custom from './custom.png';
+import custom from './custom.svg';
 import Modal from '../../containers/modal.jsx';
 import Box from '../box/box.jsx';
 import AddonHooks from '../../addons/hooks';

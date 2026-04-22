@@ -16,7 +16,7 @@
 }
 
 .library-scroll-grid.withFilterBar {
-    height: calc(100% - $library-header-height - $library-filter-bar-height - 2rem);
+    height: calc(100vh - 3.125rem - 2.5rem - 2rem);
 }
 
 .filter-bar {
@@ -24,7 +24,8 @@
     flex-direction: row;
     justify-content: flex-start;
     align-items: center;
-    height: calc($library-filter-bar-height + 2rem); /* padding */
+    height: calc($library-filter-bar-height + 2rem);
+    /* padding */
     background-color: $looks-transparent;
     padding: 0 1rem;
     font-size: .875rem;

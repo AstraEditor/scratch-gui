@@ -10,6 +10,7 @@
     justify-content: center;
     align-items: center;
 }
+
 .body {
     width: 50%;
     color: white;
@@ -17,26 +18,28 @@
 }
 
 /* scratch-www was overriding the colors */
-.body p, .body h2 {
+.body p,
+.body h2 {
     color: inherit;
 }
 
 .reloadButton {
-    border: 2px solid $motion-primary;
+    border: 2px solid white;
     border-radius: 0.25rem;
     padding: 0.5rem 2rem;
     background: transparent;
-    color: $text-primary;
+    color: white;
     font-weight: bold;
     font-size: 0.875rem;
     cursor: pointer;
-    margin: 5px
+    margin: 5px;
 }
 
 .header {
     font-size: 1.5em;
     font-weight: bold;
 }
+
 .error-message {
     white-space: pre-wrap;
     font-family: monospace;
