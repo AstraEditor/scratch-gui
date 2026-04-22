@@ -207,14 +207,11 @@
   color: var(--text-primary-transparent) !important;
 }
 
-/* Terminal按钮激活状态 - 主题色边框（上、左、右），背景保持白色 */
 .addons-bottom-panel-button-bar .sa-terminal-toggle-button.sa-terminal-toggle-active {
   background: var(--ui-white) !important;
   color: var(--looks-secondary) !important;
   font-weight: bold !important;
-  border-right: 2px solid var(--looks-secondary) !important;
-  border-left: 2px solid var(--looks-secondary) !important;
-  border-top: 2px solid var(--looks-secondary) !important;
+  border-bottom: 2px solid var(--looks-secondary) !important;
 }
 
 /* 激活状态下图标颜色 - 显示主题色 */
