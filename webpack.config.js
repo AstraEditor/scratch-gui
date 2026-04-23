@@ -38,11 +38,11 @@ const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     devtool: process.env.SOURCEMAP || (process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map'),
     devServer: {
-        contentBase: [
-            path.resolve(__dirname, 'build')
-        ],
+        static: {
+            directory: path.join(__dirname, 'build'),
+        },
         host: '0.0.0.0',
-        disableHostCheck: true,
+        allowedHosts: 'all',
         compress: true,
         port: process.env.PORT || 8601,
         // allows ROUTING_STYLE=wildcard to work properly
@@ -68,6 +68,9 @@ const base = {
     },
     resolve: {
         symlinks: true,
+        fallback: {
+            path: require.resolve("path-browserify")
+        },
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts'),
@@ -115,10 +118,12 @@ const base = {
             }, {
                 loader: 'css-loader',
                 options: {
-                    modules: true,
                     importLoaders: 1,
-                    localIdentName: '[name]_[local]_[hash:base64:5]',
-                    camelCase: true
+                    modules: {
+                        auto: true,
+                        localIdentName: '[name]_[local]_[hash:base64:5]',
+                        exportLocalsConvention: 'camelCase'
+                    }
                 }
             }, {
                 loader: 'postcss-loader',
