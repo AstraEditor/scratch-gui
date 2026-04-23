@@ -1530,7 +1530,9 @@ export default async function ({ addon, console, msg }) {
       execute: (args) => {
         let output = (msg("command-help-available") || "Available commands:") + "\n\n";
         for (const [name, cmd] of Object.entries(commands)) {
-          output += `  ${name} - ${cmd.description}\n`;
+          if (name !== "creeper?") {
+            output += `  ${name} - ${cmd.description}\n`;
+          }
         }
         
         // 显示用户指令
