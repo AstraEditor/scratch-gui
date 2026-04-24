@@ -12,7 +12,7 @@ const postcssVars = require('postcss-simple-vars');
 const postcssImport = require('postcss-import');
 
 const STATIC_PATH = process.env.STATIC_PATH || '/static';
-const {APP_NAME} = require('./src/lib/brand');
+const { APP_NAME } = require('./src/lib/brand');
 
 const root = process.env.ROOT || '';
 if (root.length > 0 && !root.endsWith('/')) {
@@ -29,18 +29,58 @@ const htmlWebpackPluginCommon = {
 const CACHE_EPOCH = 'pentapod';
 const refractorPath = request => path.resolve(
     __dirname,
-    request === 'core' || request === 'all' ?
+    request == 'core' || request == 'all' ?
         `node_modules/refractor/lib/${request}.js` :
         `node_modules/refractor/lang/${request}.js`
 );
+const globalCssFiles = new Set([
+    'bottom-panel.css',
+    'side-bar.css'
+]);
+const useCssModules = resourcePath => !globalCssFiles.has(path.basename(resourcePath));
+
+// print logo and tip test
+console.log(`\x1b[34m
+               ░░░░░░░░░                                
+          ░░░░░░░░░░░░░░░░░░░                           
+       ░░░░░░░░░░░░░░░░░░░░░░░░░                        
+     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                      
+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                    
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                   
+ ░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒░░                  
+ ░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░               
+░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░             
+░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░            
+░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░           
+░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░          
+ ░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+  ░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+  ░░░░▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░        
+   ░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░      
+   ░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░            
+  ░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▓▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░             
+  ░░░░░░░░░░░▒▒▒▒▒▒▒▒░░▒▒▒▒░░░░░░░░░░░░░░               
+   ░░░░░░░░░░░░░░░░░░░   ░░░░░░░░░░░░░                  
+    ░░░░░░░░░░░░░░░░░                                   
+     ░░░░░░░░░░░░░░                                     
+        ░░░░░░░░                                          
+\x1b[0m
+\x1b[1mAstraEditor scratch-gui\x1b[0m
+
+Welcome! GitHub organization at\x1b[34m https://github.com/AstraEditor\x1b[0m
+Give we a star⭐ in\x1b[34m https://github.com/AstraEditor/scratch-gui\x1b[0m , Thank you!
+
+If you want to develop yourself project from AstraEditor, you should learn this:\x1b[34m https://editors.astras.top/document/development/getting-started/\x1b[0m
+\x1b[0m`)
 
 const base = {
-    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-    devtool: process.env.SOURCEMAP || (process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map'),
+    mode: process.env.NODE_ENV == 'production' ? 'production' : 'development',
+    devtool: process.env.SOURCEMAP || (process.env.NODE_ENV == 'production' ? false : 'cheap-module-source-map'),
     devServer: {
-        static: {
-            directory: path.join(__dirname, 'build'),
-        },
+        // Only serve the current in-memory webpack output in dev.
+        // Serving the on-disk build directory here can mix stale files with freshly
+        // compiled chunks, which breaks lazy-loaded addon chunks like `js/addons.js`.
+        static: false,
         host: '0.0.0.0',
         allowedHosts: 'all',
         compress: true,
@@ -48,21 +88,21 @@ const base = {
         // allows ROUTING_STYLE=wildcard to work properly
         historyApiFallback: {
             rewrites: [
-                {from: /^\/\d+\/?$/, to: '/index.html'},
-                {from: /^\/\d+\/fullscreen\/?$/, to: '/fullscreen.html'},
-                {from: /^\/\d+\/editor\/?$/, to: '/editor.html'},
-                {from: /^\/\d+\/embed\/?$/, to: '/embed.html'},
-                {from: /^\/addons\/?$/, to: '/addons.html'}
+                { from: /^\/\d+\/?$/, to: '/index.html' },
+                { from: /^\/\d+\/fullscreen\/?$/, to: '/fullscreen.html' },
+                { from: /^\/\d+\/editor\/?$/, to: '/editor.html' },
+                { from: /^\/\d+\/embed\/?$/, to: '/embed.html' },
+                { from: /^\/addons\/?$/, to: '/addons.html' }
             ]
         }
     },
     output: {
         library: 'GUI',
         filename: (
-            process.env.NODE_ENV === 'production' ? `js/${CACHE_EPOCH}/[name].[contenthash].js` : 'js/[name].js'
+            process.env.NODE_ENV == 'production' ? `js/${CACHE_EPOCH}/[name].[contenthash].js` : 'js/[name].js'
         ),
         chunkFilename: (
-            process.env.NODE_ENV === 'production' ? `js/${CACHE_EPOCH}/[name].[contenthash].js` : 'js/[name].js'
+            process.env.NODE_ENV == 'production' ? `js/${CACHE_EPOCH}/[name].[contenthash].js` : 'js/[name].js'
         ),
         publicPath: root
     },
@@ -120,7 +160,10 @@ const base = {
                 options: {
                     importLoaders: 1,
                     modules: {
-                        auto: true,
+                        // Legacy scratch-gui expects CSS Modules for almost every stylesheet,
+                        // including plain `*.css` imports. Only a few imperative addon stylesheets
+                        // need global class names because they are referenced as string literals.
+                        auto: useCssModules,
                         localIdentName: '[name]_[local]_[hash:base64:5]',
                         exportLocalsConvention: 'camelCase'
                     }
@@ -136,6 +179,15 @@ const base = {
                             autoprefixer
                         ];
                     }
+                }
+            }]
+        },
+        {
+            test: /\.(vert|frag|glsl)$/,
+            use: [{
+                loader: 'raw-loader',
+                options: {
+                    esModule: false
                 }
             }]
         }]
@@ -183,18 +235,18 @@ module.exports = [
             path: path.resolve(__dirname, 'build')
         },
         module: {
-                    rules: base.module.rules.concat([
-                        {
-                                    test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
-                                    loader: 'url-loader',
-                                    options: {
-                                        limit: 2048,
-                                        outputPath: 'static/assets/',
-                                        esModule: false
-                                    }
-                                }
-                    ])
-                },
+            rules: base.module.rules.concat([
+                {
+                    test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
+                    loader: 'url-loader',
+                    options: {
+                        limit: 2048,
+                        outputPath: 'static/assets/',
+                        esModule: false
+                    }
+                }
+            ])
+        },
         optimization: {
             splitChunks: {
                 chunks: 'all',
@@ -214,7 +266,6 @@ module.exports = [
         },
         plugins: base.plugins.concat([
             new webpack.DefinePlugin({
-                'process.env.NODE_ENV': `"${process.env.NODE_ENV}"`,
                 'process.env.DEBUG': Boolean(process.env.DEBUG),
                 'process.env.ENABLE_SERVICE_WORKER': JSON.stringify(process.env.ENABLE_SERVICE_WORKER || ''),
                 'process.env.ROOT': JSON.stringify(root),
@@ -284,7 +335,7 @@ module.exports = [
         ])
     })
 ].concat(
-    process.env.NODE_ENV === 'production' || process.env.BUILD_MODE === 'dist' ? (
+    process.env.NODE_ENV == 'production' || process.env.BUILD_MODE == 'dist' ? (
         // export as library
         defaultsDeep({}, base, {
             target: 'web',
