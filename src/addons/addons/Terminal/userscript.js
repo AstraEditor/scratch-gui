@@ -752,7 +752,7 @@ export default async function ({ addon, console, msg }) {
     
     const { exists, name, originalId } = targetInfo;
     link.textContent = name;
-    link.title = "点击跳转到积木";
+    link.title = msg("block-link-title") || "点击跳转到积木";
     
     if (exists && originalId) {
       link.addEventListener("mousedown", () => {
@@ -806,7 +806,7 @@ export default async function ({ addon, console, msg }) {
   // 创建继续按钮（默认隐藏）
   const continueButton = document.createElement("button");
   continueButton.className = "sa-terminal-continue-button";
-  continueButton.title = "继续运行";
+  continueButton.title = msg("button-continue") || "继续运行";
 
   continueButton.style.display = "none";
 
@@ -829,7 +829,7 @@ export default async function ({ addon, console, msg }) {
   // 创建导出日志按钮
   const exportButton = document.createElement("button");
   exportButton.className = "sa-terminal-export-button";
-  exportButton.title = "导出日志";
+  exportButton.title = msg("button-export") || "导出日志";
 
 
   // 为导出按钮添加SVG图标
@@ -879,9 +879,9 @@ export default async function ({ addon, console, msg }) {
 
   // 位置标题映射
   const positionTitles = {
-    [POSITION_TYPES.SIDEBAR]: "侧边栏",
-    [POSITION_TYPES.BOTTOM_PANEL]: "底部面板",
-    [POSITION_TYPES.WINDOW]: "独立窗口"
+    [POSITION_TYPES.SIDEBAR]: msg("position-sidebar") || "侧边栏",
+    [POSITION_TYPES.BOTTOM_PANEL]: msg("position-bottom") || "底部面板",
+    [POSITION_TYPES.WINDOW]: msg("position-window") || "独立窗口"
   };
 
   // 更新位置图标映射（重新生成SVG数据）
@@ -899,7 +899,8 @@ export default async function ({ addon, console, msg }) {
   // 创建轮换按钮
   const rotateButton = document.createElement("button");
   rotateButton.className = "sa-terminal-rotate-button";
-  rotateButton.title = `当前位置: ${positionTitles[currentPosition]} (点击轮换)`;
+  const switchPositionTitle = msg("button-switch-position") || "Current position: %s (click to switch)";
+  rotateButton.title = switchPositionTitle.replace("%s", positionTitles[currentPosition]);
   rotateButton.style.cssText = `
     background: none;
     border: 1px solid var(--ui-black-transparent);
@@ -1015,19 +1016,19 @@ export default async function ({ addon, console, msg }) {
   const sidebarPopupButton = createPopupButton(
     POSITION_TYPES.SIDEBAR,
     iconSidebar,
-    "侧边栏"
+    msg("position-sidebar") || "侧边栏"
   );
 
   const bottomPopupButton = createPopupButton(
     POSITION_TYPES.BOTTOM_PANEL,
     iconBottom,
-    "底部面板"
+    msg("position-bottom") || "底部面板"
   );
 
   const windowPopupButton = createPopupButton(
     POSITION_TYPES.WINDOW,
     iconWindow,
-    "独立窗口"
+    msg("position-window") || "独立窗口"
   );
 
   popupContainer.appendChild(sidebarPopupButton);
@@ -1139,11 +1140,11 @@ export default async function ({ addon, console, msg }) {
 
   // 初始化欢迎信息
   const welcomeLine1 = document.createElement("div");
-  welcomeLine1.textContent = "AstraEditor Terminal v1.0";
+  welcomeLine1.textContent = msg("welcome-title") || "AstraEditor Terminal v1.0";
   virtualList.appendLog({ element: welcomeLine1, contentHash: welcomeLine1.textContent });
 
   const welcomeLine2 = document.createElement("div");
-  welcomeLine2.textContent = "Type 'help' for available commands.";
+  welcomeLine2.textContent = msg("welcome-help") || "Type 'help' for available commands.";
   virtualList.appendLog({ element: welcomeLine2, contentHash: welcomeLine2.textContent });
 
   const welcomeLine3 = document.createElement("div");
@@ -1237,7 +1238,7 @@ export default async function ({ addon, console, msg }) {
           
           const textSpan = document.createElement("span");
           textSpan.className = "sa-terminal-log-text";
-          textSpan.textContent = " 断点积木只能在编辑器中使用。";
+          textSpan.textContent = " " + (msg("breakpoint-editor-only") || "断点积木只能在编辑器中使用。");
           line.appendChild(textSpan);
           
           addLogLineWithElement(line);
@@ -1260,7 +1261,7 @@ export default async function ({ addon, console, msg }) {
         
         const textSpan = document.createElement("span");
         textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = " 程序已暂停";
+        textSpan.textContent = " " + (msg("breakpoint-paused") || "程序已暂停");
         line.appendChild(textSpan);
         
         if (thread) {
@@ -1506,7 +1507,7 @@ export default async function ({ addon, console, msg }) {
   const terminalInput = document.createElement("input");
   terminalInput.type = "text";
   terminalInput.className = "sa-terminal-input";
-  terminalInput.placeholder = "Enter command...";
+  terminalInput.placeholder = msg("input-placeholder") || "Enter command...";
 
   inputLine.appendChild(prompt);
   inputLine.appendChild(terminalInput);
@@ -1525,19 +1526,21 @@ export default async function ({ addon, console, msg }) {
   // 可用命令
   const commands = {
     help: {
-      description: "Show available commands",
+      description: msg("command-help-desc") || "Show available commands",
       execute: (args) => {
-        let output = "Available commands:\n";
+        let output = (msg("command-help-available") || "Available commands:") + "\n\n";
         for (const [name, cmd] of Object.entries(commands)) {
-          output += `  ${name} - ${cmd.description}\n`;
+          if (name !== "creeper?") {
+            output += `  ${name} - ${cmd.description}\n`;
+          }
         }
         
         // 显示用户指令
         const userCommandCount = Object.keys(userCommands).length;
         if (userCommandCount > 0) {
-          output += "\nUser Command：\n";
+          output += "\n" + (msg("command-user-command") || "User Command：") + "\n";
           for (const [name, description] of Object.entries(userCommands)) {
-            output += ` - ${name} - ${description}\n`;
+            output += `  ${name} - ${description}\n`;
           }
         }
         
@@ -1545,38 +1548,38 @@ export default async function ({ addon, console, msg }) {
       }
     },
     echo: {
-      description: "Echo the input text",
+      description: msg("command-echo-desc") || "Echo the input text",
       execute: (args) => args.join(" ")
     },
     project: {
-      description: "Show project information",
+      description: msg("command-project-desc") || "Show project information",
       execute: () => {
         try {
           const vm = addon.tab.traps.vm;
           const target = vm.runtime.getEditingTarget();
           const stage = vm.runtime.getTargetForStage();
 
-          return `Project Information:
-  Stage: ${stage.getName()}
-  Current Sprite: ${target.getName()}
-  Sprites: ${vm.runtime.targets.length - 1}
-  Variables: ${Object.keys(stage.variables).length}
-  Broadcasts: ${Object.keys(stage.blocks).filter(k => k.startsWith('broadcast_')).length}
+          return `${msg("command-project-output") || "Project Information"}:
+  ${msg("command-project-stage") || "Stage"}: ${stage.getName()}
+  ${msg("command-project-sprite") || "Current Sprite"}: ${target.getName()}
+  ${msg("command-project-sprites") || "Sprites"}: ${vm.runtime.targets.length - 1}
+  ${msg("command-project-variables") || "Variables"}: ${Object.keys(stage.variables).length}
+  ${msg("command-project-broadcasts") || "Broadcasts"}: ${Object.keys(stage.blocks).filter(k => k.startsWith('broadcast_')).length}
 `;
         } catch (e) {
-          return "Error: Unable to get project information";
+          return msg("command-project-error") || "Error: Unable to get project information";
         }
       }
     },
     variables: {
-      description: "List all variables",
+      description: msg("command-variables-desc") || "List all variables",
       execute: () => {
         try {
           const vm = addon.tab.traps.vm;
           const target = vm.runtime.getEditingTarget();
           const stage = vm.runtime.getTargetForStage();
 
-          let output = "Global Variables:\n";
+          let output = msg("command-variables-global") || "Global Variables:\n";
           Object.values(stage.variables).forEach(v => {
             if (v.type === "" || v.type === "list") {
               const value = v.type === "list" ? `[${v.value.join(", ")}]` : v.value;
@@ -1584,7 +1587,7 @@ export default async function ({ addon, console, msg }) {
             }
           });
 
-          output += "\nLocal Variables:\n";
+          output += "\n" + (msg("command-variables-local") || "Local Variables:") + "\n";
           if (!target.isStage) {
             Object.values(target.variables).forEach(v => {
               if (v.type === "" || v.type === "list") {
@@ -1596,16 +1599,16 @@ export default async function ({ addon, console, msg }) {
 
           return output;
         } catch (e) {
-          return "Error: Unable to get variables";
+          return msg("command-variables-error") || "Error: Unable to get variables";
         }
       }
     },
     sprites: {
-      description: "List all sprites",
+      description: msg("command-sprites-desc") || "List all sprites",
       execute: () => {
         try {
           const vm = addon.tab.traps.vm;
-          let output = "Sprites:\n";
+          let output = (msg("command-sprites-output") || "Sprites:") + "\n";
           vm.runtime.targets.forEach(target => {
             if (!target.isStage) {
               output += `  ${target.getName()}\n`;
@@ -1613,17 +1616,17 @@ export default async function ({ addon, console, msg }) {
           });
           return output;
         } catch (e) {
-          return "Error: Unable to get sprites";
+          return msg("command-sprites-error") || "Error: Unable to get sprites";
         }
       }
     },
     version: {
-      description: "Show terminal version",
-      execute: () => "AstraEditor Terminal v1.0"
+      description: msg("command-version-desc") || "Show terminal version",
+      execute: () => msg("welcome-title") || "AstraEditor Terminal v1.0"
     },
     "creeper?": {
       description: "",
-      execute: () => "Awwww Man!"
+      execute: () => msg("command-creeper") || "Awwww Man!"
     }
 
   };
