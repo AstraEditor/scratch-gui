@@ -110,7 +110,8 @@ const base = {
         symlinks: true,
         fallback: {
             path: require.resolve("path-browserify"),
-            process: require.resolve('process/browser')
+            process: require.resolve('process/browser'),
+            buffer: require.resolve('buffer/')
         },
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
@@ -195,7 +196,8 @@ const base = {
     },
     plugins: [
         new webpack.ProvidePlugin({
-            process: 'process/browser'
+            process: 'process/browser',
+            Buffer: ['buffer', 'Buffer']
         }),
         new webpack.NormalModuleReplacementPlugin(/^refractor\/(.+)$/, resource => {
             resource.request = refractorPath(resource.request.slice('refractor/'.length));

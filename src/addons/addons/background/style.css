@@ -96,7 +96,6 @@
 .sa-modal-background-enabled {
     position: relative;
     isolation: isolate;
-    overflow: clip;
     background-color: color-mix(in srgb, var(--ui-modal-background) 72%, transparent) !important;
 }
 
@@ -112,6 +111,7 @@
     background-position: var(--sa-modal-bg-position, 0 0);
     background-repeat: no-repeat;
     filter: blur(var(--sa-modal-bg-blur, 0px)) opacity(var(--sa-modal-bg-opacity, 0.35));
+    clip-path: inset(0);
     pointer-events: none;
     z-index: 0;
 }

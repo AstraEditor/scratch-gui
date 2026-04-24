@@ -1,7 +1,8 @@
 import { getSetting } from '../../tools/AEsettings/index'
 import logo from '!../../../lib/tw-recolor/build!./logo.svg';
-import dropdown from './dropdown-arrow.svg';
-import done from './done.svg'
+import dropdown from './dropdown-arrow.svg';;
+import done from './done.svg';
+import undone from './undone.svg';
 import SideBar from "../../ui/side-bar/side-bar.js";
 
 /*
@@ -135,13 +136,18 @@ ${JSON.stringify(content)}
             const content = document.createElement('div');
             const preview = document.createElement('div');
             preview.className = 'sa-todo-modal-preview';
-            const preview_title = document.createElement('span');
+            const preview_title = document.createElement('input');
             preview_title.className = 'sa-todo-modal-preview-title';
+            preview_title.style.outlineColor = config.color;
+            preview_title.onchange = e => {
+                config.name = e.target.value;
+                refresh();
+            }
             const preview_date = document.createElement('span')
             preview_date.className = 'sa-todo-modal-preview-date';
 
             const refresh = () => {
-                preview_title.textContent = config.name;
+                preview_title.value = config.name;
                 preview_date.textContent = getFormattedDateRange(config.task.startTime, config.task.endTime);
                 preview.style.backgroundColor = config.color + alpha;
                 document.querySelectorAll('.sa-todo-modal-preview-steps').forEach(ele => ele.remove())
@@ -152,36 +158,45 @@ ${JSON.stringify(content)}
                     const preview_steps_step = document.createElement('li');
                     preview_steps_step.id = step.id;
                     preview_steps_step.className = 'sa-todo-modal-preview-steps-step';
-                    const preview_steps_step_text = document.createElement('span');
-                    preview_steps_step_text.textContent = step.text;
+                    const preview_steps_step_text = document.createElement('input');
+                    preview_steps_step_text.className = 'sa-todo-modal-preview-steps-step-input';
+                    preview_steps_step_text.style.outlineColor = config.color;
+                    preview_steps_step_text.value = step.text;
+                    preview_steps_step_text.onchange = e => {
+                        config.task.steps[index].text = e.target.value;
+                    }
                     preview_steps_step_text.style.color = 'white';
                     const preview_steps_remove = document.createElement('button');
                     preview_steps_remove.textContent = '×';
                     preview_steps_remove.className = 'sa-todo-modal-preview-steps-step-remove';
                     preview_steps_remove.style.backgroundColor = config.color;
                     preview_steps_remove.style.color = 'white';
-                    const preview_steps_rename = document.createElement('button');
-                    preview_steps_rename.innerHTML = `<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="15px" width="15px" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="m15 16-4 4h10v-4zM12.06 7.19 3 16.25V20h3.75l9.06-9.06-3.75-3.75zM5.92 18H5v-.92l7.06-7.06.92.92L5.92 18zM18.71 8.04a.996.996 0 0 0 0-1.41l-2.34-2.34a1.001 1.001 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>`;
-                    preview_steps_rename.className = 'sa-todo-modal-preview-steps-step-rename';
-                    preview_steps_rename.style.backgroundColor = config.color;
-                    preview_steps_rename.style.color = 'white';
-                    preview_steps_rename.onclick = () => {
-                        const newName = prompt(msg('new-name'));
-                        if (newName) config.task.steps[index].text = newName;
-                        refresh();
-                    }
 
                     preview_steps_step.appendChild(preview_steps_remove);
-                    preview_steps_step.appendChild(preview_steps_rename);
                     preview_steps_step.appendChild(preview_steps_step_text);
 
                     preview_steps.appendChild(preview_steps_step);
                 })
 
                 preview.appendChild(preview_steps)
+                // 最新创建的step自动对焦
+                const latestStepIndex = config.task.steps.findIndex(step => step.latest === true);
+                if (latestStepIndex !== -1) {
+                    const stepElements = document.querySelectorAll('.sa-todo-modal-preview-steps-step');
+                    if (stepElements[latestStepIndex]) {
+                        const input = stepElements[latestStepIndex].querySelector('.sa-todo-modal-preview-steps-step-input');
+                        if (input) {
+                            setTimeout(() => {
+                                input.focus();
+                            }, 0);
+                        }
+                    }
+                    config.task.steps[latestStepIndex].latest = false;
+                }
+
             }
 
-            const input = (inputType, text, key, key2 = null) => {
+            const input = (inputType, text, inputConfig = {}) => {
                 const inputContent = document.createElement('div');
                 inputContent.className = 'sa-todo-modal-input';
                 const inputText = document.createElement('span');
@@ -189,11 +204,11 @@ ${JSON.stringify(content)}
                 const input = document.createElement('input');
                 input.className = 'sa-todo-modal-input-input';
                 if (inputType != 'input') input.type = inputType;
-                if (key2) input.value = config[key][key2];
-                else input.value = config[key];
+                if (inputConfig.key2) input.value = config[inputConfig.key][inputConfig.key2];
+                else input.value = config[inputConfig.key];
                 input.oninput = e => {
-                    if (key2) config[key][key2] = e.target.value;
-                    else config[key] = e.target.value;
+                    if (inputConfig.key2) config[inputConfig.key][inputConfig.key2] = e.target.value;
+                    else config[inputConfig.key] = e.target.value;
                     refresh();
                 }
 
@@ -208,48 +223,64 @@ ${JSON.stringify(content)}
             refresh();
 
             const preview_steps_create = document.createElement('button');
+            preview_steps_create.className = 'sa-todo-modal-create-button';
             preview_steps_create.textContent = msg('new-step');
             preview_steps_create.onclick = () => {
-                const newName = prompt(msg('step-name'));
-                if (newName) config.task.steps.push({
+                config.task.steps.push({
                     id: generateId(),
-                    text: newName,
+                    text: msg('new-step'),
+                    latest: true,
                     done: false
                 });
                 refresh()
             }
 
             const done = document.createElement('button');
+            done.className = 'sa-todo-modal-create-button';
             done.textContent = msg('done');
             done.onclick = () => {
-                console.log(config)
                 addNewTodo(config);
                 remove()
             }
-
-            content.appendChild(preview);
-            content.appendChild(input('input', msg('name'), 'name'));
-            content.appendChild(input('color', msg('color'), 'color'));
-            content.appendChild(input('datetime-local', msg('start-time'), 'task', 'startTime'));
-            content.appendChild(input('datetime-local', msg('end-time'), 'task', 'endTime'));
+            content.appendChild(Object.assign(document.createElement('h1'), {
+                className: 'sa-todo-modal-title',
+                textContent: msg('edit')
+            }));
+            content.appendChild(input('color', msg('color'), {
+                key: 'color'
+            }));
+            content.appendChild(input('datetime-local', msg('start-time'), {
+                key: 'task',
+                key2: 'startTime'
+            }));
+            content.appendChild(input('datetime-local', msg('end-time'), {
+                key: 'task',
+                key2: 'endTime'
+            }));
             content.appendChild(preview_steps_create);
             content.appendChild(done);
+            content.appendChild(Object.assign(document.createElement('h1'), {
+                className: 'sa-todo-modal-title',
+                textContent: msg('preview')
+            }))
+            content.appendChild(preview);
             return content
         }
 
-        const { backdrop, container, content, closeButton, remove } =
+        const { backdrop, container, content: contentMain, closeButton, remove } =
             addon.tab.createModal(msg('create-title'), {
                 isOpen: true,
                 useEditorClasses: true
             });
 
         container.classList.add('sa-todo-popup');
-        content.classList.add('sa-todo-content');
+        contentMain.classList.add('sa-todo-content');
 
-        content.appendChild(addContentForModal(remove));
+        contentMain.appendChild(addContentForModal(remove));
 
         backdrop.addEventListener("click", remove);
         closeButton.addEventListener("click", remove);
+
     }
 
 
@@ -264,6 +295,7 @@ ${JSON.stringify(content)}
         todoList.className = 'sa-todo-list';
         try {
             getTodoListContent().tasks.forEach((task, index) => {
+                let currentTask = task;
                 let isHide = true;
                 const todoEle = document.createElement('li');
                 todoEle.className = 'sa-todo-list-ele';
@@ -271,41 +303,80 @@ ${JSON.stringify(content)}
                 todoEle_card.className = 'sa-todo-list-ele-titleDiv';
                 const todoEleName = document.createElement('span');
                 todoEleName.className = 'sa-todo-list-ele-title';
-                todoEleName.textContent = task.name;
+                todoEleName.textContent = currentTask.name;
                 const todoEleSetDone = document.createElement('img');
-                todoEleSetDone.src = done;
+                todoEleSetDone.src = getTodoListContent().tasks[index].done ? undone : done;
                 todoEleSetDone.className = 'sa-todo-list-ele-done'
-                todoEleSetDone.style.backgroundColor = task.color;
+                todoEleSetDone.style.backgroundColor = currentTask.color;
 
 
                 const todoEleDate = document.createElement('span');
                 todoEleDate.style.color = 'white';
-                todoEleDate.textContent = getFormattedDateRange(task.startTime, task.endTime);
+                todoEleDate.textContent = getFormattedDateRange(currentTask.startTime, currentTask.endTime);
                 // steps
                 const todoEleStepsContent = document.createElement('ul');
-                const todoEleStepsContentMain = document.createElement('li');
-                todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
-                todoEleStepsContent.className = 'sa-todo-list-ele-steps';
-                todoEleStepsContent.id = task.id;
-                if (task.steps.length != 0) task.steps.forEach(step => {
-                    const todoEleStep = document.createElement('li');
-                    todoEleStep.className = 'sa-todo-list-ele-steps-li';
-                    const todoEleStep_Text = document.createElement('span');
-                    todoEleStep_Text.textContent = step.text;
-                    todoEleStep_Text.style.color = 'white';
 
-                    todoEleStep.appendChild(todoEleStep_Text);
+                const spawnSteps = (needGetLatest = false) => {
+                    if (needGetLatest) currentTask = getTodoListContent().tasks[index]
+                    const todoEleStepsContentMain = document.createElement('li');
+                    todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
+                    todoEleStepsContent.className = 'sa-todo-list-ele-steps';
+                    todoEleStepsContent.id = currentTask.id;
+                    if (currentTask.steps.length != 0) {
+                        // 让Done为true的移到末尾
+                        for (let needDone = 0; needDone <= 1; needDone += 1) {
+                            if (needDone && !!currentTask.steps.find(step => step.done)) { //分割线
+                                const lineDiv = document.createElement('li');
+                                lineDiv.className = 'sa-todo-list-ele-line';
+                                const text = document.createElement('span');
+                                text.className = 'sa-todo-list-ele-line-text';
+                                text.textContent = msg('done');
+                                const line = document.createElement('hr');
+                                line.className = 'sa-todo-list-ele-line-line';
 
-                    todoEleStepsContentMain.appendChild(todoEleStep);
-                });
-                todoEleStepsContent.appendChild(todoEleStepsContentMain);
+                                lineDiv.appendChild(text);
+                                lineDiv.appendChild(line)
+                                todoEleStepsContentMain.appendChild(lineDiv);
+                            }
+                            currentTask.steps.forEach((step, indexStep) => {
+                                if (step.done == !!needDone) {
+                                    const todoEleStep = document.createElement('li');
+                                    todoEleStep.className = 'sa-todo-list-ele-steps-li';
+
+                                    const todoEleSetDoneStep = document.createElement('img');
+                                    todoEleSetDoneStep.src = needDone ? undone : done;
+                                    todoEleSetDoneStep.className = 'sa-todo-list-ele-done'
+                                    todoEleSetDoneStep.style.backgroundColor = currentTask.color;
+                                    todoEleSetDoneStep.onclick = () => {
+                                        const todos = getTodoListContent();
+                                        todos.tasks[index].steps[indexStep].done = !todos.tasks[index].steps[indexStep].done;
+                                        createCommentToStage(getFormatComment(todos), false);
+                                        todoEleStepsContent.innerHTML = '';
+                                        spawnSteps(true);
+                                    }
+
+                                    const todoEleStep_Text = document.createElement('span');
+                                    todoEleStep_Text.textContent = `${indexStep + 1}.${step.text}`;
+                                    todoEleStep_Text.style.color = 'white';
+
+                                    todoEleStep.appendChild(todoEleSetDoneStep);
+                                    todoEleStep.appendChild(todoEleStep_Text);
+
+                                    todoEleStepsContentMain.appendChild(todoEleStep);
+                                }
+                            });
+                        }
+                    }
+                    todoEleStepsContent.appendChild(todoEleStepsContentMain);
+                }
+                spawnSteps();
 
                 // display
-                todoEle.style.backgroundColor = task.color + alpha;
+                todoEle.style.backgroundColor = currentTask.color + alpha;
                 // 刷新选择done后的状态
                 const refreshTodoStyle = () => {
                     const isDone = getTodoListContent().tasks[index].done;
-                    if(isDone) {
+                    if (isDone) {
                         todoEleName.classList.add('done');
                     } else {
                         todoEleName.classList.remove('done');
@@ -324,6 +395,7 @@ ${JSON.stringify(content)}
                 todoEleSetDone.onclick = () => {
                     const todos = getTodoListContent();
                     todos.tasks[index].done = !todos.tasks[index].done;
+                    todoEleSetDone.src = todos.tasks[index].done ? undone : done;
                     createCommentToStage(getFormatComment(todos), false);
                     refreshTodoStyle()
                 }
@@ -332,7 +404,7 @@ ${JSON.stringify(content)}
                     refreshDropdown_Steps()
                 }
                 // spawn
-                if (task.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
+                if (currentTask.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
                 todoEle_card.appendChild(todoEleSetDone);
                 todoEle_card.appendChild(todoEleName);
                 todoEle.appendChild(todoEle_card);

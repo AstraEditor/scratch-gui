@@ -13,6 +13,10 @@
     border: 0;
     display: flex;
     cursor: pointer;
+    -webkit-border-radius: 0px !important;
+    -moz-border-radius: 0px !important;
+    -ms-border-radius: 0px !important;
+    -o-border-radius: 0px !important;
 }
 
 .sa-todo {
@@ -37,6 +41,9 @@
 
 .sa-todo-list-ele-steps-li {
     list-style-type: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .sa-todo-list-ele-steps-main {
@@ -101,11 +108,31 @@
     font-size: x-large;
     text-shadow: #00000030 0 0 2px;
     color: white;
-    transition: color 0.3s ease;
-    -webkit-transition: color 0.3s ease;
-    -moz-transition: color 0.3s ease;
-    -ms-transition: color 0.3s ease;
-    -o-transition: color 0.3s ease;
+    transition: color 0.3s ease outline 0.2s ease;
+    -webkit-transition: color 0.3s ease outline 0.2s ease;
+    -moz-transition: color 0.3s ease outline 0.2s ease;
+    -ms-transition: color 0.3s ease outline 0.2s ease;
+    -o-transition: color 0.3s ease outline 0.2s ease;
+    border: none;
+    background-color: transparent;
+    outline: 0px solid;
+}
+
+.sa-todo-modal-preview-steps-step-input {
+    color: white;
+    transition: color 0.3s ease outline 0.2s ease;
+    -webkit-transition: color 0.3s ease outline 0.2s ease;
+    -moz-transition: color 0.3s ease outline 0.2s ease;
+    -ms-transition: color 0.3s ease outline 0.2s ease;
+    -o-transition: color 0.3s ease outline 0.2s ease;
+    border: none;
+    background-color: transparent;
+    outline: 0px solid;
+}
+
+.sa-todo-modal-preview-title:hover,
+.sa-todo-modal-preview-steps-step-input:hover {
+    outline: 2px solid
 }
 
 .sa-todo-list-ele-title.done {
@@ -150,7 +177,9 @@
 }
 
 .sa-todo-content {
-    padding: 5px;
+    padding: 15px;
+    max-height: 70vh;
+    overflow: auto;
 }
 
 .sa-todo-modal-preview {
@@ -235,4 +264,43 @@
 .sa-todo-list-ele-done:hover {
     filter: brightness(1.2);
     -webkit-filter: brightness(1.2);
+}
+
+.sa-todo-modal-create-button {
+    background-color: var(--looks-secondary);
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    margin: 5px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+    transition: filter 0.3s ease;
+    -webkit-transition: filter 0.3s ease;
+    -moz-transition: filter 0.3s ease;
+    -ms-transition: filter 0.3s ease;
+    -o-transition: filter 0.3s ease;
+}
+
+.sa-todo-modal-create-button:hover {
+    filter: brightness(1.2);
+    -webkit-filter: brightness(1.2);
+}
+
+.sa-todo-list-ele-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 4px;
+}
+
+.sa-todo-list-ele-line-line {
+    width: 100%;
+    opacity: 0.5;
+}
+
+.sa-todo-list-ele-line-text {
+    opacity: 0.5;
+    font-style: italic;
 }
