@@ -555,7 +555,7 @@ ${JSON.stringify(content)}
         // 事实上对于POINT是*不可能*不通过用户而出现的，所以就直接全替换了
         config = JSON.parse(JSON.stringify(config).replaceAll(POINT,
             // 这很神秘啊
-            `Why? ${POINT} is key word, how did you found it?`
+            `Why? ${POINT.split('').join(' ')} is key word, how did you found it?`
         ));
         if (config.mode === 1) {
             // 对于group
