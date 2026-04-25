@@ -558,3 +558,8 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
   width: 25px !important;
   height: 25px !important;
 }
+
+/*Make stage padding current*/
+[class*="stage-wrapper_stage-canvas-wrapper"]:not([class*="stage-wrapper_isfullScreen"]){
+  padding-top: 34px !important;
+}
