@@ -186,8 +186,8 @@ importers:
         specifier: github:AstraEditor/scratch-audio#develop
         version: https://codeload.github.com/AstraEditor/scratch-audio/tar.gz/aba00cd02e36d95407effafa03f3678e4c669b30
       scratch-blocks:
-        specifier: github:AstraEditor/scratch-blocks#develop-builds
-        version: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276
+        specifier: github:AstraEditor/scratch-blocks#develop
+        version: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/3b7e8cb93d9d17c813f687b6720fc5f148c69e1b
       scratch-paint:
         specifier: github:AstraEditor/scratch-paint#develop
         version: https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/dba550ca8a0e0616473e1a3503ad37399fa69b6b(react-dom@16.14.0(react@16.14.0))(react-intl@2.9.0(prop-types@15.8.1)(react@16.14.0))(react-popover@0.5.10)(react-redux@5.0.7(react@16.14.0)(redux@3.7.2))(react-responsive@5.0.0(react@16.14.0))(react-style-proptype@3.2.2)(react-tooltip@3.8.0(react-dom@16.14.0(react@16.14.0))(react@16.14.0))(react@16.14.0)(redux@3.7.2)
@@ -5244,8 +5244,8 @@ packages:
     resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-audio/tar.gz/aba00cd02e36d95407effafa03f3678e4c669b30}
     version: 0.1.0
 
-  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276:
-    resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276}
+  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/3b7e8cb93d9d17c813f687b6720fc5f148c69e1b:
+    resolution: {tarball: https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/3b7e8cb93d9d17c813f687b6720fc5f148c69e1b}
     version: 0.1.0
 
   scratch-paint@https://codeload.github.com/AstraEditor/scratch-paint/tar.gz/dba550ca8a0e0616473e1a3503ad37399fa69b6b:
@@ -12237,7 +12237,7 @@ snapshots:
       '@turbowarp/nanolog': 0.2.0
       '@turbowarp/startaudiocontext': 1.0.0
 
-  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/2606ef070d0c057b4cf96d3b7e541ed8d4bf6276:
+  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/3b7e8cb93d9d17c813f687b6720fc5f148c69e1b:
     dependencies:
       exports-loader: 0.7.0
       imports-loader: 0.8.0
