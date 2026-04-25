@@ -58,7 +58,7 @@ const projectData = translateFunction => {
                 blocks: {},
                 comments: {
                     abc: {
-                        "text": "#README #欢迎！\n\n# 欢迎使用 <font color=#0099ff>AstraEditor</font> ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/docunment/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！",
+                        "text": "#README #欢迎！\n\n# 欢迎使用 **AstraEditor** ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/docunment/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！",
                         "x": 200,
                         "y": 200,
                         "width": 640,
