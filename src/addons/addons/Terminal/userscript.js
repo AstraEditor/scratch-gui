@@ -1496,6 +1496,17 @@ export default async function ({ addon, console, msg }) {
     return: 1 // 1 表示圆角返回值块
   });
 
+  // 添加返回值积木（返回上次输入时间戳）
+  vm.addAddonBlock({
+    procedureCode: "terminal_get_input_timestamp",
+    displayName: "上次输入时间戳",
+    callback: () => {
+      // 返回上次用户输入的时间戳，如果没有则返回0
+      return lastInputTimestamp;
+    },
+    return: 1 
+  });
+
   // 创建输入行
   const inputLine = document.createElement("div");
   inputLine.className = "sa-terminal-input-line";
@@ -1519,6 +1530,8 @@ export default async function ({ addon, console, msg }) {
 
   // 存储用户输入用于返回值积木
   let lastUserInput = "";
+  // 存储用户输入时间戳
+  let lastInputTimestamp = 0;
 
   // 存储用户指令
   const userCommands = {};
@@ -1637,6 +1650,7 @@ export default async function ({ addon, console, msg }) {
     const args = parts.slice(1);
 
     lastUserInput = command.trim();
+    lastInputTimestamp = Date.now();
 
     if (command.trim()) {
       commandHistory.push(command.trim());
