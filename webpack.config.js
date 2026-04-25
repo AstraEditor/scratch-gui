@@ -245,9 +245,11 @@ module.exports = [
                 {
                     test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
                     loader: 'url-loader',
+                    type: 'javascript/auto',
                     options: {
                         limit: 2048,
                         outputPath: 'static/assets/',
+                        publicPath: '/static/assets/',
                         esModule: false
                     }
                 }
