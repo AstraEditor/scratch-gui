@@ -75,7 +75,7 @@ export default async function ({ addon, console, msg }) {
     if (hideButton) {
       break
     }
-    
+
     const stageControls = await addon.tab.waitForElement(
       "[class*='stage-header_stage-size-toggle-group_'] > [class*='toggle-buttons_row_']",
       {
@@ -85,18 +85,29 @@ export default async function ({ addon, console, msg }) {
     );
     bodyWrapper = document.querySelector("[class*='gui_body-wrapper_']");
 
-    const stageButtons = Array.from(stageControls.querySelectorAll("button"));
-    smallStageButton = stageButtons[0];
-    largeStageButton = stageButtons.length === 3 ? stageButtons[1] : null;
-    fullStageButton = stageButtons[stageButtons.length - 1];
+    const setButton = () => {
+      const stageButtons = Array.from(stageControls.querySelectorAll("button:not(.sa-hide-stage-button)"));
+      smallStageButton = stageButtons[0];
+      largeStageButton = stageButtons.length === 3 ? stageButtons[1] : null;
+      fullStageButton = stageButtons[stageButtons.length - 1];
+      if (smallStageButton) {
+        smallStageButton.removeEventListener("click", unhideStage);
+        smallStageButton.addEventListener("click", unhideStage);
+      }
+      if (largeStageButton) {
+        largeStageButton.removeEventListener("click", unhideStage);
+        largeStageButton.addEventListener("click", unhideStage);
+      }
+      if (fullStageButton) {
+        fullStageButton.removeEventListener("click", unhideStage);
+        fullStageButton.addEventListener("click", unhideStage);
+      }
+    }
+    setButton();
+    document.addEventListener('urlchange', () => setTimeout(setButton), 5); // 改变舞台大小会改变url
 
     if (!addon.self.disabled) stageControls.insertBefore(hideStageButton, smallStageButton);
     if (stageHidden) hideStage();
     else unhideStage();
-
-    if (smallStageButton) smallStageButton.addEventListener("click", unhideStage);
-    if (largeStageButton) largeStageButton.addEventListener("click", unhideStage);
-    if (fullStageButton) fullStageButton.addEventListener("click", unhideStage);
-
   }
 }

@@ -3,6 +3,7 @@ import log from './log';
 const originalReplaceState = history.replaceState;
 history.replaceState = function (...args) {
     try {
+        document.dispatchEvent(new CustomEvent('urlchange'));
         return originalReplaceState.call(this, ...args);
     } catch (e) {
         log.error(e);

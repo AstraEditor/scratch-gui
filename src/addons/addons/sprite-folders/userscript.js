@@ -387,9 +387,6 @@ export default async ({ addon, console, msg }) => {
             e.preventDefault();
             e.stopPropagation();
 
-            // Select the sprite first
-            selectSprite(sprite);
-
             showSpriteContextMenu(e, sprite, container);
         });
 
