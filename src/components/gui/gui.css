@@ -74,7 +74,7 @@
         https://github.com/LLK/scratch-gui/issues/318
         TW: and also fix double horizontal scrollbar at some screen sizes in paint editor
     */
-    /* overflow: hidden; Move to JSX */
+    overflow: hidden;
 }
 
 .editor-wrapper {
