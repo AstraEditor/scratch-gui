@@ -848,23 +848,68 @@ export default function ({ addon, msg, console }) {
     // 分析有效积木和函数定义
     analyzeEffectiveBlocks(analysis, projectData) {
       const targets = projectData.targets || [];
+      // 获取 vm 对象
+      const vm = addon.tab.traps.vm;
 
       targets.forEach(target => {
         const blocks = target.blocks || {};
+        
+        // 首先找出所有头代码（hat blocks）
+        const hatBlocks = [];
         Object.values(blocks).forEach(block => {
-          if (block.opcode) {
-            // 统计有效积木（非 shadow）
-            if (!block.shadow) {
-              analysis.effectiveBlocks++;
-            }
-
-            // 统计函数定义
-            if (block.opcode === 'procedures_definition') {
-              analysis.functionDefinitions++;
+          if (block.opcode && !block.shadow && block.topLevel) {
+            // 使用 vm.runtime.getIsHat() 判断是否为头代码，同时手动检查函数定义
+            if (vm.runtime.getIsHat(block.opcode) || block.opcode === 'procedures_definition') {
+              hatBlocks.push(block);
             }
           }
+          
+          // 统计函数定义
+          if (block.opcode === 'procedures_definition') {
+            analysis.functionDefinitions++;
+          }
+        });
+        
+        // 统计每个头代码栈中的有效积木
+        hatBlocks.forEach(hatBlock => {
+          this.traverseBlockStack(blocks, hatBlock, analysis);
         });
       });
+    }
+    
+    // 遍历代码栈，包括子栈（迭代实现）
+    traverseBlockStack(blocks, block, analysis) {
+      if (!block) return;
+      
+      const stack = [block];
+      
+      while (stack.length > 0) {
+        const currentBlock = stack.pop();
+        if (!currentBlock) continue;
+        
+        // 计数当前积木（非阴影）
+        if (!currentBlock.shadow) {
+          analysis.effectiveBlocks++;
+        }
+        
+        // 处理下一个积木（先入栈，后处理）
+        if (currentBlock.next && blocks[currentBlock.next]) {
+          stack.push(blocks[currentBlock.next]);
+        }
+        
+        // 处理子栈（如循环体、条件语句等）
+        if (currentBlock.inputs) {
+          Object.values(currentBlock.inputs).forEach(input => {
+            if (Array.isArray(input) && input.length >= 2) {
+              const inputValue = input[1];
+              // 如果输入值是积木ID，入栈
+              if (typeof inputValue === 'string' && blocks[inputValue]) {
+                stack.push(blocks[inputValue]);
+              }
+            }
+          });
+        }
+      }
     }
 
     // 计算Dr.Scratch评分
@@ -1144,7 +1189,7 @@ export default function ({ addon, msg, console }) {
             <div class="sa-analyze-stats-grid" id="saStatsGrid">
               <div class="sa-analyze-stat">
                 <div class="sa-analyze-stat-value">-</div>
-                <div class="sa-analyze-stat-label">${msg('total-blocks', '总代码块数')}</div>
+                <div class="sa-analyze-stat-label">${msg('total-blocks', '总积木数')}</div>
               </div>
               <div class="sa-analyze-stat">
                 <div class="sa-analyze-stat-value">-</div>
@@ -1274,7 +1319,7 @@ export default function ({ addon, msg, console }) {
       statsGrid.innerHTML = `
         <div class="sa-analyze-stat">
           <div class="sa-analyze-stat-value">${analysis.totalBlocks}</div>
-          <div class="sa-analyze-stat-label">${msg('total-blocks', '总代码块数')}</div>
+          <div class="sa-analyze-stat-label">${msg('total-blocks', '总积木数')}</div>
         </div>
         <div class="sa-analyze-stat">
           <div class="sa-analyze-stat-value">${analysis.effectiveBlocks}</div>

@@ -328,7 +328,7 @@
     "simple-project-analyzer/math-total-score": "数学总分",
     "simple-project-analyzer/blocks-count": "个积木",
     "simple-project-analyzer/project-stats": "项目统计",
-    "simple-project-analyzer/total-blocks": "总代码块数",
+    "simple-project-analyzer/total-blocks": "总积木数",
     "simple-project-analyzer/extensions-used": "使用的扩展",
     "simple-project-analyzer/calculating": "计算中...",
     "block-pins/move_to_top": "移到顶部",
