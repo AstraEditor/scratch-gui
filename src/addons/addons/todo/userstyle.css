@@ -174,10 +174,12 @@
 
 .sa-todo-popup {
     width: 50vw;
+    position: relative;
 }
 
 .sa-todo-content {
     padding: 15px;
+    padding-bottom: 72px;
     max-height: 70vh;
     overflow: auto;
 }
@@ -267,6 +269,8 @@
 }
 
 .sa-todo-modal-create-button {
+    position: absolute;
+    bottom: 15px;
     background-color: var(--looks-secondary);
     padding: 10px;
     border: none;
@@ -281,6 +285,14 @@
     -moz-transition: filter 0.3s ease;
     -ms-transition: filter 0.3s ease;
     -o-transition: filter 0.3s ease;
+}
+
+.sa-todo-modal-create-button:first-of-type {
+    right: 110px;
+}
+
+.sa-todo-modal-create-button:last-of-type {
+    right: 15px;
 }
 
 .sa-todo-modal-create-button:hover {
