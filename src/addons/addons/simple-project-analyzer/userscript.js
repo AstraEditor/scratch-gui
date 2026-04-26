@@ -1,18 +1,14 @@
-// 加载Chart.js库
-async function loadChartJS() {
-  return new Promise((resolve, reject) => {
-    if (window.Chart) {
-      resolve();
-      return;
-    }
+import { Chart, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Legend } from 'chart.js';
 
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.js';
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
+// 注册Chart.js组件
+Chart.register(
+  RadarController,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Legend
+);
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
 import SideBar from "../../ui/side-bar/side-bar.js";
 import { getSetting } from "../../tools/AEsettings/index.js";
@@ -22,9 +18,7 @@ function isVSCodeLayoutEnabled() {
   return getSetting("EnableVSCodeLayout");
 }
 
-export default async function ({ addon, msg, console }) {
-  // 加载Chart.js库
-  await loadChartJS();
+export default function ({ addon, msg, console }) {
   const vm = addon.tab.traps.vm;
 
   // 项目分析器类
