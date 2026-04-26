@@ -683,7 +683,7 @@ export default function ({ addon, msg, console }) {
         const blocks = target.blocks || {};
 
         Object.values(blocks).forEach(block => {
-          if (block.opcode) {
+          if (block.opcode && !block.shadow) {
             analysis.totalBlocks++;
 
             const category = this.getBlockCategory(block.opcode, extensionNameMap);
