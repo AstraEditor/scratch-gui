@@ -105,7 +105,7 @@ export default async function ({ addon, msg }) {
     const alpha = 'a0';
 
     // 这个 ReduxStore 到底是哪里来的？？？
-    ReduxStore.subscribe(() => {
+    await ReduxStore.subscribe(() => {
         PROJECT_NAME = ReduxStore.getState().scratchGui.projectTitle;
     })
 
@@ -188,6 +188,7 @@ ${JSON.stringify(content)}
                         if (input) {
                             setTimeout(() => {
                                 input.focus();
+                                input.select();
                             }, 0);
                         }
                     }
@@ -304,6 +305,24 @@ ${JSON.stringify(content)}
                 const todoEleName = document.createElement('span');
                 todoEleName.className = 'sa-todo-list-ele-title';
                 todoEleName.textContent = currentTask.name;
+
+                const getTextWidth = (text, fontSize, plus = 0, fontFamily = 'sans-serif') => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    context.font = `${fontSize} ${fontFamily}`;
+                    return context.measureText(text).width + plus + 'px';
+                }
+
+                const todoEleDelLine = document.createElement('div');
+                todoEleDelLine.textContent = currentTask.name;
+                todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 10));
+                if (currentTask.steps.length != 0){
+                    todoEleDelLine.style.marginLeft = '70px';
+                } else {
+                    todoEleDelLine.style.marginLeft = '35px';
+                }
+                todoEleDelLine.className = 'sa-todo-list-ele-title sa-todo-list-ele-title-rmLine';
+
                 const todoEleSetDone = document.createElement('img');
                 todoEleSetDone.src = getTodoListContent().tasks[index].done ? undone : done;
                 todoEleSetDone.className = 'sa-todo-list-ele-done'
@@ -339,13 +358,13 @@ ${JSON.stringify(content)}
                                 todoEleStepsContentMain.appendChild(lineDiv);
                             }
                             currentTask.steps.forEach((step, indexStep) => {
-                                if (step.done == !!needDone) {
+                                if (step.done == needDone) {
                                     const todoEleStep = document.createElement('li');
                                     todoEleStep.className = 'sa-todo-list-ele-steps-li';
 
                                     const todoEleSetDoneStep = document.createElement('img');
                                     todoEleSetDoneStep.src = needDone ? undone : done;
-                                    todoEleSetDoneStep.className = 'sa-todo-list-ele-done'
+                                    todoEleSetDoneStep.className = 'sa-todo-list-ele-done';
                                     todoEleSetDoneStep.style.backgroundColor = currentTask.color;
                                     todoEleSetDoneStep.onclick = () => {
                                         const todos = getTodoListContent();
@@ -357,6 +376,7 @@ ${JSON.stringify(content)}
 
                                     const todoEleStep_Text = document.createElement('span');
                                     todoEleStep_Text.textContent = `${indexStep + 1}.${step.text}`;
+                                    if (needDone) todoEleStep_Text.style.opacity = 0.5;
                                     todoEleStep_Text.style.color = 'white';
 
                                     todoEleStep.appendChild(todoEleSetDoneStep);
@@ -377,9 +397,11 @@ ${JSON.stringify(content)}
                 const refreshTodoStyle = () => {
                     const isDone = getTodoListContent().tasks[index].done;
                     if (isDone) {
-                        todoEleName.classList.add('done');
+                        todoEleDelLine.style.width = '';
+                        todoEleName.style.opacity = 0.5;
                     } else {
-                        todoEleName.classList.remove('done');
+                        todoEleDelLine.style.width = '0px';
+                        todoEleName.style.opacity = 1;
                     }
                 }
 
@@ -407,6 +429,7 @@ ${JSON.stringify(content)}
                 if (currentTask.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
                 todoEle_card.appendChild(todoEleSetDone);
                 todoEle_card.appendChild(todoEleName);
+                todoEle_card.appendChild(todoEleDelLine);
                 todoEle.appendChild(todoEle_card);
                 todoEle.appendChild(todoEleDate);
                 todoEle.appendChild(todoEleStepsContent);
@@ -418,15 +441,22 @@ ${JSON.stringify(content)}
             console.warn('Todo List can\'t display: ' + e)
         }
         const addButton = document.createElement('button');
-        addButton.className = 'sa-todo-add-todo'
-        addButton.textContent = '+';
+        addButton.className = 'sa-todo-add-todo';
+        const addButtonText_p = document.createElement('span');
+        addButtonText_p.textContent = '+';
+        addButtonText_p.className = 'sa-todo-add-todo-text_p';
         addButton.onclick = () => {
             addModal();
         }
+        const addButtonText_t = document.createElement('span');
+        addButtonText_t.textContent = msg('add_todo');
+        // todo:add push animation
+        addButton.appendChild(addButtonText_p);
+        addButton.appendChild(addButtonText_t);
 
         content.appendChild(title)
-        content.appendChild(addButton)
         content.appendChild(todoList)
+        content.appendChild(addButton)
         return content
     }
 

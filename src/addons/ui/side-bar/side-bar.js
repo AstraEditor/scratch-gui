@@ -221,6 +221,7 @@ class SideBarInternal {
             background: var(--ui-white);
             min-height: 0;
             max-height: 100%;
+            display: flex;
         `;
         this.element.appendChild(this.contentContainer);
 
