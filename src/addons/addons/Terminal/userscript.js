@@ -1140,7 +1140,7 @@ export default async function ({ addon, console, msg }) {
 
   // 初始化欢迎信息
   const welcomeLine1 = document.createElement("div");
-  welcomeLine1.textContent = msg("welcome-title") || "AstraEditor Terminal v1.0";
+  welcomeLine1.textContent = msg("welcome-title") || "AstraEditor Terminal v1.2.0";
   virtualList.appendLog({ element: welcomeLine1, contentHash: welcomeLine1.textContent });
 
   const welcomeLine2 = document.createElement("div");
@@ -1560,6 +1560,136 @@ export default async function ({ addon, console, msg }) {
         return output;
       }
     },
+    fastfetch: {
+      description: "Show device status information",
+      execute: async () => {
+        const asciiArt = `               ░░░░░░░░░                                
+          ░░░░░░░░░░░░░░░░░░░                           
+       ░░░░░░░░░░░░░░░░░░░░░░░░░                        
+     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                      
+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                    
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                   
+ ░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒░░                  
+ ░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░               
+░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░             
+░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░            
+░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░           
+░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░          
+ ░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+  ░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+  ░░░░▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+   ░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
+   ░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░          
+  ░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▓▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░            
+  ░░░░░░░░░░░▒▒▒▒▒▒▒▒░░▒▒▒▒░░░░░░░░░░░░░░               
+   ░░░░░░░░░░░░░░░░░░░   ░░░░░░░░░░░░░                  
+    ░░░░░░░░░░░░░░░░░                                   
+     ░░░░░░░░░░░░░░                                     
+        ░░░░░░░░                                         `;
+
+        let output = "Device Status:\n\n";
+        
+        // Navigator API information
+        if (navigator.userAgent) {
+          output += `  User Agent: ${navigator.userAgent.substring(0, 100)}${navigator.userAgent.length > 100 ? '...' : ''}\n`;
+        }
+        
+        if (navigator.platform) {
+          output += `  Platform: ${navigator.platform}\n`;
+        }
+        
+        if (navigator.language) {
+          output += `  Language: ${navigator.language}\n`;
+        }
+        
+        if (navigator.hardwareConcurrency) {
+          output += `  CPU Cores: ${navigator.hardwareConcurrency}\n`;
+        }
+        
+        if (navigator.deviceMemory) {
+          output += `  Device Memory: ${navigator.deviceMemory} GB\n`;
+        }
+        
+        // Screen information
+        if (screen.width && screen.height) {
+          output += `  Screen Resolution: ${screen.width}x${screen.height}\n`;
+        }
+        
+        if (screen.colorDepth) {
+          output += `  Color Depth: ${screen.colorDepth} bits\n`;
+        }
+        
+        // WebGPU support and details
+        if ('gpu' in navigator) {
+          output += `  WebGPU: Supported\n`;
+          try {
+            // Get GPU adapter information
+            const adapter = await navigator.gpu.requestAdapter();
+            if (adapter) {
+              output += `  GPU Adapter: ${adapter.name}\n`;
+              
+              // Get adapter features
+              const features = [];
+              for (const feature of adapter.features) {
+                features.push(feature);
+              }
+              if (features.length > 0) {
+                output += `  GPU Features: ${features.slice(0, 5).join(', ')}${features.length > 5 ? '...' : ''}\n`;
+              }
+              
+              // Get adapter limits
+              const limits = adapter.limits;
+              if (limits && limits.maxTextureDimension2D) {
+                output += `  Max Texture Size: ${limits.maxTextureDimension2D}x${limits.maxTextureDimension2D}\n`;
+              }
+              
+              // Try to get device info
+              try {
+                const device = await adapter.requestDevice();
+                output += `  GPU Device: ${device.label || 'Default Device'}\n`;
+                device.destroy(); // Cleanup
+              } catch (deviceError) {
+                // Device request might fail, but that's okay
+              }
+            } else {
+              output += `  GPU Adapter: Not available\n`;
+            }
+          } catch (error) {
+            output += `  GPU Info: Error retrieving details - ${error.message}\n`;
+          }
+        } else {
+          output += `  WebGPU: Not Supported\n`;
+        }
+        
+        // Network information
+        if (navigator.connection) {
+          const connection = navigator.connection;
+          output += `  Network Type: ${connection.type || 'Unknown'}\n`;
+          if (connection.effectiveType) {
+            output += `  Effective Type: ${connection.effectiveType}\n`;
+          }
+          if (connection.downlink) {
+            output += `  Downlink: ${connection.downlink} Mbps\n`;
+          }
+        }
+
+        output += `  Editor Version: 1.2.0\n  Terminal Version: 1.2.0\n`;
+
+        const asciiLines = asciiArt.split('\n');
+        const infoLines = output.split('\n');
+        let combined = '';
+        const maxLines = Math.max(asciiLines.length, infoLines.length);
+
+        for (let i = 0; i < maxLines; i++) {
+          const ascii = asciiLines[i] || '';
+          const info = infoLines[i] || '';
+          const paddedAscii = ascii.padEnd(24);
+          combined += paddedAscii + ' ' + info + '\n';
+        }
+
+        return combined;
+      }
+    },
     echo: {
       description: msg("command-echo-desc") || "Echo the input text",
       execute: (args) => args.join(" ")
@@ -1635,16 +1765,15 @@ export default async function ({ addon, console, msg }) {
     },
     version: {
       description: msg("command-version-desc") || "Show terminal version",
-      execute: () => msg("welcome-title") || "AstraEditor Terminal v1.0"
+      execute: () => msg("welcome-title") || "AstraEditor Terminal v1.2.0"
     },
     "creeper?": {
       description: "",
       execute: () => msg("command-creeper") || "Awwww Man!"
     }
-
   };
 
-  const executeCommand = (command) => {
+  const executeCommand = async (command) => {
     const parts = command.trim().split(" ");
     const cmdName = parts[0].toLowerCase();
     const args = parts.slice(1);
@@ -1681,13 +1810,15 @@ export default async function ({ addon, console, msg }) {
     const cmd = commands[cmdName];
     if (cmd) {
       try {
-        const result = cmd.execute(args);
+        const result = await cmd.execute(args);
         if (result) {
           const lines = result.split('\n');
           lines.forEach((lineContent, index) => {
             const resultLine = document.createElement("div");
             resultLine.className = "sa-terminal-result-line";
-            resultLine.textContent = lineContent;
+            // 将空格转换为非断行空格以保留格式
+            const escapedContent = lineContent.replace(/ /g, '&nbsp;');
+            resultLine.innerHTML = escapedContent;
             resultLine.title = lineContent;
             virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${lineContent}` });
           });
@@ -1703,11 +1834,11 @@ export default async function ({ addon, console, msg }) {
   };
 
   // 输入处理
-  terminalInput.addEventListener("keydown", (e) => {
+  terminalInput.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
       const command = terminalInput.value;
       terminalInput.value = "";
-      executeCommand(command);
+      await executeCommand(command);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (historyIndex > 0) {
