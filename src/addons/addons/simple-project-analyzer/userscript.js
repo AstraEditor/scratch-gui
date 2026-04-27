@@ -169,12 +169,14 @@ export default function ({ addon, msg, console }) {
         this.sidebarContent = document.createElement("div");
         this.sidebarContent.className = "sa-spa-sidebar-content";
         this.sidebarContent.style.cssText = `
-          height: 100%;
+          width: 100%;
+          flex: 1;
           display: flex;
           flex-direction: column;
           gap: 16px;
           padding: 16px;
           overflow-y: auto;
+          box-sizing: border-box;
         `;
 
         // 添加标题

@@ -206,7 +206,8 @@
 
 /* Sidebar 内容容器样式 */
 .sa-find-sidebar-content {
-  height: 100%;
+  width: 100%;
+  flex: 1;
   padding: 16px;
   display: flex;
   flex-direction: column;
