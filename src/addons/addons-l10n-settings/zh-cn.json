@@ -410,7 +410,7 @@
     "tw-straighten-comments/@description": "确保注释始终通过一条水平的直线与其对应的源代码块相连，而不产生任何角度。",
     "simple-project-analyzer/@name": "SPA 简易作品分析器",
     "simple-project-analyzer/@description": "使用简单的算法在编辑器中分析您的作品！",
-    "hide-menubar/@name": "隐藏工具栏",
+    "hide-menubar/@name": "隐藏菜单栏",
     "hide-menubar/@description": "将工具栏隐藏，且当鼠标靠近时可自动弹出。您也可将其锁定，恢复为常驻显示。",
     "hide-menubar/@info-warn": "不要在使用桌面端时启用这个插件。",
     "toolbox-category-drag/@name": "拖动调整工具箱分类",

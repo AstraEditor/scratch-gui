@@ -269,6 +269,22 @@
     justify-content: center;
     align-items: center;
 }
+.sa-todo-add-todo-text_t{
+    width: 0;
+    transition: width 0.5s ease, opacity 0.3s ease, font-size 0.1s ease;
+    font-size: 10px;
+    -webkit-transition: width 0.5s ease, opacity 0.3s ease, font-size 0.1s ease;
+    -moz-transition: width 0.5s ease, opacity 0.3s ease, font-size 0.1s ease;
+    -ms-transition: width 0.5s ease, opacity 0.3s ease, font-size 0.1s ease;
+    -o-transition: width 0.5s ease, opacity 0.3s ease, font-size 0.1s ease;
+    white-space: nowrap;
+    opacity: 0;
+}
+.sa-todo-add-todo-text_t.active{
+    width: var(--width);
+    opacity: 1;
+    font-size: 16px;
+}
 
 .sa-todo-add-todo-text_p {
     color: white;

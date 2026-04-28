@@ -501,7 +501,7 @@ const GUIComponent = props => {
                                         : tabClassNames.tabList
                                 }>
                                     <div className='HindToolBar'>
-                                        {/*这里是隐藏工具栏时提供的边距*/}
+                                        {/*这里是隐藏菜单栏时提供的边距*/}
                                     </div>
                                     <Tab className={tabClassNames.tab}>
                                         <img

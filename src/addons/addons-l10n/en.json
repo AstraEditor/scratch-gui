@@ -477,5 +477,6 @@
     "background/background-preview-empty": "No wallpaper selected",
     "background/background-rotate": "Rotate",
     "background/disable": "Disable",
-    "todo/title": "ToDo for {project}"
+    "todo/title": "ToDo for {project}",
+    "todo/add_todo": "Add a Todo"
 }

@@ -116,6 +116,17 @@ ${POINT}
 ${JSON.stringify(content)}
 `
 
+    const getTextWidth = (() => {
+        const el = document.createElement('span');
+        el.style.cssText = 'position:fixed;visibility:hidden;white-space:nowrap;height:auto;width:auto';
+        document.body.appendChild(el);
+        return (text = 'hello world', fontSize = '16px', plus = 0, fontFamily = '"Helvetica Neue", Helvetica, Arial, sans-serif') => {
+            el.style.font = `${String(fontSize).endsWith('px') ? fontSize : fontSize + 'px'} ${fontFamily}`;
+            el.textContent = text;
+            return el.offsetWidth + plus + 'px';
+        };
+    })();
+
     const addModal = () => {
         const addContentForModal = (remove) => {
             const config = {
@@ -306,17 +317,10 @@ ${JSON.stringify(content)}
                 todoEleName.className = 'sa-todo-list-ele-title';
                 todoEleName.textContent = currentTask.name;
 
-                const getTextWidth = (text, fontSize, plus = 0, fontFamily = 'sans-serif') => {
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    context.font = `${fontSize} ${fontFamily}`;
-                    return context.measureText(text).width + plus + 'px';
-                }
-
                 const todoEleDelLine = document.createElement('div');
                 todoEleDelLine.textContent = currentTask.name;
-                todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 10));
-                if (currentTask.steps.length != 0){
+                todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 15));
+                if (currentTask.steps.length != 0) {
                     todoEleDelLine.style.marginLeft = '70px';
                 } else {
                     todoEleDelLine.style.marginLeft = '35px';
@@ -450,7 +454,15 @@ ${JSON.stringify(content)}
         }
         const addButtonText_t = document.createElement('span');
         addButtonText_t.textContent = msg('add_todo');
-        // todo:add push animation
+        addButtonText_t.className = 'sa-todo-add-todo-text_t'
+        addButtonText_t.style.setProperty('--width', getTextWidth(msg('add_todo'), '16px'));
+        addButton.onmouseenter = () => {
+            addButtonText_t.classList.add('active');
+        }
+        addButton.onmouseleave = () => {
+            addButtonText_t.classList.remove('active');
+        }
+
         addButton.appendChild(addButtonText_p);
         addButton.appendChild(addButtonText_t);
 
