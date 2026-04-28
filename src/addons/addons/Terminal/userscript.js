@@ -2006,6 +2006,7 @@ export default async function ({ addon, console, msg }) {
           toggleBtnIcon.style.display = "inline";
           toggleBtnText.style.display = "inline";
           bottomBarButtonBar.appendChild(toggleButton);
+          BottomPanel.updateButtonBarVisibility();
         }
         break;
       case POSITION_TYPES.WINDOW:
@@ -2018,6 +2019,9 @@ export default async function ({ addon, console, msg }) {
         toggleButton.style.marginRight = "2px";
         break;
     }
+
+    // 无论切换到什么模式，都更新按钮栏显示状态
+    BottomPanel.updateButtonBarVisibility();
 
     // 更新按钮激活状态
     if (isTerminalVisible()) {
@@ -2037,6 +2041,7 @@ export default async function ({ addon, console, msg }) {
       // 使用 updateToggleButtonPosition 来正确设置按钮样式
       updateToggleButtonPosition();
       console.log("Terminal button added to button bar");
+      BottomPanel.updateButtonBarVisibility();
       window.dispatchEvent(new Event("resize"));
       break;
     }

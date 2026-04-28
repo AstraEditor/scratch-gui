@@ -23,11 +23,11 @@ class BottomPanelInternal {
         this.MAX_HEIGHT = 500;
         this.currentHeight = this.DEFAULT_HEIGHT;
 
-        // 创建按钮栏容器（独立于面板，常显）
+        // 创建按钮栏容器（独立于面板）
         this.buttonBar = document.createElement("div");
         this.buttonBar.className = "addons-bottom-panel-button-bar";
         this.buttonBar.style.cssText = `
-            display: flex;
+            display: none;
             gap: 0;
             background: var(--ui-white);
             border-top: 1px solid var(--ui-black-transparent);
@@ -181,6 +181,25 @@ class BottomPanelInternal {
     }
 
     /**
+     * 检查按钮栏是否有按钮（不包含resizeHandle）
+     */
+    hasButtons() {
+        // resizeHandle 是按钮栏的第一个子元素，所以检查是否有其他子元素
+        return this.buttonBar.children.length > 1;
+    }
+
+    /**
+     * 更新按钮栏显示状态
+     */
+    updateButtonBarVisibility() {
+        if (this.hasButtons()) {
+            this.buttonBar.style.display = "flex";
+        } else {
+            this.buttonBar.style.display = "none";
+        }
+    }
+
+    /**
      * 检测CostumeTab是否打开
      */
     isCostumeTabOpen() {
@@ -276,7 +295,7 @@ class BottomPanelInternal {
     }
 
     /**
-     * 获取按钮栏容器
+     * 获取按钮栏容器（添加按钮后自动更新显示状态）
      */
     getButtonBar() {
         return this.buttonBar;
@@ -365,6 +384,8 @@ class BottomPanelInternal {
 
     open() {
         this.element.style.display = "flex";
+        // 更新按钮栏显示状态
+        this.updateButtonBarVisibility();
         // 使用 CSS 类控制 buttonBar 样式，而不是移动 DOM
         this.buttonBar.classList.add('bottom-panel-open');
         this.buttonBar.style.borderTop = "none";
@@ -386,6 +407,8 @@ class BottomPanelInternal {
         // 禁用拖拽手柄
         this.resizeHandle.style.pointerEvents = "none";
         this.resizeHandle.style.cursor = "default";
+        // 更新按钮栏显示状态（可能没有按钮）
+        this.updateButtonBarVisibility();
         window.dispatchEvent(new Event("resize"));
         // 触发自定义事件通知 sidebar 更新高度
         window.dispatchEvent(new CustomEvent('bottomPanelClosed'));
@@ -545,13 +568,23 @@ export default class BottomPanel {
     }
 
     /**
-     * 获取按钮栏容器
+     * 获取按钮栏容器（添加按钮后需要调用 updateButtonBarVisibility）
      */
     static getButtonBar() {
         if (!instance) {
             instance = new BottomPanelInternal();
         }
         return instance.getButtonBar();
+    }
+
+    /**
+     * 更新按钮栏显示状态（在添加或移除按钮后调用）
+     */
+    static updateButtonBarVisibility() {
+        if (!instance) {
+            instance = new BottomPanelInternal();
+        }
+        instance.updateButtonBarVisibility();
     }
 
     /**
