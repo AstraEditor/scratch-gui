@@ -7,6 +7,7 @@ import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
 import iconContinue from "!../../../lib/tw-recolor/build!./icon-continue.svg";
 import iconExport from "!../../../lib/tw-recolor/build!./icon-export.svg";
 import { setup as setupDebugger, setPaused as setPausedDebugger } from "./module.js";
+import aeVersion from "../../../lib/ae-version.js";
 
 const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
 
@@ -49,7 +50,7 @@ class TerminalVirtualList {
     this.isScrolledToEnd = true;
     this.scrollTop = 0;
     this.height = 0;
-    this.rowHeight = 20;
+    this.rowHeight = 16;
 
     this.updateContentQueued = false;
     this.scrollToEndQueued = false;
@@ -1133,7 +1134,7 @@ export default async function ({ addon, console, msg }) {
 
   // 创建终端输出区域（虚拟滚动列表）
   const virtualList = new TerminalVirtualList({
-    rowHeight: 20,
+    rowHeight: 16,
     batchTimeout: 50
   });
   const terminalOutput = virtualList.outerElement;
@@ -1561,7 +1562,7 @@ export default async function ({ addon, console, msg }) {
       }
     },
     fastfetch: {
-      description: "Show device status information",
+      description: msg("command-fastfetch-desc") || "Show device status information",
       execute: async () => {
         const asciiArt = `               ░░░░░░░░░                                
           ░░░░░░░░░░░░░░░░░░░                           
@@ -1673,7 +1674,8 @@ export default async function ({ addon, console, msg }) {
           }
         }
 
-        output += `  Editor Version: 1.2.0\n  Terminal Version: 1.2.0\n`;
+        output += '\n  AstraEditor Version: ' + aeVersion.version + ' ( Built in ' + aeVersion.date + ' )\n';
+        output += '  Terminal Version: 1.2.0\n';
 
         const asciiLines = asciiArt.split('\n');
         const infoLines = output.split('\n');
@@ -1765,7 +1767,7 @@ export default async function ({ addon, console, msg }) {
     },
     version: {
       description: msg("command-version-desc") || "Show terminal version",
-      execute: () => msg("welcome-title") || "AstraEditor Terminal v1.2.0"
+      execute: () => "AstraEditor Terminal v" + aeVersion.version
     },
     "creeper?": {
       description: "",
