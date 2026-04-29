@@ -54,6 +54,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-bottom: 5px;
 }
 
 .sa-todo-list-ele-steps-main {
@@ -126,6 +127,7 @@
     border: none;
     background-color: transparent;
     outline: 0px solid;
+    flex: 1 1 0%;
 }
 
 .sa-todo-modal-preview-steps-step-input {

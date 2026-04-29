@@ -3,6 +3,7 @@ import logo from '!../../../lib/tw-recolor/build!./logo.svg';
 import dropdown from './dropdown-arrow.svg';;
 import done from './done.svg';
 import undone from './undone.svg';
+import edit from './edit.svg';
 import SideBar from "../../ui/side-bar/side-bar.js";
 
 /*
@@ -127,20 +128,69 @@ ${JSON.stringify(content)}
         };
     })();
 
-    const addModal = () => {
+    const addModal = (editEleConfig = false) => {
         const addContentForModal = (remove) => {
-            const config = {
-                mode: 2,
-                id: generateId(),
-                name: msg('new-todo'),
-                color: '#0099ff',
-                task: {
-                    startTime: Date.now(),
-                    endTime: Date.now() + 10000086,
-                    done: false,
-                    tags: [],
-                    priority: 1,
-                    steps: [],
+            let config
+            if (editEleConfig) {
+                /*
+{
+    "id": "todo-9p4po00hs",
+    "name": "todo/new-todo",
+    "startTime": 1777418067938,
+    "endTime": 1777428068024,
+    "done": false,
+    "groupId": [],
+    "color": "#0099ff",
+    "steps": [
+        {
+            "id": "todo-gs3bvbl8d",
+            "text": "todo/new-step",
+            "latest": false,
+            "done": false
+        },
+        {
+            "id": "todo-ikqruv7df",
+            "text": "todo/new-step",
+            "latest": false,
+            "done": false
+        },
+        {
+            "id": "todo-b9uol4wgz",
+            "text": "todo/new-step",
+            "latest": false,
+            "done": false
+        }
+    ]
+}
+                 */
+                config = {
+                    mode: editEleConfig.mode || 2,
+                    id: editEleConfig.id || generateId(),
+                    name: editEleConfig.name || msg('new-todo'),
+                    color: editEleConfig.color || '#0099ff',
+                    task: {
+                        startTime: editEleConfig.startTime || Date.now(),
+                        endTime: editEleConfig.endTime || Date.now() + 10000086,
+                        done: editEleConfig.done || false,
+                        tags: editEleConfig.groupId || [],
+                        priority: 1,
+                        steps: editEleConfig.steps || [],
+                    },
+                }
+            } else {
+                config = {
+                    mode: 2,
+                    id: generateId(),
+                    name: msg('new-todo'),
+                    color: '#0099ff',
+                    task: {
+                        startTime: Date.now(),
+                        endTime: Date.now() + 10000086,
+                        done: false,
+                        tags: [],
+                        priority: 1,
+                        steps: [],
+                    }
                 }
             }
 
@@ -251,7 +301,8 @@ ${JSON.stringify(content)}
             done.className = 'sa-todo-modal-create-button';
             done.textContent = msg('done');
             done.onclick = () => {
-                addNewTodo(config);
+                if (editEleConfig) replaceTodo(config);
+                else addNewTodo(config);
                 remove()
             }
             content.appendChild(Object.assign(document.createElement('h1'), {
@@ -280,7 +331,7 @@ ${JSON.stringify(content)}
         }
 
         const { backdrop, container, content: contentMain, closeButton, remove } =
-            addon.tab.createModal(msg('create-title'), {
+            addon.tab.createModal(editEleConfig ? msg('edit-title') : msg('create-title'), {
                 isOpen: true,
                 useEditorClasses: true
             });
@@ -332,6 +383,13 @@ ${JSON.stringify(content)}
                 todoEleSetDone.className = 'sa-todo-list-ele-done'
                 todoEleSetDone.style.backgroundColor = currentTask.color;
 
+                const todoEleEditButton = document.createElement('img');
+                todoEleEditButton.src = edit;
+                todoEleEditButton.className = 'sa-todo-list-ele-done'
+                todoEleEditButton.style.backgroundColor = currentTask.color;
+                todoEleEditButton.onclick = () => {
+                    addModal(task);
+                }
 
                 const todoEleDate = document.createElement('span');
                 todoEleDate.style.color = 'white';
@@ -434,6 +492,8 @@ ${JSON.stringify(content)}
                 todoEle_card.appendChild(todoEleSetDone);
                 todoEle_card.appendChild(todoEleName);
                 todoEle_card.appendChild(todoEleDelLine);
+                todoEle_card.appendChild(todoEleEditButton);
+
                 todoEle.appendChild(todoEle_card);
                 todoEle.appendChild(todoEleDate);
                 todoEle.appendChild(todoEleStepsContent);
@@ -605,7 +665,7 @@ ${JSON.stringify(content)}
                 ...editTodo.groups,
                 {
                     id: config.id || generateId(),
-                    name: config.name || msg("New Group"),
+                    name: config.name || msg("new-group"),
                     color: config.color || '#0099ff'
                 }
             ]
@@ -615,7 +675,7 @@ ${JSON.stringify(content)}
                 ...editTodo.tasks,
                 {
                     id: config.id || generateId(),
-                    name: config.name || msg("New Group"),
+                    name: config.name || msg("new-task"),
                     startTime: config.task.startTime || Date.now(),
                     endTime: config.task.endTime || Date.now() + 100000086,
                     done: config.task.done || false,
@@ -624,6 +684,28 @@ ${JSON.stringify(content)}
                     steps: config.task.steps || []
                 }
             ]
+        }
+        createCommentToStage(getFormatComment(editTodo))
+    };
+
+    // 替换todo,用于编辑
+    const replaceTodo = config => {
+        const editTodo = getTodoListContent();
+        let editIndex = 0;
+        config = JSON.parse(JSON.stringify(config).replaceAll(POINT,
+            // 这很神秘啊
+            `Why? ${POINT.split('').join(' ')} is key word, how did you found it?`
+        ));
+        editIndex = editTodo.tasks.findIndex(task => task.id === config.id);
+        editTodo.tasks[editIndex] = {
+            id: config.id || generateId(),
+            name: config.name || msg("New Group"),
+            startTime: config.task.startTime || Date.now(),
+            endTime: config.task.endTime || Date.now() + 100000086,
+            done: config.task.done || false,
+            groupId: config.task.tags || [],
+            color: config.color || "#0099ff",
+            steps: config.task.steps || []
         }
         createCommentToStage(getFormatComment(editTodo))
     }
