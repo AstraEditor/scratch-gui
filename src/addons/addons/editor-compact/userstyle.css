@@ -478,10 +478,10 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
   height: auto;
 }
 [class*="library_library-scroll-grid"] {
-  max-height: calc(100% - 2rem);
+  height: calc(100vh - 2rem);
 }
 [class*="library_library-scroll-grid"][class*="library_withFilterBar"] {
-  max-height: calc(100% - 4rem);
+  height: calc(100vh - 4rem);
 }
 [class*="library_library-scroll-grid"]::-webkit-scrollbar-thumb {
   background-color: var(--editorDarkMode-selector-compactScrollbar, #c1c8d1);
