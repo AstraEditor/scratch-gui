@@ -508,7 +508,7 @@ ${JSON.stringify(content)}
                 todoEleDelLine.textContent = currentTask.name;
                 todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 15));
                 if (currentTask.steps.length != 0) {
-                    todoEleDelLine.style.marginLeft = '70px';
+                    todoEleDelLine.style.marginLeft = '75px';
                 } else {
                     todoEleDelLine.style.marginLeft = '40px';
                 }
