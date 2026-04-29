@@ -360,10 +360,10 @@ ${JSON.stringify(content)}
 
             const taskFields = document.createElement('div');
             const groupFields = document.createElement('div');
-            const previewLabel = Object.assign(document.createElement('h1'), {
-                className: 'sa-todo-modal-title',
-                textContent: msg('preview')
-            });
+            const previewLabel = document.createElement('div');
+            previewLabel.className = 'sa-todo-modal-title';
+            previewLabel.appendChild(Object.assign(document.createElement('span'), { textContent: msg('preview') }));
+            previewLabel.appendChild(document.createElement('div'));
 
             const preview_steps_create = document.createElement('button');
             preview_steps_create.className = 'sa-todo-modal-create-button';
@@ -403,10 +403,11 @@ ${JSON.stringify(content)}
                 groupFields.style.display = 'none';
             }
 
-            content.appendChild(Object.assign(document.createElement('h1'), {
-                className: 'sa-todo-modal-title',
-                textContent: msg('edit')
-            }));
+            const editHeader = document.createElement('div');
+            editHeader.className = 'sa-todo-modal-title';
+            editHeader.appendChild(Object.assign(document.createElement('span'), { textContent: msg('edit') }));
+            editHeader.appendChild(document.createElement('div'));
+            content.appendChild(editHeader);
             if (isNew) document.querySelector('[class*=sa-todo-content]').parentNode.insertBefore(modeTab, document.querySelector('[class*=sa-todo-content]'));
             content.appendChild(taskFields);
             content.appendChild(groupFields);

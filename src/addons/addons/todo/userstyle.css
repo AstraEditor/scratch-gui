@@ -190,7 +190,7 @@
 }
 
 .sa-todo-content {
-    padding: 15px;
+    padding: 1.5rem 2.25rem;
     padding-bottom: 72px;
     max-height: 70vh;
     height: 70vh;
@@ -306,37 +306,42 @@
     -webkit-filter: brightness(1.2);
 }
 
+.sa-todo-modal-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0.5rem 0 0 0;
+    font-weight: bold;
+}
+.sa-todo-modal-title > div {
+    flex-grow: 1;
+    margin-left: 1rem;
+    border-top: 1px dashed var(--ui-tertiary);
+}
+
 .sa-todo-modal-create-button {
     position: absolute;
     bottom: 15px;
     background-color: var(--looks-secondary);
     color: white;
-    padding: 10px;
+    padding: 0.5rem 1rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 4px;
     margin: 5px;
-    -webkit-border-radius: 10px;
-    -moz-border-radius: 10px;
-    -ms-border-radius: 10px;
-    -o-border-radius: 10px;
-    transition: filter 0.3s ease;
-    -webkit-transition: filter 0.3s ease;
-    -moz-transition: filter 0.3s ease;
-    -ms-transition: filter 0.3s ease;
-    -o-transition: filter 0.3s ease;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
 }
-
+.sa-todo-modal-create-button:active,
+.sa-todo-modal-create-button:focus-within {
+    box-shadow: 0 0 0 3px var(--looks-transparent);
+}
 .sa-todo-modal-create-button:first-of-type {
     right: 110px;
 }
-
 .sa-todo-modal-create-button:last-of-type {
     right: 15px;
-}
-
-.sa-todo-modal-create-button:hover {
-    filter: brightness(1.2);
-    -webkit-filter: brightness(1.2);
 }
 
 .sa-todo-list-ele-line {
