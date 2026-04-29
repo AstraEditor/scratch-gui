@@ -258,6 +258,7 @@
     width: 100%;
     height: 30px;
     background-color: var(--looks-secondary);
+    color:var(--ui-white);
     border: none;
     border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -293,10 +294,10 @@
 }
 
 .sa-todo-list-ele-done {
-    padding: 5px;
+    padding: 8px;
     border-radius: 999px;
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     margin-left: 2px;
 }
 
@@ -309,6 +310,7 @@
     position: absolute;
     bottom: 15px;
     background-color: var(--looks-secondary);
+    color: var(--ui-white);
     padding: 10px;
     border: none;
     border-radius: 10px;
@@ -352,6 +354,104 @@
 .sa-todo-list-ele-line-text {
     opacity: 0.5;
     font-style: italic;
+}
+
+.sa-todo-group-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 0;
+    flex-shrink: 0;
+    scrollbar-width: none;
+}
+.sa-todo-group-bar::-webkit-scrollbar {
+    display: none;
+}
+.sa-todo-group-btn {
+    display: block;
+    padding: 4px 12px;
+    border: 1px solid #00000020;
+    border-radius: 12px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.25s ease;
+    transition-property: background;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+.sa-todo-group-btn.active {
+    background: var(--looks-secondary);
+}
+
+.sa-todo-mode-tab {
+    position: relative;
+    height: 35px;
+}
+.sa-todo-mode-tab::after {
+    content: "";
+    position: absolute;
+    width: 50%;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: var(--looks-secondary);
+    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
+}
+.sa-todo-mode-tab:has(button:nth-child(1).enable)::after {
+    left: 0;
+}
+.sa-todo-mode-tab:has(button:nth-child(2).enable)::after {
+    left: 50%;
+}
+.sa-todo-mode-tab-btn {
+    border: none;
+    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
+    height: 30px;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    background: var(--ui-modal-background);
+    color: var(--ui-modal-foreground);
+    cursor: pointer;
+}
+.sa-todo-mode-tab-btn.enable {
+    filter: brightness(1);
+}
+.sa-todo-mode-tab-btn.unable {
+    filter: brightness(0.8);
+}
+.sa-todo-mode-tab-btn:hover {
+    filter: brightness(1);
+    background: var(--ui-modal-background);
+}
+.sa-todo-mode-tab-btn:active {
+    filter: brightness(0.9);
+    background: var(--ui-modal-background);
+}
+
+.sa-todo-group-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 5px;
+}
+.sa-todo-group-tag {
+    padding: 4px 10px;
+    border: 1px solid #00000020;
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.25s ease;
+    transition-property: background;
+    font-size: 13px;
+}
+.sa-todo-group-tag.active {
+    border-color: #fff;
 }
 
 .sa-todo-list-ele-title-rmLine {

@@ -469,5 +469,17 @@
     "background/background-preview-empty": "未选择壁纸",
     "background/background-rotate": "轮换",
     "background/disable": "禁用",
-    "todo/title": "{project} 的待办"
+    "todo/title": "{project} 的待办",
+    "todo/add": "添加",
+    "todo/edit": "编辑",
+    "todo/task": "任务",
+    "todo/group": "组",
+    "todo/color": "颜色",
+    "todo/start-time": "开始时间",
+    "todo/end-time": "结束时间",
+    "todo/preview": "预览",
+    "todo/new-todo": "新的待办",
+    "todo/new-step": "新的步骤",
+    "todo/name": "名称",
+    "todo/done": "完成"
 }

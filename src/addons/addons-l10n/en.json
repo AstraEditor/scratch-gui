@@ -479,5 +479,17 @@
     "background/background-rotate": "Rotate",
     "background/disable": "Disable",
     "todo/title": "ToDo for {project}",
-    "todo/add_todo": "Add a Todo"
+    "todo/add": "Add",
+    "todo/edit": "Edit",
+    "todo/task": "Task",
+    "todo/group": "Group",
+    "todo/color": "Color",
+    "todo/start-time": "Start Time",
+    "todo/end-time": "End Time",
+    "todo/preview": "Preview",
+    "todo/new-todo": "New todo",
+    "todo/new-step": "New step",
+    "todo/name": "Name",
+    "todo/done": "Done"
+
 }

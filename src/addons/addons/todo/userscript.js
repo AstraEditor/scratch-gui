@@ -4,6 +4,7 @@ import dropdown from './dropdown-arrow.svg';;
 import done from './done.svg';
 import undone from './undone.svg';
 import edit from './edit.svg';
+import remove from './remove.svg';
 import SideBar from "../../ui/side-bar/side-bar.js";
 
 /*
@@ -97,7 +98,7 @@ export default async function ({ addon, msg }) {
 
     const SIDEBAR_ID = 'todo';
     let COMMENT_ID = 'todo'
-    var PROJECT_NAME = '';
+    let PROJECT_NAME = '';
     const POINT = '_TODO_LIST_'
     const emptyTodo = {
         groups: [],
@@ -182,6 +183,7 @@ ${JSON.stringify(content)}
                     mode: 2,
                     id: generateId(),
                     name: msg('new-todo'),
+                    name_group: msg('new-group'),
                     color: '#0099ff',
                     task: {
                         startTime: Date.now(),
@@ -284,6 +286,81 @@ ${JSON.stringify(content)}
             preview.appendChild(preview_date);
             refresh();
 
+            const isNew = !editEleConfig;
+
+            const modeTab = document.createElement('div');
+            modeTab.className = 'sa-todo-mode-tab';
+
+            const taskTabBtn = document.createElement('button');
+            taskTabBtn.className = 'sa-todo-mode-tab-btn ' + (config.mode === 2 ? 'enable' : 'unable');
+            taskTabBtn.textContent = msg('task');
+            taskTabBtn.style.width = '50%';
+            taskTabBtn.onclick = () => {
+                config.mode = 2;
+                taskTabBtn.className = 'sa-todo-mode-tab-btn enable';
+                groupTabBtn.className = 'sa-todo-mode-tab-btn unable';
+                taskFields.style.display = '';
+                groupFields.style.display = 'none';
+                preview.style.display = '';
+                previewLabel.style.display = '';
+                preview_steps_create.style.display = '';
+                refreshGroupSelector();
+                refresh();
+            };
+
+            const groupTabBtn = document.createElement('button');
+            groupTabBtn.className = 'sa-todo-mode-tab-btn ' + (config.mode === 1 ? 'enable' : 'unable');
+            groupTabBtn.textContent = msg('group');
+            groupTabBtn.style.width = '50%';
+            groupTabBtn.onclick = () => {
+                config.mode = 1;
+                groupTabBtn.className = 'sa-todo-mode-tab-btn enable';
+                taskTabBtn.className = 'sa-todo-mode-tab-btn unable';
+                taskFields.style.display = 'none';
+                groupFields.style.display = '';
+                preview.style.display = 'none';
+                previewLabel.style.display = 'none';
+                preview_steps_create.style.display = 'none';
+            };
+
+            modeTab.appendChild(taskTabBtn);
+            modeTab.appendChild(groupTabBtn);
+
+            const groupSelector = document.createElement('div');
+            groupSelector.className = 'sa-todo-group-selector';
+            const refreshGroupSelector = () => {
+                groupSelector.innerHTML = '';
+                const groups = getTodoListContent().groups || [];
+                if (groups.length === 0) return;
+                groups.forEach(group => {
+                    const tag = document.createElement('button');
+                    tag.className = 'sa-todo-group-tag';
+                    tag.textContent = group.name;
+                    const active = (config.task.tags || []).includes(group.id);
+                    if (active) {
+                        tag.classList.add('active');
+                        tag.style.backgroundColor = group.color;
+                    } else {
+                        tag.style.backgroundColor = group.color + '60';
+                    }
+                    tag.onclick = () => {
+                        const tags = config.task.tags || [];
+                        const idx = tags.indexOf(group.id);
+                        if (idx === -1) tags.push(group.id); else tags.splice(idx, 1);
+                        config.task.tags = tags;
+                        refreshGroupSelector();
+                    };
+                    groupSelector.appendChild(tag);
+                });
+            };
+
+            const taskFields = document.createElement('div');
+            const groupFields = document.createElement('div');
+            const previewLabel = Object.assign(document.createElement('h1'), {
+                className: 'sa-todo-modal-title',
+                textContent: msg('preview')
+            });
+
             const preview_steps_create = document.createElement('button');
             preview_steps_create.className = 'sa-todo-modal-create-button';
             preview_steps_create.textContent = msg('new-step');
@@ -305,28 +382,35 @@ ${JSON.stringify(content)}
                 else addNewTodo(config);
                 remove()
             }
+
+            taskFields.appendChild(input('color', msg('color'), { key: 'color' }));
+            taskFields.appendChild(input('datetime-local', msg('start-time'), { key: 'task', key2: 'startTime' }));
+            taskFields.appendChild(input('datetime-local', msg('end-time'), { key: 'task', key2: 'endTime' }));
+            taskFields.appendChild(groupSelector);
+
+            groupFields.appendChild(input('text', msg('name'), { key: 'name' }));
+            groupFields.appendChild(input('color', msg('color'), { key: 'color' }));
+
+            if (config.mode === 1) {
+                taskFields.style.display = 'none';
+                preview.style.display = 'none';
+                previewLabel.style.display = 'none';
+            } else {
+                groupFields.style.display = 'none';
+            }
+
             content.appendChild(Object.assign(document.createElement('h1'), {
                 className: 'sa-todo-modal-title',
                 textContent: msg('edit')
             }));
-            content.appendChild(input('color', msg('color'), {
-                key: 'color'
-            }));
-            content.appendChild(input('datetime-local', msg('start-time'), {
-                key: 'task',
-                key2: 'startTime'
-            }));
-            content.appendChild(input('datetime-local', msg('end-time'), {
-                key: 'task',
-                key2: 'endTime'
-            }));
+            if (isNew) content.appendChild(modeTab);
+            content.appendChild(taskFields);
+            content.appendChild(groupFields);
             content.appendChild(preview_steps_create);
             content.appendChild(done);
-            content.appendChild(Object.assign(document.createElement('h1'), {
-                className: 'sa-todo-modal-title',
-                textContent: msg('preview')
-            }))
+            content.appendChild(previewLabel);
             content.appendChild(preview);
+            refreshGroupSelector();
             return content
         }
 
@@ -347,6 +431,7 @@ ${JSON.stringify(content)}
     }
 
 
+    let selectedGroup = null;
     const createSideBarElements = () => {
         const content = document.createElement('div');
         content.className = 'sa-todo';
@@ -354,14 +439,60 @@ ${JSON.stringify(content)}
         const title = document.createElement('h1');
         title.textContent = msg('title', { project: PROJECT_NAME.toString() });
 
+        let groupBar = null;
+        try {
+            const groups = getTodoListContent().groups || [];
+            if (groups.length > 0) {
+                groupBar = document.createElement('div');
+                groupBar.className = 'sa-todo-group-bar';
+
+                const allBtn = document.createElement('button');
+                allBtn.className = 'sa-todo-group-btn';
+                allBtn.textContent = msg('all');
+                if (selectedGroup === null) allBtn.classList.add('active');
+                allBtn.onclick = () => {
+                    selectedGroup = null;
+                    SideBar.clearContent();
+                    SideBar.setContent(createSideBarElements(msg));
+                };
+                groupBar.appendChild(allBtn);
+
+                groups.forEach(group => {
+                    const btn = document.createElement('button');
+                    btn.className = 'sa-todo-group-btn';
+                    btn.textContent = group.name;
+                    if (selectedGroup === group.id) {
+                        btn.classList.add('active');
+                        btn.style.backgroundColor = group.color;
+                    } else {
+                        btn.style.backgroundColor = group.color + '60';
+                    }
+                    btn.onclick = () => {
+                        selectedGroup = group.id;
+                        SideBar.clearContent();
+                        SideBar.setContent(createSideBarElements(msg));
+                    };
+                    groupBar.appendChild(btn);
+                });
+            }
+        } catch (e) { }
+
         const todoList = document.createElement('ul');
         todoList.className = 'sa-todo-list';
         try {
             getTodoListContent().tasks.forEach((task, index) => {
                 let currentTask = task;
+                if (selectedGroup !== null && !(currentTask.groupId || []).includes(selectedGroup)) return;
                 let isHide = true;
                 const todoEle = document.createElement('li');
                 todoEle.className = 'sa-todo-list-ele';
+                let border = '';
+                task.groupId.forEach((tag, index) => {
+                    const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
+                    const end = index == task.groupId.length - 1 ? '' : ', ';
+                    border += `0 ${index * 6 + 6}px 0 0 ${getTodoListContent().groups[groupIndex].color}${end}`
+                })
+                todoEle.style.boxShadow = border;
                 const todoEle_card = document.createElement('div')
                 todoEle_card.className = 'sa-todo-list-ele-titleDiv';
                 const todoEleName = document.createElement('span');
@@ -374,7 +505,7 @@ ${JSON.stringify(content)}
                 if (currentTask.steps.length != 0) {
                     todoEleDelLine.style.marginLeft = '70px';
                 } else {
-                    todoEleDelLine.style.marginLeft = '35px';
+                    todoEleDelLine.style.marginLeft = '40px';
                 }
                 todoEleDelLine.className = 'sa-todo-list-ele-title sa-todo-list-ele-title-rmLine';
 
@@ -389,6 +520,15 @@ ${JSON.stringify(content)}
                 todoEleEditButton.style.backgroundColor = currentTask.color;
                 todoEleEditButton.onclick = () => {
                     addModal(task);
+                }
+                const todoEleRemoveButton = document.createElement('img');
+                todoEleRemoveButton.src = remove;
+                todoEleRemoveButton.className = 'sa-todo-list-ele-done'
+                todoEleRemoveButton.style.backgroundColor = currentTask.color;
+                todoEleRemoveButton.onclick = () => {
+                    const originTodo = getTodoListContent();
+                    originTodo.tasks.splice(index, 1);
+                    createCommentToStage(getFormatComment(originTodo));
                 }
 
                 const todoEleDate = document.createElement('span');
@@ -492,6 +632,7 @@ ${JSON.stringify(content)}
                 todoEle_card.appendChild(todoEleSetDone);
                 todoEle_card.appendChild(todoEleName);
                 todoEle_card.appendChild(todoEleDelLine);
+                todoEle_card.appendChild(todoEleRemoveButton);
                 todoEle_card.appendChild(todoEleEditButton);
 
                 todoEle.appendChild(todoEle_card);
@@ -502,7 +643,7 @@ ${JSON.stringify(content)}
                 todoList.appendChild(todoEle);
             });
         } catch (e) {
-            console.warn('Todo List can\'t display: ' + e)
+            console.warn('Todo List can\'t display: ' + e.stack)
         }
         const addButton = document.createElement('button');
         addButton.className = 'sa-todo-add-todo';
@@ -513,9 +654,9 @@ ${JSON.stringify(content)}
             addModal();
         }
         const addButtonText_t = document.createElement('span');
-        addButtonText_t.textContent = msg('add_todo');
+        addButtonText_t.textContent = msg('add');
         addButtonText_t.className = 'sa-todo-add-todo-text_t'
-        addButtonText_t.style.setProperty('--width', getTextWidth(msg('add_todo'), '16px'));
+        addButtonText_t.style.setProperty('--width', getTextWidth(msg('add'), '16px'));
         addButton.onmouseenter = () => {
             addButtonText_t.classList.add('active');
         }
@@ -527,6 +668,7 @@ ${JSON.stringify(content)}
         addButton.appendChild(addButtonText_t);
 
         content.appendChild(title)
+        if (groupBar) content.appendChild(groupBar);
         content.appendChild(todoList)
         content.appendChild(addButton)
         return content
@@ -560,8 +702,12 @@ ${JSON.stringify(content)}
 
     const getTodoList = () => {
         const vm = addon.tab.traps.vm;
-        return vm.runtime.getTargetForStage().comments[COMMENT_ID] || ''
+        return vm.runtime.getTargetForStage().comments[COMMENT_ID] || getFormatComment(emptyTodo)
     }
+    /**
+     * 
+     * @returns {object}
+     */
     const getTodoListContent = () => {
         try {
             return JSON.parse(
