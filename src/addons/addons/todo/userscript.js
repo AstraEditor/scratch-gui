@@ -294,7 +294,9 @@ ${JSON.stringify(content)}
             const taskTabBtn = document.createElement('button');
             taskTabBtn.className = 'sa-todo-mode-tab-btn ' + (config.mode === 2 ? 'enable' : 'unable');
             taskTabBtn.textContent = msg('task');
+            taskTabBtn.style.display = 'inline-block';
             taskTabBtn.style.width = '50%';
+            taskTabBtn.style.height = '100%';
             taskTabBtn.onclick = () => {
                 config.mode = 2;
                 taskTabBtn.className = 'sa-todo-mode-tab-btn enable';
@@ -311,7 +313,9 @@ ${JSON.stringify(content)}
             const groupTabBtn = document.createElement('button');
             groupTabBtn.className = 'sa-todo-mode-tab-btn ' + (config.mode === 1 ? 'enable' : 'unable');
             groupTabBtn.textContent = msg('group');
+            groupTabBtn.style.display = 'inline-block';
             groupTabBtn.style.width = '50%';
+            groupTabBtn.style.height = '100%';
             groupTabBtn.onclick = () => {
                 config.mode = 1;
                 groupTabBtn.className = 'sa-todo-mode-tab-btn enable';
@@ -403,7 +407,7 @@ ${JSON.stringify(content)}
                 className: 'sa-todo-modal-title',
                 textContent: msg('edit')
             }));
-            if (isNew) content.appendChild(modeTab);
+            if (isNew) document.querySelector('[class*=sa-todo-content]').parentNode.insertBefore(modeTab, document.querySelector('[class*=sa-todo-content]'));
             content.appendChild(taskFields);
             content.appendChild(groupFields);
             content.appendChild(preview_steps_create);
