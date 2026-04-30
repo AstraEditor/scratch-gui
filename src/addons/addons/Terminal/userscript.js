@@ -6,6 +6,7 @@ import iconBottom from "!../../../lib/tw-recolor/build!./icon-bottom.svg";
 import iconWindow from "!../../../lib/tw-recolor/build!./icon-window.svg";
 import iconContinue from "!../../../lib/tw-recolor/build!./icon-continue.svg";
 import iconExport from "!../../../lib/tw-recolor/build!./icon-export.svg";
+import iconSetting from "!../../../lib/tw-recolor/build!./icon-setting.svg";
 import { setup as setupDebugger, setPaused as setPausedDebugger } from "./module.js";
 import aeVersion from "../../../lib/ae-version.js";
 
@@ -866,6 +867,190 @@ export default async function ({ addon, console, msg }) {
 
   exportButton.addEventListener("click", exportLogs);
 
+  // 创建设置按钮
+  const settingsButton = document.createElement("button");
+  settingsButton.className = "sa-terminal-settings-button";
+  settingsButton.title = msg("button-settings") || "设置";
+
+  const settingsBtnIcon = document.createElement("img");
+  settingsBtnIcon.src = iconSetting();
+  settingsBtnIcon.style.cssText = `
+    width: 16px;
+    height: 16px;
+    filter: grayscale(100%);
+  `;
+  settingsButton.appendChild(settingsBtnIcon);
+
+  // 设置界面状态
+  let isSettingsVisible = false;
+
+  // 创建设置界面
+  const settingsPanel = document.createElement("div");
+  settingsPanel.className = "sa-terminal-settings-panel";
+  settingsPanel.style.cssText = `
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: auto;
+    padding: 12px;
+  `;
+
+  // 设置界面标题栏
+  const settingsHeader = document.createElement("div");
+  settingsHeader.className = "sa-terminal-settings-header";
+  settingsHeader.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #3c3c3c;
+  `;
+
+  const backButton = document.createElement("button");
+  backButton.className = "sa-terminal-back-button";
+  backButton.style.cssText = `
+    background: none;
+    border: 1px solid var(--ui-black-transparent);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--ui-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+  `;
+  backButton.textContent = "← 返回";
+
+  const settingsTitle = document.createElement("span");
+  settingsTitle.style.cssText = `
+    font-weight: bold;
+    color: #ffffff;
+    font-size: 14px;
+  `;
+  settingsTitle.textContent = msg("settings-title") || "控制台设置";
+
+  settingsHeader.appendChild(backButton);
+  settingsHeader.appendChild(settingsTitle);
+  settingsPanel.appendChild(settingsHeader);
+
+  // 设置内容区域
+  const settingsContent = document.createElement("div");
+  settingsContent.className = "sa-terminal-settings-content";
+  settingsContent.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  `;
+
+  // 控制台报错开关设置
+  const consoleErrorSwitchContainer = document.createElement("div");
+  consoleErrorSwitchContainer.className = "sa-terminal-setting-item";
+  consoleErrorSwitchContainer.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #2d2d2d;
+    border-radius: 6px;
+  `;
+
+  const consoleErrorLabel = document.createElement("span");
+  consoleErrorLabel.style.cssText = `
+    color: #d4d4d4;
+    font-size: 13px;
+  `;
+  consoleErrorLabel.textContent = msg("setting-console-error") || "在终端中显示控制台报错";
+
+  const consoleErrorSwitch = document.createElement("label");
+  consoleErrorSwitch.className = "sa-terminal-switch";
+  consoleErrorSwitch.style.cssText = `
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+  `;
+
+  const consoleErrorSwitchInput = document.createElement("input");
+  consoleErrorSwitchInput.type = "checkbox";
+  consoleErrorSwitchInput.className = "sa-terminal-switch-input";
+  consoleErrorSwitchInput.style.cssText = `
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  `;
+
+  const consoleErrorSwitchBackground = document.createElement("span");
+  consoleErrorSwitchBackground.className = "sa-terminal-switch-background";
+  consoleErrorSwitchBackground.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555555;
+    transition: 0.3s;
+    border-radius: 22px;
+  `;
+
+  const consoleErrorSwitchSlider = document.createElement("span");
+  consoleErrorSwitchSlider.className = "sa-terminal-switch-slider";
+  consoleErrorSwitchSlider.style.cssText = `
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    z-index: 1;
+  `;
+
+  consoleErrorSwitchInput.addEventListener("change", (e) => {
+    if (e.target.checked) {
+      consoleErrorSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      consoleErrorSwitchSlider.style.transform = "translateX(18px)";
+      enableConsoleErrorInterceptor();
+      saveSettings({ consoleErrorEnabled: true });
+    } else {
+      consoleErrorSwitchBackground.style.backgroundColor = "#555555";
+      consoleErrorSwitchSlider.style.transform = "translateX(0)";
+      disableConsoleErrorInterceptor();
+      saveSettings({ consoleErrorEnabled: false });
+    }
+  });
+
+  consoleErrorSwitch.appendChild(consoleErrorSwitchInput);
+  consoleErrorSwitch.appendChild(consoleErrorSwitchBackground);
+  consoleErrorSwitch.appendChild(consoleErrorSwitchSlider);
+  consoleErrorSwitchContainer.appendChild(consoleErrorLabel);
+  consoleErrorSwitchContainer.appendChild(consoleErrorSwitch);
+  settingsContent.appendChild(consoleErrorSwitchContainer);
+
+  settingsPanel.appendChild(settingsContent);
+
+  // 切换显示设置界面（完全替代整个 Terminal 面板）
+  const showSettingsPanel = () => {
+    isSettingsVisible = true;
+    terminalHeader.style.display = "none";
+    terminalOutput.style.display = "none";
+    settingsPanel.style.display = "flex";
+  };
+
+  const hideSettingsPanel = () => {
+    isSettingsVisible = false;
+    terminalHeader.style.display = "";
+    terminalOutput.style.display = "";
+    settingsPanel.style.display = "none";
+  };
+
+  settingsButton.addEventListener("click", showSettingsPanel);
+  backButton.addEventListener("click", hideSettingsPanel);
+
   // 创建位置切换按钮容器
   const positionSwitchContainer = document.createElement("div");
   positionSwitchContainer.className = "sa-terminal-position-switch";
@@ -1120,6 +1305,7 @@ export default async function ({ addon, console, msg }) {
   // 将按钮添加到容器中
   buttonContainer.appendChild(continueButton);
   buttonContainer.appendChild(exportButton);
+  buttonContainer.appendChild(settingsButton);
   buttonContainer.appendChild(positionSwitchContainer);
 
   // 将关闭按钮添加到按钮容器（默认隐藏，只在独立窗口模式显示）
@@ -1153,13 +1339,71 @@ export default async function ({ addon, console, msg }) {
   virtualList.appendLog({ element: welcomeLine3, contentHash: "" });
 
   terminalContainer.appendChild(terminalOutput);
+  terminalContainer.appendChild(settingsPanel);
+
+  // 设置存储键名
+  const SETTINGS_STORAGE_KEY = "AETerminalSettings";
+
+  // 加载设置
+  const loadSettings = () => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return { consoleErrorEnabled: true };
+  };
+
+  // 保存设置
+  const saveSettings = (newSettings) => {
+    try {
+      const current = loadSettings();
+      const updated = { ...current, ...newSettings };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // 控制台错误拦截器状态
+  let isConsoleErrorInterceptorEnabled = true;
+
+  // 启用控制台错误拦截器
+  const enableConsoleErrorInterceptor = () => {
+    isConsoleErrorInterceptorEnabled = true;
+  };
+
+  // 禁用控制台错误拦截器
+  const disableConsoleErrorInterceptor = () => {
+    isConsoleErrorInterceptorEnabled = false;
+  };
+
+  // 初始化设置开关状态
+  const initSettingsSwitch = () => {
+    const settings = loadSettings();
+    if (!settings.consoleErrorEnabled) {
+      consoleErrorSwitchInput.checked = false;
+      consoleErrorSwitchBackground.style.backgroundColor = "#555555";
+      consoleErrorSwitchSlider.style.transform = "translateX(0)";
+      disableConsoleErrorInterceptor();
+    } else {
+      consoleErrorSwitchInput.checked = true;
+      consoleErrorSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      consoleErrorSwitchSlider.style.transform = "translateX(18px)";
+      enableConsoleErrorInterceptor();
+    }
+  };
+  initSettingsSwitch();
 
   // 控制台错误拦截器 - 将 console.error 同步到 Terminal
   const originalConsoleError = console.error.bind(console);
   console.error = (...args) => {
     originalConsoleError(...args);
 
-    if (terminalOutput) {
+    if (terminalOutput && isConsoleErrorInterceptorEnabled) {
       resetLogTracking();
 
       const line = document.createElement("div");

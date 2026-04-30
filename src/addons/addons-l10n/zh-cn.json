@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "逆时针",
     "_general/blocks/clockwise": "顺时针",
     "_general/blocks/green-flag": "绿旗",
@@ -434,6 +434,8 @@
     "Terminal/block-link-title": "点击跳转到积木",
     "Terminal/block-add-user-command": "添加用户指令 %s 简介 %s",
     "Terminal/block-export-logs": "导出日志",
+    "Terminal/settings-title": "终端设置",
+    "Terminal/setting-console-error": "同步控制台报错",
     "background/background": "背景",
     "background/clear": "清除背景",
     "background/add": "添加背景图片",

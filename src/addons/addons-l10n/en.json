@@ -1,4 +1,4 @@
-{
+﻿{
     "_general/blocks/anticlockwise": "anti-clockwise",
     "_general/blocks/clockwise": "clockwise",
     "_general/blocks/green-flag": "flag",
@@ -448,6 +448,8 @@
     "Terminal/block-link-title": "Click to jump to block",
     "Terminal/block-add-user-command": "Add User Command named %s with description %s",
     "Terminal/block-export-logs": "Export Logs",
+    "Terminal/settings-title": "Terminal Settings",
+    "Terminal/setting-console-error": "Sync Console Error",
     "background/background": "Background",
     "background/clear": "Clear background",
     "background/add": "Add background image",
