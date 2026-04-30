@@ -292,6 +292,7 @@
     "hide-stage/hide-stage": "Hide stage",
     "simple-project-analyzer/analyze-button": "Analyze Project",
     "simple-project-analyzer/analyze-tooltip": "Analyze project statistics",
+    "simple-project-analyzer/export-image": "Export Result as Image",
     "simple-project-analyzer/modal-title": "Project Analysis",
     "simple-project-analyzer/stat-sprites": "Sprites",
     "simple-project-analyzer/stat-blocks": "Blocks",

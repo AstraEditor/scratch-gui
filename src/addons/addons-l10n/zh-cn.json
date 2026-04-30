@@ -284,6 +284,7 @@
     "swap-local-global/to-local": "转换为“仅适用于当前角色”",
     "simple-project-analyzer/analyze-button": "分析作品",
     "simple-project-analyzer/analyze-tooltip": "分析项目统计信息",
+    "simple-project-analyzer/export-image": "导出结果为图片",
     "simple-project-analyzer/modal-title": "项目分析",
     "simple-project-analyzer/stat-sprites": "角色",
     "simple-project-analyzer/stat-blocks": "积木",

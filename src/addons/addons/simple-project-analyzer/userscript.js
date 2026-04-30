@@ -1,13 +1,18 @@
-import { Chart, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Legend } from 'chart.js';
+import { Chart, RadarController, DoughnutController, RadialLinearScale, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip } from 'chart.js';
 
 // 注册Chart.js组件
 Chart.register(
   RadarController,
+  DoughnutController,
   RadialLinearScale,
+  CategoryScale,
+  LinearScale,
   PointElement,
   LineElement,
+  ArcElement,
   Filler,
-  Legend
+  Legend,
+  Tooltip
 );
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
 import SideBar from "../../ui/side-bar/side-bar.js";
@@ -124,6 +129,11 @@ export default function ({ addon, msg, console }) {
 
       // 设置模态框内容
       content.innerHTML = `
+        <div class="sa-analyze-header">
+          <button id="saExportButton" class="sa-export-button">
+            ${msg('export-image', '导出图片')}
+          </button>
+        </div>
         <div class="sa-analyze-loading" id="saAnalyzeLoading">
           <div class="sa-analyze-spinner"></div>
           <p>${msg('analyzing')}</p>
@@ -136,6 +146,11 @@ export default function ({ addon, msg, console }) {
       // 添加关闭事件监听器
       backdrop.addEventListener('click', () => this.closeModal());
       closeButton.addEventListener('click', () => this.closeModal());
+
+      // 添加导出按钮事件
+      document.getElementById('saExportButton').addEventListener('click', () => {
+        this.exportAnalysisAsImage();
+      });
 
       // 异步分析项目
       this.analyzeProject();
@@ -179,6 +194,17 @@ export default function ({ addon, msg, console }) {
           box-sizing: border-box;
         `;
 
+        // 添加标题栏（包含标题和导出按钮）
+        const header = document.createElement("div");
+        header.style.cssText = `
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+          flex-shrink: 0;
+        `;
+
         // 添加标题
         const title = document.createElement("div");
         title.className = "sa-spa-sidebar-title";
@@ -186,12 +212,32 @@ export default function ({ addon, msg, console }) {
           font-size: 16px;
           font-weight: 600;
           color: var(--text-primary);
-          padding-bottom: 12px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          flex-shrink: 0;
         `;
         title.textContent = msg('modal-title');
-        this.sidebarContent.appendChild(title);
+        header.appendChild(title);
+
+        // 添加导出按钮
+        const exportButton = document.createElement("button");
+        exportButton.id = "saSPASidebarExportButton";
+        exportButton.className = "sa-spa-sidebar-export-button";
+        exportButton.textContent = msg('export-image', '导出图片');
+        exportButton.style.cssText = `
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #ffffff;
+          background-color: var(--motion-primary);
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        `;
+        exportButton.addEventListener('click', () => {
+          this.exportAnalysisAsImage();
+        });
+        header.appendChild(exportButton);
+
+        this.sidebarContent.appendChild(header);
 
         // 添加加载提示
         const loadingDiv = document.createElement("div");
@@ -234,6 +280,9 @@ export default function ({ addon, msg, console }) {
         style.textContent = `
           @keyframes sa-spa-spin {
             to { transform: rotate(360deg); }
+          }
+          .sa-spa-sidebar-export-button:hover {
+            background-color: #3a7bc8;
           }
         `;
         document.head.appendChild(style);
@@ -1695,6 +1744,632 @@ export default function ({ addon, msg, console }) {
 
       html += '</div>';
       extensionList.innerHTML = html;
+    }
+
+    // 导出分析结果为图片
+    async exportAnalysisAsImage() {
+      // 获取项目数据并执行分析
+      const vm = addon.tab.traps.vm;
+      const projectJSON = JSON.parse(vm.toJSON());
+      const analysis = this.performAnalysis(projectJSON);
+      const drScratchScores = this.calculateDrScratchScores(projectJSON);
+      const mathLogicScores = this.calculateMathLogicScores(projectJSON);
+
+      // 创建导出Canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // 设置Canvas尺寸
+      const padding = 40;
+      const sectionPadding = 25;
+      const topBarHeight = 60;
+      const statsHeight = 200;
+      const chartHeight = 280;
+      const scoreSectionHeight = 320;
+      const footerHeight = 40;
+
+      const totalHeight = topBarHeight + statsHeight + chartHeight + scoreSectionHeight * 2 + footerHeight + padding * 2 + sectionPadding * 4;
+      const width = 900;
+      canvas.width = width;
+      canvas.height = totalHeight;
+
+      // 设置背景
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, totalHeight);
+
+      // 绘制顶部栏
+      ctx.fillStyle = '#66ccff';
+      ctx.fillRect(0, 0, width, topBarHeight);
+
+      // 绘制Logo（使用SVG路径直接绘制）
+      const logoX = 20;
+      const logoY = 12;
+      const logoWidth = 36;
+      const logoHeight = 36;
+      // 将SVG坐标缩放并平移到我们需要的位置
+      const scale = logoWidth / 103.42932;
+      const offsetX = logoX - 188.28534 * scale;
+      const offsetY = logoY - 128.35262 * scale;
+      
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      
+      // 绘制所有路径
+      ctx.beginPath();
+      ctx.moveTo(188.28534 * scale + offsetX, 196.60551 * scale + offsetY);
+      ctx.lineTo(188.28534 * scale + offsetX, (196.60551 - 68.25289) * scale + offsetY);
+      ctx.lineTo((188.28534 + 33.21101) * scale + offsetX, (196.60551 - 68.25289) * scale + offsetY);
+      ctx.lineTo((188.28534 + 33.21101) * scale + offsetX, 196.60551 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(188.28534 * scale + offsetX, 196.60551 * scale + offsetY);
+      ctx.lineTo(188.28534 * scale + offsetX, (196.60551 - 33.21101) * scale + offsetY);
+      ctx.lineTo((188.28534 + 103.29475) * scale + offsetX, (196.60551 - 33.21101) * scale + offsetY);
+      ctx.lineTo((188.28534 + 103.29475) * scale + offsetX, 196.60551 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(188.28534 * scale + offsetX, 231.64738 * scale + offsetY);
+      ctx.lineTo(188.28534 * scale + offsetX, (231.64738 - 33.21101) * scale + offsetY);
+      ctx.lineTo((188.28534 + 68.32016) * scale + offsetX, (231.64738 - 33.21101) * scale + offsetY);
+      ctx.lineTo((188.28534 + 68.32016) * scale + offsetX, 231.64738 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(223.3945 * scale + offsetX, 161.56363 * scale + offsetY);
+      ctx.lineTo(223.3945 * scale + offsetX, (161.56363 - 33.21101) * scale + offsetY);
+      ctx.lineTo((223.3945 + 33.21101) * scale + offsetX, (161.56363 - 33.21101) * scale + offsetY);
+      ctx.lineTo((223.3945 + 33.21101) * scale + offsetX, 161.56363 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(258.50366 * scale + offsetX, 161.56363 * scale + offsetY);
+      ctx.lineTo(258.50366 * scale + offsetX, (161.56363 - 33.21101) * scale + offsetY);
+      ctx.lineTo((258.50366 + 33.21101) * scale + offsetX, (161.56363 - 33.21101) * scale + offsetY);
+      ctx.lineTo((258.50366 + 33.21101) * scale + offsetX, 161.56363 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(258.50366 * scale + offsetX, 231.64738 * scale + offsetY);
+      ctx.lineTo(258.50366 * scale + offsetX, (231.64738 - 68.25289) * scale + offsetY);
+      ctx.lineTo((258.50366 + 33.21101) * scale + offsetX, (231.64738 - 68.25289) * scale + offsetY);
+      ctx.lineTo((258.50366 + 33.21101) * scale + offsetX, 231.64738 * scale + offsetY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.restore();
+
+      // 绘制标题文本
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText('Simple Project Analyser Result', logoX + 50, logoY + 24);
+
+      let y = topBarHeight + padding;
+
+      // 绘制项目统计部分
+      y = this.drawStatsSection(ctx, analysis, width, y, padding, sectionPadding);
+
+      // 绘制代码类型分布饼图
+      y = this.drawCodeTypeChart(ctx, analysis, width, y, padding, sectionPadding);
+
+      // 绘制Dr.Scratch评分
+      y = this.drawDrScratchSection(ctx, drScratchScores, width, y, padding, sectionPadding);
+
+      // 绘制数学逻辑评分
+      y = this.drawMathLogicSection(ctx, mathLogicScores, width, y, padding, sectionPadding);
+
+      // 绘制底部版权信息
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillStyle = '#aaaaaa';
+      ctx.textAlign = 'center';
+      ctx.fillText('Generated by Simple Project Analyser', width / 2, totalHeight - 15);
+
+      // 下载图片
+      const link = document.createElement('a');
+      link.download = `project-analysis-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // 绘制统计部分
+    drawStatsSection(ctx, analysis, width, y, padding, sectionPadding) {
+      const sectionWidth = width - padding * 2;
+      const sectionHeight = 200;
+      
+      // 绘制背景
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.roundRect(padding, y, sectionWidth, sectionHeight, 12);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // 绘制标题
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left';
+      ctx.fillText(msg('project-stats', '项目统计'), padding + 20, y + 30);
+
+      // 统计数据
+      const stats = [
+        { label: msg('total-blocks', '总积木数'), value: analysis.totalBlocks },
+        { label: msg('effective-blocks', '有效积木'), value: analysis.effectiveBlocks },
+        { label: msg('function-definitions', '函数定义'), value: analysis.functionDefinitions },
+        { label: msg('stat-sprites', '精灵数量'), value: analysis.sprites },
+        { label: msg('stat-costumes', '造型数量'), value: analysis.costumeCount },
+        { label: msg('stat-sounds', '声音数量'), value: analysis.soundCount },
+        { label: msg('stat-variables', '变量数量'), value: analysis.variableCount },
+        { label: msg('stat-lists', '列表数量'), value: analysis.listCount },
+        { label: msg('extensions', '扩展数量'), value: analysis.extensions.length }
+      ];
+
+      const cols = 3;
+      const rows = 3;
+      const itemWidth = (sectionWidth - 40) / cols;
+      const itemHeight = (sectionHeight - 60) / rows;
+
+      stats.forEach((stat, index) => {
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const itemX = padding + 20 + col * itemWidth;
+        const itemY = y + 50 + row * itemHeight;
+
+        // 绘制数值
+        ctx.font = 'bold 22px Arial, sans-serif';
+        ctx.fillStyle = '#4C97FF';
+        ctx.textAlign = 'center';
+        ctx.fillText(stat.value.toString(), itemX + itemWidth / 2, itemY + 20);
+
+        // 绘制标签
+        ctx.font = '13px Arial, sans-serif';
+        ctx.fillStyle = '#666666';
+        ctx.fillText(stat.label, itemX + itemWidth / 2, itemY + 42);
+      });
+
+      return y + sectionHeight + sectionPadding;
+    }
+
+    // 绘制代码类型分布饼图
+    drawCodeTypeChart(ctx, analysis, width, y, padding, sectionPadding) {
+      const sectionWidth = width - padding * 2;
+      
+      // 绘制背景
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.roundRect(padding, y, sectionWidth, 280, 12);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // 绘制标题
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left';
+      ctx.fillText(msg('block-distribution', '代码类型分布'), padding + 20, y + 30);
+
+      // 饼图区域位置：左侧1/3位置
+      const chartAreaWidth = sectionWidth / 3;
+      const centerX = padding + chartAreaWidth / 2;
+      const centerY = y + 140; // 背景高度280的垂直中心
+      const radius = 80; // 减小半径以适应背景
+
+      // 定义颜色
+      const categoryColors = {
+        [msg('motion', '运动')]: '#4C97FF',
+        [msg('looks', '外观')]: '#9966FF',
+        [msg('sound', '声音')]: '#CF63CF',
+        [msg('events', '事件')]: '#FFBF00',
+        [msg('control', '控制')]: '#FFAB19',
+        [msg('sensing', '侦测')]: '#5CB1D6',
+        [msg('operators', '运算')]: '#59C059',
+        [msg('data', '数据')]: '#FF8C1A',
+        [msg('custom-functions', '自定义函数')]: '#FF6680'
+      };
+
+      const extensionColors = [
+        '#3498DB', '#E74C3C', '#F39C12', '#27AE60', '#16A085',
+        '#2ECC71', '#E67E22', '#95A5A6', '#34495E', '#7F8C8D',
+        '#9B59B6', '#1ABC9C', '#2C3E50', '#F1C40F', '#D35400'
+      ];
+
+      // 排序数据
+      const standardOrder = [
+        msg('motion', '运动'), msg('looks', '外观'), msg('sound', '声音'),
+        msg('events', '事件'), msg('control', '控制'), msg('sensing', '侦测'),
+        msg('operators', '运算'), msg('data', '数据'), msg('custom-functions', '自定义函数')
+      ];
+
+      const sortedCodeTypes = {};
+      standardOrder.forEach(category => {
+        if (analysis.codeTypes[category]) {
+          sortedCodeTypes[category] = analysis.codeTypes[category];
+        }
+      });
+
+      Object.keys(analysis.codeTypes).sort().forEach(category => {
+        if (!standardOrder.includes(category)) {
+          sortedCodeTypes[category] = analysis.codeTypes[category];
+        }
+      });
+
+      const labels = Object.keys(sortedCodeTypes);
+      const data = Object.values(sortedCodeTypes);
+      const total = data.reduce((a, b) => a + b, 0);
+
+      // 绘制饼图
+      let startAngle = -Math.PI / 2;
+
+      data.forEach((value, index) => {
+        const sliceAngle = (value / total) * Math.PI * 2;
+        const endAngle = startAngle + sliceAngle;
+        const label = labels[index];
+
+        // 获取颜色
+        let color = categoryColors[label];
+        if (!color) {
+          color = extensionColors[index % extensionColors.length];
+        }
+
+        // 绘制扇形
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // 绘制边框
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        startAngle = endAngle;
+      });
+
+      // 绘制图例（3列布局，限制最大显示数量）
+      const legendStartX = padding + 280;
+      const legendItemWidth = 180;
+      const maxItems = 21; // 最多显示21项
+      const displayLabels = labels.slice(0, maxItems);
+      const displayData = data.slice(0, maxItems);
+
+      displayLabels.forEach((label, index) => {
+        let color = categoryColors[label];
+        if (!color) {
+          color = extensionColors[index % extensionColors.length];
+        }
+
+        const row = Math.floor(index / 3);
+        const col = index % 3;
+        const legendX = legendStartX + col * legendItemWidth;
+        const legendY = y + 50 + row * 26;
+
+        // 绘制颜色方块
+        ctx.fillStyle = color;
+        ctx.fillRect(legendX, legendY, 10, 10);
+
+        // 绘制标签和数值
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'left';
+        
+        const displayLabel = label.length > 10 ? label.substring(0, 10) + '...' : label;
+        ctx.fillText(`${displayLabel}: ${displayData[index]}`, legendX + 14, legendY + 9);
+      });
+
+      // 如果有更多项目，显示提示
+      if (labels.length > maxItems) {
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillStyle = '#999999';
+        ctx.textAlign = 'left';
+        ctx.fillText(`+${labels.length - maxItems} more...`, legendStartX, y + 50 + Math.ceil(maxItems / 3) * 26 + 10);
+      }
+
+      return y + 280 + sectionPadding;
+    }
+
+    // 绘制Dr.Scratch评分部分
+    drawDrScratchSection(ctx, scores, width, y, padding, sectionPadding) {
+      const sectionWidth = width - padding * 2;
+      
+      // 绘制背景
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.roundRect(padding, y, sectionWidth, 320, 12);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // 绘制标题
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left';
+      ctx.fillText(msg('dr-scratch-score', 'Dr.Scratch评分系统'), padding + 20, y + 30);
+
+      const labels = Object.keys(scores);
+      const data = Object.values(scores);
+      const totalScore = data.reduce((sum, val) => sum + val, 0);
+
+      // 计算等级
+      let level = msg('beginner', '初学者');
+      if (totalScore >= 18) level = msg('expert', '专家级');
+      else if (totalScore >= 14) level = msg('advanced', '高级');
+      else if (totalScore >= 10) level = msg('intermediate', '中级');
+      else if (totalScore >= 6) level = msg('developing', '发展中');
+
+      // 绘制雷达图（在背景左侧1/3位置）
+      this.drawRadarChart(ctx, padding + 136, y + 160, 80, labels, data, 3, '#4d97ff');
+
+      // 绘制评分详情
+      const detailsX = padding + 340;
+      let detailsY = y + 60;
+
+      // 总分
+      ctx.font = 'bold 18px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.fillText(`${msg('total-score', '总分')}: ${totalScore} / 21`, detailsX, detailsY);
+      detailsY += 25;
+
+      // 等级
+      ctx.font = '14px Arial, sans-serif';
+      ctx.fillStyle = '#666666';
+      ctx.fillText(`${msg('evaluation-level', '评估等级')}: ${level}`, detailsX, detailsY);
+      detailsY += 35;
+
+      // 各项评分
+      labels.forEach((label, index) => {
+        const score = data[index];
+        
+        // 标签
+        ctx.font = '12px Arial, sans-serif';
+        ctx.fillStyle = '#333333';
+        const displayLabel = label.length > 14 ? label.substring(0, 14) + '...' : label;
+        ctx.fillText(displayLabel, detailsX, detailsY);
+
+        // 进度条背景
+        ctx.fillStyle = '#eeeeee';
+        ctx.fillRect(detailsX + 150, detailsY - 10, 100, 12);
+
+        // 进度条填充
+        ctx.fillStyle = '#4d97ff';
+        ctx.fillRect(detailsX + 150, detailsY - 10, (score / 3) * 100, 12);
+
+        // 分数
+        ctx.font = 'bold 12px Arial, sans-serif';
+        ctx.fillStyle = '#333333';
+        ctx.fillText(`${score}/3`, detailsX + 260, detailsY);
+
+        detailsY += 28;
+      });
+
+      return y + 320 + sectionPadding;
+    }
+
+    // 绘制数学逻辑评分部分
+    drawMathLogicSection(ctx, scores, width, y, padding, sectionPadding) {
+      const sectionWidth = width - padding * 2;
+      
+      // 绘制背景
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.roundRect(padding, y, sectionWidth, 320, 12);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // 绘制标题
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left';
+      ctx.fillText(msg('math-logic-assessment', '核心数学能力评估'), padding + 20, y + 30);
+
+      const labels = Object.keys(scores);
+      const data = Object.values(scores);
+      const totalScore = data.reduce((sum, val) => sum + val, 0);
+
+      // 计算等级
+      let level = msg('beginner', '初级');
+      if (totalScore >= 20) level = msg('advanced', '高级');
+      else if (totalScore >= 10) level = msg('intermediate', '中级');
+      else if (totalScore >= 5) level = msg('developing', '发展中');
+
+      // 标准化数据用于雷达图
+      const maxValue = Math.max(...data, 1);
+      const normalizedData = data.map(v => v / maxValue);
+
+      // 绘制雷达图（在背景左侧1/3位置）
+      this.drawRadarChart(ctx, padding + 136, y + 160, 100, labels, normalizedData, 1, '#E65100');
+
+      // 绘制评分详情
+      const detailsX = padding + 340;
+      let detailsY = y + 60;
+
+      // 总分
+      ctx.font = 'bold 18px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.fillText(`${msg('math-total-score', '数学总分')}: ${totalScore}`, detailsX, detailsY);
+      detailsY += 25;
+
+      // 等级
+      ctx.font = '14px Arial, sans-serif';
+      ctx.fillStyle = '#666666';
+      ctx.fillText(`${msg('evaluation-level', '评估等级')}: ${level}`, detailsX, detailsY);
+      detailsY += 35;
+
+      // 各项评分
+      labels.forEach((label, index) => {
+        ctx.font = '12px Arial, sans-serif';
+        ctx.fillStyle = '#333333';
+        const displayLabel = label.length > 14 ? label.substring(0, 14) + '...' : label;
+        ctx.fillText(`${displayLabel}: ${data[index]}`, detailsX, detailsY);
+        detailsY += 28;
+      });
+
+      return y + 320 + sectionPadding;
+    }
+
+    // 绘制雷达图
+    drawRadarChart(ctx, centerX, centerY, radius, labels, data, maxValue, color) {
+      const numSides = labels.length;
+      const angleStep = (Math.PI * 2) / numSides;
+
+      // 绘制网格
+      const gridLevels = 5;
+      for (let i = 1; i <= gridLevels; i++) {
+        const gridRadius = (radius / gridLevels) * i;
+        ctx.beginPath();
+        for (let j = 0; j < numSides; j++) {
+          const angle = j * angleStep - Math.PI / 2;
+          const x = centerX + gridRadius * Math.cos(angle);
+          const y = centerY + gridRadius * Math.sin(angle);
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = '#eeeeee';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // 绘制轴线
+      for (let i = 0; i < numSides; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
+        ctx.strokeStyle = '#dddddd';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // 绘制数据区域
+      ctx.beginPath();
+      data.forEach((value, index) => {
+        const angle = index * angleStep - Math.PI / 2;
+        const pointRadius = (value / maxValue) * radius;
+        const x = centerX + pointRadius * Math.cos(angle);
+        const y = centerY + pointRadius * Math.sin(angle);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = color + '33'; // 添加透明度
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 绘制数据点
+      data.forEach((value, index) => {
+        const angle = index * angleStep - Math.PI / 2;
+        const pointRadius = (value / maxValue) * radius;
+        const x = centerX + pointRadius * Math.cos(angle);
+        const y = centerY + pointRadius * Math.sin(angle);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      // 绘制标签
+      ctx.font = '10px Arial, sans-serif';
+      ctx.fillStyle = '#666666';
+      ctx.textAlign = 'center';
+
+      labels.forEach((label, index) => {
+        const angle = index * angleStep - Math.PI / 2;
+        const labelRadius = radius + 15; // 减小标签半径
+        const x = centerX + labelRadius * Math.cos(angle);
+        const y = centerY + labelRadius * Math.sin(angle);
+
+        const displayLabel = label.length > 8 ? label.substring(0, 8) + '...' : label;
+        ctx.fillText(displayLabel, x, y);
+      });
+    }
+
+    // 绘制扩展列表部分
+    drawExtensionsSection(ctx, extensions, width, y, padding, sectionPadding) {
+      const sectionWidth = width - padding * 2;
+      const height = Math.max(150, extensions.length * 50 + 60);
+      
+      // 绘制背景
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.roundRect(padding, y, sectionWidth, height, 12);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // 绘制标题
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left';
+      ctx.fillText(msg('extensions-used', '使用的扩展'), padding + 20, y + 30);
+
+      if (extensions.length === 0) {
+        ctx.font = '14px Arial, sans-serif';
+        ctx.fillStyle = '#999999';
+        ctx.fillText(msg('no-extensions', '未使用扩展'), padding + 20, y + 60);
+        return;
+      }
+
+      const cols = 3;
+      const itemWidth = (sectionWidth - 40) / cols;
+      const itemHeight = 40;
+
+      extensions.forEach((extension, index) => {
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const itemX = padding + 20 + col * itemWidth;
+        const itemY = y + 50 + row * itemHeight;
+
+        // 绘制背景
+        ctx.fillStyle = '#f8f9fa';
+        ctx.beginPath();
+        ctx.roundRect(itemX, itemY, itemWidth - 10, itemHeight - 8, 6);
+        ctx.fill();
+
+        // 绘制颜色圆点
+        const color = extension.color || '#888888';
+        ctx.beginPath();
+        ctx.arc(itemX + 12, itemY + 16, 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // 绘制名称
+        ctx.font = '13px Arial, sans-serif';
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'left';
+        const displayName = extension.name.length > 16 ? extension.name.substring(0, 16) + '...' : extension.name;
+        ctx.fillText(displayName, itemX + 26, itemY + 18);
+
+        // 绘制积木数量
+        ctx.font = '12px Arial, sans-serif';
+        ctx.fillStyle = '#999999';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${extension.blocks.length} ${msg('blocks-count', 'blocks')}`, itemX + itemWidth - 18, itemY + 18);
+      });
     }
 
     // 初始化插件

@@ -63,6 +63,39 @@
   filter: grayscale(0%);
 }
 
+/* 导出按钮样式 */
+.sa-analyze-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--ui-secondary);
+}
+
+.sa-export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  background-color: var(--motion-primary);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.sa-export-button:hover {
+  background-color: #3a7bc8;
+  transform: translateY(-1px);
+}
+
+.sa-export-button:active {
+  transform: translateY(0);
+}
+
 /* 模态框样式 */
 .sa-analyze-modal-popup {
   max-width: 90%;
