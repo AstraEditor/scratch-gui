@@ -84,16 +84,15 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: none;
 }
 
 .sa-export-button:hover {
-  background-color: #3a7bc8;
-  transform: translateY(-1px);
+  background-color: var(--motion-primary);
 }
 
 .sa-export-button:active {
-  transform: translateY(0);
+  background-color: var(--motion-primary);
 }
 
 /* 模态框样式 */

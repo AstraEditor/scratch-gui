@@ -230,7 +230,7 @@ export default function ({ addon, msg, console }) {
           border: none;
           border-radius: 4px;
           cursor: pointer;
-          transition: background-color 0.2s ease;
+          transition: none;
         `;
         exportButton.addEventListener('click', () => {
           this.exportAnalysisAsImage();
@@ -280,9 +280,6 @@ export default function ({ addon, msg, console }) {
         style.textContent = `
           @keyframes sa-spa-spin {
             to { transform: rotate(360deg); }
-          }
-          .sa-spa-sidebar-export-button:hover {
-            background-color: #3a7bc8;
           }
         `;
         document.head.appendChild(style);
