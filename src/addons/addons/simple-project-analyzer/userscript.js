@@ -375,6 +375,9 @@ export default function ({ addon, msg, console }) {
       // 更新统计数据
       this.updateSidebarStats(analysis);
 
+      // 显示代码类型分布饼图
+      this.displaySidebarCodeTypesChart(analysis);
+
       // 计算并更新 Dr.Scratch 评分
       const vm = addon.tab.traps.vm;
       const projectJSON = JSON.parse(vm.toJSON());
@@ -407,6 +410,17 @@ export default function ({ addon, msg, console }) {
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
           "></div>
+        </div>
+
+        <div class="sa-spa-codetypes-section" style="
+          background: var(--ui-secondary);
+          border-radius: 8px;
+          padding: 12px;
+        ">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">${msg('block-distribution')}</h4>
+          <div style="height: 200px; margin-top: 8px;">
+            <canvas id="saSAPACodeTypesChart"></canvas>
+          </div>
         </div>
 
         <div class="sa-spa-drscratch-section" style="
@@ -481,6 +495,91 @@ export default function ({ addon, msg, console }) {
           <div style="font-size: 11px; color: var(--text-primary); opacity: 0.8;">${stat.label}</div>
         </div>
       `).join('');
+    }
+
+    // 显示 Sidebar 版本的代码类型分布饼图
+    displaySidebarCodeTypesChart(analysis) {
+      const canvas = document.getElementById('saSAPACodeTypesChart');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+
+      const categoryColors = {
+        [msg('motion')]: '#4C97FF',
+        [msg('looks')]: '#9966FF',
+        [msg('sound')]: '#CF63CF',
+        [msg('events')]: '#FFBF00',
+        [msg('control')]: '#FFAB19',
+        [msg('sensing')]: '#5CB1D6',
+        [msg('operators')]: '#59C059',
+        [msg('data')]: '#FF8C1A',
+        [msg('custom-functions')]: '#FF6680'
+      };
+
+      const extensionColors = [
+        '#3498DB', '#E74C3C', '#F39C12', '#27AE60', '#16A085',
+        '#2ECC71', '#E67E22', '#95A5A6', '#34495E', '#7F8C8D',
+        '#9B59B6', '#1ABC9C', '#2C3E50', '#F1C40F', '#D35400'
+      ];
+
+      const standardOrder = [
+        msg('motion'), msg('looks'), msg('sound'),
+        msg('events'), msg('control'), msg('sensing'),
+        msg('operators'), msg('data'), msg('custom-functions')
+      ];
+
+      const sortedCodeTypes = {};
+      standardOrder.forEach(category => {
+        if (analysis.codeTypes[category]) {
+          sortedCodeTypes[category] = analysis.codeTypes[category];
+        }
+      });
+
+      Object.keys(analysis.codeTypes).sort().forEach(category => {
+        if (!standardOrder.includes(category)) {
+          sortedCodeTypes[category] = analysis.codeTypes[category];
+        }
+      });
+
+      const labels = Object.keys(sortedCodeTypes);
+      const data = Object.values(sortedCodeTypes);
+      const colors = labels.map((label, index) => {
+        if (categoryColors[label]) return categoryColors[label];
+        return extensionColors[index % extensionColors.length];
+      });
+
+      if (this.codeTypesChartInstance) {
+        this.codeTypesChartInstance.destroy();
+      }
+
+      this.codeTypesChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 12,
+                padding: 8,
+                font: {
+                  size: 10
+                }
+              }
+            }
+          }
+        }
+      });
     }
 
     // 显示 Sidebar 版本的 Dr.Scratch 评分
