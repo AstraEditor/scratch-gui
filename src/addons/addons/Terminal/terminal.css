@@ -451,6 +451,17 @@
   background-color: #ff4444;
 }
 
+.sa-terminal-log-mark.console-error {
+  color: #ffffff;
+  background-color: #e74c3c;
+}
+
+.sa-terminal-log-stack {
+  color: #888888;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
 /* 位置切换按钮样式 */
 .sa-terminal-position-switch {
   display: flex;

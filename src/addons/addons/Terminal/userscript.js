@@ -1154,6 +1154,56 @@ export default async function ({ addon, console, msg }) {
 
   terminalContainer.appendChild(terminalOutput);
 
+  // 控制台错误拦截器 - 将 console.error 同步到 Terminal
+  const originalConsoleError = console.error.bind(console);
+  console.error = (...args) => {
+    originalConsoleError(...args);
+
+    if (terminalOutput) {
+      resetLogTracking();
+
+      const line = document.createElement("div");
+      line.className = "sa-terminal-log-line";
+
+      const mark = document.createElement("span");
+      mark.className = "sa-terminal-log-mark console-error";
+      mark.textContent = "[console.error]";
+      line.appendChild(mark);
+
+      const textSpan = document.createElement("span");
+      textSpan.className = "sa-terminal-log-text";
+
+      const message = args.map(arg => {
+        if (arg instanceof Error) {
+          return arg.message;
+        }
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+
+      textSpan.textContent = " " + message;
+      line.appendChild(textSpan);
+
+      if (args[0] instanceof Error && args[0].stack) {
+        const stackInfo = document.createElement("span");
+        stackInfo.className = "sa-terminal-log-stack";
+        const stackLines = args[0].stack.split('\n');
+        const relevantLines = stackLines.filter(l => !l.includes('extension-hoste'));
+        const locationInfo = relevantLines.slice(1, 3).map(l => l.trim()).join(' | ');
+        stackInfo.textContent = locationInfo ? ` (${locationInfo})` : '';
+        line.appendChild(stackInfo);
+      }
+
+      addLogLineWithElement(line);
+    }
+  };
+
   // 重复内容处理
   let lastLogData = null;
   let lastLogCount = 1;
@@ -1572,10 +1622,10 @@ export default async function ({ addon, console, msg }) {
   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                   
  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                  
  ░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒░░                
-░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░              
-░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░            
-░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░          
-░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░          
+░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░              
+░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░            
+░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░          
+░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░          
  ░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░          
   ░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
   ░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░          
