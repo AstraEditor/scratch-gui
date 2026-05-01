@@ -815,7 +815,7 @@ ${JSON.stringify(content)}
         const tabs = document.querySelector('[class*="gui_tab-list"][class*="gui_vscode"]');
         const enableEffect = (ele, parent) => {
             ele.style.filter = '';
-            parent.style.backgroundColor = 'var(--ui - white)';
+            parent.style.backgroundColor = 'var(--ui-white)';
             parent.style.boxShadow = 'inset 3px 0px 0px 0px var(--looks-secondary)';
         }
         const unableEffect = (ele, parent) => {
