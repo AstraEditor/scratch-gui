@@ -190,7 +190,7 @@ export default class SideBar {
  */
 class SideBarInternal {
     constructor() {
-        this.DEFAULT_WIDTH = 500;
+        this.DEFAULT_WIDTH = 350;
         this.MIN_WIDTH = 200;
         this.MAX_WIDTH = 600;
         this.currentWidth = this.DEFAULT_WIDTH;
