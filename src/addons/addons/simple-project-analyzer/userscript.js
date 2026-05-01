@@ -17,6 +17,7 @@ Chart.register(
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
 import SideBar from "../../ui/side-bar/side-bar.js";
 import { getSetting } from "../../tools/AEsettings/index.js";
+import ReduxStore from "../../redux.js";
 
 // 检测是否启用 VSCode 布局
 function isVSCodeLayoutEnabled() {
@@ -37,6 +38,15 @@ export default function ({ addon, msg, console }) {
       this.drScratchChartInstance = null;
       this.sidebarContent = null;
       this.isVSCodeLayout = false;
+      this.projectName = '';
+
+      // 订阅 Redux Store 获取作品名称
+      ReduxStore.addEventListener('statechanged', (e) => {
+        const state = e.detail.next;
+        if (state && state.scratchGui && state.scratchGui.projectTitle) {
+          this.projectName = state.scratchGui.projectTitle;
+        }
+      });
     }
 
     // 创建分析按钮
@@ -1941,11 +1951,18 @@ export default function ({ addon, msg, console }) {
       
       ctx.restore();
 
+      // 获取作品名称
+      const projectName = this.projectName || projectJSON.info?.objName || '';
+
       // 绘制标题文本
       ctx.font = 'bold 20px Arial, sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'left';
-      ctx.fillText('Simple Project Analyser Result', logoX + 50, logoY + 24);
+      if (projectName) {
+        ctx.fillText(msg('export-title', { name: projectName }), logoX + 50, logoY + 24);
+      } else {
+        ctx.fillText('Simple Project Analyser Result', logoX + 50, logoY + 24);
+      }
 
       let y = topBarHeight + padding;
 

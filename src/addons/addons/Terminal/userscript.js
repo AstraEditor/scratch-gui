@@ -356,8 +356,6 @@ export default async function ({ addon, console, msg }) {
       height: 400px;
       min-width: 400px;
       min-height: 300px;
-      background-color: var(--ui-white);
-      border: 1px solid var(--ui-black-transparent);
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 1000;
@@ -922,7 +920,7 @@ export default async function ({ addon, console, msg }) {
     gap: 4px;
     font-family: inherit;
   `;
-  backButton.textContent = "← 返回";
+  backButton.textContent = msg("button-back") || "← 返回";
 
   const settingsTitle = document.createElement("span");
   settingsTitle.style.cssText = `
@@ -1133,7 +1131,6 @@ export default async function ({ addon, console, msg }) {
     top: 100%;
     right: 0;
     margin-top: 4px;
-    background: var(--ui-white);
     border: 1px solid var(--ui-black-transparent);
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1259,7 +1256,7 @@ export default async function ({ addon, console, msg }) {
     const popupButtons = popupContainer.querySelectorAll(".sa-terminal-popup-button");
     popupButtons.forEach(button => {
       if (button.dataset.position === currentPosition) {
-        button.style.backgroundColor = "var(--ui-primary)";
+        // button.style.backgroundColor = "var(--ui-primary)";
         button.style.color = "white";
         // 更新图标颜色
         const img = button.querySelector("img");
