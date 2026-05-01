@@ -43,7 +43,7 @@
 /* 继续按钮样式 */
 .sa-terminal-continue-button {
   background: none;
-  border: 1px solid var(--ui-black-transparent);
+  border: 1px solid #ffffff26;
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
@@ -65,10 +65,6 @@
   filter: grayscale(100%);
 }
 
-.sa-terminal-continue-button:hover {
-  background-color: var(--ui-primary-transparent);
-}
-
 .sa-terminal-continue-button:active {
   transform: scale(0.95);
 }
@@ -76,7 +72,7 @@
 /* 导出按钮样式 */
 .sa-terminal-export-button {
   background: none;
-  border: 1px solid var(--ui-black-transparent);
+  border: 1px solid #ffffff26;
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
@@ -108,7 +104,7 @@
 
 .sa-terminal-settings-button {
   background: none;
-  border: 1px solid var(--ui-black-transparent);
+  border: 1px solid #ffffff26;
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
@@ -143,7 +139,7 @@
 }
 
 .sa-terminal-settings-content {
-  color: #d4d4d4;
+  color: #eeeeee;
 }
 
 .sa-terminal-setting-item {
@@ -200,7 +196,7 @@
 .sa-terminal-output {
   flex: 1;
   background: #1e1e1e;
-  color: #d4d4d4;
+  color: #eeeeee;
   font-size: 13px;
   overflow-y: auto;
   white-space: pre-wrap;
@@ -241,7 +237,7 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #d4d4d4;
+  color: #eeeeee;
   font-size: 13px;
   outline: none;
   font-family: 'Courier New', monospace;
@@ -261,7 +257,7 @@
   height: 24px !important;
   min-height: 24px !important;
   background: var(--ui-white) !important;
-  color: var(--text-primary-transparent) !important;
+  color: #ffffff26 !important;
   font-size: 12px !important;
   cursor: pointer !important;
   display: flex !important;
@@ -404,7 +400,7 @@
 /* 命令行样式 */
 .sa-terminal-command-line {
   padding: 2px 0;
-  color: var(--text-primary);
+  color: #eeeeee;
   display: flex;
   align-items: center;
 }
@@ -422,7 +418,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-primary);
+  color: #eeeeee;
 }
 
 /* 错误行样式 */
@@ -550,6 +546,8 @@
 /* 位置切换按钮样式 */
 .sa-terminal-position-switch {
   display: flex;
+  border: 1px solid #ffffff26;
+  border-radius: 4px;
   gap: 4px;
   align-items: center;
   position: relative;
@@ -558,7 +556,7 @@
 /* 轮换按钮样式 */
 .sa-terminal-rotate-button {
   background: none;
-  border: 1px solid var(--ui-black-transparent);
+  border: 1px solid #ffffff26;
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
@@ -594,8 +592,8 @@
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: var(--ui-white);
-  border: 1px solid var(--ui-black-transparent);
+  background: #1e1e1e !important;
+  border: 1px solid #ffffff26 !important;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 4px;
@@ -614,7 +612,7 @@
   padding: 6px 10px;
   cursor: pointer;
   font-size: 12px;
-  color: var(--ui-text-primary);
+  /* color: var(--ui-text-primary); */
   text-align: left;
   transition: background-color 0.2s;
   display: flex;
@@ -665,7 +663,7 @@
   min-width: 400px;
   min-height: 300px;
   background-color: var(--ui-white);
-  border: 1px solid var(--ui-black-transparent);
+  border: 1px solid #ffffff26;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
@@ -729,17 +727,13 @@
     background-color: #2d2d2d;
     border-color: #3c3c3c;
   }
-
+/* 
   .sa-terminal-rotate-button {
-    color: #d4d4d4;
-  }
+    color: #eeeeee;
+  } */
 
   .sa-terminal-rotate-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .sa-terminal-popup-button {
-    color: #d4d4d4;
   }
 
   .sa-terminal-popup-button:hover:not(:disabled) {
