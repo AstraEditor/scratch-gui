@@ -343,7 +343,7 @@
 [class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.is-selected img {
   filter: grayscale(0%);
 }
-
+/* 
 @media (prefers-color-scheme: dark) {
   .addons-bottom-panel-button-bar .sa-terminal-toggle-button {
     background: var(--ui-dark) !important;
@@ -365,7 +365,7 @@
   [class*="tabs"][class*="vscodeList"] .sa-terminal-toggle-button.vscode-tab.is-selected {
     background-color: var(--ui-dark) !important;
   }
-}
+} */
 
 /* Bottom panel specific styles */
 .addons-bottom-panel .sa-terminal-container {
@@ -717,7 +717,7 @@
 }
 
 /* 暗色主题适配 */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .sa-terminal-floating-window {
     background-color: #1e1e1e;
     border-color: #3c3c3c;
@@ -727,10 +727,10 @@
     background-color: #2d2d2d;
     border-color: #3c3c3c;
   }
-/* 
+
   .sa-terminal-rotate-button {
     color: #eeeeee;
-  } */
+  }
 
   .sa-terminal-rotate-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -739,4 +739,4 @@
   .sa-terminal-popup-button:hover:not(:disabled) {
     background-color: rgba(255, 255, 255, 0.1);
   }
-}
+} */
