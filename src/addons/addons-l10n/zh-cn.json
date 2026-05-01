@@ -484,5 +484,8 @@
     "todo/new-todo": "新的待办",
     "todo/new-step": "新的步骤",
     "todo/name": "名称",
-    "todo/done": "完成"
+    "todo/done": "完成",
+    "todo/all": "所有",
+    "todo/create-title": "创建待办",
+    "todo/edit-title": "修改待办"
 }

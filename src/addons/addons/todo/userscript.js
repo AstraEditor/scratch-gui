@@ -30,50 +30,77 @@ import SideBar from "../../ui/side-bar/side-bar.js";
 }
 */
 
-/**
- * 获取两个时间戳的格式化日期区间
- * AI 太好用了你知道吗
- * @param {number} timestamp1 - 第一个时间戳（毫秒）
- * @param {number} timestamp2 - 第二个时间戳（毫秒）
- * @returns {string} 格式化后的日期区间字符串
- */
-function getFormattedDateRange(timestamp1, timestamp2) {
-
-    const date1 = new Date(timestamp1);
-    const date2 = new Date(timestamp2);
-
-    const pad = (num) => String(num).padStart(2, '0');
-
-    const year1 = date1.getFullYear();
-    const month1 = pad(date1.getMonth() + 1);
-    const day1 = pad(date1.getDate());
-    const hour1 = pad(date1.getHours());
-    const minute1 = pad(date1.getMinutes());
-    const second1 = pad(date1.getSeconds());
-
-    const year2 = date2.getFullYear();
-    const month2 = pad(date2.getMonth() + 1);
-    const day2 = pad(date2.getDate());
-    const hour2 = pad(date2.getHours());
-    const minute2 = pad(date2.getMinutes());
-    const second2 = pad(date2.getSeconds());
-
-    const timeStr1 = `${hour1}:${minute1}:${second1}`;
-    const timeStr2 = `${hour2}:${minute2}:${second2}`;
-
-    const isSameDate = year1 === year2 && month1 === month2 && day1 === day2;
-
-    if (isSameDate) {
-        const dateStr = `${year1}-${month1}-${day1}`;
-        return `${dateStr} ${timeStr1} -> ${timeStr2}`;
-    } else {
-        const fullStr1 = `${year1}-${month1}-${day1} ${timeStr1}`;
-        const fullStr2 = `${year2}-${month2}-${day2} ${timeStr2}`;
-        return `${fullStr1} -> ${fullStr2}`;
-    }
-}
 
 export default async function ({ addon, msg }) {
+    function getContrastColor(hexColor) {
+        let r, g, b;
+
+        if (hexColor.startsWith('#')) {
+            if (hexColor.length === 4) {
+                r = parseInt(hexColor[1] + hexColor[1], 16);
+                g = parseInt(hexColor[2] + hexColor[2], 16);
+                b = parseInt(hexColor[3] + hexColor[3], 16);
+            } else {
+                r = parseInt(hexColor.slice(1, 3), 16);
+                g = parseInt(hexColor.slice(3, 5), 16);
+                b = parseInt(hexColor.slice(5, 7), 16);
+            }
+        } else if (hexColor.startsWith('rgb')) {
+            const match = hexColor.match(/\d+/g);
+            r = parseInt(match[0]);
+            g = parseInt(match[1]);
+            b = parseInt(match[2]);
+        } else {
+            return '#000000';
+        }
+
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+        return brightness > 128 ? '#000000' : '#ffffff';
+    }
+    /**
+    * 获取两个时间戳的格式化日期区间
+    * AI 太好用了你知道吗
+     * @param {number} timestamp1 - 第一个时间戳（毫秒）
+    * @param {number} timestamp2 - 第二个时间戳（毫秒）
+    * @returns {string} 格式化后的日期区间字符串
+    */
+    function getFormattedDateRange(timestamp1, timestamp2) {
+
+        const date1 = new Date(timestamp1);
+        const date2 = new Date(timestamp2);
+
+        const pad = (num) => String(num).padStart(2, '0');
+
+        const year1 = date1.getFullYear();
+        const month1 = pad(date1.getMonth() + 1);
+        const day1 = pad(date1.getDate());
+        const hour1 = pad(date1.getHours());
+        const minute1 = pad(date1.getMinutes());
+        const second1 = pad(date1.getSeconds());
+
+        const year2 = date2.getFullYear();
+        const month2 = pad(date2.getMonth() + 1);
+        const day2 = pad(date2.getDate());
+        const hour2 = pad(date2.getHours());
+        const minute2 = pad(date2.getMinutes());
+        const second2 = pad(date2.getSeconds());
+
+        const timeStr1 = `${hour1}:${minute1}:${second1}`;
+        const timeStr2 = `${hour2}:${minute2}:${second2}`;
+
+        const isSameDate = year1 === year2 && month1 === month2 && day1 === day2;
+
+        if (isSameDate) {
+            const dateStr = `${year1}-${month1}-${day1}`;
+            return `${dateStr} ${timeStr1} -> ${timeStr2}`;
+        } else {
+            const fullStr1 = `${year1}-${month1}-${day1} ${timeStr1}`;
+            const fullStr2 = `${year2}-${month2}-${day2} ${timeStr2}`;
+            return `${fullStr1} -> ${fullStr2}`;
+        }
+    }
+
     const generateId = () => {
         return `todo-${Math.random().toString(36).substr(2, 9)}`;
     }
@@ -445,6 +472,11 @@ ${JSON.stringify(content)}
         title.textContent = msg('title', { project: PROJECT_NAME.toString() });
 
         let groupBar = null;
+
+        const refreshTodo = () => {
+            SideBar.clearContent();
+            SideBar.setContent(createSideBarElements());
+        }
         try {
             const groups = getTodoListContent().groups || [];
             if (groups.length > 0) {
@@ -457,15 +489,42 @@ ${JSON.stringify(content)}
                 if (selectedGroup === null) allBtn.classList.add('active');
                 allBtn.onclick = () => {
                     selectedGroup = null;
-                    SideBar.clearContent();
-                    SideBar.setContent(createSideBarElements(msg));
+                    refreshTodo()
                 };
                 groupBar.appendChild(allBtn);
 
-                groups.forEach(group => {
+
+
+
+                groups.forEach((group, index) => {
+                    let needRemove = false;
                     const btn = document.createElement('button');
                     btn.className = 'sa-todo-group-btn';
                     btn.textContent = group.name;
+                    const btnRemoveGroup = document.createElement('div');
+                    btnRemoveGroup.className = 'sa-todo-group-remove-btn'
+                    btnRemoveGroup.style.backgroundColor = group.color;
+
+                    const btnRemoveGroupImg = document.createElement('img');
+                    btnRemoveGroupImg.src = remove;
+                    btnRemoveGroupImg.className = 'sa-todo-group-remove-btn-img';
+                    btnRemoveGroupImg.style.filter = `brightness(${getContrastColor(group.color) === '#000000' ? 0 : 1}`
+                    btnRemoveGroup.onclick = () => {
+                        if (selectedGroup === group.id) selectedGroup = null;
+                        // 气死我了btn会强键我的删除让它选取，加个标志来强上它
+                        needRemove = true;
+                        const currentGroup = getTodoListContent();
+                        const nowGroupId = currentGroup.groups[index].id;
+                        currentGroup.groups.splice(index, 1);
+                        // 删除所有使用这个组的task中的组
+                        currentGroup.tasks.forEach((task,taskIndex) => {
+                            const groupIndex = task.groupId.indexOf(nowGroupId);
+                            if (groupIndex !== -1){
+                                currentGroup.tasks[taskIndex].groupId.splice(groupIndex, 1);
+                            }
+                        })
+                        createCommentToStage(getFormatComment(currentGroup));
+                    }
                     if (selectedGroup === group.id) {
                         btn.classList.add('active');
                         btn.style.backgroundColor = group.color;
@@ -473,14 +532,17 @@ ${JSON.stringify(content)}
                         btn.style.backgroundColor = group.color + '60';
                     }
                     btn.onclick = () => {
+                        // 退！退！退！
+                        if (needRemove) return;
                         selectedGroup = group.id;
-                        SideBar.clearContent();
-                        SideBar.setContent(createSideBarElements(msg));
+                        refreshTodo()
                     };
+                    btnRemoveGroup.appendChild(btnRemoveGroupImg);
+                    btn.appendChild(btnRemoveGroup);
                     groupBar.appendChild(btn);
                 });
             }
-        } catch (e) { }
+        } catch (e) { console.warn(`Can't load group menu because ${e}`) }
 
         const todoList = document.createElement('ul');
         todoList.className = 'sa-todo-list';
@@ -491,13 +553,27 @@ ${JSON.stringify(content)}
                 let isHide = true;
                 const todoEle = document.createElement('li');
                 todoEle.className = 'sa-todo-list-ele';
-                let border = '';
-                task.groupId.forEach((tag, index) => {
+                // 这个需要改padding,但是我不想用，因为效果不太好
+                // let border = '';
+                // task.groupId.forEach((tag, index) => {
+                //     const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
+                //     const end = index == task.groupId.length - 1 ? '' : ', ';
+                //     border += `0 ${index * 6 + 6}px 0 0 ${getTodoListContent().groups[groupIndex].color}${end}`
+                // })
+                // todoEle.style.boxShadow = border;
+
+                // 改为这个，直接在里面加个方块代表
+                const todoEle_groupTip = document.createElement('div');
+                todoEle_groupTip.className = 'sa-todo-list-ele-group_tip';
+                if (task.groupId.length > 0) todoEle.style.borderRadius = '0px 0px 5px 5px';
+                task.groupId.forEach(tag => {
                     const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
-                    const end = index == task.groupId.length - 1 ? '' : ', ';
-                    border += `0 ${index * 6 + 6}px 0 0 ${getTodoListContent().groups[groupIndex].color}${end}`
+                    const groupEleBlock = document.createElement('div');
+                    groupEleBlock.className = 'sa-todo-list-ele-group_tip-block';
+                    groupEleBlock.style.backgroundColor = getTodoListContent().groups[groupIndex].color;
+
+                    todoEle_groupTip.appendChild(groupEleBlock);
                 })
-                todoEle.style.boxShadow = border;
                 const todoEle_card = document.createElement('div')
                 todoEle_card.className = 'sa-todo-list-ele-titleDiv';
                 const todoEleName = document.createElement('span');
@@ -633,6 +709,7 @@ ${JSON.stringify(content)}
                     refreshDropdown_Steps()
                 }
                 // spawn
+                todoList.appendChild(todoEle_groupTip);
                 if (currentTask.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
                 todoEle_card.appendChild(todoEleSetDone);
                 todoEle_card.appendChild(todoEleName);
@@ -701,7 +778,7 @@ ${JSON.stringify(content)}
         // 刷新一下Tab
         if (needRefresh) {
             SideBar.clearContent();
-            SideBar.setContent(createSideBarElements(msg))
+            SideBar.setContent(createSideBarElements())
         }
     }
 
