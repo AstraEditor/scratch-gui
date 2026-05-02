@@ -496,6 +496,6 @@
     "todo/new-todo": "New todo",
     "todo/new-step": "New step",
     "todo/name": "Name",
-    "todo/done": "Done"
-
+    "todo/done": "Done",
+    "todo/todo-title": "ToDo"
 }

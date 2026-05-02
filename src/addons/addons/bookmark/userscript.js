@@ -1,19 +1,5 @@
 import icon from "!../../../lib/tw-recolor/build!./bookmark.svg";
-import SideBar from "../../ui/side-bar/side-bar.js";
-
-// 检测是否启用 VSCode 布局
-function isVSCodeLayoutEnabled() {
-  try {
-    const settings = localStorage.getItem("AESettings");
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      return parsed.EnableVSCodeLayout === true;
-    }
-  } catch (e) {
-    // ignore
-  }
-  return false;
-}
+import AddToBar from "../../tools/AddToBar/index.js";
 
 export default async ({ addon, msg, console }) => {
   const Blockly = await addon.tab.traps.getBlockly();
@@ -135,32 +121,20 @@ export default async ({ addon, msg, console }) => {
     });
   };
 
-  let bookmarkButton = null;
   let sidebarContent = null;
-  let currentVSCodeLayout = isVSCodeLayoutEnabled();
 
-  // Check if VSCodeLayout is enabled
-  const isVSCodeLayout = () => {
-    try {
-      const settings = JSON.parse(localStorage.getItem('AESettings'));
-      return settings && settings.EnableVSCodeLayout;
-    } catch (e) {
-      return false;
-    }
-  };
+  let sidebarRenderer = null;
 
   // Show bookmark in sidebar
-  const showBookmarkSidebar = (img) => { //img是图标
-    // 如果还没有创建内容，创建并注册
+  const showBookmarkSidebar = () => {
     if (!sidebarContent) {
       sidebarContent = document.createElement("div");
       sidebarContent.className = "sa-bookmark-sidebar-content";
 
-      // 创建书签列表
       const bookmarkList = document.createElement("div");
       bookmarkList.className = "sa-bookmark-list";
 
-      const renderBookmarks = () => {
+      sidebarRenderer = () => {
         bookmarkList.innerHTML = "";
         const bookmarks = parseBookmarkComment();
 
@@ -238,7 +212,7 @@ export default async ({ addon, msg, console }) => {
             const bookmarks = parseBookmarkComment();
             bookmarks.splice(index, 1);
             saveBookmarkComment(bookmarks);
-            renderBookmarks();
+            sidebarRenderer();
           });
 
           bookmarkActions.appendChild(jumpButton);
@@ -277,7 +251,7 @@ export default async ({ addon, msg, console }) => {
         bookmarks.push(newBookmark);
         saveBookmarkComment(bookmarks);
         nameInput.value = "";
-        renderBookmarks();
+        sidebarRenderer();
       });
 
       addBookmarkForm.appendChild(nameLabel);
@@ -286,30 +260,7 @@ export default async ({ addon, msg, console }) => {
 
       sidebarContent.appendChild(bookmarkList);
       sidebarContent.appendChild(addBookmarkForm);
-
-      // 注册插件内容和回调
-      SideBar.register('bookmark', sidebarContent, {
-        onActivate: () => {
-          // 激活时添加按钮状态
-          if (bookmarkButton) {
-            bookmarkButton.classList.add('sa-bookmark-button-active', "is-selected");
-            img.style.filter = "grayscale(0%)";
-          }
-          // 渲染书签列表
-          renderBookmarks();
-        },
-        onDeactivate: () => {
-          // 停用时移除按钮状态
-          if (bookmarkButton) {
-            bookmarkButton.classList.remove('sa-bookmark-button-active', "is-selected");
-            img.style.filter = "grayscale(100%)";
-          }
-        }
-      });
     }
-
-    // 切换到书签插件
-    SideBar.switchTo('bookmark');
   };
 
   // Create bookmark modal
@@ -475,72 +426,21 @@ export default async ({ addon, msg, console }) => {
     document.addEventListener("keydown", escapeHandler);
   };
 
-  // Create bookmark button
-  const createBookmarkButton = async () => {
-    const VSCodeLayout = isVSCodeLayoutEnabled();
-
-    // 检测是否在 VSCodeLayout 下
-    const tabBar = await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
-      markAsSeen: true
-    });
-
-    // 等待 bookmarkContainer 出现
-    const bookmarkContainer = await addon.tab.waitForElement('.bookmarkContainer', {
-      markAsSeen: true
-    });
-
-    if (!bookmarkContainer) return;
-
-    bookmarkButton = document.createElement('li');
-    bookmarkButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
-      others: 'sa-bookmark-button'
-    });
-    const img = document.createElement('img');
-
-    if (VSCodeLayout) {
-      // VSCodeLayout 下使用 SVG 图标
-      img.src = icon();
-      img.style.filter = "grayscale(100%)";
-      img.style.width = '20px';
-      img.style.height = '20px';
-      img.alt = msg("bookmark-button");
-      bookmarkButton.appendChild(img);
-    } else {
-      // 普通布局下使用文字
-      bookmarkButton.textContent = msg("bookmark-button");
-    }
-    bookmarkButton.title = msg("bookmark-button-tooltip");
-
-    // 禁用时隐藏按钮
-    addon.tab.displayNoneWhileDisabled(bookmarkButton);
-
-    bookmarkButton.addEventListener("click", () => {
-      // 重新检测布局模式
-      currentVSCodeLayout = isVSCodeLayoutEnabled();
-
-      if (currentVSCodeLayout) {
-        // VSCode 布局下，切换 sidebar
-        if (SideBar.getActivePlugin() === 'bookmark') {
-          SideBar.close();
-        } else {
-          showBookmarkSidebar(img);
-        }
-      } else {
-        // 非 VSCode 布局下，显示 modal
-        createBookmarkModal();
-      }
-    });
-
-    // 将按钮添加到目标位置
-    if (VSCodeLayout) {
-      // VSCodeLayout 下，按钮应该插入到标签栏（TabList）中
-      tabBar.appendChild(bookmarkButton);
-    } else {
-      // 普通布局下，插入到 bookmarkContainer
-      bookmarkContainer.appendChild(bookmarkButton);
-    }
-  };
-
-  // Create the button
-  await createBookmarkButton();
+  // Button injection via AddToBar (handles both VSCode and non-VSCode layouts)
+  AddToBar(addon, {
+    id: 'bookmark',
+    icon: icon,
+    text: msg("bookmark-button"),
+    getContent: () => {
+      showBookmarkSidebar();
+      return sidebarContent;
+    },
+    onActivate: () => {
+      if (sidebarRenderer) sidebarRenderer();
+    },
+    onClick: () => {
+      createBookmarkModal();
+    },
+    containerSelector: '.bookmarkContainer',
+  });
 };

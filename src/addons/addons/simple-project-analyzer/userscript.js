@@ -15,14 +15,8 @@ Chart.register(
   Tooltip
 );
 import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
-import SideBar from "../../ui/side-bar/side-bar.js";
-import { getSetting } from "../../tools/AEsettings/index.js";
+import AddToBar from "../../tools/AddToBar/index.js";
 import ReduxStore from "../../redux.js";
-
-// 检测是否启用 VSCode 布局
-function isVSCodeLayoutEnabled() {
-  return getSetting("EnableVSCodeLayout");
-}
 
 export default function ({ addon, msg, console }) {
   const vm = addon.tab.traps.vm;
@@ -30,14 +24,12 @@ export default function ({ addon, msg, console }) {
   // 项目分析器类
   class SimpleProjectAnalyzer {
     constructor() {
-      this.analyzeButton = null;
       this.analyzeModal = null;
       this.removeModal = null;
       this.chartInstance = null;
       this.mathLogicChartInstance = null;
       this.drScratchChartInstance = null;
       this.sidebarContent = null;
-      this.isVSCodeLayout = false;
       this.projectName = '';
 
       // 订阅 Redux Store 获取作品名称
@@ -50,71 +42,6 @@ export default function ({ addon, msg, console }) {
     }
 
     // 创建分析按钮
-    async createAnalyzeButton() {
-      // 检测是否在 VSCodeLayout 下
-      this.isVSCodeLayout = isVSCodeLayoutEnabled();
-
-      const tabBar = await addon.tab.waitForElement('[class*="react-tabs_react-tabs__tab-list"]', {
-        markAsSeen: true
-      });
-
-      // 等待 spaContainer 出现
-      const spaContainer = await addon.tab.waitForElement('.spaContainer', {
-        markAsSeen: true
-      });
-
-      if (!spaContainer) return;
-
-      this.analyzeButton = document.createElement('button');
-      this.analyzeButton.className = addon.tab.scratchClass('menu-bar_menu-bar-button', {
-        others: 'sa-analyze-button'
-      });
-
-      if (this.isVSCodeLayout) {
-        // VSCodeLayout 下使用 SVG 图标
-        this.analyzeButton.classList.add('vscode-tab');
-        const img = document.createElement('img');
-        img.src = icon();
-        img.style.filter = "grayscale(100%)"
-        img.marginTop = '5px';
-        img.width = '20px';
-        img.height = '20px';
-        img.alt = '分析';
-        this.analyzeButton.appendChild(img);
-      } else {
-        // 普通布局下使用文字
-        this.analyzeButton.textContent = msg('analyze-button');
-      }
-      this.analyzeButton.title = msg('analyze-tooltip');
-
-      // 禁用时隐藏按钮
-      addon.tab.displayNoneWhileDisabled(this.analyzeButton);
-
-      // 点击事件：根据布局类型选择显示方式
-      this.analyzeButton.addEventListener('click', () => {
-        if (this.isVSCodeLayout) {
-          // VSCode 布局：使用 Sidebar
-          if (SideBar.getActivePlugin() === 'spa') {
-            SideBar.close();
-          } else {
-            this.showAnalysisSidebar();
-          }
-        } else {
-          // 普通 Tab 布局：使用模态框
-          this.showAnalysisModal();
-        }
-      });
-
-      // 将按钮添加到目标位置
-      if (this.isVSCodeLayout) {
-        // VSCodeLayout 下，按钮应该插入到标签栏（TabList）中
-        tabBar.appendChild(this.analyzeButton);
-      } else {
-        // 普通布局下，插入到 spaContainer
-        spaContainer.appendChild(this.analyzeButton);
-      }
-    }
-
     // 显示分析结果模态框
     showAnalysisModal() {
       // 如果模态框已存在，先移除
@@ -300,52 +227,11 @@ export default function ({ addon, msg, console }) {
     showAnalysisSidebar() {
       this.createSidebarContent();
 
-      // 显示加载，隐藏结果
       const loadingDiv = document.getElementById('saSAPASidebarLoading');
       const resultsDiv = document.getElementById('saSAPASidebarResults');
 
       if (loadingDiv) loadingDiv.style.display = 'flex';
       if (resultsDiv) resultsDiv.style.display = 'none';
-
-      // 注册到 Sidebar
-      SideBar.register('spa', this.sidebarContent, {
-        onActivate: () => {
-          if (this.analyzeButton) {
-            this.analyzeButton.classList.add("sa-spa-active", "is-selected");
-            const img = this.analyzeButton.querySelector('img');
-            if (img) {
-              img.style.filter = "grayscale(0%)";
-            }
-          }
-          // 开始分析
-          this.analyzeProjectForSidebar();
-        },
-        onDeactivate: () => {
-          if (this.analyzeButton) {
-            this.analyzeButton.classList.remove("sa-spa-active", "is-selected");
-            const img = this.analyzeButton.querySelector('img');
-            if (img) {
-              img.style.filter = "grayscale(100%)";
-            }
-          }
-          // 销毁图表实例
-          if (this.chartInstance) {
-            this.chartInstance.destroy();
-            this.chartInstance = null;
-          }
-          if (this.mathLogicChartInstance) {
-            this.mathLogicChartInstance.destroy();
-            this.mathLogicChartInstance = null;
-          }
-          if (this.drScratchChartInstance) {
-            this.drScratchChartInstance.destroy();
-            this.drScratchChartInstance = null;
-          }
-        }
-      });
-
-      // 切换到 Sidebar
-      SideBar.switchTo('spa');
     }
 
     // 为 Sidebar 分析项目
@@ -2485,22 +2371,34 @@ export default function ({ addon, msg, console }) {
       });
     }
 
-    // 初始化插件
-    async init() {
-      await this.createAnalyzeButton();
-    }
   }
 
-  // 创建并初始化分析器
   const analyzer = new SimpleProjectAnalyzer();
 
-  // 等待编辑器加载完成
-  addon.tab.waitForElement('[class*="menu-bar_menu-bar"], [class*="react-tabs_react-tabs__tab-list"]', {
-    markAsSeen: true
-  }).then(() => {
-    analyzer.init();
-    if(isVSCodeLayoutEnabled()) vm.runtime.on('PROJECT_CHANGED', () => {
+  // Listen for project changes (auto-refresh analysis in sidebar)
+  vm.runtime.on('PROJECT_CHANGED', () => {
+    analyzer.analyzeProjectForSidebar();
+  });
+
+  // Button injection via AddToBar (handles both VSCode and non-VSCode layouts)
+  AddToBar(addon, {
+    id: 'spa',
+    icon: icon,
+    text: msg('analyze-button'),
+    getContent: () => {
+      analyzer.showAnalysisSidebar();
+      return analyzer.sidebarContent;
+    },
+    onActivate: () => {
       analyzer.analyzeProjectForSidebar();
-    });
+    },
+    onDeactivate: () => {
+      if (analyzer.chartInstance) { analyzer.chartInstance.destroy(); analyzer.chartInstance = null; }
+      if (analyzer.mathLogicChartInstance) { analyzer.mathLogicChartInstance.destroy(); analyzer.mathLogicChartInstance = null; }
+      if (analyzer.drScratchChartInstance) { analyzer.drScratchChartInstance.destroy(); analyzer.drScratchChartInstance = null; }
+    },
+    onClick: () => {
+      analyzer.showAnalysisModal();
+    },
   });
 }

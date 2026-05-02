@@ -541,7 +541,7 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 [class*="Modaltab"]{
   height: 25px;
 }
-[class*=tab-button]{
+[class*=_tab-button]{
   line-height: 0.6;
 }
 

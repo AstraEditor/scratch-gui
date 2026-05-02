@@ -30,11 +30,17 @@
     border-color: $ui-black-transparent;
     padding: 0.2rem 0.5rem;
     margin: 0;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: border-color 0.2s ease
+    margin: auto auto auto 5px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    -ms-border-radius: 4px;
+    -o-border-radius: 4px;
 }
-
+.readmeButton:hover {
+    border-color: var(--motion-primary);
+}
 
 /* VSCode layout: README button as icon */
 .tab-list.vscode .readmeButton {

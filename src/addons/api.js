@@ -342,7 +342,7 @@ class Tab extends EventTargetShim {
             afterTabs: {
                 element: () => q("[class^='react-tabs_react-tabs__tab-list']"),
                 from: () => [q("[class^='react-tabs_react-tabs__tab-list']").children[0]],
-                until: () => [q('.findBar')]
+                until: () => [q('.sa-find-bar')]
             },
             assetContextMenuAfterExport: {
                 element: () => scope,

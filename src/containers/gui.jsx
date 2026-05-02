@@ -152,7 +152,7 @@ GUI.propTypes = {
     projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     telemetryModalVisible: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired,
-    extensionEditorUrl: PropTypes.string
+    extensioneditorurl: PropTypes.string
 };
 
 GUI.defaultProps = {

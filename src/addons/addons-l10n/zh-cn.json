@@ -490,5 +490,7 @@
     "todo/done": "完成",
     "todo/all": "所有",
     "todo/create-title": "创建待办",
-    "todo/edit-title": "修改待办"
+    "todo/edit-title": "修改待办",
+    "todo/todo-title": "待办",
+    "todo/no-todo": "这里还没有待办事项，尝试添加一个!"
 }

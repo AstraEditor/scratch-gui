@@ -39,7 +39,7 @@ export default async function ({ addon, msg, console }) {
       this.findBarOuter = document.createElement("div");
       this.findBarOuter.className = "sa-find-bar";
       addon.tab.displayNoneWhileDisabled(this.findBarOuter, { display: "flex" });
-      root.appendChild(this.findBarOuter);
+      root.insertAdjacentElement('afterend', this.findBarOuter);
 
       this.findWrapper = this.findBarOuter.appendChild(document.createElement("span"));
       this.findWrapper.className = "sa-find-wrapper";
@@ -88,7 +88,7 @@ export default async function ({ addon, msg, console }) {
         }
       });
 
-      if (VSCodeLayout) root.appendChild(this.findBarButton);
+      if (VSCodeLayout) root.insertAdjacentElement('afterend',this.findBarButton);
 
       this.bindEvents();
       this.tabChanged();
@@ -1089,11 +1089,14 @@ export default async function ({ addon, msg, console }) {
   });
 
   while (true) {
-    const root = await addon.tab.waitForElement("div[class*=findBar]", { //改了匹配路径让它能到readme的左边
+    await addon.tab.waitForElement("ul[class*=react-tabs_react-tabs__tab-list_][class*=gui_tab-list]", {
       markAsSeen: true,
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
-    findBar.createDom(root);
+    let tab = document.querySelectorAll('li[class*=react-tabs_react-tabs__tab][id*=react-tabs]');
+    console.log(tab)
+    tab = tab[tab.length - 1];
+    findBar.createDom(tab);
   }
 }

@@ -1,4 +1,3 @@
-import { getSetting } from '../../tools/AEsettings/index'
 import logo from '!../../../lib/tw-recolor/build!./logo.svg';
 import dropdown from './dropdown-arrow.svg';;
 import done from './done.svg';
@@ -6,6 +5,8 @@ import undone from './undone.svg';
 import edit from './edit.svg';
 import remove from './remove.svg';
 import SideBar from "../../ui/side-bar/side-bar.js";
+import AddToBar from "../../tools/AddToBar/index.js";
+import { getSetting } from '../../tools/AEsettings/index.js';
 
 /*
 {
@@ -104,9 +105,6 @@ export default async function ({ addon, msg }) {
     const generateId = () => {
         return `todo-${Math.random().toString(36).substr(2, 9)}`;
     }
-    const isVSCodeLayout = () => {
-        return getSetting('EnableVSCodeLayout');
-    }
     // 在加载的项目内寻找正确的Todo注释ID
     // 因为它保存的ID是会！变！的！
     // 那我这个设置‘todo’为id的意义是什么...
@@ -123,7 +121,6 @@ export default async function ({ addon, msg }) {
     })
 
 
-    const SIDEBAR_ID = 'todo';
     let COMMENT_ID = 'todo'
     let PROJECT_NAME = '';
     const POINT = '_TODO_LIST_'
@@ -465,6 +462,8 @@ ${JSON.stringify(content)}
 
     let selectedGroup = null;
     const createSideBarElements = () => {
+        const isVSCL = getSetting('EnableVSCodeLayout');
+
         const content = document.createElement('div');
         content.className = 'sa-todo';
 
@@ -474,8 +473,15 @@ ${JSON.stringify(content)}
         let groupBar = null;
 
         const refreshTodo = () => {
-            SideBar.clearContent();
-            SideBar.setContent(createSideBarElements());
+            if (getSetting('EnableVSCodeLayout')) {
+                SideBar.clearContent();
+                SideBar.setContent(createSideBarElements())
+            } else {
+                // 未启用 VSC 布局
+                const content = document.querySelector("[class*='sa-todo-modal-content']");
+                content.childNodes.forEach(ele => ele.remove());
+                content.appendChild(createSideBarElements())
+            }
         }
         try {
             const groups = getTodoListContent().groups || [];
@@ -517,9 +523,9 @@ ${JSON.stringify(content)}
                         const nowGroupId = currentGroup.groups[index].id;
                         currentGroup.groups.splice(index, 1);
                         // 删除所有使用这个组的task中的组
-                        currentGroup.tasks.forEach((task,taskIndex) => {
+                        currentGroup.tasks.forEach((task, taskIndex) => {
                             const groupIndex = task.groupId.indexOf(nowGroupId);
-                            if (groupIndex !== -1){
+                            if (groupIndex !== -1) {
                                 currentGroup.tasks[taskIndex].groupId.splice(groupIndex, 1);
                             }
                         })
@@ -547,183 +553,190 @@ ${JSON.stringify(content)}
         const todoList = document.createElement('ul');
         todoList.className = 'sa-todo-list';
         try {
-            getTodoListContent().tasks.forEach((task, index) => {
-                let currentTask = task;
-                if (selectedGroup !== null && !(currentTask.groupId || []).includes(selectedGroup)) return;
-                let isHide = true;
-                const todoEle = document.createElement('li');
-                todoEle.className = 'sa-todo-list-ele';
-                // 这个需要改padding,但是我不想用，因为效果不太好
-                // let border = '';
-                // task.groupId.forEach((tag, index) => {
-                //     const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
-                //     const end = index == task.groupId.length - 1 ? '' : ', ';
-                //     border += `0 ${index * 6 + 6}px 0 0 ${getTodoListContent().groups[groupIndex].color}${end}`
-                // })
-                // todoEle.style.boxShadow = border;
+            if (getTodoListContent().tasks.length == 0) {
+                const tip = document.createElement('span');
+                tip.textContent = msg('no-todo');
+                tip.className = 'sa-todo-list-empty-tip';
+                todoList.appendChild(tip);
+            } else {
+                getTodoListContent().tasks.forEach((task, index) => {
+                    let currentTask = task;
+                    if (selectedGroup !== null && !(currentTask.groupId || []).includes(selectedGroup)) return;
+                    let isHide = true;
+                    const todoEle = document.createElement('li');
+                    todoEle.className = 'sa-todo-list-ele';
+                    // 这个需要改padding,但是我不想用，因为效果不太好
+                    // let border = '';
+                    // task.groupId.forEach((tag, index) => {
+                    //     const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
+                    //     const end = index == task.groupId.length - 1 ? '' : ', ';
+                    //     border += `0 ${index * 6 + 6}px 0 0 ${getTodoListContent().groups[groupIndex].color}${end}`
+                    // })
+                    // todoEle.style.boxShadow = border;
 
-                // 改为这个，直接在里面加个方块代表
-                const todoEle_groupTip = document.createElement('div');
-                todoEle_groupTip.className = 'sa-todo-list-ele-group_tip';
-                if (task.groupId.length > 0) todoEle.style.borderRadius = '0px 0px 5px 5px';
-                task.groupId.forEach(tag => {
-                    const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
-                    const groupEleBlock = document.createElement('div');
-                    groupEleBlock.className = 'sa-todo-list-ele-group_tip-block';
-                    groupEleBlock.style.backgroundColor = getTodoListContent().groups[groupIndex].color;
+                    // 改为这个，直接在里面加个方块代表
+                    const todoEle_groupTip = document.createElement('div');
+                    todoEle_groupTip.className = 'sa-todo-list-ele-group_tip';
+                    if (task.groupId.length > 0) todoEle.style.borderRadius = '0px 0px 5px 5px';
+                    task.groupId.forEach(tag => {
+                        const groupIndex = getTodoListContent().groups.findIndex(group => group.id === tag);
+                        const groupEleBlock = document.createElement('div');
+                        groupEleBlock.className = 'sa-todo-list-ele-group_tip-block';
+                        groupEleBlock.style.backgroundColor = getTodoListContent().groups[groupIndex].color;
 
-                    todoEle_groupTip.appendChild(groupEleBlock);
-                })
-                const todoEle_card = document.createElement('div')
-                todoEle_card.className = 'sa-todo-list-ele-titleDiv';
-                const todoEleName = document.createElement('span');
-                todoEleName.className = 'sa-todo-list-ele-title';
-                todoEleName.textContent = currentTask.name;
+                        todoEle_groupTip.appendChild(groupEleBlock);
+                    })
+                    const todoEle_card = document.createElement('div')
+                    todoEle_card.className = 'sa-todo-list-ele-titleDiv';
+                    const todoEleName = document.createElement('span');
+                    todoEleName.className = 'sa-todo-list-ele-title';
+                    todoEleName.textContent = currentTask.name;
 
-                const todoEleDelLine = document.createElement('div');
-                todoEleDelLine.textContent = currentTask.name;
-                todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 15));
-                if (currentTask.steps.length != 0) {
-                    todoEleDelLine.style.marginLeft = '75px';
-                } else {
-                    todoEleDelLine.style.marginLeft = '40px';
-                }
-                todoEleDelLine.className = 'sa-todo-list-ele-title sa-todo-list-ele-title-rmLine';
-
-                const todoEleSetDone = document.createElement('img');
-                todoEleSetDone.src = getTodoListContent().tasks[index].done ? undone : done;
-                todoEleSetDone.className = 'sa-todo-list-ele-done'
-                todoEleSetDone.style.backgroundColor = currentTask.color;
-
-                const todoEleEditButton = document.createElement('img');
-                todoEleEditButton.src = edit;
-                todoEleEditButton.className = 'sa-todo-list-ele-done'
-                todoEleEditButton.style.backgroundColor = currentTask.color;
-                todoEleEditButton.onclick = () => {
-                    addModal(task);
-                }
-                const todoEleRemoveButton = document.createElement('img');
-                todoEleRemoveButton.src = remove;
-                todoEleRemoveButton.className = 'sa-todo-list-ele-done'
-                todoEleRemoveButton.style.backgroundColor = currentTask.color;
-                todoEleRemoveButton.onclick = () => {
-                    const originTodo = getTodoListContent();
-                    originTodo.tasks.splice(index, 1);
-                    createCommentToStage(getFormatComment(originTodo));
-                }
-
-                const todoEleDate = document.createElement('span');
-                todoEleDate.style.color = 'white';
-                todoEleDate.textContent = getFormattedDateRange(currentTask.startTime, currentTask.endTime);
-                // steps
-                const todoEleStepsContent = document.createElement('ul');
-
-                const spawnSteps = (needGetLatest = false) => {
-                    if (needGetLatest) currentTask = getTodoListContent().tasks[index]
-                    const todoEleStepsContentMain = document.createElement('li');
-                    todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
-                    todoEleStepsContent.className = 'sa-todo-list-ele-steps';
-                    todoEleStepsContent.id = currentTask.id;
+                    const todoEleDelLine = document.createElement('div');
+                    todoEleDelLine.textContent = currentTask.name;
+                    todoEleDelLine.style.setProperty('--width', getTextWidth(currentTask.name, '30px', 15));
                     if (currentTask.steps.length != 0) {
-                        // 让Done为true的移到末尾
-                        for (let needDone = 0; needDone <= 1; needDone += 1) {
-                            if (needDone && !!currentTask.steps.find(step => step.done)) { //分割线
-                                const lineDiv = document.createElement('li');
-                                lineDiv.className = 'sa-todo-list-ele-line';
-                                const text = document.createElement('span');
-                                text.className = 'sa-todo-list-ele-line-text';
-                                text.textContent = msg('done');
-                                const line = document.createElement('hr');
-                                line.className = 'sa-todo-list-ele-line-line';
+                        todoEleDelLine.style.marginLeft = '75px';
+                    } else {
+                        todoEleDelLine.style.marginLeft = '40px';
+                    }
+                    todoEleDelLine.className = 'sa-todo-list-ele-title sa-todo-list-ele-title-rmLine';
 
-                                lineDiv.appendChild(text);
-                                lineDiv.appendChild(line)
-                                todoEleStepsContentMain.appendChild(lineDiv);
-                            }
-                            currentTask.steps.forEach((step, indexStep) => {
-                                if (step.done == needDone) {
-                                    const todoEleStep = document.createElement('li');
-                                    todoEleStep.className = 'sa-todo-list-ele-steps-li';
+                    const todoEleSetDone = document.createElement('img');
+                    todoEleSetDone.src = getTodoListContent().tasks[index].done ? undone : done;
+                    todoEleSetDone.className = 'sa-todo-list-ele-done'
+                    todoEleSetDone.style.backgroundColor = currentTask.color;
 
-                                    const todoEleSetDoneStep = document.createElement('img');
-                                    todoEleSetDoneStep.src = needDone ? undone : done;
-                                    todoEleSetDoneStep.className = 'sa-todo-list-ele-done';
-                                    todoEleSetDoneStep.style.backgroundColor = currentTask.color;
-                                    todoEleSetDoneStep.onclick = () => {
-                                        const todos = getTodoListContent();
-                                        todos.tasks[index].steps[indexStep].done = !todos.tasks[index].steps[indexStep].done;
-                                        createCommentToStage(getFormatComment(todos), false);
-                                        todoEleStepsContent.innerHTML = '';
-                                        spawnSteps(true);
-                                    }
+                    const todoEleEditButton = document.createElement('img');
+                    todoEleEditButton.src = edit;
+                    todoEleEditButton.className = 'sa-todo-list-ele-done'
+                    todoEleEditButton.style.backgroundColor = currentTask.color;
+                    todoEleEditButton.onclick = () => {
+                        addModal(task);
+                    }
+                    const todoEleRemoveButton = document.createElement('img');
+                    todoEleRemoveButton.src = remove;
+                    todoEleRemoveButton.className = 'sa-todo-list-ele-done'
+                    todoEleRemoveButton.style.backgroundColor = currentTask.color;
+                    todoEleRemoveButton.onclick = () => {
+                        const originTodo = getTodoListContent();
+                        originTodo.tasks.splice(index, 1);
+                        createCommentToStage(getFormatComment(originTodo));
+                    }
 
-                                    const todoEleStep_Text = document.createElement('span');
-                                    todoEleStep_Text.textContent = `${indexStep + 1}.${step.text}`;
-                                    if (needDone) todoEleStep_Text.style.opacity = 0.5;
-                                    todoEleStep_Text.style.color = 'white';
+                    const todoEleDate = document.createElement('span');
+                    todoEleDate.style.color = 'white';
+                    todoEleDate.textContent = getFormattedDateRange(currentTask.startTime, currentTask.endTime);
+                    // steps
+                    const todoEleStepsContent = document.createElement('ul');
 
-                                    todoEleStep.appendChild(todoEleSetDoneStep);
-                                    todoEleStep.appendChild(todoEleStep_Text);
+                    const spawnSteps = (needGetLatest = false) => {
+                        if (needGetLatest) currentTask = getTodoListContent().tasks[index]
+                        const todoEleStepsContentMain = document.createElement('li');
+                        todoEleStepsContentMain.className = 'sa-todo-list-ele-steps-main'
+                        todoEleStepsContent.className = 'sa-todo-list-ele-steps';
+                        todoEleStepsContent.id = currentTask.id;
+                        if (currentTask.steps.length != 0) {
+                            // 让Done为true的移到末尾
+                            for (let needDone = 0; needDone <= 1; needDone += 1) {
+                                if (needDone && !!currentTask.steps.find(step => step.done)) { //分割线
+                                    const lineDiv = document.createElement('li');
+                                    lineDiv.className = 'sa-todo-list-ele-line';
+                                    const text = document.createElement('span');
+                                    text.className = 'sa-todo-list-ele-line-text';
+                                    text.textContent = msg('done');
+                                    const line = document.createElement('hr');
+                                    line.className = 'sa-todo-list-ele-line-line';
 
-                                    todoEleStepsContentMain.appendChild(todoEleStep);
+                                    lineDiv.appendChild(text);
+                                    lineDiv.appendChild(line)
+                                    todoEleStepsContentMain.appendChild(lineDiv);
                                 }
-                            });
+                                currentTask.steps.forEach((step, indexStep) => {
+                                    if (step.done == needDone) {
+                                        const todoEleStep = document.createElement('li');
+                                        todoEleStep.className = 'sa-todo-list-ele-steps-li';
+
+                                        const todoEleSetDoneStep = document.createElement('img');
+                                        todoEleSetDoneStep.src = needDone ? undone : done;
+                                        todoEleSetDoneStep.className = 'sa-todo-list-ele-done';
+                                        todoEleSetDoneStep.style.backgroundColor = currentTask.color;
+                                        todoEleSetDoneStep.onclick = () => {
+                                            const todos = getTodoListContent();
+                                            todos.tasks[index].steps[indexStep].done = !todos.tasks[index].steps[indexStep].done;
+                                            createCommentToStage(getFormatComment(todos), false);
+                                            todoEleStepsContent.innerHTML = '';
+                                            spawnSteps(true);
+                                        }
+
+                                        const todoEleStep_Text = document.createElement('span');
+                                        todoEleStep_Text.textContent = `${indexStep + 1}.${step.text}`;
+                                        if (needDone) todoEleStep_Text.style.opacity = 0.5;
+                                        todoEleStep_Text.style.color = 'white';
+
+                                        todoEleStep.appendChild(todoEleSetDoneStep);
+                                        todoEleStep.appendChild(todoEleStep_Text);
+
+                                        todoEleStepsContentMain.appendChild(todoEleStep);
+                                    }
+                                });
+                            }
+                        }
+                        todoEleStepsContent.appendChild(todoEleStepsContentMain);
+                    }
+                    spawnSteps();
+
+                    // display
+                    todoEle.style.backgroundColor = currentTask.color + alpha;
+                    // 刷新选择done后的状态
+                    const refreshTodoStyle = () => {
+                        const isDone = getTodoListContent().tasks[index].done;
+                        if (isDone) {
+                            todoEleDelLine.style.width = '';
+                            todoEleName.style.opacity = 0.5;
+                        } else {
+                            todoEleDelLine.style.width = '0px';
+                            todoEleName.style.opacity = 1;
                         }
                     }
-                    todoEleStepsContent.appendChild(todoEleStepsContentMain);
-                }
-                spawnSteps();
 
-                // display
-                todoEle.style.backgroundColor = currentTask.color + alpha;
-                // 刷新选择done后的状态
-                const refreshTodoStyle = () => {
-                    const isDone = getTodoListContent().tasks[index].done;
-                    if (isDone) {
-                        todoEleDelLine.style.width = '';
-                        todoEleName.style.opacity = 0.5;
-                    } else {
-                        todoEleDelLine.style.width = '0px';
-                        todoEleName.style.opacity = 1;
+                    // dropdown
+                    const todoEleDropdown = document.createElement('img');
+                    todoEleDropdown.src = dropdown;
+                    todoEleDropdown.className = 'sa-todo-list-ele-titleDiv-dropdown';
+                    const refreshDropdown_Steps = () => {
+                        todoEleDropdown.style.transform = isHide ? 'rotate(180deg)' : 'rotate(0deg)';
+                        // steps
+                        todoEleStepsContent.style.gridTemplateRows = isHide ? '0fr' : '1fr';
                     }
-                }
+                    todoEleSetDone.onclick = () => {
+                        const todos = getTodoListContent();
+                        todos.tasks[index].done = !todos.tasks[index].done;
+                        todoEleSetDone.src = todos.tasks[index].done ? undone : done;
+                        createCommentToStage(getFormatComment(todos), false);
+                        refreshTodoStyle()
+                    }
+                    todoEleDropdown.onclick = () => {
+                        isHide = !isHide;
+                        refreshDropdown_Steps()
+                    }
+                    // spawn
+                    todoList.appendChild(todoEle_groupTip);
+                    if (currentTask.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
+                    todoEle_card.appendChild(todoEleSetDone);
+                    todoEle_card.appendChild(todoEleName);
+                    todoEle_card.appendChild(todoEleDelLine);
+                    todoEle_card.appendChild(todoEleRemoveButton);
+                    todoEle_card.appendChild(todoEleEditButton);
 
-                // dropdown
-                const todoEleDropdown = document.createElement('img');
-                todoEleDropdown.src = dropdown;
-                todoEleDropdown.className = 'sa-todo-list-ele-titleDiv-dropdown';
-                const refreshDropdown_Steps = () => {
-                    todoEleDropdown.style.transform = isHide ? 'rotate(180deg)' : 'rotate(0deg)';
-                    // steps
-                    todoEleStepsContent.style.gridTemplateRows = isHide ? '0fr' : '1fr';
-                }
-                todoEleSetDone.onclick = () => {
-                    const todos = getTodoListContent();
-                    todos.tasks[index].done = !todos.tasks[index].done;
-                    todoEleSetDone.src = todos.tasks[index].done ? undone : done;
-                    createCommentToStage(getFormatComment(todos), false);
-                    refreshTodoStyle()
-                }
-                todoEleDropdown.onclick = () => {
-                    isHide = !isHide;
-                    refreshDropdown_Steps()
-                }
-                // spawn
-                todoList.appendChild(todoEle_groupTip);
-                if (currentTask.steps.length != 0) todoEle_card.appendChild(todoEleDropdown);
-                todoEle_card.appendChild(todoEleSetDone);
-                todoEle_card.appendChild(todoEleName);
-                todoEle_card.appendChild(todoEleDelLine);
-                todoEle_card.appendChild(todoEleRemoveButton);
-                todoEle_card.appendChild(todoEleEditButton);
-
-                todoEle.appendChild(todoEle_card);
-                todoEle.appendChild(todoEleDate);
-                todoEle.appendChild(todoEleStepsContent);
-                refreshDropdown_Steps();
-                refreshTodoStyle();
-                todoList.appendChild(todoEle);
-            });
+                    todoEle.appendChild(todoEle_card);
+                    todoEle.appendChild(todoEleDate);
+                    todoEle.appendChild(todoEleStepsContent);
+                    refreshDropdown_Steps();
+                    refreshTodoStyle();
+                    todoList.appendChild(todoEle);
+                });
+            }
         } catch (e) {
             console.warn('Todo List can\'t display: ' + e.stack)
         }
@@ -749,7 +762,7 @@ ${JSON.stringify(content)}
         addButton.appendChild(addButtonText_p);
         addButton.appendChild(addButtonText_t);
 
-        content.appendChild(title)
+        if (isVSCL) content.appendChild(title)
         if (groupBar) content.appendChild(groupBar);
         content.appendChild(todoList)
         content.appendChild(addButton)
@@ -777,8 +790,15 @@ ${JSON.stringify(content)}
 
         // 刷新一下Tab
         if (needRefresh) {
-            SideBar.clearContent();
-            SideBar.setContent(createSideBarElements())
+            if (getSetting('EnableVSCodeLayout')) {
+                SideBar.clearContent();
+                SideBar.setContent(createSideBarElements())
+            } else {
+                // 未启用 VSC 布局
+                const content = document.querySelector("[class*='sa-todo-modal-content']");
+                content.childNodes.forEach(ele => ele.remove());
+                content.appendChild(createSideBarElements())
+            }
         }
     }
 
@@ -808,58 +828,6 @@ ${JSON.stringify(content)}
         } catch (e) {
             return emptyTodo
         }
-    }
-
-
-    const addButtonWithVSCodeLayout = () => {
-        const tabs = document.querySelector('[class*="gui_tab-list"][class*="gui_vscode"]');
-        const enableEffect = (ele, parent) => {
-            ele.style.filter = '';
-            parent.style.backgroundColor = 'var(--ui-white)';
-            parent.style.boxShadow = 'inset 3px 0px 0px 0px var(--looks-secondary)';
-        }
-        const unableEffect = (ele, parent) => {
-            ele.style.filter = "grayscale(100%)";
-            parent.style.backgroundColor = 'transprant';
-            parent.style.boxShadow = 'none';
-        }
-        if (tabs) {
-            const tabbutton = document.createElement('li');
-            tabbutton.className = 'sa-todo-tabButton';
-            const tabbuttonIcon = document.createElement('img');
-            tabbuttonIcon.src = logo();
-            tabbuttonIcon.style.filter = "grayscale(100%)";
-            tabbuttonIcon.style.width = '25px';
-            tabbuttonIcon.style.height = 'auto';
-
-            tabbutton.appendChild(tabbuttonIcon);
-
-            tabbutton.onclick = () => {
-                if (SideBar.getActivePlugin() === SIDEBAR_ID) {
-                    SideBar.close()
-                    unableEffect(tabbuttonIcon, tabbutton)
-                } else {
-                    SideBar.register(SIDEBAR_ID, createSideBarElements(), {
-                        onActivate: () => {
-                            enableEffect(tabbuttonIcon, tabbutton)
-                        },
-                        onDeactivate: () => {
-                            unableEffect(tabbuttonIcon, tabbutton)
-                        }
-                    });
-                    SideBar.switchTo(SIDEBAR_ID);
-                    SideBar.open();
-
-                    enableEffect(tabbuttonIcon, tabbutton)
-                }
-            }
-            tabs.appendChild(tabbutton);
-        } else {
-            throw new Error('Cant add list to tabs.')
-        }
-    }
-    const addButton = () => {
-
     }
 
 
@@ -938,6 +906,21 @@ ${JSON.stringify(content)}
         createCommentToStage(getFormatComment(editTodo))
     }
 
-    if (isVSCodeLayout()) addButtonWithVSCodeLayout()
-    else addButton()
+    AddToBar(addon, {
+        id: 'todo',
+        icon: logo,
+        text: msg('todo-title'),
+        getContent: createSideBarElements,
+        onClick: () => {
+            const { backdrop, container, content, closeButton, remove } = addon.tab.createModal(msg('title', { project: PROJECT_NAME.toString() }), {
+                isOpen: true,
+                useEditorClasses: true
+            });
+            container.classList.add('sa-todo-modal-popup');
+            content.classList.add('sa-todo-modal-content');
+            content.appendChild(createSideBarElements());
+            backdrop.addEventListener('click', remove);
+            closeButton.addEventListener('click', remove);
+        },
+    });
 }

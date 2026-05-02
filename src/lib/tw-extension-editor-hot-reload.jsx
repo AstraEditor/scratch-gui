@@ -46,7 +46,7 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
         }
 
         handleOpenExtensionEditor() {
-            const url = this.props.extensionEditorUrl || DEFAULT_EXTENSION_EDITOR_URL;
+            const url = this.props.extensioneditorurl || DEFAULT_EXTENSION_EDITOR_URL;
             console.log('[ExtensionEditor] Opening URL:', url);
             
             // 在 Desktop 环境中使用 IPC 打开窗口
@@ -203,7 +203,7 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
     }
 
     ExtensionEditorHotReloadComponent.propTypes = {
-        extensionEditorUrl: PropTypes.string,
+        extensioneditorurl: PropTypes.string,
         vm: PropTypes.shape({
             extensionManager: PropTypes.shape({
                 isExtensionLoaded: PropTypes.func,
@@ -216,7 +216,7 @@ const ExtensionEditorHotReloadHOC = function (WrappedComponent) {
 
     const mapStateToProps = (state, ownProps) => ({
         vm: state.scratchGui.vm,
-        extensionEditorUrl: ownProps.extensionEditorUrl
+        extensioneditorurl: ownProps.extensioneditorurl
     });
 
     const mapDispatchToProps = () => ({});

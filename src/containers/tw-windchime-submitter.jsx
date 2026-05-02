@@ -73,7 +73,7 @@ class TWWindchimeSubmitter extends React.Component {
 TWWindchimeSubmitter.propTypes = {
     isEmbedded: PropTypes.bool.isRequired,
     isStarted: PropTypes.bool.isRequired,
-    projectId: PropTypes.string.isRequired
+    projectId: PropTypes.string
 };
 
 const mapStateToProps = state => ({

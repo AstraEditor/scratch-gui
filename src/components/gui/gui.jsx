@@ -500,9 +500,6 @@ const GUIComponent = props => {
                                         ? `${tabClassNames.tabList} ${tabClassNames.vscode}`
                                         : tabClassNames.tabList
                                 }>
-                                    <div className='HindToolBar'>
-                                        {/*这里是隐藏菜单栏时提供的边距*/}
-                                    </div>
                                     <Tab className={tabClassNames.tab}>
                                         <img
                                             draggable={false}
@@ -548,34 +545,9 @@ const GUIComponent = props => {
                                             id="gui.gui.soundsTab"
                                         />
                                     </Tab>
-                                    <div className='varM'>
-                                        {/*这里是变量Tab*/}
-                                    </div>
-                                    <div className='findBar' style={!vscodeLayoutRef ? {
-                                        marginTop: "auto",
-                                        marginBottom: "auto",
-                                    } : {}}>
-                                        {/*这里是搜索栏*/}
-                                    </div>
-                                    <div className='spaContainer' style={!vscodeLayoutRef ? {
-                                        marginTop: "auto",
-                                        marginBottom: "auto",
-                                    } : {}}>
-                                        {/*这里是项目分析器*/}
-                                    </div>
-                                    <div className='bookmarkContainer' style={!vscodeLayoutRef ? {
-                                        marginTop: "auto",
-                                        marginBottom: "auto",
-                                    } : {}}>
-                                        {/*这里是书签*/}
-                                    </div>
                                     {canShowReadme &&
                                         <button
                                             className={styles.readmeButton}
-                                            style={{
-                                                margin: "auto",
-                                                marginLeft: "20px"
-                                            }}
                                             onClick={onOpenReadme}
                                         >
                                             {vscodeLayoutRef ? (
