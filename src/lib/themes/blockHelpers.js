@@ -39,7 +39,7 @@ const injectExtensionCategoryTheme = (dynamicBlockXML, theme) => {
         const dom = parser.parseFromString(extension.xml, 'text/xml');
 
         const primaryColor = dom.documentElement.getAttribute('colour');
-        const hasCustomColor = primaryColor && primaryColor.toLowerCase() !== '#0099ff';
+        const hasCustomColor = !!primaryColor;
         if (hasCustomColor) {
             const converters = theme.getCustomExtensionColors();
             dom.documentElement.setAttribute('colour', converters.categoryIconBackground(primaryColor));
