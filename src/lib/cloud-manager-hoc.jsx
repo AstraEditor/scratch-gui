@@ -44,7 +44,7 @@ const cloudManagerHOC = function (WrappedComponent) {
                 this.connectToCloud();
             }
         }
-        componentWillReceiveProps (nextProps) {
+        UNSAFE_componentWillReceiveProps (nextProps) {
             if (this.props.reduxCloudHost !== nextProps.cloudHost) {
                 this.props.onSetReduxCloudHost(nextProps.cloudHost);
             }

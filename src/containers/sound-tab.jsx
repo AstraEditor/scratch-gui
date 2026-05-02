@@ -59,7 +59,7 @@ class SoundTab extends React.Component {
         this.state = {selectedSoundIndex: 0};
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         const {
             editingTarget,
             sprites,
