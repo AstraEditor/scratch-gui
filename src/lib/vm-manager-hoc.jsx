@@ -52,7 +52,8 @@ const vmManagerHOC = function (WrappedComponent) {
                     this.props.vm.runtime.fontManager.restrictFont(font);
                 }
                 this.props.vm.initialized = true;
-                this.props.vm.setLocale(this.props.locale, this.props.messages);
+                this.props.vm.setLocale(this.props.locale, {...this.props.messages});
+                // 插件加积木的i18n可能会让它报警告，千丝万缕
             }
             if (!this.props.isPlayerOnly && !this.props.isStarted) {
                 this.props.vm.start();

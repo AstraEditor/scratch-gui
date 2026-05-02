@@ -1,6 +1,11 @@
 # Addons
 
-Addons and translations are from the [Scratch Addons browser extension](https://scratchaddons.com/). Feature requests should be sent [upstream](https://github.com/ScratchAddons/ScratchAddons/issues), but bug reports should be opened here first incase it's a bug caused by TurboWarp.
+These addons are from the [Scratch Addons browser extension](https://scratchaddons.com/) and TW addons. We have made some modifications to them and added more AE-exclusive features.
+
+## pull.js
+It was originally used to fetch upstream addons, but we no longer use them.
+
+<!-- Addons and translations are from the [Scratch Addons browser extension](https://scratchaddons.com/). Feature requests should be sent [upstream](https://github.com/ScratchAddons/ScratchAddons/issues), but bug reports should be opened here first incase it's a bug caused by TurboWarp.
 
 We apply some patches on top of the original source files. These patches are maintained in https://github.com/TurboWarp/addons.
 
@@ -15,4 +20,4 @@ Directory structure:
  - addons-l10n-settings - addon translations used by the settings page (managed by pull.js)
  - libraries - libraries used by addons (managed by pull.js)
  - generated - additional generated files (managed by pull.js)
- - settings - the settings page and its translations
+ - settings - the settings page and its translations -->
