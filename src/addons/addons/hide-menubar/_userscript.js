@@ -1,11 +1,4 @@
-import { isScratchDesktop } from "../../../lib/isScratchDesktop";
-
 export default async function ({ addon, msg, Window }) {
-    if (isScratchDesktop) {
-        // no support desktop
-        alert(msg('no-support-desktop'));
-        return;
-    }
     const cleanupKey = '__aeHideMenubarCleanup';
     if (typeof window[cleanupKey] === 'function') {
         window[cleanupKey]();
@@ -37,11 +30,34 @@ export default async function ({ addon, msg, Window }) {
         aeSettings = {};
     }
     const isVSCodeLayout = Boolean(aeSettings.EnableVSCodeLayout);
-    const hind = document.getElementsByClassName('HindToolBar')[0];
-    if (hind) {
-        if (!isVSCodeLayout) hind.style.width = '40px';
-        else hind.style.height = '30px';
-    }
+    // 后台持续注入 HindToolBar 占位到 tab-list 最前面（随 DOM 刷新重建）
+    (async () => {
+        while (true) {
+            const tabList = await addon.tab.waitForElement("[class*='react-tabs_react-tabs__tab-list']", {
+                markAsSeen: true,
+                reduxEvents: [
+                    "scratch-gui/mode/SET_PLAYER",
+                    "fontsLoaded/SET_FONTS_LOADED",
+                    "scratch-gui/locales/SELECT_LOCALE",
+                ],
+                reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
+            });
+            let hind = tabList.querySelector('.HindToolBar');
+            if (!hind) {
+                hind = document.createElement('div');
+                hind.className = 'HindToolBar';
+                hind.style.flexShrink = '0';
+                tabList.insertBefore(hind, tabList.firstChild);
+            }
+            if (!isVSCodeLayout) {
+                hind.style.width = '40px';
+                hind.style.height = '';
+            } else {
+                hind.style.width = '';
+                hind.style.height = '30px';
+            }
+        }
+    })();
 
     const isTouchDevice =
         (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) ||
