@@ -22,7 +22,7 @@
 .readmeButton {
     font-family: inherit;
     font-size: 14px;
-    font-weight:bold;
+    font-weight: bold;
     background-color: $ui-modal-background;
     border-width: 1px;
     border-style: solid;
@@ -38,6 +38,7 @@
     -ms-border-radius: 4px;
     -o-border-radius: 4px;
 }
+
 .readmeButton:hover {
     border-color: var(--motion-primary);
 }
@@ -56,11 +57,18 @@
     justify-content: center;
     align-items: center;
     display: flex;
+    filter: grayscale(100%);
+    -webkit-filter: ;
 }
 
 .tab-list.vscode .readmeButton svg {
     width: 1rem;
     height: 1rem;
+}
+
+.tab-list.vscode .readmeButton:hover {
+    filter: brightness(150%) grayscale(100%);
+    -webkit-filter: brightness(150%) grayscale(100%);
 }
 
 
@@ -126,6 +134,8 @@
     border-bottom: 0 !important;
 
     color: $text-primary;
+    background-color: var(--ui-white);
+    z-index: $z-index-tab;
 }
 
 .tab {
@@ -194,6 +204,11 @@
 .tab img {
     width: 1rem;
     filter: grayscale(100%);
+}
+
+.tab:hover img {
+    filter: brightness(150%) grayscale(100%);
+    -webkit-filter: brightness(150%) grayscale(100%);
 }
 
 [dir="ltr"] .tab img {
@@ -427,7 +442,8 @@ $fade-out-distance: 15px;
 .menu-bar-position {
     position: relative;
     z-index: $z-index-menu-bar;
-    min-width: 1024px /*保证开插件时显示正确*/
+    min-width: 1024px
+        /*保证开插件时显示正确*/
 }
 
 /* Alerts */

@@ -5,6 +5,7 @@
 */
 
 /* Toolbox z-index: 40; set in scratch-blocks */
+$z-index-tab: 25;
 $z-index-extension-button: 42;
 $z-index-stage-indicator: 45;
 $z-index-add-button: 46;
