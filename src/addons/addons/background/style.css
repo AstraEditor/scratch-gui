@@ -90,7 +90,7 @@
 
 /*不让左边那框产生“空隙”（原来的颜色是透明的不知道咋想的）*/
 .injectionDiv {
-    border: 1px solid var(--ui-secondary) !important
+    border-left: 1px solid var(--ui-secondary) !important
 }
 
 .sa-modal-background-enabled {

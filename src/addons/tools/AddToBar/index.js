@@ -77,6 +77,10 @@ function injectStyles() {
   margin: 0 !important;
   filter: grayscale(100%);
 }
+[class*="tabs"][class*="vscodeList"] .${CONTAINER_CLASS} .${TAB_BUTTON_CLASS}:hover img {
+  filter: brightness(150%) grayscale(100%);
+  -webkit-filter: brightness(150%) grayscale(100%);
+}
 [class*="tabs"][class*="vscodeList"] .${CONTAINER_CLASS} .${TAB_BUTTON_CLASS}.is-selected {
   background-color: var(--ui-white) !important;
   box-shadow: inset 3px 0px 0px 0px var(--looks-secondary) !important;
@@ -100,6 +104,7 @@ function injectStyles() {
  * @param {string} config.id - unique SideBar plugin ID
  * @param {string|function} config.icon - icon URL or function that returns one
  * @param {string} config.text - button label for non-VSCode layout
+ * @param {boolean} [config.vscOnly] - if true, skip non-VSCode button creation (VSCode only)
  * @param {function} [config.getContent] - returns a DOM element for SideBar content (VSCode only)
  * @param {function} [config.onActivate] - called when SideBar activates this addon (VSCode only)
  * @param {function} [config.onDeactivate] - called when SideBar deactivates this addon (VSCode only)
@@ -107,8 +112,11 @@ function injectStyles() {
  */
 export default async function AddToBar(addon, config) {
     injectStyles();
-    const { id, icon, text, getContent, onActivate, onDeactivate, onClick } = config;
+    const { id, icon, text, vscOnly, getContent, onActivate, onDeactivate, onClick } = config;
     const vscode = isVSCodeLayoutEnabled();
+
+    // vscOnly: skip entirely when not in VSCode layout
+    if (vscOnly && !vscode) return;
     const tabListSelector = '[class*="react-tabs_react-tabs__tab-list"]';
     const tabAddonListSelector = CONTAINER_CLASS;
 
