@@ -1095,7 +1095,6 @@ export default async function ({ addon, msg, console }) {
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
     let tab = document.querySelectorAll('li[class*=react-tabs_react-tabs__tab][id*=react-tabs]');
-    console.log(tab)
     tab = tab[tab.length - 1];
     findBar.createDom(tab);
   }

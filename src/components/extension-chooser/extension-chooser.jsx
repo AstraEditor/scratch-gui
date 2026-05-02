@@ -301,7 +301,6 @@ const ExtensionChooser = props => {
         const blocksSVG = [];
         const opcodes = Opcodes.AllOpcode;
         opcodes.forEach((item, index) => {
-            console.log(item)
             try {
                 if (item.isSVG) {
                     blocksSVG.push(item.data);
