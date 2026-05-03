@@ -239,6 +239,7 @@ class MenuBar extends React.Component {
             'handleClickSeeCommunity',
             'handleClickShare',
             'handleSetMode',
+            'handleFileGroupHover',
             'handleKeyPress',
             'handleRestoreOption',
             'getSaveToComputerHandler',
@@ -408,8 +409,11 @@ class MenuBar extends React.Component {
             this.props.errorsMenuOpen ||
             this.props.toolsMenuOpen;
     }
-    handleMenuHover (menuName) {
+    handleFileGroupHover (event) {
         if (!this.isAnyMenuOpen()) return;
+        const target = event.target.closest('[data-menu]');
+        if (!target) return;
+        const menuName = target.getAttribute('data-menu');
         this.props.onRequestCloseFile();
         this.props.onRequestCloseEdit();
         this.props.onRequestCloseAbout();
@@ -644,8 +648,8 @@ class MenuBar extends React.Component {
                             aboutButton
                         )}
 
-                        <div className={styles.fileGroup}>
-                            {this.props.errors.length > 0 && <div onMouseEnter={() => this.handleMenuHover('errors')}>
+                        <div className={styles.fileGroup} onMouseOver={this.handleFileGroupHover}>
+                            {this.props.errors.length > 0 && <div data-menu="errors">
                                 <MenuLabel
                                     open={this.props.errorsMenuOpen}
                                     onOpen={this.props.onClickErrors}
@@ -697,7 +701,8 @@ class MenuBar extends React.Component {
                                     </MenuBarMenu>
                                 </MenuLabel>
                             </div>}
-                            {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<div onMouseEnter={() => this.handleMenuHover('settings')}><SettingsMenu
+                            {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
+                                dataMenu="settings"
                                 canChangeLanguage={this.props.canChangeLanguage}
                                 canChangeTheme={this.props.canChangeTheme}
                                 isRtl={this.props.isRtl}
@@ -714,9 +719,10 @@ class MenuBar extends React.Component {
                                 onRequestOpen={this.props.onClickSettings}
                                 settingsMenuOpen={this.props.settingsMenuOpen}
                                 openAESettings={this.props.onOpenAstraEditorSettings}
-                            /></div>)}
-                            {(this.props.canManageFiles) && (<div onMouseEnter={() => this.handleMenuHover('file')}>
+                            />)}
+                            {(this.props.canManageFiles) && (
                                 <MenuLabel
+                                    dataMenu="file"
                                     open={this.props.fileMenuOpen}
                                     onOpen={this.props.onClickFile}
                                     onClose={this.props.onRequestCloseFile}
@@ -884,8 +890,9 @@ class MenuBar extends React.Component {
                                         </MenuSection>
                                     </MenuBarMenu>
                                 </MenuLabel>
-                            </div>)}
-                            <div onMouseEnter={() => this.handleMenuHover('edit')}><MenuLabel
+                            )}
+                            <MenuLabel
+                                dataMenu="edit"
                                 open={this.props.editMenuOpen}
                                 onOpen={this.props.onClickEdit}
                                 onClose={this.props.onRequestCloseEdit}
@@ -1011,8 +1018,8 @@ class MenuBar extends React.Component {
                                     </MenuSection>
                                 </MenuBarMenu>
                             </MenuLabel>
-                            </div>
-                            {this.props.isTotallyNormal && (<div onMouseEnter={() => this.handleMenuHover('mode')}><MenuLabel
+                            {this.props.isTotallyNormal && (<MenuLabel
+                                    dataMenu="mode"
                                     open={this.props.modeMenuOpen}
                                     onOpen={this.props.onClickMode}
                                     onClose={this.props.onRequestCloseMode}
@@ -1053,7 +1060,7 @@ class MenuBar extends React.Component {
                                         </MenuSection>
                                     </MenuBarMenu>
                                 </MenuLabel>
-                            </div>)}
+                            )}
 
                             {this.props.onClickAddonSettings && (
                                 <div
@@ -1095,7 +1102,8 @@ class MenuBar extends React.Component {
                                     </span>
                                 </div>
                             )}
-                            <div onMouseEnter={() => this.handleMenuHover('tools')}><MenuLabel
+                            <MenuLabel
+                                dataMenu="tools"
                                 open={this.props.toolsMenuOpen}
                                 onOpen={this.props.onClickTools}
                                 onClose={this.props.onRequestCloseTools}
@@ -1154,7 +1162,6 @@ class MenuBar extends React.Component {
                                     </MenuItem>
                                 </MenuBarMenu>
                             </MenuLabel>
-                            </div>
                         </div>
 
                         <Divider className={styles.divider} />

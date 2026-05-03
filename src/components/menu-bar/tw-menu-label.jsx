@@ -56,6 +56,7 @@ class MenuLabel extends React.Component {
                 className={classNames(styles.menuBarItem, styles.hoverable, {
                     [styles.active]: this.props.open
                 })}
+                data-menu={this.props.dataMenu}
                 onClick={this.handleClick}
                 ref={this.menuRef}
             >
@@ -67,6 +68,7 @@ class MenuLabel extends React.Component {
 
 MenuLabel.propTypes = {
     children: PropTypes.node,
+    dataMenu: PropTypes.string,
     open: PropTypes.bool,
     onOpen: PropTypes.func,
     onClose: PropTypes.func

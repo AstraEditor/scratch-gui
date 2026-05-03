@@ -20,6 +20,7 @@ import settingsIcon from './icon--settings.svg';
 const SettingsMenu = ({
     canChangeLanguage,
     canChangeTheme,
+    dataMenu,
     isRtl,
     onClickDesktopSettings,
     onOpenCustomSettings,
@@ -28,6 +29,7 @@ const SettingsMenu = ({
     settingsMenuOpen
 }) => (
     <MenuLabel
+        dataMenu={dataMenu}
         open={settingsMenuOpen}
         onOpen={onRequestOpen}
         onClose={onRequestClose}
@@ -78,6 +80,7 @@ const SettingsMenu = ({
 SettingsMenu.propTypes = {
     canChangeLanguage: PropTypes.bool,
     canChangeTheme: PropTypes.bool,
+    dataMenu: PropTypes.string,
     isRtl: PropTypes.bool,
     onClickDesktopSettings: PropTypes.func,
     onOpenCustomSettings: PropTypes.func,
