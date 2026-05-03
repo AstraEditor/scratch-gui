@@ -397,6 +397,37 @@ class MenuBar extends React.Component {
             this.props.onRequestCloseEdit();
         };
     }
+    isAnyMenuOpen () {
+        return this.props.fileMenuOpen ||
+            this.props.editMenuOpen ||
+            this.props.aboutMenuOpen ||
+            this.props.accountMenuOpen ||
+            this.props.loginMenuOpen ||
+            this.props.modeMenuOpen ||
+            this.props.settingsMenuOpen ||
+            this.props.errorsMenuOpen ||
+            this.props.toolsMenuOpen;
+    }
+    handleMenuHover (menuName) {
+        if (!this.isAnyMenuOpen()) return;
+        this.props.onRequestCloseFile();
+        this.props.onRequestCloseEdit();
+        this.props.onRequestCloseAbout();
+        this.props.onRequestCloseAccount();
+        this.props.onRequestCloseLogin();
+        this.props.onRequestCloseMode();
+        this.props.onRequestCloseSettings();
+        this.props.onRequestCloseErrors();
+        this.props.onRequestCloseTools();
+        switch (menuName) {
+        case 'file': this.props.onClickFile(); break;
+        case 'edit': this.props.onClickEdit(); break;
+        case 'errors': this.props.onClickErrors(); break;
+        case 'tools': this.props.onClickTools(); break;
+        case 'mode': this.props.onClickMode(); break;
+        case 'settings': this.props.onClickSettings(); break;
+        }
+    }
     handleKeyPress(event) {
         const modifier = bowser.mac ? event.metaKey : event.ctrlKey;
         if (modifier) {
@@ -614,7 +645,7 @@ class MenuBar extends React.Component {
                         )}
 
                         <div className={styles.fileGroup}>
-                            {this.props.errors.length > 0 && <div>
+                            {this.props.errors.length > 0 && <div onMouseEnter={() => this.handleMenuHover('errors')}>
                                 <MenuLabel
                                     open={this.props.errorsMenuOpen}
                                     onOpen={this.props.onClickErrors}
@@ -666,7 +697,7 @@ class MenuBar extends React.Component {
                                     </MenuBarMenu>
                                 </MenuLabel>
                             </div>}
-                            {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
+                            {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<div onMouseEnter={() => this.handleMenuHover('settings')}><SettingsMenu
                                 canChangeLanguage={this.props.canChangeLanguage}
                                 canChangeTheme={this.props.canChangeTheme}
                                 isRtl={this.props.isRtl}
@@ -683,8 +714,8 @@ class MenuBar extends React.Component {
                                 onRequestOpen={this.props.onClickSettings}
                                 settingsMenuOpen={this.props.settingsMenuOpen}
                                 openAESettings={this.props.onOpenAstraEditorSettings}
-                            />)}
-                            {(this.props.canManageFiles) && (
+                            /></div>)}
+                            {(this.props.canManageFiles) && (<div onMouseEnter={() => this.handleMenuHover('file')}>
                                 <MenuLabel
                                     open={this.props.fileMenuOpen}
                                     onOpen={this.props.onClickFile}
@@ -853,8 +884,8 @@ class MenuBar extends React.Component {
                                         </MenuSection>
                                     </MenuBarMenu>
                                 </MenuLabel>
-                            )}
-                            <MenuLabel
+                            </div>)}
+                            <div onMouseEnter={() => this.handleMenuHover('edit')}><MenuLabel
                                 open={this.props.editMenuOpen}
                                 onOpen={this.props.onClickEdit}
                                 onClose={this.props.onRequestCloseEdit}
@@ -980,8 +1011,8 @@ class MenuBar extends React.Component {
                                     </MenuSection>
                                 </MenuBarMenu>
                             </MenuLabel>
-                            {this.props.isTotallyNormal && (
-                                <MenuLabel
+                            </div>
+                            {this.props.isTotallyNormal && (<div onMouseEnter={() => this.handleMenuHover('mode')}><MenuLabel
                                     open={this.props.modeMenuOpen}
                                     onOpen={this.props.onClickMode}
                                     onClose={this.props.onRequestCloseMode}
@@ -1022,7 +1053,7 @@ class MenuBar extends React.Component {
                                         </MenuSection>
                                     </MenuBarMenu>
                                 </MenuLabel>
-                            )}
+                            </div>)}
 
                             {this.props.onClickAddonSettings && (
                                 <div
@@ -1064,7 +1095,7 @@ class MenuBar extends React.Component {
                                     </span>
                                 </div>
                             )}
-                            <MenuLabel
+                            <div onMouseEnter={() => this.handleMenuHover('tools')}><MenuLabel
                                 open={this.props.toolsMenuOpen}
                                 onOpen={this.props.onClickTools}
                                 onClose={this.props.onRequestCloseTools}
@@ -1123,6 +1154,7 @@ class MenuBar extends React.Component {
                                     </MenuItem>
                                 </MenuBarMenu>
                             </MenuLabel>
+                            </div>
                         </div>
 
                         <Divider className={styles.divider} />

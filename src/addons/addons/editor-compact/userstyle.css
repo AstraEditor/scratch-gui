@@ -29,7 +29,7 @@
   border: 1px solid transparent;
 }
 
-[class*="menu-bar_Icon"],
+[class*="menu-bar_Icon"]:not([id*="error"]),
 [class*="settings-menu_SettingIcon"],
 [class*="menu-bar_help-icon"] {
   width: 0;
