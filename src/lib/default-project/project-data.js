@@ -1,11 +1,32 @@
 import { defineMessages } from 'react-intl';
 import sharedMessages from '../shared-messages';
 
+const defaultMsg_README = `
+#README #Welcome!
+
+# Welcome to ** AstraEditor ** !
+
+AE is a Scratch editor developed based on TurboWarp. We have added more features and addons~~as well as many BUGs and features~~!
+
+Here we are demonstrating the README feature. To learn more, please visit [AstraEditor Documentation](https://editors.astras.top/document/)!
+
+For secondary development based on AstraEditor, please visit our [code repository](https://github.com/AstraEditor).
+
+Go to [this link](https://github.com/AstraEditor/scratch-gui/issues) to report BUGs to us!
+
+> [!NOTE]
+> [Follow us on Bilibili](https://space.bilibili.com/3691007061264515)`;
+
 let messages = defineMessages({
     variable: {
         defaultMessage: 'my variable',
         description: 'Name for the default variable',
         id: 'gui.defaultProject.variable'
+    },
+    tip: {
+        defaultMessage: defaultMsg_README,
+        description: 'a README',
+        id: 'tw.defaultProject.readme'
     }
 });
 
@@ -58,7 +79,7 @@ const projectData = translateFunction => {
                 blocks: {},
                 comments: {
                     abc: {
-                        "text": "#README #欢迎！\n\n# 欢迎使用 **AstraEditor** ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/docunment/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！\n\n> [!NOTE]\n> 在[哔哩哔哩上关注我们](https://space.bilibili.com/3691007061264515)",
+                        "text": translator(messages.tip, { index: 2 }),
                         "x": 200,
                         "y": 200,
                         "width": 640,
@@ -75,8 +96,8 @@ const projectData = translateFunction => {
                         bitmapResolution: 1,
                         md5ext: '927d672925e7b99f7813735c484c6923.svg',
                         dataFormat: 'svg',
-                        rotationCenterX: 240,
-                        rotationCenterY: 180
+                        rotationCenterX: 244,
+                        rotationCenterY: 188
                     }
                 ],
                 sounds: [],

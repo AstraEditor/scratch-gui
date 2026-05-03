@@ -5076,7 +5076,8 @@
         "tw.settingsModal.enablehtmlsupportreadme": "启用HTML支持",
         "tw.settingsModal.enablehtmlsupportreadmeHelp": "允许README显示HTML标签",
         "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置",
-        "tw.menuBar.extensionEditor": "扩展编辑器"
+        "tw.menuBar.extensionEditor": "扩展编辑器",
+        "tw.defaultProject.readme": "#README #欢迎！\n\n# 欢迎使用 **AstraEditor** ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/document/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！\n\n> [!NOTE]\n> 在[哔哩哔哩上关注我们](https://space.bilibili.com/3691007061264515)"
     },
     "zh-tw": {
         "tw.alerts.lostPeripheralConnection": "與{extensionName}的連線中斷了。",
