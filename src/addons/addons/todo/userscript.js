@@ -94,11 +94,11 @@ export default async function ({ addon, msg }) {
 
         if (isSameDate) {
             const dateStr = `${year1}-${month1}-${day1}`;
-            return `${dateStr} ${timeStr1} -> ${timeStr2}`;
+            return `${dateStr} ${timeStr1} → ${timeStr2}`;
         } else {
             const fullStr1 = `${year1}-${month1}-${day1} ${timeStr1}`;
             const fullStr2 = `${year2}-${month2}-${day2} ${timeStr2}`;
-            return `${fullStr1} -> ${fullStr2}`;
+            return `${fullStr1} → ${fullStr2}`;
         }
     }
 

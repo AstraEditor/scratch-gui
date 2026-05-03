@@ -1249,12 +1249,7 @@ async function addModalBackground() {
             target.style.removeProperty('--sa-modal-bg-position');
             target.style.removeProperty('--sa-modal-bg-blur');
             target.style.removeProperty('--sa-modal-bg-opacity');
-            target.style.removeProperty('--sa-modal-bg-height');
             target.style.removeProperty('--sa-modal-bg-modalsize');
-            target.style.removeProperty('--sa-modal-bg-pad-top');
-            target.style.removeProperty('--sa-modal-bg-pad-right');
-            target.style.removeProperty('--sa-modal-bg-pad-bottom');
-            target.style.removeProperty('--sa-modal-bg-pad-left');
         };
         document.querySelectorAll('[class*="library_library-scroll-grid"]').forEach(ele => ele.style.background = 'transparent')
 
@@ -1292,7 +1287,6 @@ async function addModalBackground() {
 
         modalBackgrounds.forEach((bg) => {
             resetModalBackground(bg);
-            const modalStyle = window.getComputedStyle(bg);
 
             bg.classList.add('sa-modal-background-enabled');
             bg.classList.toggle('sa-modal-background-fullscreen', Boolean(bg.closest('.sa-modal-shell-fullscreen')));
@@ -1301,14 +1295,7 @@ async function addModalBackground() {
             bg.style.setProperty('--sa-modal-bg-position', backgroundPosition);
             bg.style.setProperty('--sa-modal-bg-blur', `${config.blur}px`);
             bg.style.setProperty('--sa-modal-bg-opacity', `${config.opacity}`);
-            bg.style.setProperty('--sa-modal-bg-height', `${bg.clientHeight}px`);
             bg.style.setProperty('--sa-modal-bg-modalsize', `${modalSizeFactor}`);
-            bg.style.setProperty('--sa-modal-bg-pad-top', modalStyle.paddingTop);
-            bg.style.setProperty('--sa-modal-bg-pad-right', modalStyle.paddingRight);
-            bg.style.setProperty('--sa-modal-bg-pad-bottom', modalStyle.paddingBottom);
-            bg.style.setProperty('--sa-modal-bg-pad-left', modalStyle.paddingLeft);
-
-            bg.style.backgroundColor = 'var(--ui-modal-background) !important';
         });
 
     } catch (e) {

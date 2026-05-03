@@ -9,7 +9,6 @@
     height: 35px;
 }
 .body {
-    background: $ui-modal-background;
     padding: 0.5rem;
     min-height: 200px;
     max-height: calc(100vh - 250px);

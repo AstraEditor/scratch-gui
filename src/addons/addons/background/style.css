@@ -95,34 +95,38 @@
 
 .sa-modal-background-enabled {
     position: relative;
-    isolation: isolate;
-    background-color: color-mix(in srgb, var(--ui-modal-background) 72%, transparent) !important;
+    background-color: transparent !important;
 }
 
 .sa-modal-background-enabled::before {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: inherit;
     transform-origin: top left;
     transform: scale(var(--sa-modal-bg-modalsize, 1));
-    border-radius: inherit;
     background-image: var(--sa-modal-bg-image);
     background-size: var(--sa-modal-bg-size, cover);
     background-position: var(--sa-modal-bg-position, 0 0);
     background-repeat: no-repeat;
     filter: blur(var(--sa-modal-bg-blur, 0px)) opacity(var(--sa-modal-bg-opacity, 0.35));
-    clip-path: inset(0);
-    pointer-events: none;
-    z-index: 0;
 }
 
-.sa-modal-background-enabled.sa-modal-background-fullscreen::before {
+/* Gray tint behind background image — separate from ::before so filter doesn't affect it */
+.sa-modal-background-enabled::after {
+    content: "";
+    position: absolute;
     inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-color: var(--ui-modal-background);
 }
 
-.sa-modal-background-enabled>* {
-    position: relative;
-    z-index: 1;
+.sa-modal-background-enabled.sa-modal-background-fullscreen::before,
+.sa-modal-background-enabled.sa-modal-background-fullscreen::after {
+    transform: none;
 }
 
 .sa-modal-background-enabled[class*="_body"],
