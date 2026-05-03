@@ -6,7 +6,6 @@
 /* Override fullscreen top offset for compact menu bar height on Desktop only */
 :root[data-is-scratch-desktop='true'] {
     --stage-fullscreen-top: 2rem;
-    --modal-top-offset: 2rem;
 }
 
 .sa-body-editor,

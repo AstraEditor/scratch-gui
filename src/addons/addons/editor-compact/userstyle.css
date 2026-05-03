@@ -1,3 +1,7 @@
+:root[data-is-scratch-desktop='true'] {
+  --modal-top-offset: 2rem;
+}
+
 [class*="menu-bar_Icon"]:not([id*="error"]),
 [class*="settings-menu_SettingIcon"],
 [class*="menu-bar_help-icon"] {
