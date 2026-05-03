@@ -306,10 +306,7 @@ export default async function ({ addon, console, msg }) {
 
   const verifyBackpack = (backpackInstance) => {
     const Backpack = backpackInstance.constructor;
-    if (
-      typeof Backpack.prototype.handleDrop === "function" &&
-      typeof Backpack.prototype.componentDidUpdate === "undefined"
-    ) {
+    if (typeof Backpack.prototype.handleDrop === "function") {
       return;
     }
     throw new Error("Can not comprehend Backpack");
