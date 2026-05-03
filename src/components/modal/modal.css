@@ -11,7 +11,7 @@
     z-index: $z-index-modal;
     background-color: $ui-modal-overlay;
     color: $ui-modal-foreground;
-    margin-top: var(--modal-top-offset, 0px);
+    margin-top: var(--stage-fullscreen-top, 0px);
 }
 
 .modal-content * {

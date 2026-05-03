@@ -3,11 +3,6 @@
   height: calc(100% - 2rem);
 } 这个会导致显示问题*/
 
-/* Override fullscreen top offset for compact menu bar height on Desktop only */
-:root[data-is-scratch-desktop='true'] {
-    --stage-fullscreen-top: 2rem;
-}
-
 .sa-body-editor,
 .sa-body-editor * {
     scrollbar-width: thin;

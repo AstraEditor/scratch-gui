@@ -1,5 +1,5 @@
 :root[data-is-scratch-desktop='true'] {
-  --modal-top-offset: 2rem;
+  --stage-fullscreen-top: 2rem;
 }
 
 [class*="menu-bar_Icon"]:not([id*="error"]),
