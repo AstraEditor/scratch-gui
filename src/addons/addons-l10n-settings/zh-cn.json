@@ -163,6 +163,8 @@
     "editor-compact/@info-hide-icons-update": "使用“自定义菜单栏”插件隐藏菜单栏图标",
     "editor-compact/@name": "紧凑的编辑器",
     "editor-compact/@settings-name-hideLabels": "隐藏造型和声音编辑器中的按钮标签",
+    "editor-compact/@settings-name-compactMenubar": "紧凑的菜单栏",
+    "editor-compact/@settings-name-compactGUI": "紧凑的界面(除了菜单栏)",
     "custom-menu-bar/@description": "允许你隐藏特定的菜单栏内容，或移除他们的标签或图标。",
     "custom-menu-bar/@info-small-screens": "在小窗口中时，自动将文本标签替换为小图标。",
     "custom-menu-bar/@name": "自定义编辑器菜单栏",

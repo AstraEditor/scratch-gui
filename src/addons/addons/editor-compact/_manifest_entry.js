@@ -45,7 +45,7 @@ const manifest = {
       "url": "userstyle.css",
       "if": {
         "settings": {
-          "CompactMenubar": true
+          "compactMenubar": true
         }
       }
     },
@@ -53,7 +53,7 @@ const manifest = {
       "url": "gui.css",
       "if": {
         "settings": {
-          "CompactGUI": true
+          "compactGUI": true
         }
       }
     }
@@ -71,15 +71,15 @@ const manifest = {
       "default": true
     },
     {
-      "id": "CompactMenubar",
+      "id": "compactMenubar",
       "type": "boolean",
       "name": "Compact Menu bar",
       "default": true
     },
     {
-      "id": "CompactGUI",
+      "id": "compactGUI",
       "type": "boolean",
-      "name": "Compact GUI",
+      "name": "Compact GUI (Expect Menu bar)",
       "default": true
     }
   ],
