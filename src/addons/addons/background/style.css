@@ -1,7 +1,11 @@
 :root {
     --enable-workspace-background: transparent;
+    --enable-modal-background: transparent
 }
 
+[class*=modal-content]{
+    background-color: var(--enable-modal-background);
+}
 .sa-background-popup {
     box-sizing: border-box;
     width: min(72rem, 92vw);

@@ -839,6 +839,7 @@ async function addContext(modal, msg) {
     modalClearButton.addEventListener('click', async () => {
         modalSettings.enabled = false;
         modalSettings.link = null;
+        document.documentElement.style.setProperty('--enable-modal-background', 'var(--ui-modal-background)');
         await applySettings('EnableModalBG', modalSettings.enabled);
         await applySettings('ModalBGLink', null);
         await applySettings('ModalBGName', null);
@@ -1254,9 +1255,11 @@ async function addModalBackground() {
         document.querySelectorAll('[class*="library_library-scroll-grid"]').forEach(ele => ele.style.background = 'transparent')
 
         if (!config) {
+            document.documentElement.style.setProperty('--enable-modal-background', 'var(--ui-modal-background)')
             modalBackgrounds.forEach(resetModalBackground);
             return;
         }
+        document.documentElement.style.setProperty('--enable-modal-background', 'transparent');
 
         const modalSizeValue = Number.isFinite(config.modalSize) ? config.modalSize : 100;
         const isNoFit = modalSizeValue === 0;

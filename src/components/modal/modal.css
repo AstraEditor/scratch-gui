@@ -19,6 +19,10 @@
 }
 
 .modal-content {
+    background-color: $ui-secondary;
+}
+
+.modal-content {
     margin: 100px auto;
     outline: none;
     border: 4px solid $ui-white-transparent;
