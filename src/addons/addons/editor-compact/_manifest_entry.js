@@ -26,9 +26,6 @@ const manifest = {
   ],
   "userstyles": [
     {
-      "url": "userstyle.css"
-    },
-    {
       "url": "hide-labels.css",
       "if": {
         "settings": {
@@ -42,6 +39,22 @@ const manifest = {
         "addonEnabled": [
           "sprite-properties"
         ]
+      }
+    },
+    {
+      "url": "userstyle.css",
+      "if": {
+        "settings": {
+          "CompactMenubar": true
+        }
+      }
+    },
+    {
+      "url": "gui.css",
+      "if": {
+        "settings": {
+          "CompactGUI": true
+        }
       }
     }
   ],
@@ -58,10 +71,16 @@ const manifest = {
       "default": true
     },
     {
-      "id": "onlyCompactMenubar",
+      "id": "CompactMenubar",
       "type": "boolean",
-      "name": "Only compact Menu bar",
-      "default": false
+      "name": "Compact Menu bar",
+      "default": true
+    },
+    {
+      "id": "CompactGUI",
+      "type": "boolean",
+      "name": "Compact GUI",
+      "default": true
     }
   ],
   "dynamicDisable": true,
