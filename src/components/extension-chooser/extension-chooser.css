@@ -23,7 +23,7 @@
     font-weight: bold;
 }
 
-.openLibraryButton, .openCustomExtension {
+.openLibraryButton, .openCustomExtension, .openCodeButton{
     justify-content: center;
     background-color: $looks-secondary;
     border: none;
@@ -44,8 +44,12 @@
     bottom: 100px;
     font-size: 16px;
 }
+.openCodeButton{
+    bottom: 170px;
+    font-size: 16px;
+}
 
-.openLibraryButton:hover, .openCustomExtension:hover {
+.openLibraryButton:hover, .openCustomExtension:hover, .openCodeButton:hover {
     filter: brightness(1.2);
 }
 

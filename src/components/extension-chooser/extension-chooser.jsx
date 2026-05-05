@@ -5,6 +5,7 @@ import { defineMessages, injectIntl, intlShape, FormattedMessage } from 'react-i
 
 import add from './add.svg';
 import custom from './custom.svg';
+import code from './code.svg';
 import Modal from '../../containers/modal.jsx';
 import Box from '../box/box.jsx';
 import AddonHooks from '../../addons/hooks';
@@ -86,7 +87,7 @@ ExtensionImage.propTypes = {
 };
 
 const ExtensionChooser = props => {
-    const { intl, onRequestClose, onOpenExtensionLibrary, onOpenCustomExtensionModal, vm, dispatch } = props;
+    const { intl, onRequestClose, onOpenExtensionLibrary, onOpenCodeLibrary,  onOpenCustomExtensionModal, vm, dispatch } = props;
     const [extensions, setExtensions] = useState([]);
     const [updateExts, setUpdateExts] = useState(false);
     const [galleryData, setGalleryData] = useState({});
@@ -242,6 +243,10 @@ const ExtensionChooser = props => {
         onRequestClose();
     };
 
+    const handleOpenCode = () => {
+        onOpenCodeLibrary();
+    }
+
     const handleOpenLibrary = () => {
         onOpenExtensionLibrary();
     };
@@ -329,6 +334,12 @@ const ExtensionChooser = props => {
         >
             <div className={styles.container}>
                 <Box className={styles.header}>
+                    <button
+                        className={styles.openCodeButton}
+                        onClick={handleOpenCode}
+                    >
+                        <img src={code} draggable={false} className={styles.openLibraryButtonIcon} />
+                    </button>
                     <button
                         className={styles.openLibraryButton}
                         onClick={handleOpenLibrary}

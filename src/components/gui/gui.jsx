@@ -333,6 +333,7 @@ const GUIComponent = props => {
                         vm={vm}
                         onRequestClose={onRequestCloseExtensionManager}
                         onOpenExtensionLibrary={onOpenExtensionLibrary}
+                        onOpenCodeLibrary={onOpenExtensionEditor}
                         onOpenCustomExtensionModal={onOpenCustomExtensionModal}
                         dispatch={dispatch}
                     />

@@ -541,6 +541,12 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
     font-size: 13px;
     bottom: 80px;
 }
+[class*="extension-chooser_openCodeButton"] {
+    width: 35px;
+    height: 35px;
+    font-size: 13px;
+    bottom: 130px;
+}
 
 [class*="extension-chooser_openLibraryButtonIcon"] {
     width: 13px;
