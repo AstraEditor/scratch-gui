@@ -268,12 +268,14 @@
 }
 
 .tab-list.vscode {
-    height: 100% !important;
     width: 41px;
     flex-direction: column !important;
     align-items: center;
     justify-content: flex-start;
     border-bottom: none;
+    overflow-y: auto;
+    align-self: stretch;
+    overflow-x: hidden;
 }
 
 .vscode .tab {

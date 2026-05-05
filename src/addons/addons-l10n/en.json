@@ -498,5 +498,8 @@
     "todo/name": "Name",
     "todo/done": "Done",
     "todo/todo-title": "ToDo",
-    "todo/no-todo": "There is no todo here yet, try adding one."
+    "todo/no-todo": "There is no todo here yet, try adding one.",
+    "todo/all": "All",
+    "todo/create-title": "Create ToDo",
+    "todo/edit-title": "Edit ToDo"
 }
