@@ -58,7 +58,7 @@
     align-items: center;
     display: flex;
     filter: grayscale(100%);
-    -webkit-filter: ;
+    -webkit-filter: grayscale(100%);
 }
 
 .tab-list.vscode .readmeButton svg {
@@ -135,7 +135,7 @@
     border-bottom: 0 !important;
 
     color: $text-primary;
-    background-color: var(--ui-white);
+    background-color: var(--editorDarkMode-page, hsl(215, 100%, 95%));
     z-index: $z-index-tab;
 }
 
