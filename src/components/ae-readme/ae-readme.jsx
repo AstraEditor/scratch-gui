@@ -237,7 +237,9 @@ const CustomModalComponent = (props) => {
                 <Box>
                     {readMe.length > 1 &&
                         <div className={styles.Modaltab} style={{
-                            margin: "0"
+                            margin: "0",
+                            '--total-tabs': readMe.length,
+                            '--active-index': nowTab
                         }}>
                             {readMe.length > 1 && readMe.map((item, index) => (
                                 <button key={index} className={

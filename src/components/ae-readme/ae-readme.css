@@ -5,9 +5,23 @@
 .modal-content {
     max-width: 750px;
 }
+
 .Modaltab {
+    position: relative;
     height: 35px;
 }
+
+.Modaltab::after {
+    content: "";
+    position: absolute;
+    width: calc(100% / var(--total-tabs));
+    left: calc(var(--active-index) * (100% / var(--total-tabs)));
+    bottom: 0;
+    height: 2px;
+    background-color: $looks-secondary;
+    transition: all 0.15s cubic-bezier(0, 0.7, 0.3, 0.99);
+}
+
 .body {
     padding: 0.5rem;
     min-height: 200px;
@@ -23,7 +37,7 @@
     font-family: Inconsolata, Monaco, Consolas, "Courier New", Courier, monospace !important;
 }
 
-.body pre > code[class*="language-"] {
+.body pre>code[class*="language-"] {
     display: block !important;
     width: max-content;
     min-width: 100%;
@@ -33,26 +47,41 @@
 .tab-button-enable,
 .tab-button-unable {
     border: none;
-    transition: filter 0.2s ease;
+    transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
     height: 30px;
     line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.tab-button-enable {
-    filter: brightness(0.8)
-}
-
-.tab-button-enable:hover,
-.tab-button-unable:hover {
-    filter: brightness(1.2)
+    border-bottom: inset transparent;
+    -webkit-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -moz-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -ms-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -o-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
 }
 
 .tab-button-enable:active,
 .tab-button-unable:active {
-    filter: brightness(0.5)
+    border-bottom: inset $looks-secondary;
+}
+
+.tab-button-enable {
+    /* filter: brightness(0.8) disable */
+    filter: brightness(1);
+    background: $ui-modal-background;
+}
+
+.tab-button-enable:hover,
+.tab-button-unable:hover {
+    /* filter: brightness(1.2) disable */
+    filter: brightness(1);
+    background: $ui-modal-background;
+}
+
+.tab-button-enable:active,
+.tab-button-unable:active {
+    filter: brightness(0.9);
+    background: $ui-modal-background;
 }
 
 .content {
@@ -179,7 +208,7 @@
 }
 
 /* Content CSS of README */
-.body blockquote{
+.body blockquote {
     border-left: 4px solid $looks-secondary;
     padding-left: 1rem;
     margin: 0.5rem 0;
@@ -193,7 +222,7 @@
     color: #24292f;
 }
 
-.readme-alert > :last-child {
+.readme-alert> :last-child {
     margin-bottom: 0;
 }
 
