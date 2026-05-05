@@ -1,8 +1,5 @@
 import reduxInstance from '../../redux.js';
-import { AESettings } from '../../../lib/settings.js';
 import './bottom-panel.css';
-
-const Settings = new AESettings();
 
 /**
  * 工作区下方面板组件 - 简化版
@@ -239,54 +236,39 @@ class BottomPanelInternal {
 
          */
 
-        insertToDOM() {
+    insertToDOM() {
         const editorWrapper = document.querySelector("[class*=editor-wrapper]");
         const backpackContainer = document.querySelector("[class^='backpack_backpack-container']");
 
         if (editorWrapper) {
+            // 确定插入位置：在背包容器之前插入
             const insertBeforeElement = backpackContainer;
 
+            // 确保按钮栏被插入到背包容器之前
             if (!editorWrapper.contains(this.buttonBar)) {
                 if (insertBeforeElement) {
                     editorWrapper.insertBefore(this.buttonBar, insertBeforeElement);
                 } else {
+                    // 如果背包容器不存在，添加到末尾
                     editorWrapper.appendChild(this.buttonBar);
                 }
                 console.log("BottomPanel button bar inserted");
             }
 
+            // 确保主面板被插入到背包容器之前
             if (!editorWrapper.contains(this.element)) {
                 if (insertBeforeElement) {
                     editorWrapper.insertBefore(this.element, insertBeforeElement);
                 } else {
+                    // 如果背包容器不存在，添加到末尾
                     editorWrapper.appendChild(this.element);
                 }
                 console.log("BottomPanel main panel inserted");
             }
-
-            this.updateHorizontalPosition();
         } else {
+            // 如果editor-wrapper不存在，延迟重试
             console.log("editor-wrapper not found, retrying...");
             setTimeout(() => this.insertToDOM(), 100);
-        }
-    }
-
-    updateHorizontalPosition() {
-        const isVSCodeLayout = Settings && Settings.get('EnableVSCodeLayout');
-        if (isVSCodeLayout) {
-            const sideBarContainer = document.querySelector("[class*=gui_tab-list]");
-            if (sideBarContainer) {
-                const sideBarWidth = sideBarContainer.offsetWidth;
-                this.element.style.left = `${sideBarWidth}px`;
-                this.element.style.width = `calc(100% - ${sideBarWidth}px)`;
-                this.buttonBar.style.left = `${sideBarWidth}px`;
-                this.buttonBar.style.width = `calc(100% - ${sideBarWidth}px)`;
-            }
-        } else {
-            this.element.style.left = '0px';
-            this.element.style.width = '100%';
-            this.buttonBar.style.left = '0px';
-            this.buttonBar.style.width = '100%';
         }
     }
 
@@ -323,35 +305,35 @@ class BottomPanelInternal {
      * 销毁面板实例
      */
     destroy() {
-            // 移除事件监听器
-            this.resizeHandle.removeEventListener("mouseenter", this._boundHandleMouseEnter);
-            this.resizeHandle.removeEventListener("mouseleave", this._boundHandleMouseLeave);
-            this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
-            document.removeEventListener("mousemove", this._boundDoResize);
-            document.removeEventListener("mouseup", this._boundEndResize);
+        // 移除事件监听器
+        this.resizeHandle.removeEventListener("mouseenter", this._boundHandleMouseEnter);
+        this.resizeHandle.removeEventListener("mouseleave", this._boundHandleMouseLeave);
+        this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
+        document.removeEventListener("mousemove", this._boundDoResize);
+        document.removeEventListener("mouseup", this._boundEndResize);
 
-            // 从全局对象中移除 BottomPanel 的引用
-            if (window.aeResizeHandles && window.aeResizeHandles.bottomPanel) {
-                delete window.aeResizeHandles.bottomPanel;
-            }
+        // 从全局对象中移除 BottomPanel 的引用
+        if (window.aeResizeHandles && window.aeResizeHandles.bottomPanel) {
+            delete window.aeResizeHandles.bottomPanel;
+        }
 
-            // 停止 MutationObserver
-                    if (this._tabObserver) {
-                        this._tabObserver.disconnect();
-                        this._tabObserver = null;
-                    }
+        // 停止 MutationObserver
+        if (this._tabObserver) {
+            this._tabObserver.disconnect();
+            this._tabObserver = null;
+        }
 
-                    // 移除 Redux 事件监听器
-                    if (this._boundHandleProjectLoad) {
-                        reduxInstance.removeEventListener('statechanged', this._boundHandleProjectLoad);
-                        this._boundHandleProjectLoad = null;
-                    }
+        // 移除 Redux 事件监听器
+        if (this._boundHandleProjectLoad) {
+            reduxInstance.removeEventListener('statechanged', this._boundHandleProjectLoad);
+            this._boundHandleProjectLoad = null;
+        }
 
-                    // 移除 DOM 元素
-                    if (this.element && this.element.parentNode) {
-                        this.element.parentNode.removeChild(this.element);
-                    }
-                }
+        // 移除 DOM 元素
+        if (this.element && this.element.parentNode) {
+            this.element.parentNode.removeChild(this.element);
+        }
+    }
     startResize(e) {
         // 面板折叠时不允许拖拽
         if (!this.isOpen()) {
@@ -479,8 +461,8 @@ export default class BottomPanel {
         pluginRegistry.set(pluginName, {
             content,
             callbacks: {
-                onActivate: callbacks.onActivate || (() => {}),
-                onDeactivate: callbacks.onDeactivate || (() => {})
+                onActivate: callbacks.onActivate || (() => { }),
+                onDeactivate: callbacks.onDeactivate || (() => { })
             }
         });
     }
