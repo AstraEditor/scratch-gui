@@ -106,6 +106,7 @@
     flex-grow: 1;
     flex-shrink: 0;
     position: relative;
+    background-color: var(--ui-white);
 
     display: flex;
     flex-direction: column;
