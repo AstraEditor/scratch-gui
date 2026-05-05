@@ -249,7 +249,7 @@ module.exports = [
                     options: {
                         limit: 2048,
                         outputPath: 'static/assets/',
-                        publicPath: '/static/assets/',
+                        publicPath: `${root}static/assets/`,
                         esModule: false
                     }
                 }
