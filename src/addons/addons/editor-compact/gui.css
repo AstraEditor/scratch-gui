@@ -583,3 +583,7 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 [class*="stage-wrapper_stage-canvas-wrapper"]:not([class*="stage-wrapper_isfullScreen"]) {
     padding-top: 34px !important;
 }
+
+[class*=react-tabs_react-tabs__tab-list_]:not([class*=gui_vscode]) img{
+    display: none;
+}
