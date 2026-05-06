@@ -18,6 +18,10 @@ import icon from '!../../../lib/tw-recolor/build!./SPA.svg'
 import AddToBar from "../../tools/AddToBar/index.js";
 import ReduxStore from "../../redux.js";
 
+/* todo:
+  将统计积木的函数从计算项目JSON改为和计数器一样的获取虚拟机函数。
+*/
+
 export default function ({ addon, msg, console }) {
   const vm = addon.tab.traps.vm;
 

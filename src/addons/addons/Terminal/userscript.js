@@ -12,6 +12,14 @@ import aeVersion from "../../../lib/ae-version.js";
 
 const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
 
+/*
+  todo:
+  1.允许获取上一行输出
+  2.允许输出内容不合并
+  3.允许不换行输出
+  4.BBCode支持
+*/
+
 /**
  * 节流函数 - 限制函数执行频率
  * @param {Function} func - 要执行的函数
