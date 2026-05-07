@@ -1037,6 +1037,92 @@ export default async function ({ addon, console, msg }) {
   consoleErrorSwitchContainer.appendChild(consoleErrorSwitch);
   settingsContent.appendChild(consoleErrorSwitchContainer);
 
+  // 折叠相同内容开关设置
+  const mergeOutputSwitchContainer = document.createElement("div");
+  mergeOutputSwitchContainer.className = "sa-terminal-setting-item";
+  mergeOutputSwitchContainer.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #2d2d2d;
+    border-radius: 6px;
+  `;
+
+  const mergeOutputLabel = document.createElement("span");
+  mergeOutputLabel.style.cssText = `
+    color: #d4d4d4;
+    font-size: 13px;
+  `;
+  mergeOutputLabel.textContent = msg("setting-merge-output") || "折叠相同内容输出";
+
+  const mergeOutputSwitch = document.createElement("label");
+  mergeOutputSwitch.className = "sa-terminal-switch";
+  mergeOutputSwitch.style.cssText = `
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+  `;
+
+  const mergeOutputSwitchInput = document.createElement("input");
+  mergeOutputSwitchInput.type = "checkbox";
+  mergeOutputSwitchInput.className = "sa-terminal-switch-input";
+  mergeOutputSwitchInput.style.cssText = `
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  `;
+
+  const mergeOutputSwitchBackground = document.createElement("span");
+  mergeOutputSwitchBackground.className = "sa-terminal-switch-background";
+  mergeOutputSwitchBackground.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555555;
+    transition: 0.3s;
+    border-radius: 22px;
+  `;
+
+  const mergeOutputSwitchSlider = document.createElement("span");
+  mergeOutputSwitchSlider.className = "sa-terminal-switch-slider";
+  mergeOutputSwitchSlider.style.cssText = `
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    z-index: 1;
+  `;
+
+  mergeOutputSwitchInput.addEventListener("change", (e) => {
+    if (e.target.checked) {
+      mergeOutputSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      mergeOutputSwitchSlider.style.transform = "translateX(18px)";
+      enableMergeOutput();
+      saveSettings({ mergeOutputEnabled: true });
+    } else {
+      mergeOutputSwitchBackground.style.backgroundColor = "#555555";
+      mergeOutputSwitchSlider.style.transform = "translateX(0)";
+      disableMergeOutput();
+      saveSettings({ mergeOutputEnabled: false });
+    }
+  });
+
+  mergeOutputSwitch.appendChild(mergeOutputSwitchInput);
+  mergeOutputSwitch.appendChild(mergeOutputSwitchBackground);
+  mergeOutputSwitch.appendChild(mergeOutputSwitchSlider);
+  mergeOutputSwitchContainer.appendChild(mergeOutputLabel);
+  mergeOutputSwitchContainer.appendChild(mergeOutputSwitch);
+  settingsContent.appendChild(mergeOutputSwitchContainer);
+
   settingsPanel.appendChild(settingsContent);
 
   // 切换显示设置界面（完全替代整个 Terminal 面板）
@@ -1359,7 +1445,7 @@ export default async function ({ addon, console, msg }) {
     } catch (e) {
       // ignore
     }
-    return { consoleErrorEnabled: true };
+    return { consoleErrorEnabled: true, mergeOutputEnabled: true };
   };
 
   // 保存设置
@@ -1386,6 +1472,19 @@ export default async function ({ addon, console, msg }) {
     isConsoleErrorInterceptorEnabled = false;
   };
 
+  // 折叠相同内容状态
+  let isMergeOutputEnabled = true;
+
+  // 启用折叠相同内容
+  const enableMergeOutput = () => {
+    isMergeOutputEnabled = true;
+  };
+
+  // 禁用折叠相同内容
+  const disableMergeOutput = () => {
+    isMergeOutputEnabled = false;
+  };
+
   // 初始化设置开关状态
   const initSettingsSwitch = () => {
     const settings = loadSettings();
@@ -1399,6 +1498,18 @@ export default async function ({ addon, console, msg }) {
       consoleErrorSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
       consoleErrorSwitchSlider.style.transform = "translateX(18px)";
       enableConsoleErrorInterceptor();
+    }
+
+    if (!settings.mergeOutputEnabled) {
+      mergeOutputSwitchInput.checked = false;
+      mergeOutputSwitchBackground.style.backgroundColor = "#555555";
+      mergeOutputSwitchSlider.style.transform = "translateX(0)";
+      disableMergeOutput();
+    } else {
+      mergeOutputSwitchInput.checked = true;
+      mergeOutputSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      mergeOutputSwitchSlider.style.transform = "translateX(18px)";
+      enableMergeOutput();
     }
   };
   initSettingsSwitch();
@@ -1460,7 +1571,7 @@ export default async function ({ addon, console, msg }) {
   const addLogLine = (content, element) => {
     const currentContent = content;
 
-    if (lastLogData && currentContent === lastLogData.contentHash) {
+    if (isMergeOutputEnabled && lastLogData && currentContent === lastLogData.contentHash) {
       lastLogCount++;
       lastLogData.count = lastLogCount;
       if (lastLogData.element && lastLogData.element.parentNode) {
@@ -1500,7 +1611,7 @@ export default async function ({ addon, console, msg }) {
   const addLogLineWithElement = (element) => {
     const contentHash = getElementContentHash(element);
 
-    if (lastLogData && contentHash === lastLogData.contentHash) {
+    if (isMergeOutputEnabled && lastLogData && contentHash === lastLogData.contentHash) {
       lastLogCount++;
       lastLogData.count = lastLogCount;
       if (lastLogData.element && lastLogData.element.parentNode) {
