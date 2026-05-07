@@ -1807,6 +1807,30 @@ export default async function ({ addon, console, msg }) {
     return: 1 
   });
 
+  // 添加返回值积木（返回上一行输出内容）
+  vm.addAddonBlock({
+    procedureCode: "terminal_get_last_output",
+    displayName: "上一行输出",
+    callback: () => {
+      // 返回上一行输出的内容，包括硬编码的输出内容
+      if (lastLogData && lastLogData.element) {
+        return lastLogData.element.textContent || "";
+      }
+      // 如果 lastLogData 不存在，尝试从 virtualList.rows 获取最后一行
+      if (virtualList.rows.length > 0) {
+        const lastRow = virtualList.rows[virtualList.rows.length - 1];
+        if (lastRow.element) {
+          return lastRow.element.textContent || "";
+        }
+        if (lastRow.contentHash) {
+          return lastRow.contentHash;
+        }
+      }
+      return "";
+    },
+    return: 1
+  });
+
   // 创建输入行
   const inputLine = document.createElement("div");
   inputLine.className = "sa-terminal-input-line";
