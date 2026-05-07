@@ -27,7 +27,3 @@
   top: var(--stage-fullscreen-top, 0rem) !important;
   height: calc(100vh - var(--stage-fullscreen-top, 0rem));
 }
-
-:root[data-is-scratch-desktop='true'] [class*="gui_menu-bar-position"]{
-  z-index: 501;
-}

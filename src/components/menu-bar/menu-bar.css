@@ -49,6 +49,9 @@
     background-color: transparent;
     -webkit-app-region: drag;
 }
+:root[data-is-scratch-desktop='true'] [class*="menu-bar_menu-bar"] {
+    z-index: $z-index-menu-bar-desktop
+}
 .menuGroup{
     display: flex;
     flex-direction: row;

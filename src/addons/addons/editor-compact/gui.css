@@ -482,7 +482,7 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 }
 
 [class*="library_library-scroll-grid"][class*="library_withFilterBar"] {
-    height: calc(100vh - 4rem);
+    height: calc(100vh - calc(4rem + var(--stage-fullscreen-top, 0px)));
 }
 
 [class*="library_library-scroll-grid"]::-webkit-scrollbar-thumb {
