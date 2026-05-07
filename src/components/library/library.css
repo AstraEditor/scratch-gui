@@ -16,7 +16,7 @@
 }
 
 .library-scroll-grid.withFilterBar {
-    height: calc(100vh - 3.125rem - 2.5rem - 2rem);
+    height: calc(100vh - 3.125rem - 2.5rem - 2rem - var(--stage-fullscreen-top));
 }
 
 .filter-bar {
