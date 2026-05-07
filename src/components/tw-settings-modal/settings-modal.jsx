@@ -500,26 +500,6 @@ const SkipCustomExtWarn = props => (
         }
     />
 );
-const EnableExtensionPreview = props => (
-    <BooleanSetting
-        {...props}
-        label={
-            <FormattedMessage
-                defaultMessage="Enable extension preview when load extension (Deprecated)"
-                description="extension preview label"
-                id="tw.settingsModal.enableextensionpreview"
-            />
-        }
-        help={
-            <FormattedMessage
-                // eslint-disable-next-line max-len
-                defaultMessage="Before loading custom extensions, you can preview the extensions you want to load."
-                description="extension preview help"
-                id="tw.settingsModal.enableextensionpreviewhelp"
-            />
-        }
-    />
-);
 const EnableVSCodeLayout = props => (
     <BooleanSetting
         {...props}
@@ -536,26 +516,6 @@ const EnableVSCodeLayout = props => (
                 defaultMessage="Change the interface layout to a style similar to VSCode."
                 description="EnableVSCodeLayout help"
                 id="tw.settingsModal.enablevscodelayouthelp"
-            />
-        }
-    />
-);
-const EnableMobileLayout = props => (
-    <BooleanSetting
-        {...props}
-        label={
-            <FormattedMessage
-                defaultMessage="Enable Mobile Layout (Need Refresh)"
-                description="EnableMobileLayout label"
-                id="tw.settingsModal.enablecoblielayout"
-            />
-        }
-        help={
-            <FormattedMessage
-                // eslint-disable-next-line max-len
-                defaultMessage="Adjust the stage and sprite area positions to make them slightly more suitable for Mobile editing."
-                description="EnableMobileLayout help"
-                id="tw.settingsModal.enablecoblielayouthelp"
             />
         }
     />
@@ -705,10 +665,6 @@ const SettingsModalComponent = props => {
                             value={AEsettings.get('skipExtWarn')}
                             onChange={(e) => { AEsettings.set("skipExtWarn", e.target.checked); update() }}
                         />
-                        <EnableExtensionPreview
-                            value={AEsettings.get('EnableExtensionPreview')}
-                            onChange={(e) => { AEsettings.set("EnableExtensionPreview", e.target.checked); update() }}
-                        />
                         <Header>
                             <FormattedMessage
                                 defaultMessage="Interface Settings"
@@ -719,10 +675,6 @@ const SettingsModalComponent = props => {
                         <EnableVSCodeLayout
                             value={AEsettings.get('EnableVSCodeLayout')}
                             onChange={(e) => { AEsettings.set("EnableVSCodeLayout", e.target.checked); location.reload(); update() }}
-                        />
-                        <EnableMobileLayout
-                            value={AEsettings.get('EnableMobileLayout')}
-                            onChange={(e) => { AEsettings.set("EnableMobileLayout", e.target.checked); location.reload(); update() }}
                         />
                     </>}
 

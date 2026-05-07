@@ -17,6 +17,16 @@ export class AESettings {
                 if (!localStorage.getItem(this.storageKey)) {
                         const defaultSettings = this.initset
                         this.save(defaultSettings);
+                } else {
+                        const stored = localStorage.getItem(this.storageKey);
+                        if (!stored || stored === 'undefined' || stored === 'null') {
+                                return
+                        }
+                        localStorage.setItem(this.storageKey, JSON.stringify({
+                                ...JSON.parse(stored),
+                                EnableMobileLayout: false,
+                                EnableExtensionPreview: false
+                        }))
                 }
         }
 
