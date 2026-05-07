@@ -93,6 +93,7 @@ import _astras_copilot from '../addons/astras-copilot/_manifest_entry.js';
 import _sprite_folders from '../addons/sprite-folders/_manifest_entry.js';
 import _background from '../addons/background/_manifest_entry.js';
 import _todo from '../addons/todo/_manifest_entry.js';
+import _collaborative_editing from '../addons/collaborative/_manifest_entry.js';
 
 export default {
   "cat-blocks": _cat_blocks,
@@ -188,5 +189,6 @@ export default {
   // "astras-copilot": _astras_copilot,
   "sprite-folders": _sprite_folders,
   "background": _background,
-  "todo": _todo
+  "todo": _todo,
+  "collaborative-editing": _collaborative_editing
 };
