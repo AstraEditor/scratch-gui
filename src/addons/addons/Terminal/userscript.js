@@ -1965,47 +1965,83 @@ export default async function ({ addon, console, msg }) {
     }
   };
 
+  // 检查上一行输出内容是否以换行符结尾
+  const isLastLineEndsWithNewline = () => {
+    if (virtualList.rows.length === 0) {
+      return true; // 没有上一行，默认创建新行
+    }
+    const lastRow = virtualList.rows[virtualList.rows.length - 1];
+    if (lastRow.element) {
+      const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
+      if (textElement) {
+        const content = textElement.textContent;
+        return content.endsWith("\n");
+      }
+    }
+    return true;
+  };
+
   const createLogLines = (text, thread, options = {}) => {
     const { markClass, markText, color } = options;
     const textStr = String(text ?? "");
-    const processedText = textStr.replace(/\\n/g, '\n');
-    const lines = processedText.split('\n');
+    
+    // 检查上一行是否以换行符结尾，如果不是则追加到上一行
+    const lastLineEndsWithNewline = isLastLineEndsWithNewline();
+    if (!lastLineEndsWithNewline && virtualList.rows.length > 0) {
+      const lastRow = virtualList.rows[virtualList.rows.length - 1];
+      if (lastRow.element) {
+        const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
+        if (textElement) {
+          textElement.textContent += textStr;
+          textElement.title += textStr;
+        }
+        // 更新内容哈希（包含新追加的内容）
+        lastRow.contentHash = getElementContentHash(lastRow.element);
+        // 更新虚拟列表
+        virtualList.renderedStartIndex = -1;
+        virtualList.renderedEndIndex = -1;
+        if (virtualList.visible) {
+          virtualList._updateContent();
+          virtualList._scrollToEnd();
+        }
+        return;
+      }
+    }
+    
+    // 否则创建新行
+    const line = document.createElement("div");
+    line.className = "sa-terminal-log-line";
+    
+    if (markClass && markText) {
+      const mark = document.createElement("span");
+      mark.className = `sa-terminal-log-mark ${markClass}`;
+      mark.textContent = markText;
+      line.appendChild(mark);
+    }
+    
+    const textSpan = document.createElement("span");
+    textSpan.className = "sa-terminal-log-text";
+    const displayText = (markClass && markText) ? ` ${textStr}` : textStr;
+    createTextWithLinks(textSpan, displayText, color);
+    textSpan.title = textStr;
+    line.appendChild(textSpan);
+    
     const blockId = thread ? thread.peekStack() : null;
     const targetId = thread ? thread.target.id : null;
     const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
     
-    lines.forEach((lineContent, index) => {
-      const isLastLine = index === lines.length - 1;
-      const line = document.createElement("div");
-      line.className = "sa-terminal-log-line";
-      
-      if (markClass && markText) {
-        const mark = document.createElement("span");
-        mark.className = `sa-terminal-log-mark ${markClass}`;
-        mark.textContent = markText;
-        line.appendChild(mark);
-      }
-      
-      const textSpan = document.createElement("span");
-      textSpan.className = "sa-terminal-log-text";
-      const displayText = (markClass && markText) ? ` ${lineContent}` : lineContent;
-      createTextWithLinks(textSpan, displayText, color);
-      textSpan.title = lineContent;
-      line.appendChild(textSpan);
-      
-      if (isLastLine && targetInfo && targetInfo.exists && blockId) {
-        const linkWrapper = document.createElement("span");
-        linkWrapper.className = "sa-terminal-log-link-wrapper";
-        linkWrapper.textContent = "[";
-        const link = createBlockLink(targetInfo, blockId);
-        link.className = "sa-terminal-block-link";
-        linkWrapper.appendChild(link);
-        linkWrapper.appendChild(document.createTextNode("]"));
-        line.appendChild(linkWrapper);
-      }
-      
-      addLogLineWithElement(line);
-    });
+    if (targetInfo && targetInfo.exists && blockId) {
+      const linkWrapper = document.createElement("span");
+      linkWrapper.className = "sa-terminal-log-link-wrapper";
+      linkWrapper.textContent = "[";
+      const link = createBlockLink(targetInfo, blockId);
+      link.className = "sa-terminal-block-link";
+      linkWrapper.appendChild(link);
+      linkWrapper.appendChild(document.createTextNode("]"));
+      line.appendChild(linkWrapper);
+    }
+    
+    addLogLineWithElement(line);
   };
 
   // 添加输出块到 Scratch
@@ -2014,7 +2050,8 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-log"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        createLogLines(text, thread);
+        // 默认 log 函数在输出末尾添加换行符
+        createLogLines(text + "\n", thread);
       }
     },
   });
@@ -2024,7 +2061,8 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-log-colored"),
     callback: ({ text, color }, thread) => {
       if (terminalOutput) {
-        createLogLines(text, thread, { color });
+        // 默认 log 函数在输出末尾添加换行符
+        createLogLines(text + "\n", thread, { color });
       }
     },
   });
@@ -2034,7 +2072,8 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-log-debug"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        createLogLines(text, thread, { markClass: "log", markText: "[log]" });
+        // 默认 log 函数在输出末尾添加换行符
+        createLogLines(text + "\n", thread, { markClass: "log", markText: "[log]" });
       }
     },
   });
@@ -2044,7 +2083,8 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-warn"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        createLogLines(text, thread, { markClass: "warn", markText: "[warn]" });
+        // 默认 log 函数在输出末尾添加换行符
+        createLogLines(text + "\n", thread, { markClass: "warn", markText: "[warn]" });
       }
     },
   });
@@ -2054,7 +2094,26 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-error"),
     callback: ({ text }, thread) => {
       if (terminalOutput) {
-        createLogLines(text, thread, { markClass: "error", markText: "[error]" });
+        // 默认 log 函数在输出末尾添加换行符
+        createLogLines(text + "\n", thread, { markClass: "error", markText: "[error]" });
+      }
+    },
+  });
+
+  // 添加输出积木（可指定结尾字符）
+  addon.tab.addBlock("\u200B\u200Bterminal_write\u200B\u200B %s %s", {
+    args: ["text", "end"],
+    displayName: msg("block-write") || "输出 %s 并以 %s 结尾",
+    callback: ({ text, end }, thread) => {
+      if (terminalOutput) {
+        // 根据结尾字符决定是否在输出末尾添加换行符
+        // 如果结尾是 \n，则在输出末尾添加换行符
+        // 如果结尾是其他内容（如空值），则不添加换行符
+        let outputText = text;
+        if (end === "\\n" || end === "\n") {
+          outputText = text + "\n";
+        }
+        createLogLines(outputText, thread);
       }
     },
   });
