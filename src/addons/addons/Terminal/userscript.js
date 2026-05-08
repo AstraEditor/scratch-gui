@@ -1478,11 +1478,190 @@ export default async function ({ addon, console, msg }) {
   // 启用折叠相同内容
   const enableMergeOutput = () => {
     isMergeOutputEnabled = true;
+    // 重新检查并合并已有的日志内容
+    mergeExistingLogs();
   };
 
   // 禁用折叠相同内容
   const disableMergeOutput = () => {
     isMergeOutputEnabled = false;
+    // 展开所有已合并的内容
+    expandAllMergedLogs();
+  };
+
+  // 获取行的实际内容（不包含计数器和链接）
+  const getRowContent = (row) => {
+    if (row.element) {
+      // 优先获取日志文本部分
+      const textElement = row.element.querySelector('.sa-terminal-log-text');
+      if (textElement) {
+        return textElement.textContent.replace(/\s+/g, ' ').trim();
+      }
+      // 如果没有 .sa-terminal-log-text，返回空字符串让行不被处理
+      return "";
+    }
+    // 如果没有 element 但有 contentHash（欢迎信息等），返回 contentHash
+    if (row.contentHash) {
+      return row.contentHash;
+    }
+    return "";
+  };
+
+  // 获取行的合并计数
+  const getRowCount = (row) => {
+    if (row.count) {
+      return row.count;
+    }
+    if (row.element) {
+      const counter = row.element.querySelector('.sa-terminal-log-counter');
+      if (counter) {
+        const count = parseInt(counter.textContent);
+        return isNaN(count) ? 1 : count;
+      }
+    }
+    return 1;
+  };
+
+  // 合并已有的日志内容
+  const mergeExistingLogs = () => {
+    if (virtualList.rows.length === 0) return;
+
+    // 创建一个映射来跟踪相同内容的日志
+    const contentMap = new Map();
+    
+    // 遍历所有日志，记录相同内容的出现次数（考虑已合并的行）
+    for (const row of virtualList.rows) {
+      const content = getRowContent(row);
+      if (!content) continue;
+      
+      if (!contentMap.has(content)) {
+        contentMap.set(content, { rows: [], totalCount: 0 });
+      }
+      contentMap.get(content).rows.push(row);
+      contentMap.get(content).totalCount += getRowCount(row);
+    }
+
+    // 只处理出现多次的内容
+    for (const [content, info] of contentMap) {
+      if (info.totalCount > 1) {
+        // 保留第一个作为主行，标记合并次数
+        const mainRow = info.rows[0];
+        if (mainRow.element) {
+          let counter = mainRow.element.querySelector('.sa-terminal-log-counter');
+          if (!counter) {
+            counter = document.createElement("span");
+            counter.className = "sa-terminal-log-counter";
+            mainRow.element.insertBefore(counter, mainRow.element.firstChild);
+          }
+          counter.textContent = info.totalCount;
+        }
+        mainRow.count = info.totalCount;
+        
+        // 移除其余重复的行
+        for (let i = 1; i < info.rows.length; i++) {
+          const index = virtualList.rows.indexOf(info.rows[i]);
+          if (index !== -1) {
+            virtualList.rows.splice(index, 1);
+            if (info.rows[i].element && info.rows[i].element.parentNode) {
+              info.rows[i].element.remove();
+            }
+          }
+        }
+      }
+    }
+
+    // 更新虚拟列表
+    virtualList.renderedStartIndex = -1;
+    virtualList.renderedEndIndex = -1;
+    if (virtualList.visible) {
+      virtualList._updateContent();
+    }
+
+    // 更新 lastLogData
+    if (virtualList.rows.length > 0) {
+      const lastRow = virtualList.rows[virtualList.rows.length - 1];
+      lastLogData = {
+        contentHash: lastRow.contentHash,
+        element: lastRow.element,
+        count: lastRow.count || 1
+      };
+      lastLogCount = lastLogData.count;
+    }
+  };
+
+  // 展开所有已合并的内容
+  const expandAllMergedLogs = () => {
+    if (virtualList.rows.length === 0) return;
+
+    const newRows = [];
+
+    for (const row of virtualList.rows) {
+      // 使用 getRowContent 获取纯文本内容（不包含链接）
+      const content = getRowContent(row);
+      // 使用 getRowCount 获取正确的计数
+      const count = getRowCount(row);
+
+      // 克隆原元素并移除计数器
+      let counterRemovedElement = null;
+      if (row.element) {
+        counterRemovedElement = row.element.cloneNode(true);
+        const counter = counterRemovedElement.querySelector('.sa-terminal-log-counter');
+        if (counter) {
+          counter.remove();
+        }
+      }
+
+      // 根据重复次数添加多行
+      for (let i = 0; i < count; i++) {
+        if (i === 0) {
+          // 保留原行（包含链接等结构），但先移除计数器
+          if (row.element) {
+            const counter = row.element.querySelector('.sa-terminal-log-counter');
+            if (counter) {
+              counter.remove();
+            }
+          }
+          newRows.push({
+            element: row.element,
+            contentHash: content,
+            count: 1
+          });
+        } else {
+          // 使用 cloneNode 复制完整结构
+          const newElement = counterRemovedElement ? counterRemovedElement.cloneNode(true) : document.createElement("div");
+          if (!counterRemovedElement) {
+            newElement.className = "sa-terminal-log-line";
+          }
+          newRows.push({
+            element: newElement,
+            contentHash: content,
+            count: 1
+          });
+        }
+      }
+    }
+
+    // 替换所有行
+    virtualList.rows = newRows;
+
+    // 更新虚拟列表
+    virtualList.renderedStartIndex = -1;
+    virtualList.renderedEndIndex = -1;
+    if (virtualList.visible) {
+      virtualList._updateContent();
+      virtualList._scrollToEnd();
+    }
+
+    // 重置 lastLogData
+    if (virtualList.rows.length > 0) {
+      const lastRow = virtualList.rows[virtualList.rows.length - 1];
+      lastLogData = {
+        contentHash: lastRow.contentHash,
+        element: lastRow.element,
+        count: 1
+      };
+      lastLogCount = 1;
+    }
   };
 
   // 初始化设置开关状态
@@ -1604,6 +1783,11 @@ export default async function ({ addon, console, msg }) {
 
   // 获取元素的内容标识符（用于比较重复内容）
   const getElementContentHash = (element) => {
+    // 优先获取日志文本部分（不包含链接）
+    const textElement = element.querySelector('.sa-terminal-log-text');
+    if (textElement) {
+      return textElement.textContent.replace(/\s+/g, ' ').trim();
+    }
     return element.textContent.replace(/\s+/g, ' ').trim();
   };
 
