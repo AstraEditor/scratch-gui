@@ -1522,52 +1522,46 @@ export default async function ({ addon, console, msg }) {
     return 1;
   };
 
-  // 合并已有的日志内容
+  // 合并已有的日志内容（只合并连续的相同内容）
   const mergeExistingLogs = () => {
     if (virtualList.rows.length === 0) return;
 
-    // 创建一个映射来跟踪相同内容的日志
-    const contentMap = new Map();
-    
-    // 遍历所有日志，记录相同内容的出现次数（考虑已合并的行）
-    for (const row of virtualList.rows) {
-      const content = getRowContent(row);
-      if (!content) continue;
+    // 从后往前遍历，只合并连续的相同内容
+    let i = virtualList.rows.length - 1;
+    while (i > 0) {
+      const currentRow = virtualList.rows[i];
+      const prevRow = virtualList.rows[i - 1];
       
-      if (!contentMap.has(content)) {
-        contentMap.set(content, { rows: [], totalCount: 0 });
-      }
-      contentMap.get(content).rows.push(row);
-      contentMap.get(content).totalCount += getRowCount(row);
-    }
-
-    // 只处理出现多次的内容
-    for (const [content, info] of contentMap) {
-      if (info.totalCount > 1) {
-        // 保留第一个作为主行，标记合并次数
-        const mainRow = info.rows[0];
-        if (mainRow.element) {
-          let counter = mainRow.element.querySelector('.sa-terminal-log-counter');
+      const currentContent = getRowContent(currentRow);
+      const prevContent = getRowContent(prevRow);
+      
+      // 如果当前行和上一行内容相同，则合并
+      if (currentContent && currentContent === prevContent) {
+        // 获取当前行的计数
+        const currentCount = getRowCount(currentRow);
+        // 更新上一行的计数
+        const prevCount = getRowCount(prevRow);
+        const newCount = prevCount + currentCount;
+        
+        if (prevRow.element) {
+          let counter = prevRow.element.querySelector('.sa-terminal-log-counter');
           if (!counter) {
             counter = document.createElement("span");
             counter.className = "sa-terminal-log-counter";
-            mainRow.element.insertBefore(counter, mainRow.element.firstChild);
+            prevRow.element.insertBefore(counter, prevRow.element.firstChild);
           }
-          counter.textContent = info.totalCount;
+          counter.textContent = newCount;
         }
-        mainRow.count = info.totalCount;
+        prevRow.count = newCount;
         
-        // 移除其余重复的行
-        for (let i = 1; i < info.rows.length; i++) {
-          const index = virtualList.rows.indexOf(info.rows[i]);
-          if (index !== -1) {
-            virtualList.rows.splice(index, 1);
-            if (info.rows[i].element && info.rows[i].element.parentNode) {
-              info.rows[i].element.remove();
-            }
-          }
+        // 移除当前行
+        if (currentRow.element && currentRow.element.parentNode) {
+          currentRow.element.remove();
         }
+        virtualList.rows.splice(i, 1);
       }
+      
+      i--;
     }
 
     // 更新虚拟列表
