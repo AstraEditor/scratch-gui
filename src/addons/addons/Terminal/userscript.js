@@ -1915,7 +1915,6 @@ export default async function ({ addon, console, msg }) {
     let result = text;
     
     // 处理转义字符（先存储起来）
-    // \\n 会在 createBBCodeLogLines 中处理，这里不需要转换
     const escapeMap = {};
     let escapeIndex = 0;
     result = result.replace(/\\(.)/g, (match, char) => {
@@ -1924,45 +1923,48 @@ export default async function ({ addon, console, msg }) {
       return key;
     });
     
-    // 颜色标签 [color=...] 或 [c=...]
-    result = result.replace(/\[color=([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
-    result = result.replace(/\[c=([^\]]+)\](.*?)\[\/c\]/gi, '<span style="color:$1">$2</span>');
-    
-    // 渐变颜色 [color=... ...] 或 [c=... ...]
+    // 渐变颜色（多个颜色用空格分隔）- 必须先于单色处理
     result = result.replace(/\[color=([^\]]+)\](.*?)\[\/color\]/gi, (match, colors, content) => {
-      const colorArray = colors.split(/\s+/).filter(c => c);
+      const colorArray = colors.trim().split(/\s+/);
       if (colorArray.length >= 2) {
-        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">${content}</span>`;
       }
       return `<span style="color:${colors}">${content}</span>`;
     });
     result = result.replace(/\[c=([^\]]+)\](.*?)\[\/c\]/gi, (match, colors, content) => {
-      const colorArray = colors.split(/\s+/).filter(c => c);
+      const colorArray = colors.trim().split(/\s+/);
       if (colorArray.length >= 2) {
-        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">${content}</span>`;
       }
       return `<span style="color:${colors}">${content}</span>`;
     });
     
-    // 背景色标签 [background=...] 或 [bg=...]
-    result = result.replace(/\[background=([^\]]+)\](.*?)\[\/background\]/gi, '<span style="background-color:$1">$2</span>');
-    result = result.replace(/\[bg=([^\]]+)\](.*?)\[\/bg\]/gi, '<span style="background-color:$1">$2</span>');
-    
-    // 渐变背景 [background=... ...] 或 [bg=... ...]
+    // 渐变背景（多个颜色用空格分隔）- 必须先于单色处理
     result = result.replace(/\[background=([^\]]+)\](.*?)\[\/background\]/gi, (match, colors, content) => {
-      const colorArray = colors.split(/\s+/).filter(c => c);
+      const colorArray = colors.trim().split(/\s+/);
       if (colorArray.length >= 2) {
         return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')});">${content}</span>`;
       }
       return `<span style="background-color:${colors}">${content}</span>`;
     });
     result = result.replace(/\[bg=([^\]]+)\](.*?)\[\/bg\]/gi, (match, colors, content) => {
-      const colorArray = colors.split(/\s+/).filter(c => c);
+      const colorArray = colors.trim().split(/\s+/);
       if (colorArray.length >= 2) {
         return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')});">${content}</span>`;
       }
       return `<span style="background-color:${colors}">${content}</span>`;
     });
+    
+    // 背景色标签
+    result = result.replace(/\[background=([^\]]+)\](.*?)\[\/background\]/gi, '<span style="background-color:$1">$2</span>');
+    result = result.replace(/\[bg=([^\]]+)\](.*?)\[\/bg\]/gi, '<span style="background-color:$1">$2</span>');
+    
+    // 颜色标签
+    result = result.replace(/\[color=([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
+    result = result.replace(/\[c=([^\]]+)\](.*?)\[\/c\]/gi, '<span style="color:$1">$2</span>');
+    
+    // 将换行符转换为 <br>
+    result = result.replace(/\n/g, '<br>');
     
     // 粗体标签 [bold=...] 或 [b=...]
     result = result.replace(/\[bold(=([\d]+(px)?))?\](.*?)\[\/bold\]/gi, (match, p1, weight) => {
@@ -2170,8 +2172,8 @@ export default async function ({ addon, console, msg }) {
       return key;
     });
     
-    // 按 \n 分割，创建多个行（不分割转义的 \\n）
-    const lines = textStr.split(/\\n/g);
+    // 按转义的 \n 或实际的换行符分割，创建多个行
+    const lines = textStr.split(/(?:\\n|\n)/g);
     
     // 检查上一行是否以换行符结尾，如果不是则第一行追加到上一行
     let shouldAppend = !isLastLineEndsWithNewline() && virtualList.rows.length > 0;
@@ -2398,6 +2400,16 @@ export default async function ({ addon, console, msg }) {
       }
     },
   });
+
+  // 添加 BBCode 示例
+  vm.addAddonBlock({
+    procedureCode: "terminal_bbcode_example",
+    displayName: msg("block-bbcode-example") || "BBCode 示例",
+    callback: () => {
+      // 返回 BBCode 示例
+      return "可以使用少量BBCode来自定义输出内容的样式。比如使用\\[color=#66ccff]文本\\[/color]或者\\[c]就可以显示[color=#66ccff]有颜色的文本[/color]了。\n同时，多个颜色将创建一个渐变色的文本，比如你可以使用\\[color=red blue]来创建一个[color=red blue]红到蓝渐变的文本[/color]。\n使用\\[background]或\\[bg]标签可以为指定文本设置[background=#0099ff]背景色[/background]，同时[bg=#66ccff #0099ff]渐变色[/bg]依旧受用。\n同样的，\\[bold]或者|\[b]可以让[b]文本加粗[/b]，\\[italic]或者\[i]可以让[i]文本倾斜[/i]，\n\[underline]或者\[u]可以给[u]文本下划线[/u]，\\[strikethrough]或者\\[s]可以[s]划掉文本[/s]，甚至你可以使用\\[url]标签来给一段文本加上[url=https://cyberneko.cn]超链接[/url]。\n最后，记住使用\\\\n来换行（当然，直接使用换行符也可以换行）。"},
+    return: 1
+  })
 
   // 添加用户指令积木
   addon.tab.addBlock("\u200B\u200Badd_user_command\u200B\u200B %s %s", {
