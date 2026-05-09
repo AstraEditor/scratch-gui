@@ -1915,6 +1915,7 @@ export default async function ({ addon, console, msg }) {
     let result = text;
     
     // 处理转义字符（先存储起来）
+    // \\n 会在 createBBCodeLogLines 中处理，这里不需要转换
     const escapeMap = {};
     let escapeIndex = 0;
     result = result.replace(/\\(.)/g, (match, char) => {
@@ -2154,74 +2155,142 @@ export default async function ({ addon, console, msg }) {
     addLogLineWithElement(line);
   };
 
-  // 创建支持 BBCode 的日志行
+  // 创建支持 BBCode 的日志行（\n 创建新行）
   const createBBCodeLogLines = (text, thread, options = {}) => {
-    const { markClass, markText, appendToLast = false } = options;
-    const textStr = String(text ?? "");
+    const { markClass, markText } = options;
+    let textStr = String(text ?? "");
     
-    // 检查上一行是否以换行符结尾，如果不是则追加到上一行
-    const lastLineEndsWithNewline = isLastLineEndsWithNewline();
-    if (!lastLineEndsWithNewline && virtualList.rows.length > 0) {
-      const lastRow = virtualList.rows[virtualList.rows.length - 1];
-      if (lastRow.element) {
-        const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
-        if (textElement) {
-          // 解析 BBCode 并追加
-          const parsedText = parseBBCode(textStr);
-          const tempContainer = document.createElement("span");
-          tempContainer.innerHTML = parsedText;
-          // 追加内容
-          textElement.innerHTML += parsedText;
-          textElement.title += textStr;
+    // 先处理双反斜杠后跟 n 的情况，保护起来
+    // \\n 应该显示为字面的 \n
+    const escapedNewlineMap = {};
+    let escapeIndex = 0;
+    textStr = textStr.replace(/\\\\n/g, () => {
+      const key = `__ESC_NL_${escapeIndex++}__`;
+      escapedNewlineMap[key] = "\\n";
+      return key;
+    });
+    
+    // 按 \n 分割，创建多个行（不分割转义的 \\n）
+    const lines = textStr.split(/\\n/g);
+    
+    // 检查上一行是否以换行符结尾，如果不是则第一行追加到上一行
+    let shouldAppend = !isLastLineEndsWithNewline() && virtualList.rows.length > 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const lineContent = lines[i];
+      
+      // 如果是空行（连续换行），创建空行
+      if (lineContent === "" && i > 0) {
+        const emptyLine = document.createElement("div");
+        emptyLine.className = "sa-terminal-log-line";
+        
+        const textSpan = document.createElement("span");
+        textSpan.className = "sa-terminal-log-text";
+        textSpan.textContent = "";
+        textSpan.title = "";
+        emptyLine.appendChild(textSpan);
+        
+        // 只有第一行需要考虑链接
+        if (i === 0 && thread) {
+          const blockId = thread.peekStack();
+          const targetId = thread.target.id;
+          const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+          
+          if (targetInfo && targetInfo.exists && blockId) {
+            const linkWrapper = document.createElement("span");
+            linkWrapper.className = "sa-terminal-log-link-wrapper";
+            linkWrapper.textContent = "[";
+            const link = createBlockLink(targetInfo, blockId);
+            link.className = "sa-terminal-block-link";
+            linkWrapper.appendChild(link);
+            linkWrapper.appendChild(document.createTextNode("]"));
+            emptyLine.appendChild(linkWrapper);
+          }
         }
-        // 更新内容哈希
-        lastRow.contentHash = getElementContentHash(lastRow.element);
-        // 更新虚拟列表
-        virtualList.renderedStartIndex = -1;
-        virtualList.renderedEndIndex = -1;
-        if (virtualList.visible) {
-          virtualList._updateContent();
-          virtualList._scrollToEnd();
-        }
-        return;
+        
+        addLogLineWithElement(emptyLine);
+        shouldAppend = false;
+        continue;
       }
+      
+      // 检查是否需要追加到上一行
+      if (shouldAppend && i === 0) {
+        const lastRow = virtualList.rows[virtualList.rows.length - 1];
+        if (lastRow && lastRow.element) {
+          const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
+          if (textElement) {
+            // 解析 BBCode
+            let parsedText = parseBBCode(lineContent);
+            // 恢复转义的换行符
+            Object.keys(escapedNewlineMap).forEach(key => {
+              parsedText = parsedText.replace(key, escapedNewlineMap[key]);
+            });
+            textElement.innerHTML += parsedText;
+            
+            // 恢复 title 中的转义换行符
+            let titleContent = lineContent;
+            Object.keys(escapedNewlineMap).forEach(key => {
+              titleContent = titleContent.replace(key, escapedNewlineMap[key]);
+            });
+            textElement.title += titleContent;
+          }
+          // 更新内容哈希
+          lastRow.contentHash = getElementContentHash(lastRow.element);
+          shouldAppend = false;
+          continue;
+        }
+      }
+      
+      // 创建新行
+      const line = document.createElement("div");
+      line.className = "sa-terminal-log-line";
+      
+      if (markClass && markText) {
+        const mark = document.createElement("span");
+        mark.className = `sa-terminal-log-mark ${markClass}`;
+        mark.textContent = markText;
+        line.appendChild(mark);
+      }
+      
+      const textSpan = document.createElement("span");
+      textSpan.className = "sa-terminal-log-text";
+      // 解析 BBCode
+      let parsedText = parseBBCode(lineContent);
+      // 恢复转义的换行符
+      Object.keys(escapedNewlineMap).forEach(key => {
+        parsedText = parsedText.replace(key, escapedNewlineMap[key]);
+      });
+      textSpan.innerHTML = parsedText;
+      
+      // 恢复 title 中的转义换行符
+      let titleContent = lineContent;
+      Object.keys(escapedNewlineMap).forEach(key => {
+        titleContent = titleContent.replace(key, escapedNewlineMap[key]);
+      });
+      textSpan.title = titleContent;
+      line.appendChild(textSpan);
+      
+      // 只有第一行需要添加链接
+      if (i === 0 && thread) {
+        const blockId = thread.peekStack();
+        const targetId = thread.target.id;
+        const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+        
+        if (targetInfo && targetInfo.exists && blockId) {
+          const linkWrapper = document.createElement("span");
+          linkWrapper.className = "sa-terminal-log-link-wrapper";
+          linkWrapper.textContent = "[";
+          const link = createBlockLink(targetInfo, blockId);
+          link.className = "sa-terminal-block-link";
+          linkWrapper.appendChild(link);
+          linkWrapper.appendChild(document.createTextNode("]"));
+          line.appendChild(linkWrapper);
+        }
+      }
+      
+      addLogLineWithElement(line);
+      shouldAppend = false;
     }
-    
-    // 否则创建新行
-    const line = document.createElement("div");
-    line.className = "sa-terminal-log-line";
-    
-    if (markClass && markText) {
-      const mark = document.createElement("span");
-      mark.className = `sa-terminal-log-mark ${markClass}`;
-      mark.textContent = markText;
-      line.appendChild(mark);
-    }
-    
-    const textSpan = document.createElement("span");
-    textSpan.className = "sa-terminal-log-text";
-    // 解析 BBCode
-    const parsedText = parseBBCode(textStr);
-    textSpan.innerHTML = parsedText;
-    textSpan.title = textStr;
-    line.appendChild(textSpan);
-    
-    const blockId = thread ? thread.peekStack() : null;
-    const targetId = thread ? thread.target.id : null;
-    const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
-    
-    if (targetInfo && targetInfo.exists && blockId) {
-      const linkWrapper = document.createElement("span");
-      linkWrapper.className = "sa-terminal-log-link-wrapper";
-      linkWrapper.textContent = "[";
-      const link = createBlockLink(targetInfo, blockId);
-      link.className = "sa-terminal-block-link";
-      linkWrapper.appendChild(link);
-      linkWrapper.appendChild(document.createTextNode("]"));
-      line.appendChild(linkWrapper);
-    }
-    
-    addLogLineWithElement(line);
   };
 
   // 添加输出块到 Scratch
