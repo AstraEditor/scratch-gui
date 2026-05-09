@@ -2360,7 +2360,7 @@ const createBBCodeLogLines = (text, thread, options = {}) => {
     displayName: msg("block-bbcode-example") || "BBCode 示例",
     callback: () => {
       // 返回 BBCode 示例
-      return "可以使用少量BBCode来自定义输出内容的样式。比如使用\\[color=#66ccff]文本\\[/color]或者\\[c]就可以显示[color=#66ccff]有颜色的文本[/color]了。\n同时，多个颜色将创建一个渐变色的文本，比如你可以使用\\[color=red blue]来创建一个[color=red blue]红到蓝渐变的文本[/color]。\n使用\\[background]或\\[bg]标签可以为指定文本设置[background=#0099ff]背景色[/background]，同时[bg=#66ccff #0099ff]渐变色[/bg]依旧受用。\n同样的，\\[bold]或者|\[b]可以让[b]文本加粗[/b]，\\[italic]或者\[i]可以让[i]文本倾斜[/i]，\n\[underline]或者\\[u]可以给[u]文本下划线[/u]，\\[strikethrough]或者\\[s]可以[s]划掉文本[/s]，甚至你可以使用\\[url]标签来给一段文本加上[url=https://cyberneko.cn]超链接[/url]。\n最后，记住使用\\\\n来换行（当然，直接使用换行符也可以换行）。"},
+      return "可以使用少量BBCode来自定义输出内容的样式。比如使用\\[color=#66ccff]文本\\[/color]或者\\[c]就可以显示[color=#66ccff]有颜色的文本[/color]了。\n同时，多个颜色将创建一个渐变色的文本，比如你可以使用\\[color=red blue]来创建一个[color=red blue]红到蓝渐变的文本[/color]。\n使用\\[background]或\\[bg]标签可以为指定文本设置[background=#0099ff]背景色[/background]，同时[bg=#66ccff #0099ff]渐变色[/bg]依旧受用。\n同样的，\\[bold]或者\\[b]可以让[b]文本加粗[/b]，\\[italic]或者\\[i]可以让[i]文本倾斜[/i]，\n\[underline]或者\\[u]可以给[u]文本下划线[/u]，\\[strikethrough]或者\\[s]可以[s]划掉文本[/s]，甚至你可以使用\\[url]标签来给一段文本加上[url=https://cyberneko.cn]超链接[/url]。\n最后，记住使用\\\\n来换行（当然，直接使用换行符也可以换行）。"},
     return: 1
   })
 
