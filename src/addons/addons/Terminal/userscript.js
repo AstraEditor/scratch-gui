@@ -1910,6 +1910,122 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
+  // BBCode 解析函数
+  const parseBBCode = (text) => {
+    let result = text;
+    
+    // 处理转义字符（先存储起来）
+    const escapeMap = {};
+    let escapeIndex = 0;
+    result = result.replace(/\\(.)/g, (match, char) => {
+      const key = `__ESCAPE_${escapeIndex++}__`;
+      escapeMap[key] = char;
+      return key;
+    });
+    
+    // 颜色标签 [color=...] 或 [c=...]
+    result = result.replace(/\[color=([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
+    result = result.replace(/\[c=([^\]]+)\](.*?)\[\/c\]/gi, '<span style="color:$1">$2</span>');
+    
+    // 渐变颜色 [color=... ...] 或 [c=... ...]
+    result = result.replace(/\[color=([^\]]+)\](.*?)\[\/color\]/gi, (match, colors, content) => {
+      const colorArray = colors.split(/\s+/).filter(c => c);
+      if (colorArray.length >= 2) {
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
+      }
+      return `<span style="color:${colors}">${content}</span>`;
+    });
+    result = result.replace(/\[c=([^\]]+)\](.*?)\[\/c\]/gi, (match, colors, content) => {
+      const colorArray = colors.split(/\s+/).filter(c => c);
+      if (colorArray.length >= 2) {
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
+      }
+      return `<span style="color:${colors}">${content}</span>`;
+    });
+    
+    // 背景色标签 [background=...] 或 [bg=...]
+    result = result.replace(/\[background=([^\]]+)\](.*?)\[\/background\]/gi, '<span style="background-color:$1">$2</span>');
+    result = result.replace(/\[bg=([^\]]+)\](.*?)\[\/bg\]/gi, '<span style="background-color:$1">$2</span>');
+    
+    // 渐变背景 [background=... ...] 或 [bg=... ...]
+    result = result.replace(/\[background=([^\]]+)\](.*?)\[\/background\]/gi, (match, colors, content) => {
+      const colorArray = colors.split(/\s+/).filter(c => c);
+      if (colorArray.length >= 2) {
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')});">${content}</span>`;
+      }
+      return `<span style="background-color:${colors}">${content}</span>`;
+    });
+    result = result.replace(/\[bg=([^\]]+)\](.*?)\[\/bg\]/gi, (match, colors, content) => {
+      const colorArray = colors.split(/\s+/).filter(c => c);
+      if (colorArray.length >= 2) {
+        return `<span style="background: linear-gradient(to right, ${colorArray.join(', ')});">${content}</span>`;
+      }
+      return `<span style="background-color:${colors}">${content}</span>`;
+    });
+    
+    // 粗体标签 [bold=...] 或 [b=...]
+    result = result.replace(/\[bold(=([\d]+(px)?))?\](.*?)\[\/bold\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[bold(=[^\]]+)?\]/gi, '').replace(/\[\/bold\]/gi, '');
+      if (weight) {
+        return `<span style="font-weight:${weight}">${content}</span>`;
+      }
+      return `<strong>${content}</strong>`;
+    });
+    result = result.replace(/\[b(=([\d]+(px)?))?\](.*?)\[\/b\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[b(=[^\]]+)?\]/gi, '').replace(/\[\/b\]/gi, '');
+      if (weight) {
+        return `<span style="font-weight:${weight}">${content}</span>`;
+      }
+      return `<strong>${content}</strong>`;
+    });
+    
+    // 斜体标签 [italic] 或 [i]
+    result = result.replace(/\[italic\](.*?)\[\/italic\]/gi, '<em>$1</em>');
+    result = result.replace(/\[i\](.*?)\[\/i\]/gi, '<em>$1</em>');
+    
+    // 下划线标签 [underline=...] 或 [u=...]
+    result = result.replace(/\[underline(=([\d]+(px)?))?\](.*?)\[\/underline\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[underline(=[^\]]+)?\]/gi, '').replace(/\[\/underline\]/gi, '');
+      if (weight) {
+        return `<span style="text-decoration: underline; text-decoration-thickness:${weight}">${content}</span>`;
+      }
+      return `<u>${content}</u>`;
+    });
+    result = result.replace(/\[u(=([\d]+(px)?))?\](.*?)\[\/u\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[u(=[^\]]+)?\]/gi, '').replace(/\[\/u\]/gi, '');
+      if (weight) {
+        return `<span style="text-decoration: underline; text-decoration-thickness:${weight}">${content}</span>`;
+      }
+      return `<u>${content}</u>`;
+    });
+    
+    // 删除线标签 [strikethrough=...] 或 [s=...]
+    result = result.replace(/\[strikethrough(=([\d]+(px)?))?\](.*?)\[\/strikethrough\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[strikethrough(=[^\]]+)?\]/gi, '').replace(/\[\/strikethrough\]/gi, '');
+      if (weight) {
+        return `<span style="text-decoration: line-through; text-decoration-thickness:${weight}">${content}</span>`;
+      }
+      return `<s>${content}</s>`;
+    });
+    result = result.replace(/\[s(=([\d]+(px)?))?\](.*?)\[\/s\]/gi, (match, p1, weight) => {
+      const content = match.replace(/\[s(=[^\]]+)?\]/gi, '').replace(/\[\/s\]/gi, '');
+      if (weight) {
+        return `<span style="text-decoration: line-through; text-decoration-thickness:${weight}">${content}</span>`;
+      }
+      return `<s>${content}</s>`;
+    });
+    
+    // 链接标签 [url=...]
+    result = result.replace(/\[url=([^\]]+)\](.*?)\[\/url\]/gi, '<a href="$1" target="_blank" class="sa-terminal-url-link">$2</a>');
+    
+    // 恢复转义字符
+    Object.keys(escapeMap).forEach(key => {
+      result = result.replace(key, escapeMap[key]);
+    });
+    
+    return result;
+  };
+
   const createTextWithLinks = (container, text, color) => {
     container.innerHTML = "";
     container.style.color = color || "";
@@ -2038,6 +2154,76 @@ export default async function ({ addon, console, msg }) {
     addLogLineWithElement(line);
   };
 
+  // 创建支持 BBCode 的日志行
+  const createBBCodeLogLines = (text, thread, options = {}) => {
+    const { markClass, markText, appendToLast = false } = options;
+    const textStr = String(text ?? "");
+    
+    // 检查上一行是否以换行符结尾，如果不是则追加到上一行
+    const lastLineEndsWithNewline = isLastLineEndsWithNewline();
+    if (!lastLineEndsWithNewline && virtualList.rows.length > 0) {
+      const lastRow = virtualList.rows[virtualList.rows.length - 1];
+      if (lastRow.element) {
+        const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
+        if (textElement) {
+          // 解析 BBCode 并追加
+          const parsedText = parseBBCode(textStr);
+          const tempContainer = document.createElement("span");
+          tempContainer.innerHTML = parsedText;
+          // 追加内容
+          textElement.innerHTML += parsedText;
+          textElement.title += textStr;
+        }
+        // 更新内容哈希
+        lastRow.contentHash = getElementContentHash(lastRow.element);
+        // 更新虚拟列表
+        virtualList.renderedStartIndex = -1;
+        virtualList.renderedEndIndex = -1;
+        if (virtualList.visible) {
+          virtualList._updateContent();
+          virtualList._scrollToEnd();
+        }
+        return;
+      }
+    }
+    
+    // 否则创建新行
+    const line = document.createElement("div");
+    line.className = "sa-terminal-log-line";
+    
+    if (markClass && markText) {
+      const mark = document.createElement("span");
+      mark.className = `sa-terminal-log-mark ${markClass}`;
+      mark.textContent = markText;
+      line.appendChild(mark);
+    }
+    
+    const textSpan = document.createElement("span");
+    textSpan.className = "sa-terminal-log-text";
+    // 解析 BBCode
+    const parsedText = parseBBCode(textStr);
+    textSpan.innerHTML = parsedText;
+    textSpan.title = textStr;
+    line.appendChild(textSpan);
+    
+    const blockId = thread ? thread.peekStack() : null;
+    const targetId = thread ? thread.target.id : null;
+    const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+    
+    if (targetInfo && targetInfo.exists && blockId) {
+      const linkWrapper = document.createElement("span");
+      linkWrapper.className = "sa-terminal-log-link-wrapper";
+      linkWrapper.textContent = "[";
+      const link = createBlockLink(targetInfo, blockId);
+      link.className = "sa-terminal-block-link";
+      linkWrapper.appendChild(link);
+      linkWrapper.appendChild(document.createTextNode("]"));
+      line.appendChild(linkWrapper);
+    }
+    
+    addLogLineWithElement(line);
+  };
+
   // 添加输出块到 Scratch
   addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
     args: ["text"],
@@ -2111,6 +2297,35 @@ export default async function ({ addon, console, msg }) {
         }
         // 如果 end 是空字符串，则只输出 text，不添加任何结尾
         createLogLines(outputText, thread);
+      }
+    },
+  });
+
+  // 添加支持 BBCode 的输出积木（默认换行）
+  addon.tab.addBlock("\u200B\u200Bterminal_log_bbcode\u200B\u200B %s", {
+    args: ["text"],
+    displayName: msg("block-log-bbcode") || "输出 BBCode %s",
+    callback: ({ text }, thread) => {
+      if (terminalOutput) {
+        // 默认在输出末尾添加换行符
+        createBBCodeLogLines(text + "\n", thread);
+      }
+    },
+  });
+
+  // 添加支持 BBCode 的输出积木（可指定结尾字符）
+  addon.tab.addBlock("\u200B\u200Bterminal_write_bbcode\u200B\u200B %s %s", {
+    args: ["text", "end"],
+    displayName: msg("block-write-bbcode") || "输出 BBCode %s 并以 %s 结尾",
+    callback: ({ text, end }, thread) => {
+      if (terminalOutput) {
+        let outputText = text;
+        if (end === "\\n" || end === "\n") {
+          outputText = text + "\n";
+        } else if (end && end !== "") {
+          outputText = text + end;
+        }
+        createBBCodeLogLines(outputText, thread);
       }
     },
   });
