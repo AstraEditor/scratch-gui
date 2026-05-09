@@ -14,9 +14,9 @@ const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
 
 /*
   todo:
-  1.允许获取上一行输出
-  2.允许输出内容不合并
-  3.允许不换行输出
+  1.允许获取上一行输出 [已完成]
+  2.允许输出内容不合并 [已完成]
+  3.允许不换行输出 [已完成]
   4.BBCode支持
 */
 
@@ -2147,7 +2147,7 @@ export default async function ({ addon, console, msg }) {
   // 添加返回值积木（返回上次输入时间戳）
   vm.addAddonBlock({
     procedureCode: "terminal_get_input_timestamp",
-    displayName: "上次输入时间戳",
+    displayName: msg("block-input-timestamp"),
     callback: () => {
       // 返回上次用户输入的时间戳，如果没有则返回0
       return lastInputTimestamp;
@@ -2158,7 +2158,7 @@ export default async function ({ addon, console, msg }) {
   // 添加返回值积木（返回上一行输出内容）
   vm.addAddonBlock({
     procedureCode: "terminal_get_last_output",
-    displayName: "上一行输出",
+    displayName: msg("block-last-output"),
     callback: () => {
       // 返回上一行输出的内容，包括硬编码的输出内容
       if (lastLogData && lastLogData.element) {
