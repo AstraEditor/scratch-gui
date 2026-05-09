@@ -459,6 +459,7 @@
     "Terminal/button-settings": "Terminal Settings",
     "Terminal/setting-console-error": "Sync Console Error",
     "Terminal/setting-merge-output": "Merge the Same Output",
+    "Terminal/setting-show-block-links": "Show Output Block Links",
     "Terminal/button-back": "← Back",
     "background/background": "Background",
     "background/clear": "Clear background",

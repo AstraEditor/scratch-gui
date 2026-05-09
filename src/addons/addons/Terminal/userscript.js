@@ -1106,6 +1106,96 @@ export default async function ({ addon, console, msg }) {
   mergeOutputSwitchContainer.appendChild(mergeOutputSwitch);
   settingsContent.appendChild(mergeOutputSwitchContainer);
 
+  // 显示跳转按钮开关设置
+  let showBlockLinksEnabled = true;
+
+  const showBlockLinksSwitchContainer = document.createElement("div");
+  showBlockLinksSwitchContainer.className = "sa-terminal-setting-item";
+  showBlockLinksSwitchContainer.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #2d2d2d;
+    border-radius: 6px;
+  `;
+
+  const showBlockLinksLabel = document.createElement("span");
+  showBlockLinksLabel.style.cssText = `
+    color: #d4d4d4;
+    font-size: 13px;
+  `;
+  showBlockLinksLabel.textContent = msg("setting-show-block-links") || "显示输出积木跳转按钮";
+
+  const showBlockLinksSwitch = document.createElement("label");
+  showBlockLinksSwitch.className = "sa-terminal-switch";
+  showBlockLinksSwitch.style.cssText = `
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+  `;
+
+  const showBlockLinksSwitchInput = document.createElement("input");
+  showBlockLinksSwitchInput.type = "checkbox";
+  showBlockLinksSwitchInput.className = "sa-terminal-switch-input";
+  showBlockLinksSwitchInput.checked = true;
+  showBlockLinksSwitchInput.style.cssText = `
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  `;
+
+  const showBlockLinksSwitchBackground = document.createElement("span");
+  showBlockLinksSwitchBackground.className = "sa-terminal-switch-background";
+  showBlockLinksSwitchBackground.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--looks-secondary);
+    transition: 0.3s;
+    border-radius: 22px;
+  `;
+
+  const showBlockLinksSwitchSlider = document.createElement("span");
+  showBlockLinksSwitchSlider.className = "sa-terminal-switch-slider";
+  showBlockLinksSwitchSlider.style.cssText = `
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    z-index: 1;
+    transform: translateX(18px);
+  `;
+
+  showBlockLinksSwitchInput.addEventListener("change", (e) => {
+    if (e.target.checked) {
+      showBlockLinksSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      showBlockLinksSwitchSlider.style.transform = "translateX(18px)";
+      showBlockLinksEnabled = true;
+      saveSettings({ showBlockLinksEnabled: true });
+    } else {
+      showBlockLinksSwitchBackground.style.backgroundColor = "#555555";
+      showBlockLinksSwitchSlider.style.transform = "translateX(0)";
+      showBlockLinksEnabled = false;
+      saveSettings({ showBlockLinksEnabled: false });
+    }
+  });
+
+  showBlockLinksSwitch.appendChild(showBlockLinksSwitchInput);
+  showBlockLinksSwitch.appendChild(showBlockLinksSwitchBackground);
+  showBlockLinksSwitch.appendChild(showBlockLinksSwitchSlider);
+  showBlockLinksSwitchContainer.appendChild(showBlockLinksLabel);
+  showBlockLinksSwitchContainer.appendChild(showBlockLinksSwitch);
+  settingsContent.appendChild(showBlockLinksSwitchContainer);
+
   settingsPanel.appendChild(settingsContent);
 
   // 切换显示设置界面（完全替代整个 Terminal 面板）
@@ -1428,7 +1518,7 @@ export default async function ({ addon, console, msg }) {
     } catch (e) {
       // ignore
     }
-    return { consoleErrorEnabled: true, mergeOutputEnabled: true };
+    return { consoleErrorEnabled: true, mergeOutputEnabled: true, showBlockLinksEnabled: true };
   };
 
   // 保存设置
@@ -1667,6 +1757,18 @@ export default async function ({ addon, console, msg }) {
       mergeOutputSwitchSlider.style.transform = "translateX(18px)";
       enableMergeOutput();
     }
+
+    if (!settings.showBlockLinksEnabled) {
+      showBlockLinksSwitchInput.checked = false;
+      showBlockLinksSwitchBackground.style.backgroundColor = "#555555";
+      showBlockLinksSwitchSlider.style.transform = "translateX(0)";
+      showBlockLinksEnabled = false;
+    } else {
+      showBlockLinksSwitchInput.checked = true;
+      showBlockLinksSwitchBackground.style.backgroundColor = "var(--looks-secondary)";
+      showBlockLinksSwitchSlider.style.transform = "translateX(18px)";
+      showBlockLinksEnabled = true;
+    }
   };
   initSettingsSwitch();
 
@@ -1840,7 +1942,7 @@ export default async function ({ addon, console, msg }) {
           const blockId = thread.peekStack();
           const targetId = thread.target.id;
           const targetInfo = getTargetInfoById(targetId);
-          if (blockId && targetInfo.exists) {
+          if (showBlockLinksEnabled && blockId && targetInfo.exists) {
             const linkWrapper = document.createElement("span");
             linkWrapper.className = "sa-terminal-log-link-wrapper";
             linkWrapper.textContent = "[";
@@ -2112,7 +2214,7 @@ export default async function ({ addon, console, msg }) {
     const targetId = thread ? thread.target.id : null;
     const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
     
-    if (targetInfo && targetInfo.exists && blockId) {
+    if (showBlockLinksEnabled && targetInfo && targetInfo.exists && blockId) {
       const linkWrapper = document.createElement("span");
       linkWrapper.className = "sa-terminal-log-link-wrapper";
       linkWrapper.textContent = "[";
@@ -2127,7 +2229,7 @@ export default async function ({ addon, console, msg }) {
   };
 
   // BBCode 输出队列，解决快速调用时的竞态条件
-const bbcodeOutputQueue = [];
+  const bbcodeOutputQueue = [];
 let isProcessingBBCodeQueue = false;
 
 // 处理 BBCode 输出队列
@@ -2209,7 +2311,7 @@ const processBBCodeQueue = () => {
       const targetId = thread.target.id;
       const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
       
-      if (targetInfo && targetInfo.exists && blockId) {
+      if (showBlockLinksEnabled && targetInfo && targetInfo.exists && blockId) {
         const linkWrapper = document.createElement("span");
         linkWrapper.className = "sa-terminal-log-link-wrapper";
         linkWrapper.textContent = "[";

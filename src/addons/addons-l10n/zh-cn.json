@@ -445,6 +445,7 @@
     "Terminal/button-settings": "终端设置",
     "Terminal/setting-console-error": "同步控制台报错",
     "Terminal/setting-merge-output": "合并相同输出",
+    "Terminal/setting-show-block-links": "显示输出积木跳转按钮",
     "Terminal/button-back": "← 返回",
     "background/background": "背景",
     "background/clear": "清除背景",
