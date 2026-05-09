@@ -16,38 +16,9 @@ const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
   todo:
   1.允许获取上一行输出 [已完成]
   2.允许输出内容不合并 [已完成]
-  3.允许不换行输出 [已完成]
+  3.允许不换行输出 [已完成] [有问题]
   4.BBCode支持
 */
-
-/**
- * 节流函数 - 限制函数执行频率
- * @param {Function} func - 要执行的函数
- * @param {number} wait - 等待时间（毫秒）
- * @returns {Function} 节流后的函数
- */
-function throttle(func, wait) {
-  let timeout = null;
-  let lastExecTime = 0;
-  
-  return function(...args) {
-    const currentTime = Date.now();
-    const remaining = wait - (currentTime - lastExecTime);
-    
-    if (remaining <= 0) {
-      clearTimeout(timeout);
-      timeout = null;
-      lastExecTime = currentTime;
-      return func.apply(this, args);
-    } else if (!timeout) {
-      timeout = setTimeout(() => {
-        timeout = null;
-        lastExecTime = Date.now();
-        func.apply(this, args);
-      }, remaining);
-    }
-  };
-}
 
 class TerminalVirtualList {
   constructor(options = {}) {
@@ -2087,11 +2058,18 @@ export default async function ({ addon, console, msg }) {
     if (lastRow.element) {
       const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
       if (textElement) {
-        const content = textElement.textContent;
-        return content.endsWith("\n");
+        // 检查 textContent 是否以换行符结尾（普通日志）
+        if (textElement.textContent.endsWith("\n")) {
+          return true;
+        }
+        // 检查 innerHTML 是否以 <br> 结尾（BBCode 日志）
+        const innerHTML = textElement.innerHTML;
+        if (innerHTML.trimEnd().endsWith('<br>') || innerHTML.trimEnd().endsWith('<br/>')) {
+          return true;
+        }
       }
     }
-    return true;
+    return false; // 默认返回 false，不追加
   };
 
   const createLogLines = (text, thread, options = {}) => {
@@ -2157,143 +2135,118 @@ export default async function ({ addon, console, msg }) {
     addLogLineWithElement(line);
   };
 
-  // 创建支持 BBCode 的日志行（\n 创建新行）
-  const createBBCodeLogLines = (text, thread, options = {}) => {
-    const { markClass, markText } = options;
-    let textStr = String(text ?? "");
+  // BBCode 输出队列，解决快速调用时的竞态条件
+const bbcodeOutputQueue = [];
+let isProcessingBBCodeQueue = false;
+
+// 处理 BBCode 输出队列
+const processBBCodeQueue = () => {
+  if (isProcessingBBCodeQueue || bbcodeOutputQueue.length === 0) {
+    return;
+  }
+  
+  isProcessingBBCodeQueue = true;
+  
+  const { text, thread, options } = bbcodeOutputQueue.shift();
+  const { markClass, markText } = options || {};
+  let textStr = String(text ?? "");
+  
+  // 先处理双反斜杠后跟 n 的情况，保护起来
+  // \\n 应该显示为字面的 \n
+  const escapedNewlineMap = {};
+  let escapeIndex = 0;
+  textStr = textStr.replace(/\\\\n/g, () => {
+    const key = `__ESC_NL_${escapeIndex++}__`;
+    escapedNewlineMap[key] = "\\n";
+    return key;
+  });
+  
+  // 按转义的 \n 或实际的换行符分割，创建多个行
+  const lines = textStr.split(/(?:\\n|\n)/g);
+  
+  // 同步处理所有行
+  for (let i = 0; i < lines.length; i++) {
+    let lineContent = lines[i];
     
-    // 先处理双反斜杠后跟 n 的情况，保护起来
-    // \\n 应该显示为字面的 \n
-    const escapedNewlineMap = {};
-    let escapeIndex = 0;
-    textStr = textStr.replace(/\\\\n/g, () => {
-      const key = `__ESC_NL_${escapeIndex++}__`;
-      escapedNewlineMap[key] = "\\n";
-      return key;
-    });
-    
-    // 按转义的 \n 或实际的换行符分割，创建多个行
-    const lines = textStr.split(/(?:\\n|\n)/g);
-    
-    // 检查上一行是否以换行符结尾，如果不是则第一行追加到上一行
-    let shouldAppend = !isLastLineEndsWithNewline() && virtualList.rows.length > 0;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const lineContent = lines[i];
-      
-      // 如果是空行（连续换行），创建空行
-      if (lineContent === "" && i > 0) {
-        const emptyLine = document.createElement("div");
-        emptyLine.className = "sa-terminal-log-line";
-        
-        const textSpan = document.createElement("span");
-        textSpan.className = "sa-terminal-log-text";
-        textSpan.textContent = "";
-        textSpan.title = "";
-        emptyLine.appendChild(textSpan);
-        
-        // 只有第一行需要考虑链接
-        if (i === 0 && thread) {
-          const blockId = thread.peekStack();
-          const targetId = thread.target.id;
-          const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
-          
-          if (targetInfo && targetInfo.exists && blockId) {
-            const linkWrapper = document.createElement("span");
-            linkWrapper.className = "sa-terminal-log-link-wrapper";
-            linkWrapper.textContent = "[";
-            const link = createBlockLink(targetInfo, blockId);
-            link.className = "sa-terminal-block-link";
-            linkWrapper.appendChild(link);
-            linkWrapper.appendChild(document.createTextNode("]"));
-            emptyLine.appendChild(linkWrapper);
-          }
-        }
-        
-        addLogLineWithElement(emptyLine);
-        shouldAppend = false;
-        continue;
-      }
-      
-      // 检查是否需要追加到上一行
-      if (shouldAppend && i === 0) {
-        const lastRow = virtualList.rows[virtualList.rows.length - 1];
-        if (lastRow && lastRow.element) {
-          const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
-          if (textElement) {
-            // 解析 BBCode
-            let parsedText = parseBBCode(lineContent);
-            // 恢复转义的换行符
-            Object.keys(escapedNewlineMap).forEach(key => {
-              parsedText = parsedText.replace(key, escapedNewlineMap[key]);
-            });
-            textElement.innerHTML += parsedText;
-            
-            // 恢复 title 中的转义换行符
-            let titleContent = lineContent;
-            Object.keys(escapedNewlineMap).forEach(key => {
-              titleContent = titleContent.replace(key, escapedNewlineMap[key]);
-            });
-            textElement.title += titleContent;
-          }
-          // 更新内容哈希
-          lastRow.contentHash = getElementContentHash(lastRow.element);
-          shouldAppend = false;
-          continue;
-        }
-      }
-      
-      // 创建新行
-      const line = document.createElement("div");
-      line.className = "sa-terminal-log-line";
-      
-      if (markClass && markText) {
-        const mark = document.createElement("span");
-        mark.className = `sa-terminal-log-mark ${markClass}`;
-        mark.textContent = markText;
-        line.appendChild(mark);
-      }
+    // 如果是空行（连续换行），创建空行
+    if (lineContent === "" && i > 0) {
+      const emptyLine = document.createElement("div");
+      emptyLine.className = "sa-terminal-log-line";
       
       const textSpan = document.createElement("span");
       textSpan.className = "sa-terminal-log-text";
-      // 解析 BBCode
-      let parsedText = parseBBCode(lineContent);
-      // 恢复转义的换行符
-      Object.keys(escapedNewlineMap).forEach(key => {
-        parsedText = parsedText.replace(key, escapedNewlineMap[key]);
-      });
-      textSpan.innerHTML = parsedText;
+      textSpan.textContent = "";
+      textSpan.title = "";
+      emptyLine.appendChild(textSpan);
       
-      // 恢复 title 中的转义换行符
-      let titleContent = lineContent;
-      Object.keys(escapedNewlineMap).forEach(key => {
-        titleContent = titleContent.replace(key, escapedNewlineMap[key]);
-      });
-      textSpan.title = titleContent;
-      line.appendChild(textSpan);
-      
-      // 只有第一行需要添加链接
-      if (i === 0 && thread) {
-        const blockId = thread.peekStack();
-        const targetId = thread.target.id;
-        const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
-        
-        if (targetInfo && targetInfo.exists && blockId) {
-          const linkWrapper = document.createElement("span");
-          linkWrapper.className = "sa-terminal-log-link-wrapper";
-          linkWrapper.textContent = "[";
-          const link = createBlockLink(targetInfo, blockId);
-          link.className = "sa-terminal-block-link";
-          linkWrapper.appendChild(link);
-          linkWrapper.appendChild(document.createTextNode("]"));
-          line.appendChild(linkWrapper);
-        }
-      }
-      
-      addLogLineWithElement(line);
-      shouldAppend = false;
+      addLogLineWithElement(emptyLine);
+      continue;
     }
-  };
+    
+    // 创建新行
+    const line = document.createElement("div");
+    line.className = "sa-terminal-log-line";
+    
+    if (markClass && markText) {
+      const mark = document.createElement("span");
+      mark.className = `sa-terminal-log-mark ${markClass}`;
+      mark.textContent = markText;
+      line.appendChild(mark);
+    }
+    
+    const textSpan = document.createElement("span");
+    textSpan.className = "sa-terminal-log-text";
+    // 解析 BBCode
+    let parsedText = parseBBCode(lineContent);
+    // 恢复转义的换行符
+    Object.keys(escapedNewlineMap).forEach(key => {
+      parsedText = parsedText.replace(key, escapedNewlineMap[key]);
+    });
+    textSpan.innerHTML = parsedText;
+    
+    // 恢复 title 中的转义换行符
+    let titleContent = lineContent;
+    Object.keys(escapedNewlineMap).forEach(key => {
+      titleContent = titleContent.replace(key, escapedNewlineMap[key]);
+    });
+    textSpan.title = titleContent;
+    line.appendChild(textSpan);
+    
+    // 只有第一行需要添加链接
+    if (i === 0 && thread) {
+      const blockId = thread.peekStack();
+      const targetId = thread.target.id;
+      const targetInfo = blockId && targetId ? getTargetInfoById(targetId) : null;
+      
+      if (targetInfo && targetInfo.exists && blockId) {
+        const linkWrapper = document.createElement("span");
+        linkWrapper.className = "sa-terminal-log-link-wrapper";
+        linkWrapper.textContent = "[";
+        const link = createBlockLink(targetInfo, blockId);
+        link.className = "sa-terminal-block-link";
+        linkWrapper.appendChild(link);
+        linkWrapper.appendChild(document.createTextNode("]"));
+        line.appendChild(linkWrapper);
+      }
+    }
+    
+    addLogLineWithElement(line);
+  }
+  
+  isProcessingBBCodeQueue = false;
+  
+  // 处理下一个队列项
+  setTimeout(processBBCodeQueue, 0);
+};
+
+// 创建支持 BBCode 的日志行（\n 创建新行）
+const createBBCodeLogLines = (text, thread, options = {}) => {
+  // 将输出请求加入队列
+  bbcodeOutputQueue.push({ text, thread, options });
+  
+  // 启动队列处理
+  processBBCodeQueue();
+};
 
   // 添加输出块到 Scratch
   addon.tab.addBlock("\u200B\u200Bterminal_log\u200B\u200B %s", {
@@ -2372,17 +2325,17 @@ export default async function ({ addon, console, msg }) {
     },
   });
 
-  // 添加支持 BBCode 的输出积木（默认换行）
-  addon.tab.addBlock("\u200B\u200Bterminal_log_bbcode\u200B\u200B %s", {
-    args: ["text"],
-    displayName: msg("block-log-bbcode") || "输出 BBCode %s",
-    callback: ({ text }, thread) => {
-      if (terminalOutput) {
-        // 默认在输出末尾添加换行符
-        createBBCodeLogLines(text + "\n", thread);
-      }
-    },
-  });
+  // // 添加支持 BBCode 的输出积木（默认换行）
+  // addon.tab.addBlock("\u200B\u200Bterminal_log_bbcode\u200B\u200B %s", {
+  //   args: ["text"],
+  //   displayName: msg("block-log-bbcode") || "输出 BBCode %s",
+  //   callback: ({ text }, thread) => {
+  //     if (terminalOutput) {
+  //       // 默认在输出末尾添加换行符
+  //       createBBCodeLogLines(text + "\n", thread);
+  //     }
+  //   },
+  // });
 
   // 添加支持 BBCode 的输出积木（可指定结尾字符）
   addon.tab.addBlock("\u200B\u200Bterminal_write_bbcode\u200B\u200B %s %s", {
@@ -2788,9 +2741,11 @@ export default async function ({ addon, console, msg }) {
           lines.forEach((lineContent, index) => {
             const resultLine = document.createElement("div");
             resultLine.className = "sa-terminal-result-line";
-            // 将空格转换为非断行空格以保留格式
-            const escapedContent = lineContent.replace(/ /g, '&nbsp;');
-            resultLine.innerHTML = escapedContent;
+            // 解析 BBCode
+            let parsedContent = parseBBCode(lineContent);
+            // 将空格转换为非断行空格以保留格式（在 BBCode 解析之后）
+            parsedContent = parsedContent.replace(/ /g, '&nbsp;');
+            resultLine.innerHTML = parsedContent;
             resultLine.title = lineContent;
             virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${lineContent}` });
           });
