@@ -370,8 +370,12 @@ export default async function ({ addon, console, msg }) {
     if (!isDraggingWindow) return;
     const x = e.clientX - dragOffsetX;
     const y = e.clientY - dragOffsetY;
-    floatingWindow.style.left = Math.max(0, x) + "px";
-    floatingWindow.style.top = Math.max(0, y) + "px";
+    const windowWidth = floatingWindow.offsetWidth;
+    const windowHeight = floatingWindow.offsetHeight;
+    const maxX = window.innerWidth - windowWidth;
+    const maxY = window.innerHeight - windowHeight;
+    floatingWindow.style.left = Math.min(Math.max(0, x), maxX) + "px";
+    floatingWindow.style.top = Math.min(Math.max(0, y), maxY) + "px";
   }
 
   function stopWindowDrag() {
@@ -432,6 +436,14 @@ export default async function ({ addon, console, msg }) {
     
     // 应用新的大小和位置
     if (floatingWindow) {
+      // 限制窗口位置，确保不会超出页面
+      const maxLeft = window.innerWidth - newWidth;
+      const maxTop = window.innerHeight - newHeight;
+      newLeft = Math.min(Math.max(0, newLeft), Math.max(0, maxLeft));
+      newTop = Math.min(Math.max(0, newTop), Math.max(0, maxTop));
+      // 再次确保大小不超过页面
+      newWidth = Math.min(newWidth, window.innerWidth);
+      newHeight = Math.min(newHeight, window.innerHeight);
       floatingWindow.style.width = newWidth + "px";
       floatingWindow.style.height = newHeight + "px";
       floatingWindow.style.left = newLeft + "px";
