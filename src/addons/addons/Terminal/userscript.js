@@ -2100,13 +2100,16 @@ export default async function ({ addon, console, msg }) {
     displayName: msg("block-write") || "输出 %s 并以 %s 结尾",
     callback: ({ text, end }, thread) => {
       if (terminalOutput) {
-        // 根据结尾字符决定是否在输出末尾添加换行符
-        // 如果结尾是 \n，则在输出末尾添加换行符
-        // 如果结尾是其他内容（如空值），则不添加换行符
+        // 根据结尾字符决定输出内容
         let outputText = text;
         if (end === "\\n" || end === "\n") {
+          // 如果结尾是换行符，则添加换行符
           outputText = text + "\n";
+        } else if (end && end !== "") {
+          // 如果结尾是其他非空字符串，则添加该字符串到输出末尾
+          outputText = text + end;
         }
+        // 如果 end 是空字符串，则只输出 text，不添加任何结尾
         createLogLines(outputText, thread);
       }
     },
