@@ -17,7 +17,7 @@ const clamp = (i, min, max) => Math.max(min, Math.min(max, i));
   1.允许获取上一行输出 [已完成]
   2.允许输出内容不合并 [已完成]
   3.允许不换行输出 [已完成] [有问题]
-  4.BBCode支持
+  4.BBCode支持 [完成不完善]
 */
 
 class TerminalVirtualList {
@@ -1389,7 +1389,7 @@ export default async function ({ addon, console, msg }) {
 
   // 初始化欢迎信息
   const welcomeLine1 = document.createElement("div");
-  welcomeLine1.textContent = msg("welcome-title") || "AstraEditor Terminal v1.2.0";
+  welcomeLine1.textContent = msg("welcome-title") || "AstraEditor Terminal v1.3.0";
   virtualList.appendLog({ element: welcomeLine1, contentHash: welcomeLine1.textContent });
 
   const welcomeLine2 = document.createElement("div");
@@ -2017,6 +2017,7 @@ export default async function ({ addon, console, msg }) {
       if (match.index > lastIndex) {
         const textNode = document.createElement("span");
         textNode.className = "sa-terminal-text-plain";
+        textNode.style.whiteSpace = "pre";
         textNode.textContent = text.slice(lastIndex, match.index);
         container.appendChild(textNode);
       }
@@ -2044,6 +2045,7 @@ export default async function ({ addon, console, msg }) {
     if (lastIndex < text.length) {
       const textNode = document.createElement("span");
       textNode.className = "sa-terminal-text-plain";
+      textNode.style.whiteSpace = "pre";
       textNode.textContent = text.slice(lastIndex);
       container.appendChild(textNode);
     }
@@ -2076,30 +2078,7 @@ export default async function ({ addon, console, msg }) {
     const { markClass, markText, color } = options;
     const textStr = String(text ?? "");
     
-    // 检查上一行是否以换行符结尾，如果不是则追加到上一行
-    const lastLineEndsWithNewline = isLastLineEndsWithNewline();
-    if (!lastLineEndsWithNewline && virtualList.rows.length > 0) {
-      const lastRow = virtualList.rows[virtualList.rows.length - 1];
-      if (lastRow.element) {
-        const textElement = lastRow.element.querySelector('.sa-terminal-log-text');
-        if (textElement) {
-          textElement.textContent += textStr;
-          textElement.title += textStr;
-        }
-        // 更新内容哈希（包含新追加的内容）
-        lastRow.contentHash = getElementContentHash(lastRow.element);
-        // 更新虚拟列表
-        virtualList.renderedStartIndex = -1;
-        virtualList.renderedEndIndex = -1;
-        if (virtualList.visible) {
-          virtualList._updateContent();
-          virtualList._scrollToEnd();
-        }
-        return;
-      }
-    }
-    
-    // 否则创建新行
+    // 创建新行（移除追加逻辑，避免竞态条件和开头空格丢失问题）
     const line = document.createElement("div");
     line.className = "sa-terminal-log-line";
     
@@ -2360,7 +2339,7 @@ const createBBCodeLogLines = (text, thread, options = {}) => {
     displayName: msg("block-bbcode-example") || "BBCode 示例",
     callback: () => {
       // 返回 BBCode 示例
-      return "可以使用少量BBCode来自定义输出内容的样式。比如使用\\\\[color=#66ccff]文本\\\\[/color]或者\\\\[c]就可以显示[color=#66ccff]有颜色的文本[/color]了。\\n同时，多个颜色将创建一个渐变色的文本，比如你可以使用\\\\[color=red blue]来创建一个[color=red blue]红到蓝渐变的文本[/color]。\\n使用\\\\[background]或\\\\[bg]标签可以为指定文本设置[background=#0099ff]背景色[/background]，同时[bg=#66ccff #0099ff]渐变色[/bg]依旧受用。\\n同样的，\\\\[bold]或者\\\\[b]可以让[b]文本加粗[/b]，\\\\[italic]或者\\\\[i]可以让[i]文本倾斜[/i]，\\n\\[underline]或者\\\\[u]可以给[u]文本下划线[/u]，\\\\[strikethrough]或者\\\\[s]可以[s]划掉文本[/s]，甚至你可以使用\\\\[url]标签来给一段文本加上[url=https://cyberneko.cn]超链接[/url]。\\n最后，记住使用\\\\\\\\n来换行（当然，直接使用换行符也可以换行）。"
+      return "可以使用少量BBCode来自定义输出内容的样式。比如使用\\[color=#66ccff]文本\\[/color]或者\\[c]就可以显示[color=#66ccff]有颜色的文本[/color]了。\n同时，多个颜色将创建一个渐变色的文本，比如你可以使用\\[color=red blue]来创建一个[color=red blue]红到蓝渐变的文本[/color]。\n使用\\[background]或\\[bg]标签可以为指定文本设置[background=#0099ff]背景色[/background]，同时[bg=#66ccff #0099ff]渐变色[/bg]依旧受用。\\n同样的，\\[bold]或者\\[b]可以让[b]文本加粗[/b]，\\[italic]或者\\[i]可以让[i]文本倾斜[/i]，\n\\[underline]或者\\[u]可以给[u]文本下划线[/u]，\\[strikethrough]或者\\[s]可以[s]划掉文本[/s]，甚至你可以使用\\[url]标签来给一段文本加上[url=https://cyberneko.cn]超链接[/url]。\n最后，记住使用\\\\n来换行（当然，直接使用换行符也可以换行）。"
     },
     return: 1
   })
@@ -2413,18 +2392,35 @@ const createBBCodeLogLines = (text, thread, options = {}) => {
     procedureCode: "terminal_get_last_output",
     displayName: msg("block-last-output"),
     callback: () => {
-      // 返回上一行输出的内容，包括硬编码的输出内容
-      if (lastLogData && lastLogData.element) {
-        return lastLogData.element.textContent || "";
-      }
-      // 如果 lastLogData 不存在，尝试从 virtualList.rows 获取最后一行
+      // 返回上一行输出的内容，不包含定位按钮，保留空格
       if (virtualList.rows.length > 0) {
         const lastRow = virtualList.rows[virtualList.rows.length - 1];
         if (lastRow.element) {
-          return lastRow.element.textContent || "";
-        }
-        if (lastRow.contentHash) {
-          return lastRow.contentHash;
+          // 尝试获取日志文本（积木输出）
+          let textElement = lastRow.element.querySelector('.sa-terminal-log-text');
+          if (textElement) {
+            return textElement.textContent || "";
+          }
+          // 尝试获取结果行文本（命令输出，如 echo）
+          if (lastRow.element.classList.contains('sa-terminal-result-line')) {
+            return lastRow.element.textContent || "";
+          }
+          // 尝试获取错误行文本（命令错误）
+          if (lastRow.element.classList.contains('sa-terminal-error-line')) {
+            return lastRow.element.textContent || "";
+          }
+          // 尝试获取日志行文本（硬编码指令输出）
+          if (lastRow.element.classList.contains('sa-terminal-log-line')) {
+            return lastRow.element.textContent || "";
+          }
+          // 尝试获取命令行文本（用户输入）
+          textElement = lastRow.element.querySelector('.sa-terminal-command-line-text');
+          if (textElement) {
+            // 移除开头的 "> " 提示符，并添加 [user] 前缀
+            const content = textElement.textContent || "";
+            const userInput = content.startsWith("> ") ? content.slice(2) : content;
+            return "[user] " + userInput;
+          }
         }
       }
       return "";
@@ -2599,7 +2595,7 @@ const createBBCodeLogLines = (text, thread, options = {}) => {
         }
 
         output += '\n  AstraEditor Version: ' + aeVersion.version + ' ( Built in ' + aeVersion.date + ' )\n';
-        output += '  Terminal Version: 1.2.0\n';
+        output += '  Terminal Version: 1.3.0\n';
 
         const asciiLines = asciiArt.split('\n');
         const infoLines = output.split('\n');
@@ -2748,7 +2744,7 @@ const createBBCodeLogLines = (text, thread, options = {}) => {
             parsedContent = parsedContent.replace(/ /g, '&nbsp;');
             resultLine.innerHTML = parsedContent;
             resultLine.title = lineContent;
-            virtualList.appendLog({ element: resultLine, contentHash: `result-${index}-${lineContent}` });
+            virtualList.appendLog({ element: resultLine, contentHash: lineContent });
           });
         }
       } catch (e) {
