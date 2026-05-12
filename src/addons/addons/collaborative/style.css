@@ -5,6 +5,7 @@
     flex: 1;
     width: 100%;
     box-sizing: border-box;
+    gap: 10px;
 }
 .sa-addon-collaborative-tipBox{
     margin-top: 1rem;
@@ -24,4 +25,8 @@
 .sa-addon-collaborative-tipBox.tip{
     background-color: #0099ff22;
     color: #0099ff;
+}
+
+.sa-addon-collaborative-inputBox{
+    display: flex;
 }
