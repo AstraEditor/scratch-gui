@@ -7,7 +7,8 @@
     box-sizing: border-box;
     gap: 10px;
 }
-.sa-addon-collaborative-tipBox{
+
+.sa-addon-collaborative-tipBox {
     margin-top: 1rem;
     padding: 0.5rem;
     border-radius: 4px;
@@ -18,15 +19,67 @@
     -o-border-radius: 4px;
     width: 100%;
 }
-.sa-addon-collaborative-tipBox.warn{
+
+.sa-addon-collaborative-tipBox.warn {
     background-color: #ffc40022;
     color: #ffc400;
 }
-.sa-addon-collaborative-tipBox.tip{
+
+.sa-addon-collaborative-tipBox.tip {
     background-color: #0099ff22;
     color: #0099ff;
 }
 
-.sa-addon-collaborative-inputBox{
+.sa-addon-collaborative-inputBox {
     display: flex;
+}
+
+.sa-addon-collaborative-tipBoxScreen {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    display: flex;
+    pointer-events: none;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+.sa-addon-collaborative-tipMsgScreen {
+    transition: all 0.4s ease;
+    -webkit-transition: all 0.4s ease;
+    -moz-transition: all 0.4s ease;
+    -ms-transition: all 0.4s ease;
+    -o-transition: all 0.4s ease;
+    padding: 10px;
+    margin: 5px;
+    background-color: #0099ff;
+    border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+    animation: tipMsgIn 0.5s ease;
+    -webkit-animation: tipMsgIn 0.5s ease;
+}
+
+@keyframes tipMsgIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+        -webkit-transform: translateY(-30px);
+        -moz-transform: translateY(-30px);
+        -ms-transform: translateY(-30px);
+        -o-transform: translateY(-30px);
+}
+
+    to {
+        opacity: 1;
+        transform: translateY(0px);
+        -webkit-transform: translateY(0px);
+        -moz-transform: translateY(0px);
+        -ms-transform: translateY(0px);
+        -o-transform: translateY(0px);
+    }
 }
