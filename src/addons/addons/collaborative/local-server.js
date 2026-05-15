@@ -1,9 +1,9 @@
 // 这是用于进行信令服务器的文件
 // 直接`node local-server.js`执行
 
-const WebSocket = require('ws');
-const http = require('http');
-const url = require('url');
+const WebSocket = require("ws");
+const http = require("http");
+const url = require("url");
 
 class SignalingServer {
     constructor(port = 3000) {
@@ -20,89 +20,109 @@ class SignalingServer {
             const parsedUrl = url.parse(req.url, true);
             const pathname = parsedUrl.pathname;
             const query = parsedUrl.query;
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-            if (pathname === '/stats') {
-                res.writeHead(200, { 'Content-Type': 'application/json'});
+            if (pathname === "/stats") {
+                res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(JSON.stringify(this.getStats(), null, 2));
                 return;
             }
 
-            if (pathname === '/roomIsFree') {
+            if (pathname === "/roomIsFree") {
                 const roomId = query.roomId;
                 const isFree = this.checkRoomIsFree(roomId);
 
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    roomId: roomId,
-                    isFree: isFree
-                }));
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(
+                    JSON.stringify({
+                        roomId: roomId,
+                        isFree: isFree,
+                    }),
+                );
                 return;
             }
 
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Signaling Server is running\n');
+            res.writeHead(200, { "Content-Type": "text/plain" });
+            res.end("Signaling Server is running\n");
         });
 
         this.wss = new WebSocket.Server({ server: this.server });
 
-        this.wss.on('connection', (ws, req) => {
+        this.wss.on("connection", (ws, req) => {
             const clientId = this.generateClientId();
             const queryParams = url.parse(req.url, true).query;
             const roomId = queryParams.room;
 
             if (!roomId) {
-                ws.close(4000, 'Room ID is required');
+                ws.close(4000, "Room ID is required");
                 return;
             }
             this.clients.set(clientId, {
                 ws,
                 roomId,
-                connectedAt: Date.now()
+                connectedAt: Date.now(),
             });
 
-            console.log(`Client ${clientId} connected to room ${roomId}`);
+            console.log(`客户端 ${clientId} 连接到了 ${roomId} 房间`);
+
+            const existingPeers = [];
+            this.clients.forEach((client, cid) => {
+                if (client.roomId === roomId && cid !== clientId) {
+                    existingPeers.push(cid);
+                }
+            });
 
             this.sendToClient(ws, {
-                type: 'connection',
+                type: "connection",
                 clientId,
-                roomId
+                roomId,
+                existingPeers,
             });
 
             // 通知房间内其他客户端
-            this.broadcastToRoom(roomId, {
-                type: 'peer-joined',
+            this.broadcastToRoom(
+                roomId,
+                {
+                    type: "peer-joined",
+                    clientId,
+                    timestamp: Date.now(),
+                },
                 clientId,
-                timestamp: Date.now()
-            }, clientId);
+            );
 
-            ws.on('message', (message) => {
+            ws.on("message", (message) => {
                 try {
                     const data = JSON.parse(message.toString());
                     this.handleMessage(clientId, data);
                 } catch (error) {
-                    console.error('Invalid message format:', error);
+                    console.error("Invalid message format:", error);
                 }
             });
 
-            ws.on('close', () => {
+            ws.on("close", () => {
                 const client = this.clients.get(clientId);
                 if (client) {
-                    console.log(`Client ${clientId} disconnected from room ${client.roomId}`);
+                    console.log(
+                        `客户端 ${clientId} 断开了 ${client.roomId} 房间的连接`,
+                    );
 
-                    this.broadcastToRoom(client.roomId, {
-                        type: 'peer-left',
+                    this.broadcastToRoom(
+                        client.roomId,
+                        {
+                            type: "peer-left",
+                            clientId,
+                            timestamp: Date.now(),
+                        },
                         clientId,
-                        timestamp: Date.now()
-                    }, clientId);
+                    );
 
                     this.clients.delete(clientId);
                 }
             });
 
-            ws.on('error', (error) => {
+            ws.on("error", (error) => {
                 console.error(`Client ${clientId} error:`, error);
             });
         });
@@ -118,25 +138,25 @@ class SignalingServer {
         if (!client) return;
 
         switch (data.type) {
-            case 'offer':
-            case 'answer':
-            case 'ice-candidate':
+            case "offer":
+            case "answer":
+            case "ice-candidate":
                 // 转发信令消息给目标客户端
                 if (data.targetId && this.clients.has(data.targetId)) {
                     this.sendToClient(this.clients.get(data.targetId).ws, {
                         ...data,
-                        senderId: clientId
+                        senderId: clientId,
                     });
                 }
                 break;
 
-            case 'chat-message':
+            case "chat-message":
                 // 广播聊天消息到房间
                 this.broadcastToRoom(client.roomId, {
-                    type: 'chat-message',
+                    type: "chat-message",
                     senderId: clientId,
                     message: data.message,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                 });
                 break;
 
@@ -175,12 +195,17 @@ class SignalingServer {
         return {
             totalClients: this.clients.size,
             rooms: roomStats,
-            uptime: process.uptime()
+            uptime: process.uptime(),
         };
     }
 
     checkRoomIsFree(roomId) {
-        return !this.clients.has(roomId)
+        let result = true;
+        this.clients.forEach((room, clientID) => {
+            if (roomId === room.roomId) result = false;
+        });
+        console.log(`${roomId} 房间正 ${result ? "闲置" : "存在"}`);
+        return result;
     }
 
     stop() {
@@ -190,10 +215,9 @@ class SignalingServer {
         if (this.server) {
             this.server.close();
         }
-        console.log('Signaling server stopped');
+        console.log("Signaling server stopped");
     }
 }
 
 const server = new SignalingServer(1832);
 server.start();
-
