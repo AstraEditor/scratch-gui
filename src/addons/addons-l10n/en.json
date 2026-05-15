@@ -509,5 +509,8 @@
     "todo/no-todo": "There is no todo here yet, try adding one.",
     "todo/all": "All",
     "todo/create-title": "Create ToDo",
-    "todo/edit-title": "Edit ToDo"
+    "todo/edit-title": "Edit ToDo",
+    "collaborative-editing/title": "Collaborative Editing",
+    "collaborative-editing/tip": "Tip",
+    "collaborative-editing/alpha_warn": "Collaborative Editing is still in beta and many features are not yet complete."
 }
