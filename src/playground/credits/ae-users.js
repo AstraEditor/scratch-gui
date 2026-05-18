@@ -36,7 +36,7 @@ const contributors = [
     },
     {
         image: luotianyi,
-        text: "LuoTianyi Arm64",
+        text: "LuoTianyi-arm64",
         href: "https://github.com/LuoTianyi-arm64"
     },
     {
