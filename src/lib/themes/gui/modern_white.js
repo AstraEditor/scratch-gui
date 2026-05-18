@@ -7,70 +7,72 @@ const guiColors = {
     "ui-tertiary":
         "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
 
-    "ui-modal-overlay": "var(--motion-primary-transparent)",
-    "ui-modal-background": "hsla(0, 100%, 100%, 1)" /* #FFFFFF */,
-    "ui-modal-foreground": "hsla(225, 15%, 40%, 1)" /* #575E75 */,
-    "ui-modal-header-background": "var(--looks-secondary)",
-    "ui-modal-header-foreground": "hsla(0, 100%, 100%, 1)" /* #FFFFFF */,
+    "ui-modal-overlay":
+        "color-mix(in srgb, rgba(130, 130, 130, 0.8) 98%, var(--looks-secondary))",
+    "ui-modal-background": "hsla(0, 100%, 100%, 1)",
+    "ui-modal-foreground": "rgb(117, 117, 117)",
+    "ui-modal-header-background":
+        "#ffffff",
+    "ui-modal-header-foreground": "rgb(0, 0, 0)",
 
     "ui-white": "rgb(255, 255, 255)",
     "ui-white-dim":
-        "hsla(0, 100%, 100%, 0.75)" /* 25% transparent version of ui-white */,
+        "hsla(0, 100%, 100%, 0.75)",
     "ui-white-transparent":
-        "hsla(0, 100%, 100%, 0.25)" /* 25% transparent version of ui-white */,
+        "hsla(0, 100%, 100%, 0.25)",
     "ui-transparent":
-        "hsla(0, 100%, 100%, 0)" /* 25% transparent version of ui-white */,
+        "hsla(0, 100%, 100%, 0)",
 
     "ui-black-transparent":
-        "hsla(0, 0%, 0%, 0.15)" /* 15% transparent version of black */,
+        "hsla(0, 0%, 0%, 0.15)",
 
-    "text-primary": "hsla(225, 15%, 40%, 1)" /* #575E75 */,
+    "text-primary": "hsla(225, 15%, 40%, 1)",
     "text-primary-transparent": "hsla(225, 15%, 40%, 0.75)",
 
-    "motion-primary": "hsla(215, 100%, 65%, 1)" /* #4C97FF */,
+    "motion-primary": "hsla(215, 55%, 75%, 1)",
     "motion-primary-transparent":
-        "hsla(215, 100%, 65%, 0.9)" /* 90% transparent version of motion-primary */,
-    "motion-tertiary": "hsla(215, 60%, 50%, 1)" /* #3373CC */,
+        "hsla(215, 55%, 75%, 0.9)",
+    "motion-tertiary": "hsla(215, 40%, 65%, 1)",
 
-    "looks-secondary": "hsla(260, 60%, 60%, 1)" /* #855CD6 */,
+    "looks-secondary": "hsla(260, 35%, 72%, 1)",
     "looks-transparent":
-        "hsla(260, 60%, 60%, 0.35)" /* 35% transparent version of looks-tertiary */,
+        "hsla(260, 35%, 72%, 0.35)",
     "looks-light-transparent":
-        "hsla(260, 60%, 60%, 0.15)" /* 15% transparent version of looks-tertiary */,
-    "looks-secondary-dark": "hsla(260, 42%, 51%, 1)" /* #714EB6 */,
+        "hsla(260, 35%, 72%, 0.15)",
+    "looks-secondary-dark": "hsla(260, 28%, 62%, 1)",
 
-    "red-primary": "hsla(20, 100%, 55%, 1)" /* #FF661A */,
-    "red-tertiary": "hsla(20, 100%, 45%, 1)" /* #E64D00 */,
+    "red-primary": "hsla(20, 70%, 65%, 1)",
+    "red-tertiary": "hsla(20, 60%, 55%, 1)",
 
-    "sound-primary": "hsla(300, 53%, 60%, 1)" /* #CF63CF */,
-    "sound-tertiary": "hsla(300, 48%, 50%, 1)" /* #BD42BD */,
+    "sound-primary": "hsla(300, 30%, 72%, 1)",
+    "sound-tertiary": "hsla(300, 25%, 62%, 1)",
 
-    "control-primary": "hsla(38, 100%, 55%, 1)" /* #FFAB19 */,
+    "control-primary": "hsla(38, 60%, 72%, 1)",
 
-    "data-primary": "hsla(30, 100%, 55%, 1)" /* #FF8C1A */,
+    "data-primary": "hsla(30, 50%, 70%, 1)",
 
-    "pen-primary": "hsla(163, 85%, 40%, 1)" /* #0FBD8C */,
-    "pen-transparent": "hsla(163, 85%, 40%, 0.25)" /* #0FBD8C */,
-    "pen-tertiary": "hsla(163, 86%, 30%, 1)" /* #0B8E69 */,
+    "pen-primary": "hsla(163, 40%, 68%, 1)",
+    "pen-transparent": "hsla(163, 40%, 68%, 0.25)",
+    "pen-tertiary": "hsla(163, 30%, 58%, 1)",
 
-    "error-primary": "hsla(30, 100%, 55%, 1)" /* #FF8C1A */,
-    "error-light": "hsla(30, 100%, 70%, 1)" /* #FFB366 */,
-    "error-transparent": "hsla(30, 100%, 55%, 0.25)" /* #FF8C1A */,
+    "error-primary": "hsla(30, 45%, 68%, 1)",
+    "error-light": "hsla(30, 40%, 78%, 1)",
+    "error-transparent": "hsla(30, 45%, 68%, 0.25)",
 
-    "extensions-primary": "hsla(163, 85%, 40%, 1)" /* #0FBD8C */,
-    "extensions-tertiary": "hsla(163, 85%, 30%, 1)" /* #0B8E69 */,
+    "extensions-primary": "hsla(163, 40%, 68%, 1)",
+    "extensions-tertiary": "hsla(163, 30%, 58%, 1)",
     "extensions-transparent":
-        "hsla(163, 85%, 40%, 0.35)" /* 35% transparent version of extensions-primary */,
+        "hsla(163, 40%, 68%, 0.35)",
     "extensions-light":
-        "hsla(163, 57%, 85%, 1)" /* opaque version of extensions-transparent, on white bg */,
+        "hsla(163, 35%, 85%, 1)",
 
     "drop-highlight":
-        "hsla(215, 100%, 77%, 1)" /* lighter than motion-primary */,
+        "hsla(215, 55%, 80%, 1)",
 
     "menu-bar-background":
         "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
     "menu-bar-background-image": "none",
-    "menu-bar-icon-style": "brightness(0.2)",
+    "icon-style": "brightness(0.2)",
     "menu-bar-feedback": "#404040",
     "menu-bar-foreground": "#7d7d7d",
 

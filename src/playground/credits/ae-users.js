@@ -1,12 +1,4 @@
-import koshino from './AE_images/koshino.jpg'
-import aseansays from './AE_images/a_sean_says.jpg'
-import cyberexplorer from './AE_images/cyberexplorer.jpg'
-import luotianyi from './AE_images/luotianyi.jpg'
-import np from './AE_images/np.jpg'
-import msw from './AE_images/msw.jpg'
-import cat from './AE_images/cat.jpg'
-import nangua from './AE_images/nangua.jpg'
-import hypixice from './AE_images/hypi.jpg'
+const qqAvatar = qq => `http://q.qlogo.cn/headimg_dl?dst_uin=${qq}&spec=140&img_type=jpg`;
 
 const shuffle = list => {
     for (let i = list.length - 1; i > 0; i--) {
@@ -20,27 +12,27 @@ const shuffle = list => {
 
 const contributors = [
     {
-        image: koshino,
+        image: qqAvatar("2381068747"),
         text: "KOSHINO",
         href: "https://github.com/KOSHINOawa"
     },
     {
-        image: cyberexplorer,
+        image: qqAvatar("3091949883"),
         text: "Cyberexplorer",
         href: "https://github.com/LanwyWriteXU"
     },
     {
-        image: aseansays,
+        image: qqAvatar("2718867769"),
         text: "A Sean Says",
         href: "https://github.com/SeanShaoJX"
     },
     {
-        image: luotianyi,
+        image: qqAvatar("2153585992"),
         text: "LuoTianyi Arm64",
         href: "https://github.com/LuoTianyi-arm64"
     },
     {
-        image: np,
+        image: qqAvatar("2913335827"),
         text: "NeuronPulse",
         href: "https://github.com/NeuronPulse"
     }
@@ -48,32 +40,32 @@ const contributors = [
 
 const logo = [
     {
-        image: msw,
+        image: qqAvatar("392824356"),
         text: "𝑚𝑠𝑤饿饿的",
-        href: ""
-    }
+        href: "",
+    },
 ];
 
 const website = [
     {
-        image: cat,
-        text: "世界第一可爱傲娇汉堡小猫",
-        href: ""
+        image: qqAvatar("3669632155"),
+        text: "汉堡小猫猫猫猫猫猫",
+        href: "",
     },
     {
-        image: nangua,
+        image: qqAvatar("316366347"),
         text: "Itz_NanGua",
-        href: "https://github.com/NanGua-QWQ"
-    }
+        href: "https://github.com/NanGua-QWQ",
+    },
 ];
 
 const icon = [
     {
-        image: hypixice,
+        image: qqAvatar("2891607724"),
         text: "Hypixice",
         href: "https://www.hypixice.top"
     }
-]
+];
 
 export default {
     contributors: shuffle(contributors),

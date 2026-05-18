@@ -53,7 +53,7 @@ const ThemeIcon = ({id}) => (
         src={icons[id]}
         draggable={false}
         style={id === BLOCKS_CUSTOM ? {
-            filter: "var(--menu-bar-icon-style)"
+            filter: "var(--icon-style)"
         } : {} }
         width={24}
     />

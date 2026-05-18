@@ -19,7 +19,7 @@ const guiColors = {
 
     "menu-bar-background": "#050505",
     "menu-bar-feedback": "white",
-    "menu-bar-icon-style": "brightness(1)",
+    "icon-style": "brightness(1)",
 
     "assets-background": "#050505",
 

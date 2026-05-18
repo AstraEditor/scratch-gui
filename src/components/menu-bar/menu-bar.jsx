@@ -509,7 +509,7 @@ class MenuBar extends React.Component {
                     style={{
                         width: "25px",
                         margin: "5px",
-                        filter: "var(--menu-bar-icon-style)",
+                        filter: "var(--icon-style)",
                     }}
                     src={aboutIcon}
                     draggable={false}
@@ -644,7 +644,7 @@ class MenuBar extends React.Component {
                             <img src={aeLogo} draggable={false} style={{
                                 width: '25px',
                                 marginLeft: '10px',
-                                filter: 'var(--menu-bar-icon-style)'
+                                filter: 'var(--icon-style)'
                             }} />
                         ) : (
                             aboutButton

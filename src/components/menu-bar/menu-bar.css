@@ -34,7 +34,7 @@
 }
 
 .dropdownCaret {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
 }
 
 .main-menu {
@@ -296,7 +296,7 @@
 }
 
 .Icon {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     width: 20px;
     height: auto;
 }

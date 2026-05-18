@@ -1,9 +1,9 @@
 @import "../../css/colors.css";
 
 .icon {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     width: 1.5rem;
-    -webkit-filter: $menu-bar-icon-style;
+    -webkit-filter: $icon-style;
 }
 
 .theme-label {
@@ -17,7 +17,7 @@
 }
 
 .check {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     margin: 0 .25rem 0 0;
     visibility: hidden;
 }
@@ -43,7 +43,7 @@
 }
 
 .expand-caret {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     transform: rotate(-90deg);
 }
 
@@ -93,16 +93,16 @@
 }
 
 .open-link {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     margin-left: 0.5rem;
 }
 
 .SettingIcon{
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     width: 20px;
     height: auto;
 }
 
 .dropdownCaret {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
 }
