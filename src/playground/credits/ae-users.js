@@ -41,7 +41,7 @@ const contributors = [
 const logo = [
     {
         image: qqAvatar("392824356"),
-        text: "𝑚𝑠𝑤饿饿的",
+        text: "MSW11_BiliUP",
         href: "",
     },
 ];

@@ -29,45 +29,39 @@ const guiColors = {
     "text-primary": "hsla(225, 15%, 40%, 1)",
     "text-primary-transparent": "hsla(225, 15%, 40%, 0.75)",
 
-    "motion-primary": "hsla(215, 55%, 75%, 1)",
-    "motion-primary-transparent":
-        "hsla(215, 55%, 75%, 0.9)",
-    "motion-tertiary": "hsla(215, 40%, 65%, 1)",
+    "motion-primary": "hsla(215, 100%, 75%, 1)",
+    "motion-primary-transparent": "hsla(215, 100%, 75%, 0.9)",
+    "motion-tertiary": "hsla(215, 60%, 65%, 1)",
 
-    "looks-secondary": "hsla(260, 35%, 72%, 1)",
-    "looks-transparent":
-        "hsla(260, 35%, 72%, 0.35)",
-    "looks-light-transparent":
-        "hsla(260, 35%, 72%, 0.15)",
-    "looks-secondary-dark": "hsla(260, 28%, 62%, 1)",
+    "looks-secondary": "hsla(260, 60%, 72%, 1)",
+    "looks-transparent": "hsla(260, 60%, 72%, 0.35)",
+    "looks-light-transparent": "hsla(260, 60%, 72%, 0.15)",
+    "looks-secondary-dark": "hsla(260, 42%, 62%, 1)",
 
-    "red-primary": "hsla(20, 70%, 65%, 1)",
-    "red-tertiary": "hsla(20, 60%, 55%, 1)",
+    "red-primary": "hsla(20, 100%, 65%, 1)",
+    "red-tertiary": "hsla(20, 100%, 55%, 1)",
 
-    "sound-primary": "hsla(300, 30%, 72%, 1)",
-    "sound-tertiary": "hsla(300, 25%, 62%, 1)",
+    "sound-primary": "hsla(300, 53%, 72%, 1)",
+    "sound-tertiary": "hsla(300, 48%, 62%, 1)",
 
-    "control-primary": "hsla(38, 60%, 72%, 1)",
+    "control-primary": "hsla(38, 100%, 72%, 1)",
 
-    "data-primary": "hsla(30, 50%, 70%, 1)",
+    "data-primary": "hsla(30, 100%, 70%, 1)",
 
-    "pen-primary": "hsla(163, 40%, 68%, 1)",
-    "pen-transparent": "hsla(163, 40%, 68%, 0.25)",
-    "pen-tertiary": "hsla(163, 30%, 58%, 1)",
+    "pen-primary": "hsla(163, 85%, 68%, 1)",
+    "pen-transparent": "hsla(163, 85%, 68%, 0.25)",
+    "pen-tertiary": "hsla(163, 86%, 58%, 1)",
 
-    "error-primary": "hsla(30, 45%, 68%, 1)",
-    "error-light": "hsla(30, 40%, 78%, 1)",
-    "error-transparent": "hsla(30, 45%, 68%, 0.25)",
+    "error-primary": "hsla(30, 100%, 68%, 1)",
+    "error-light": "hsla(30, 100%, 78%, 1)",
+    "error-transparent": "hsla(30, 100%, 68%, 0.25)",
 
-    "extensions-primary": "hsla(163, 40%, 68%, 1)",
-    "extensions-tertiary": "hsla(163, 30%, 58%, 1)",
-    "extensions-transparent":
-        "hsla(163, 40%, 68%, 0.35)",
-    "extensions-light":
-        "hsla(163, 35%, 85%, 1)",
+    "extensions-primary": "hsla(163, 85%, 68%, 1)",
+    "extensions-tertiary": "hsla(163, 85%, 58%, 1)",
+    "extensions-transparent": "hsla(163, 85%, 68%, 0.35)",
+    "extensions-light": "hsla(163, 57%, 85%, 1)",
 
-    "drop-highlight":
-        "hsla(215, 55%, 80%, 1)",
+    "drop-highlight": "hsla(215, 100%, 85%, 1)",
 
     "menu-bar-background":
         "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
