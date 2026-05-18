@@ -34,7 +34,7 @@
 }
 
 .dropdownCaret {
-    /* Nothing, ready for addons */
+    filter: $menu-bar-icon-style;
 }
 
 .main-menu {
@@ -49,10 +49,10 @@
     background-color: transparent;
     -webkit-app-region: drag;
 }
-:root[data-is-scratch-desktop='true'] [class*="menu-bar_menu-bar"] {
-    z-index: $z-index-menu-bar-desktop
+:root[data-is-scratch-desktop="true"] [class*="menu-bar_menu-bar"] {
+    z-index: $z-index-menu-bar-desktop;
 }
-.menuGroup{
+.menuGroup {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -65,7 +65,7 @@
     opacity: 0;
 }
 .scratch-logo {
-    height:  1.6rem;
+    height: 1.6rem;
     vertical-align: middle;
 }
 
@@ -127,7 +127,7 @@
 }
 
 .feedback-button {
-    background-color: white;
+    background-color: $menu-bar-feedback;
     color: inherit;
     height: 34px;
 }
@@ -137,8 +137,8 @@
 }
 
 .author-info {
-    margin-left: .25rem;
-    margin-right: .6875rem;
+    margin-left: 0.25rem;
+    margin-right: 0.6875rem;
 }
 
 .menu-bar-button {
@@ -146,14 +146,14 @@
 }
 
 .remix-button {
-    background-color: $pen-primary
+    background-color: $pen-primary;
 }
 
 .remix-button-icon {
     height: 1.25rem;
 }
 
-.coming-soon >:not(.coming-soon-tooltip) {
+.coming-soon > :not(.coming-soon-tooltip) {
     opacity: 0.5;
 }
 
@@ -166,32 +166,33 @@
 }
 
 .account-info-group .menu-bar-item {
-    margin: 0 .25rem;
+    margin: 0 0.25rem;
     padding: 0 0.75rem;
 }
 
 .mystuff-icon {
-    margin: 0 .25rem;
+    margin: 0 0.25rem;
     height: 1rem;
 }
 
 .help-icon {
-    margin: 0 .25rem 0 0;
+    margin: 0 0.25rem 0 0;
 }
 
 [dir="rtl"] .help-icon {
-    margin: 0 0 0 .25rem;
+    margin: 0 0 0 0.25rem;
 }
 
-.account-nav-menu, .mystuff-button {
-    padding: 0 .25rem;
+.account-nav-menu,
+.mystuff-button {
+    padding: 0 0.25rem;
     display: flex;
     flex-direction: row;
     align-items: center;
 }
 
 .profile-icon {
-    margin: 0 .25rem;
+    margin: 0 0.25rem;
     width: $menu-bar-button-size;
     border-radius: $form-radius;
 }
@@ -202,11 +203,11 @@
 }
 
 [dir="ltr"] .dropdown-caret-icon {
-    margin-left: .5rem;
+    margin-left: 0.5rem;
 }
 
 [dir="rtl"] .dropdown-caret-icon {
-    margin-right: .5rem;
+    margin-right: 0.5rem;
 }
 
 .disabled {
@@ -214,22 +215,22 @@
 }
 
 .mystuff > a {
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: 45%;
-  padding-right: 10px;
-  padding-left: 10px;
-  width: 30px;
-  overflow: hidden;
-  text-indent: 50px;
-  white-space: nowrap;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 45%;
+    padding-right: 10px;
+    padding-left: 10px;
+    width: 30px;
+    overflow: hidden;
+    text-indent: 50px;
+    white-space: nowrap;
 }
 .mystuff > a:hover {
-  background-size: 50%;
+    background-size: 50%;
 }
 
 .mystuff > a {
-  /* background-image: url("/images/mystuff.png"); */
+    /* background-image: url("/images/mystuff.png"); */
 }
 
 .about-icon {
@@ -239,11 +240,12 @@
 }
 
 .collapsible-label {
-    margin: 0 .25rem;
+    margin: 0 0.25rem;
 }
 
 @media only screen and (max-width: 1124px) {
-    .tutorials-label, .collapsible-label {
+    .tutorials-label,
+    .collapsible-label {
         display: none;
     }
 
@@ -251,9 +253,9 @@
         margin-right: 0;
     }
 
-    .Icon{
+    .Icon {
         width: 20px !important;
-        height: auto !important
+        height: auto !important;
     }
 }
 
@@ -293,12 +295,13 @@
     flex-shrink: 0;
 }
 
-.Icon{
+.Icon {
+    filter: $menu-bar-icon-style;
     width: 20px;
     height: auto;
 }
 
-.controlButton{
+.controlButton {
     width: 46px;
     height: 100%;
     display: flex;
@@ -309,8 +312,7 @@
     -webkit-app-region: none;
     user-select: none;
     background-color: transparent;
-
 }
-.controlButton:hover{
-    background-color: #ffffff20
+.controlButton:hover {
+    background-color: #ffffff20;
 }

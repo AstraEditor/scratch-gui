@@ -54,6 +54,8 @@ $extensions-light: var(--extensions-light);
 $drop-highlight: var(--drop-highlight);
 
 $menu-bar-background: var(--menu-bar-background);
+$menu-bar-icon-style: var(--menu-bar-icon-style);
+$menu-bar-feedback: var(--menu-bar-feedback);
 $menu-bar-background-image: var(--menu-bar-background-image);
 $menu-bar-foreground: var(--menu-bar-foreground);
 

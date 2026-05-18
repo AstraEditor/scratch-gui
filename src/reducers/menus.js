@@ -6,6 +6,7 @@ const MENU_ACCOUNT = 'accountMenu';
 const MENU_EDIT = 'editMenu';
 const MENU_FILE = 'fileMenu';
 const MENU_LANGUAGE = 'languageMenu';
+const MENU_GUIACCENT = 'guiACCENT';
 const MENU_LOGIN = 'loginMenu';
 const MENU_MODE = 'modeMenu';
 const MENU_SETTINGS = 'settingsMenu';
@@ -54,6 +55,7 @@ const rootMenu = new Menu('root')
     .addChild(new Menu(MENU_ERRORS))
     .addChild(
         new Menu(MENU_SETTINGS)
+            .addChild(new Menu(MENU_GUIACCENT))
             .addChild(new Menu(MENU_LANGUAGE))
             .addChild(new Menu(MENU_ACCENT))
             .addChild(new Menu(MENU_BLOCKS_THEME))
@@ -73,6 +75,7 @@ const initialState = {
     [MENU_EDIT]: false,
     [MENU_FILE]: false,
     [MENU_LANGUAGE]: false,
+    [MENU_GUIACCENT]: false,
     [MENU_LOGIN]: false,
     [MENU_MODE]: false,
     [MENU_SETTINGS]: false,
@@ -139,6 +142,10 @@ const openLanguageMenu = () => openMenu(MENU_LANGUAGE);
 const closeLanguageMenu = () => closeMenu(MENU_LANGUAGE);
 const languageMenuOpen = state => state.scratchGui.menus[MENU_LANGUAGE];
 
+const openGUIAccentMenu = () => openMenu(MENU_GUIACCENT);
+const closeGUIAccentMenu = () => closeMenu(MENU_GUIACCENT);
+const GUIAccentMenuOpen = (state) => state.scratchGui.menus[MENU_GUIACCENT];
+
 const openLoginMenu = () => openMenu(MENU_LOGIN);
 const closeLoginMenu = () => closeMenu(MENU_LOGIN);
 const loginMenuOpen = state => state.scratchGui.menus[MENU_LOGIN];
@@ -185,6 +192,9 @@ export {
     openLanguageMenu,
     closeLanguageMenu,
     languageMenuOpen,
+    openGUIAccentMenu,
+    closeGUIAccentMenu,
+    GUIAccentMenuOpen,
     openLoginMenu,
     closeLoginMenu,
     loginMenuOpen,
@@ -205,5 +215,5 @@ export {
     errorsMenuOpen,
     openToolsMenu,
     closeToolsMenu,
-    toolsMenuOpen
+    toolsMenuOpen,
 };

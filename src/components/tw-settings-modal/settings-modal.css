@@ -22,14 +22,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background: $ui-modal-header-background
 }
 .Modaltab{
     position: relative;
     height: 35px;
 }
 .tab-button-enable {
-    /* filter: brightness(0.8) disable */
-    filter: brightness(1);
     background: $ui-modal-background;
 }
 .Modaltab::after {
@@ -54,9 +53,8 @@
 }
 .tab-button-enable:hover,
 .tab-button-unable:hover {
-    /* filter: brightness(1.2) disable */
-    filter: brightness(1);
-    background: $ui-modal-background;
+    filter: brightness(1.2);
+    -webkit-filter: brightness(1.2);
 }
 
 .tab-button-enable:active,

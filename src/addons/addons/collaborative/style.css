@@ -124,6 +124,7 @@
 }
 .sa-addon-collaborative-roomTitleCopyButton:hover {
     background-color: #66666650;
+    cursor: pointer;
 }
 .sa-addon-collaborative-roomTitleDiv {
     display: flex;
@@ -135,4 +136,12 @@
     font-size: xx-large;
     font-weight: bold;
     padding-bottom: 5px;
+}
+.sa-addon-collaborative-roomMembers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #55555550;
+    padding: 10px;
+    border-radius: 5px;
 }

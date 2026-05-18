@@ -1,45 +1,45 @@
 const guiColors = {
-    "color-scheme": "dark",
+    "color-scheme": "deep_dark",
 
-    "ui-primary": "#111111",
-    "ui-secondary": "#1e1e1e",
-    "ui-tertiary": "#2e2e2e",
+    "ui-primary": "#050505",
+    "ui-secondary": "#101010",
+    "ui-tertiary": "#101010",
 
-    "ui-modal-overlay": "#333333aa",
-    "ui-modal-background": "#111111",
-    "ui-modal-foreground": "#eeeeee",
-    "ui-modal-header-background": "#333333",
-    "ui-modal-header-foreground": "#ffffff",
+    "ui-modal-overlay": "#222222aa",
+    "ui-modal-background": "#050505",
+    "ui-modal-foreground": "#e0e0e0",
+    "ui-modal-header-background": "#222222",
+    "ui-modal-header-foreground": "#eeeeee",
 
-    "ui-white": "#111111",
+    "ui-white": "#050505",
 
     "ui-black-transparent": "#ffffff26",
 
     "text-primary": "#eeeeee",
 
-    "menu-bar-background": "#333333",
+    "menu-bar-background": "#050505",
     "menu-bar-feedback": "white",
     "menu-bar-icon-style": "brightness(1)",
 
-    "assets-background": "#111111",
+    "assets-background": "#050505",
 
-    "input-background": "#1e1e1e",
+    "input-background": "#101010",
 
-    "popover-background": "#1e1e1e",
+    "popover-background": "#101010",
 
     "badge-background": "#16202c",
     "badge-border": "#203652",
 
-    "fullscreen-background": "#111111",
-    "fullscreen-accent": "#111111",
+    "fullscreen-background": "#050505",
+    "fullscreen-accent": "#050505",
 
-    "page-background": "#111111",
+    "page-background": "#050505",
     "page-foreground": "#eeeeee",
 
     "project-title-inactive": "var(--ui-secondary)",
-    "project-title-hover": "#ffffff3f",
+    "project-title-hover": "#eeeeee3f",
 
-    "link-color": "#44aaff",
+    "link-color": "#004488",
 
     "filter-icon-black": "invert(100%)",
     "filter-icon-gray": "grayscale(100%) brightness(1.7)",
@@ -50,16 +50,16 @@ const guiColors = {
 
 const blockColors = {
     insertionMarker: '#cccccc',
-    workspace: '#1e1e1e',
-    toolboxSelected: '#1e1e1e',
+    workspace: '#101010',
+    toolboxSelected: '#101010',
     toolboxText: '#cccccc',
-    toolbox: '#111111',
-    flyout: '#111111',
+    toolbox: '#050505',
+    flyout: '#050505',
     scrollbar: '#666666',
-    valueReportBackground: '#1e1e1e',
+    valueReportBackground: '#101010',
     valueReportBorder: '#333333',
     valueReportForeground: '#eeeeee',
-    contextMenuBackground: '#111111',
+    contextMenuBackground: '#050505',
     contextMenuBorder: '#ffffff26',
     contextMenuForeground: '#eeeeee',
     contextMenuActiveBackground: '#2e2e2e',

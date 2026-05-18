@@ -2,6 +2,8 @@
 
 .community-button {
     box-shadow: 0 0 0 1px $ui-black-transparent;
+    filter: $menu-bar-icon-style;
+    -webkit-filter: $menu-bar-icon-style;
 }
 
 .community-button-icon {

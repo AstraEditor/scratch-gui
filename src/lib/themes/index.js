@@ -12,6 +12,8 @@ import * as accentMIKU from './accent/miku';
 
 import * as guiLight from './gui/light';
 import * as guiDark from './gui/dark';
+import * as guiDeepDark from "./gui/deep_dark";
+import * as guiModenWhite from './gui/modern_white'
 
 import * as blocksThree from './blocks/three';
 import * as blocksHighContrast from './blocks/high-contrast';
@@ -42,9 +44,13 @@ const ACCENT_DEFAULT = ACCENT_AE;
 
 const GUI_LIGHT = 'light';
 const GUI_DARK = 'dark';
+const GUI_DEEKDARK = "deep_dark";
+const GUI_MODERNWHITE = "modern_white"
 const GUI_MAP = {
     [GUI_LIGHT]: guiLight,
-    [GUI_DARK]: guiDark
+    [GUI_DARK]: guiDark,
+    [GUI_DEEKDARK]: guiDeepDark,
+    [GUI_MODERNWHITE]: guiModenWhite
 };
 const GUI_DEFAULT = GUI_DARK;
 
@@ -143,7 +149,7 @@ class Theme {
     }
 
     isDark () {
-        return this.getGuiColors()['color-scheme'] === 'dark';
+        return this.getGuiColors()['color-scheme'] === 'dark' || this.getGuiColors()['color-scheme'] === 'deep_dark';
     }
 
     getStageBlockColors () {
@@ -175,6 +181,8 @@ export {
 
     GUI_LIGHT,
     GUI_DARK,
+    GUI_DEEKDARK,
+    GUI_MODERNWHITE,
     GUI_MAP,
 
     BLOCKS_THREE,

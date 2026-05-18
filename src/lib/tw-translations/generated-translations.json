@@ -1,7 +1,12 @@
 {
     "ar": {
         "tw.footer.credits": "الاعتمادات",
-        "tw.usernameModal.reset": "إعادة تعيين"
+        "tw.usernameModal.reset": "إعادة تعيين",
+        "tw.modernLightMode": "فاتح عصري",
+        "tw.deepDarkMode": "داكن عميق",
+        "tw.guiAccent": "سمة الواجهة",
+        "tw.lightMode": "داكن",
+        "tw.darkMode": "فاتح"
     },
     "ca": {
         "tw.alerts.creatingRestorePoint": "S'està creant un punt de restauració...",
@@ -195,7 +200,12 @@
         "tw.usesCloudVariables2": "Les variables al núvol de {APP_NAME} no estan connectades a Scratch. Qualsevol pot {changeTheirUsername} per qualsevol, així que aneu amb compte amb la suplantació d'identitat.",
         "tw.usesCloudVariables2.change": "canviar el seu nom d'usuari",
         "tw.viewFeaturedProjects": "Fes click per veure els projectes destacats.",
-        "tw.viewOnScratch": "Veure a l'Scratch"
+        "tw.viewOnScratch": "Veure a l'Scratch",
+        "tw.modernLightMode": "Clar Modern",
+        "tw.deepDarkMode": "Fosc Profund",
+        "tw.guiAccent": "Tema d'Interfície",
+        "tw.lightMode": "Fosc",
+        "tw.darkMode": "Clar"
     },
     "cs": {
         "tw.alerts.creatingRestorePoint": "Vytvářím bod obnovení...",
@@ -282,7 +292,12 @@
         "tw.usernameModal.reset": "Obnovit",
         "tw.usernameModal.title": "Změnit jméno",
         "tw.viewFeaturedProjects": "Klikněte sem pro zhlédnutí vybraných projektů.",
-        "tw.viewOnScratch": "Zhlédnout projekt na Scratchi"
+        "tw.viewOnScratch": "Zhlédnout projekt na Scratchi",
+        "tw.modernLightMode": "Moderní světlý",
+        "tw.deepDarkMode": "Hluboký tmavý",
+        "tw.guiAccent": "Motiv rozhraní",
+        "tw.lightMode": "Tmavý",
+        "tw.darkMode": "Světlý"
     },
     "de": {
         "tw.accent.blue": "Blau",
@@ -339,7 +354,7 @@
         "tw.customExtensionModal.untrusted": "Erweiterungen von Unvertrauenswürdigen URLs werden zur Sicherheit immer mit der Sandbox geladen.",
         "tw.customReporters.description": "Erlaubt es, eigenen Blöcken Werte ausgeben zu lassen und als Wertblöcke zu funktionieren.",
         "tw.customReporters.name": "Eigene Wertblöcke",
-        "tw.darkMode": "Zu hellem Modus wechseln",
+        "tw.darkMode": "Hell",
         "tw.desktopCloud": "In der Desktop-App werden Cloud-Variablen nur zwischen den Fenstern der Desktop-App synchronisiert. Lade das Projekt auf Scratch hoch oder nutze ein Tool wie den {packager}, um sie weltweit zu synchronisieren. ",
         "tw.documentation": "Dokumentation",
         "tw.download.danger": "Diese Datei wurde nicht von den {APP_NAME}-Entwicklern geprüft.",
@@ -402,7 +417,7 @@
         "tw.invalidProject.title": "Fehler",
         "tw.invalidProject.validationError": "Dieser Fehler bedeutet meistens, dass ein kleiner Teil des Projekts beschädigt wurde, aber der Rest noch gültig ist. Dieses Problem kann oft leicht behoben werden, also {reportIt}.",
         "tw.invalidProject.zipCorruption": "Dieser Fehler bedeutet oft, dass die Datei beschädigt wurde, möglicherweise aufgrund eines fehlerhaften Speichergeräts, eines Stromausfalls oder des Trennens eines USB-Laufwerks ohne Auswerfen. Versuche {usingSb3fix}, da es diese Art von Fehler beheben kann.",
-        "tw.lightMode": "Zu dunklem Modus wechseln",
+        "tw.lightMode": "Dunkel",
         "tw.loadExtension.embedded": "Das Projekt will eine benutzerdefinierte Erweiterung laden, die folgenden Code hat:",
         "tw.loadExtension.sandboxed": "Obwohl der Code in der Sandbox ausgeführt wird, wird sie weiterhin Zugang zu Geräteinformationen wie deine IP-Adresse und ungefähre Position haben. Stelle sicher, dass du dem Entwickler dieser Erweiterung vertraust, bevor du fortfährst.",
         "tw.loadExtension.unsandboxed": "Ohne Sandbox ausführen",
@@ -535,7 +550,10 @@
         "tw.usesCloudVariables2": "{APP_NAME}s Cloud-Variablen sind nicht mit denen von Scratch verbunden. Jeder kann willkürlich {changeTheirUsername}.",
         "tw.usesCloudVariables2.change": "seinen Benutzernamen ändern",
         "tw.viewFeaturedProjects": "Klicke, um vorgestellte Projekte anzusehen.",
-        "tw.viewOnScratch": "Projekt auf Scratch anzeigen"
+        "tw.viewOnScratch": "Projekt auf Scratch anzeigen",
+        "tw.modernLightMode": "Modern Hell",
+        "tw.deepDarkMode": "Tief Dunkel",
+        "tw.guiAccent": "Oberflächendesign"
     },
     "es": {
         "tw.accent.blue": "Azul",
@@ -593,7 +611,7 @@
         "tw.customExtensionModal.untrusted": "Extensiones de URLs no confiadas siempre serán cargadas con sandbox por seguridad.",
         "tw.customReporters.description": "Permitir a bloques personalizados devolver resultados y ser usados como entradas.",
         "tw.customReporters.name": "Reporteros Personalizados",
-        "tw.darkMode": "Cambiar a Tema Claro",
+        "tw.darkMode": "Claro",
         "tw.desktopCloud": "En la app del escritorio, las variables de la nube se sincronizan entre todas las ventanas de esta computadora. Suba el proyecto a Scratch o use una herramienta como el {packager} para que se sincronicen de forma global.",
         "tw.documentation": "Documentación",
         "tw.download.danger": "Este archivo no ha sido revisado por los desarrolladores de {APP_NAME}.",
@@ -653,7 +671,7 @@
         "tw.invalidProject.restorePoints": "Ver Puntos de Restauración",
         "tw.invalidProject.sb3fix": "usar sb3fix para recuperar su proyecto",
         "tw.invalidProject.zipCorruption": "Este error a menudo significa que el archivo se ha dañado, posiblemente debido a un dispositivo almacenamiento defectuoso, un corte de energía o a la desconexión de una unidad USB. Probe {usingSb3fix} porque puede arreglar este tipo de error.",
-        "tw.lightMode": "Cambiar a Tema Oscuro",
+        "tw.lightMode": "Oscuro",
         "tw.loadExtension.embedded": "El proyecto quiere cargar una extensión personalizada con el código:",
         "tw.loadExtension.sandboxed": "A pesar de que el código tenga sandbox, tendrá acceso a la información de su dispositivo como su IP y su ubicación general. Asegúrese de confiar el autor de esta extensión antes de continuar.",
         "tw.loadExtension.unsandboxed": "Ejecutar sin sandbox",
@@ -782,7 +800,10 @@
         "tw.usesCloudVariables2": "Las variables de la nube de {APP_NAME} no están conectadas a las de Scratch. Cualquiera puede {changeTheirUsername}, así que tenga cuidado con la suplantación.",
         "tw.usesCloudVariables2.change": "cambiar su nombre de usuario",
         "tw.viewFeaturedProjects": "Clickee para ver proyectos destacados.",
-        "tw.viewOnScratch": "Ver proyecto en Scratch"
+        "tw.viewOnScratch": "Ver proyecto en Scratch",
+        "tw.modernLightMode": "Claro Moderno",
+        "tw.deepDarkMode": "Oscuro Profundo",
+        "tw.guiAccent": "Tema de Interfaz"
     },
     "fi": {
         "tw.accent.blue": "Sininen",
@@ -843,7 +864,7 @@
         "tw.customExtensionModal.url": "URL-osoite",
         "tw.customReporters.description": "Käytä omia lohkoja syötteinä ja arvojen palauttamiseen.",
         "tw.customReporters.name": "Omat ilmoituslohkot",
-        "tw.darkMode": "Vaihda vaaleaan tilaan",
+        "tw.darkMode": "Vaalea",
         "tw.desktopCloud": "Työpöytäsovelluksessa pilvimuuttujat synkronoituvat kaikkien tämän tietokoneen sovellusikkunoiden välillä. Lataa projekti Scratchiin tai käytä {packager} -pakkauskonetta, jotta ne synkronoituvat maailmanlaajuisesti.",
         "tw.documentation": "Opas",
         "tw.download.danger": "{APP_NAME}in kehittäjät eivät ole tarkastaneet tätä tiedostoa.",
@@ -904,7 +925,7 @@
         "tw.invalidProject.restorePoints": "Näytä palautuskohdat",
         "tw.invalidProject.title": "Virhe",
         "tw.invalidProject.validationError": "Tämä virhe tarkoittaa useimmiten sitä, että pieni osa projektista on turmeltunut, mutta muuten se toimii. Tämä voidaan helposti korjata, joten {reportIt}.",
-        "tw.lightMode": "Vaihda tummaan tilaan",
+        "tw.lightMode": "Tumma",
         "tw.loadExtension.embedded": "Projekti haluaa ladata oman laajennuksen koodilla:",
         "tw.loadExtension.sandboxed": "Vaikka koodi on hiekkalaatikossa, sillä on silti pääsy laitteesi tietoihin, kuten IP-osoitteeseen ja likimääräiseen sijaintiin. Varmista ennen jatkamista, että tekijä on luotettava.",
         "tw.loadExtension.unsandboxed": "Suorita hiekkalaatikon ulkopuolella",
@@ -1042,7 +1063,10 @@
         "tw.usesCloudVariables2": "{APP_NAME}in muuttujia ei ole yhdistetty Scratchiin. Kuka vain voi {changeTheirUsername} miksi vain, joten varo toisena henkilönä esiintymistä.",
         "tw.usesCloudVariables2.change": "vaihtaa käyttäjänimensä",
         "tw.viewFeaturedProjects": "Näytä valitut projektit napauttamalla",
-        "tw.viewOnScratch": "Näytä projekti Scratchissa"
+        "tw.viewOnScratch": "Näytä projekti Scratchissa",
+        "tw.modernLightMode": "Moderni vaalea",
+        "tw.deepDarkMode": "Syvä tumma",
+        "tw.guiAccent": "Käyttöliittymän teema"
     },
     "fr": {
         "tw.accent.blue": "Bleu",
@@ -1076,7 +1100,7 @@
         "tw.customExtensionModal.unsandboxedWarning1": "Le chargement d'extensions sans sandbox est dangereux et ne doit pas être activé si vous ne savez pas ce que vous faites.",
         "tw.customExtensionModal.unsandboxedWarning2": "Les extensions non sandboxées peuvent corrompre votre projet, supprimer vos paramètres, voler vos mots de passe et causer d'autres dommages. Les développeurs de {APP_NAME} ne sont pas responsables des problèmes qui pourraient en résulter.",
         "tw.customExtensionModal.untrusted": "Les extensions provenant d'URL non fiables seront toujours chargées avec la sandbox pour des raisons de sécurité.",
-        "tw.darkMode": "Basculer sur le mode clair",
+        "tw.darkMode": "Clair",
         "tw.favorite": "Ajouter aux favoris",
         "tw.featuredProjectsStudio": "Voir le studio sur scratch.",
         "tw.feedback": "retour et signalement de bugues",
@@ -1100,7 +1124,7 @@
         "tw.invalidParameters.clones": "Le paramètre d'URL \"clone\" n'est pas valide.",
         "tw.invalidParameters.fps": "Le paramètre d'URL \"fps\" n'est pas valide.",
         "tw.invalidProject.title": "Erreur",
-        "tw.lightMode": "Baculer sur le mode sombre",
+        "tw.lightMode": "Sombre",
         "tw.loadExtension.unsandboxed": "Exécuter sans la sandbox",
         "tw.loader.downloadingAssets": "Téléchargement des assets ({complete}/{total}) ...",
         "tw.loader.loadingAssets": "Chargement des assets ({complete}/{total})...",
@@ -1187,7 +1211,10 @@
         "tw.usernameModal.title": "Changer votre nom d'utilisateur",
         "tw.usesCloudVariables": "Ce projet utilise des variables cloud.",
         "tw.viewFeaturedProjects": "Cliquez pour voir les projets sélectionnés.",
-        "tw.viewOnScratch": "Voir le projet sur Scratch"
+        "tw.viewOnScratch": "Voir le projet sur Scratch",
+        "tw.modernLightMode": "Clair Moderne",
+        "tw.deepDarkMode": "Sombre Profond",
+        "tw.guiAccent": "Thème d'Interface"
     },
     "he": {
         "tw.accent.blue": "כחול",
@@ -1223,7 +1250,7 @@
         "tw.customExtensionModal.unsandboxed": "הפעל ללא ארגז חול",
         "tw.customExtensionModal.unsandboxedWarning1": "טעינת תוספים ללא ארגז חול מסוכנת ואין להפעיל אותה אם אתה לא יודע מה אתה עושה.",
         "tw.customExtensionModal.url": "כתובת אתר",
-        "tw.darkMode": "החלף למצב בהיר",
+        "tw.darkMode": "בהיר",
         "tw.documentation": "מסמכים",
         "tw.featuredProjectsStudio": "הצג את הסטודיו על קידוד שריטות",
         "tw.feedback": "הצעות ושגיאות",
@@ -1252,7 +1279,7 @@
         "tw.invalidProject.reportIt": "דווח",
         "tw.invalidProject.restorePoints": "צפה בנקודות השחזור",
         "tw.invalidProject.title": "שגיאה",
-        "tw.lightMode": "החלף למצב כהה",
+        "tw.lightMode": "כהה",
         "tw.loadExtension.unsandboxed": "הפעל ללא ארגז חול",
         "tw.loader.downloadingAssets": "הורדה של נכסים({complete}/{total})...",
         "tw.loader.loadingAssets": "טוען נכסים ({complete} מתוך {total})...",
@@ -1321,7 +1348,10 @@
         "tw.usesCloudVariables2": "משתני הענן של {APP_NAME} אינם מקושרים למשתני Scratch. כל אחד יכול {changeTheirUsername} לכל דבר, לכן היזהרו מהתחזות.",
         "tw.usesCloudVariables2.change": "שינוי שם המשתמש",
         "tw.viewFeaturedProjects": "לחץ על כפתור זה כדי להציג פרויקטי קוד נבחרים.",
-        "tw.viewOnScratch": "צפה בפרויקט בScratch."
+        "tw.viewOnScratch": "צפה בפרויקט בScratch.",
+        "tw.modernLightMode": "בהיר מודרני",
+        "tw.deepDarkMode": "כהה עמוק",
+        "tw.guiAccent": "ערכת נושא לממשק"
     },
     "hu": {
         "tw.accent.blue": "Kék",
@@ -1381,7 +1411,7 @@
         "tw.customExtensionModal.untrusted": "Megbízhatatlan URL-ekből származó bővítmények mindig homokozó használatával kerülnek betöltésre a biztonság érdekében.",
         "tw.customReporters.description": "Lehetővé teszi a saját blokkoknak, hogy értékeket adjanak vissza és, hogy bemenetként lehessen használni.",
         "tw.customReporters.name": "Saját értékblokkok",
-        "tw.darkMode": "Átváltás világos módra",
+        "tw.darkMode": "Világos",
         "tw.desktopCloud": "Az asztali alkalmazásban a megosztott változók szinkronizálódnak minden e gépen levő ablak között. Töltsd fel a projektet Scratchre, vagy használj egy olyan eszközt mint a {packager}, hogy a felhőben is szinkronizálva legyenek.",
         "tw.documentation": "Dokumentáció",
         "tw.download.danger": "Ez a fájl nem lett átvizsgálva a {APP_NAME} fejlesztői által.",
@@ -1441,7 +1471,7 @@
         "tw.invalidProject.restorePoints": "Biztonsági mentések megtekintése",
         "tw.invalidProject.title": "Hiba",
         "tw.invalidProject.validationError": "Ez a hiba gyakran azt jelenti, hogy egy kis része a projektnek megsérült, de máskülönben szabályos. Ebben az esetben könnyen megjavítható a hiba, így kérlek {reportIt}.",
-        "tw.lightMode": "Átváltás sötét módra",
+        "tw.lightMode": "Sötét",
         "tw.loadExtension.embedded": "A projekt be szeretne tölteni egy egyedi bővítményt a következő kóddal:",
         "tw.loadExtension.sandboxed": "A kódnak a homokozóban történő futása közben továbbra is alkalma lesz hozzáférni információkhoz az eszközödről, mint például az IP-címedhez, vagy a körülbelüli tartózkodási helyedhez. Győződj meg róla a továbblépés előtt, hogy bízol-e a bővítmény készítőiben.",
         "tw.loadExtension.unsandboxed": "Futtatás homokozó használata nélkül",
@@ -1579,7 +1609,10 @@
         "tw.usesCloudVariables2": "A {APP_NAME} megosztott változói nem vannak csatlakozva a Scratch-ével. Barki {changeTheirUsername} bármire, ezért légy figyelmes a megszemélyesítésről.",
         "tw.usesCloudVariables2.change": "megváltoztathatja a felhasználónevét",
         "tw.viewFeaturedProjects": "Egy kattintás a kiemelt projektek megtekintéséhez.",
-        "tw.viewOnScratch": "Projekt megtekintése a Scratchen."
+        "tw.viewOnScratch": "Projekt megtekintése a Scratchen.",
+        "tw.modernLightMode": "Modern világos",
+        "tw.deepDarkMode": "Mély sötét",
+        "tw.guiAccent": "Felület témája"
     },
     "it": {
         "tw.accent.blue": "Azzurro",
@@ -1639,7 +1672,7 @@
         "tw.customExtensionModal.untrusted": "Le estensioni da URL non affidabili saranno sempre caricate con una sandbox per ragioni di sicurezza.",
         "tw.customReporters.description": "Permette ai blocchi personalizzati di restituire un valore e di essere usati come monitor.",
         "tw.customReporters.name": "Monitor Personalizzati",
-        "tw.darkMode": "Passa alla Modalità Chiara",
+        "tw.darkMode": "Chiaro",
         "tw.desktopCloud": "Nell'app desktop le variabili cloud vengono sincronizzate tra tutte le finestre dell'app che girano nello stesso computer. Per fare in modo che siano invece sincronizzate globalmente, carica il progetto sul sito di Scratch, oppure usa il {packager}.",
         "tw.documentation": "Documentazione",
         "tw.download.danger": "Il file è stato validato dagli sviluppatori di  {APP_NAME}.",
@@ -1703,7 +1736,7 @@
         "tw.invalidProject.title": "Errore",
         "tw.invalidProject.validationError": "Questo errore spesso significa che una piccola parte del progetto si è corrotta, ma che per il resto è valido. Siccome potrebbe essere semplice risolverlo, ti preghiamo di {reportIt}.",
         "tw.invalidProject.zipCorruption": "Questo errore indica spesso che il file è corrotto, a causa di dispositivo di memorizzazione malfunzionante o all'estrazione di un dispositivo di memorizzazione senza averlo prima espulso. Prova {usingSb3fix}, pensato proprio per risolvere questo tipo di problemi.",
-        "tw.lightMode": "Passa alla Modalità Scura",
+        "tw.lightMode": "Scuro",
         "tw.loadExtension.embedded": "Il progetto vuole caricare una estensione personalizzata con il seguente codice:",
         "tw.loadExtension.sandboxed": "Anche se il codice è eseguito in una sandbox, l'estensione avrà comunque accesso a informazioni sul tuo dispositivo come ad esempio il tuo indirizzo IP e la tua localizzazione. Assicurati di fidarti dell'autore dell'estensione prima di continuare.",
         "tw.loadExtension.unsandboxed": "Esegui senza sandbox",
@@ -1838,7 +1871,10 @@
         "tw.usesCloudVariables2": "Le variabili cloud di {APP_NAME} non sono collegate a quelle di Scratch. Chiunque può {changeTheirUsername} come preferisce, fai quindi attenzione a chi tenta di spacciarsi per qualcun altro.",
         "tw.usesCloudVariables2.change": "cambiare il proprio username",
         "tw.viewFeaturedProjects": "Clicca per vedere i progetti in primo piano.",
-        "tw.viewOnScratch": "Mostra il progetto nel sito di Scratch"
+        "tw.viewOnScratch": "Mostra il progetto nel sito di Scratch",
+        "tw.modernLightMode": "Chiaro Moderno",
+        "tw.deepDarkMode": "Scuro Profondo",
+        "tw.guiAccent": "Tema Interfaccia"
     },
     "ja": {
         "tw.accent.blue": "青",
@@ -1898,7 +1934,7 @@
         "tw.customExtensionModal.untrusted": "信頼できないURLからの拡張機能は、セキュリティのため常にサンドボックスで読み込みます。",
         "tw.customReporters.description": "カスタムブロックが値を出力し、入力として使えるようにする。",
         "tw.customReporters.name": "カスタム定義",
-        "tw.darkMode": "ライトモードに切り替える",
+        "tw.darkMode": "ライト",
         "tw.desktopCloud": "デスクトップアプリでは、クラウド変数はこのコンピューター上のすべてのデスクトップアプリのウィンドウ間で同期されます。プロジェクトをScratchにアップロードするか、{packager}などのツールを使用してグローバルに同期してください。",
         "tw.documentation": "ドキュメント",
         "tw.download.danger": "このファイルはまだ{APP_NAME}の開発者によって審査されていません。",
@@ -1957,7 +1993,7 @@
         "tw.invalidProject.reportIt": "報告してください",
         "tw.invalidProject.restorePoints": "復元ポイントを見る",
         "tw.invalidProject.validationError": "このエラーは多くの場合、プロジェクトのごく一部が破損していることを意味していますが、それ以外は問題ありません。このエラーは簡単に修正が可能ですので、{reportIt}",
-        "tw.lightMode": "ダークモードに切り替える",
+        "tw.lightMode": "ダーク",
         "tw.loadExtension.embedded": "このプロジェクトは、コードと共にカスタム拡張機能を読み込もうとしています:",
         "tw.loadExtension.sandboxed": "コードは保護されますが、IPや位置などのデバイスに関する情報には引き続きアクセスできます。続行する前に、この拡張機能の作成者が信頼できることを確認してください。",
         "tw.loadExtension.unsandboxed": "サンドボックスなしで実行する",
@@ -2093,7 +2129,10 @@
         "tw.usesCloudVariables2": "{APP_NAME}のクラウド変数はScratchとは接続されていません。\n誰でも{changeTheirUsername}して何でも入力することができるので、気をつけてください。",
         "tw.usesCloudVariables2.change": "ユーザー名を変更",
         "tw.viewFeaturedProjects": "クリックしてプロジェクトの特集を見る。",
-        "tw.viewOnScratch": "Scratchでプロジェクトを見る"
+        "tw.viewOnScratch": "Scratchでプロジェクトを見る",
+        "tw.modernLightMode": "モダンライト",
+        "tw.deepDarkMode": "ディープダーク",
+        "tw.guiAccent": "インターフェーステーマ"
     },
     "ja-hira": {
         "tw.alerts.creatingRestorePoint": "ふくげんしています…",
@@ -2182,7 +2221,12 @@
         "tw.usernameModal.reset": "リセット",
         "tw.usernameModal.title": "ユーザーめいをかえる",
         "tw.viewFeaturedProjects": "クリックしてプロジェクトの特集(とくしゅう)をみる。",
-        "tw.viewOnScratch": "Scratchでプロジェクトをみる"
+        "tw.viewOnScratch": "Scratchでプロジェクトをみる",
+        "tw.modernLightMode": "もだんらいと",
+        "tw.deepDarkMode": "でぃーぷだーく",
+        "tw.guiAccent": "いんたーふぇーすてーま",
+        "tw.lightMode": "だーく",
+        "tw.darkMode": "らいと"
     },
     "ko": {
         "tw.accent.blue": "푸른색",
@@ -2238,7 +2282,7 @@
         "tw.customExtensionModal.untrusted": "신뢰할 수 없는 URL로부터 제공되는 확장 기능은 보안을 위해 항상 샌드박스하여 불러옵니다.",
         "tw.customReporters.description": "사용자 정의 블록이 값을 출력하거나 입력으로 사용될 수 있도록 합니다.",
         "tw.customReporters.name": "사용자 정의 리포터 블록",
-        "tw.darkMode": "밝은 화면으로 전환하기",
+        "tw.darkMode": "라이트",
         "tw.desktopCloud": "데스크톱 앱의 경우, 클라우드 변수는 컴퓨터 내에서 실행되는 모든 데스크톱 앱 창에서 동기화됩니다. 해당 프로젝트를 스크래치에 업로드하거나, {packager}와 같은 도구를 사용하여 전역적으로 동기화가 가능합니다. ",
         "tw.documentation": "문서",
         "tw.download.danger": "해당 파일은 {APP_NAME} 개발진에 의해 검수되지 않았습니다.",
@@ -2300,7 +2344,7 @@
         "tw.invalidProject.restorePoints": "복원 지점 보기",
         "tw.invalidProject.title": "오류",
         "tw.invalidProject.validationError": "해당 오류는 프로젝트의 일부분이 손상되었을 경우 자주 발생하며, 쉽게 복구가 가능합니다. 따라서 {reportIt}해주시기를 부탁드립니다.",
-        "tw.lightMode": "어두운 화면으로 전환하기",
+        "tw.lightMode": "다크",
         "tw.loadExtension.embedded": "프로젝트가 코드를 포함한 사용자 지정 확장 기능 불러오기를 요청합니다 : ",
         "tw.loadExtension.sandboxed": "코드가 샌드박스되지만, 여전히 IP 주소나 위치 정보와 같은 사용자 기기 정보에 접근할 수 있습니다.\n계속하기 전에 해당 확장 기능의 제작자를 신뢰할 수 있는지 확인하세요.",
         "tw.loadExtension.unsandboxed": "샌드박스하지 않고 실행하기",
@@ -2438,7 +2482,10 @@
         "tw.usesCloudVariables2": "{APP_NAME} 프로젝트의 클라우드 변수가 스크래치 서버에 연결되지 않았습니다. 모든 사용자가 {changeTheirUsername}을 다른 사용자 이름으로 변경할 수 있으므로 사칭에 주의해야 합니다.",
         "tw.usesCloudVariables2.change": "자기 자신의 사용자 이름",
         "tw.viewFeaturedProjects": "클릭하여 특집 프로젝트 보기",
-        "tw.viewOnScratch": "스크래치에서 프로젝트 보기"
+        "tw.viewOnScratch": "스크래치에서 프로젝트 보기",
+        "tw.modernLightMode": "모던 라이트",
+        "tw.deepDarkMode": "딥 다크",
+        "tw.guiAccent": "인터페이스 테마"
     },
     "lt": {
         "tw.alerts.creatingRestorePoint": "Atkuriamas atkūrimo taškas...",
@@ -2532,7 +2579,12 @@
         "tw.usernameModal.reset": "nustatyti iš naujo",
         "tw.usernameModal.title": "Pakeisti Naudotojo vardą",
         "tw.viewFeaturedProjects": "Spustelkite kad pažiurėtumėte rekomenduojamus projektus.",
-        "tw.viewOnScratch": "Peržiurėti projektą per Scratch"
+        "tw.viewOnScratch": "Peržiurėti projektą per Scratch",
+        "tw.modernLightMode": "Šiuolaikinis šviesus",
+        "tw.deepDarkMode": "Gilus tamsus",
+        "tw.guiAccent": "Sąsajos tema",
+        "tw.lightMode": "Tamsus",
+        "tw.darkMode": "Šviesus"
     },
     "nb": {
         "tw.accent.blue": "Blå",
@@ -2585,7 +2637,7 @@
         "tw.customExtensionModal.untrusted": "Utvidelser fra upålitelige URL-er vil alltid bli lastet med sandkassen for sikkerhet.",
         "tw.customReporters.description": "Tillat tilpassede blokker å gi ut verdier og bli brukt som inndata.",
         "tw.customReporters.name": "Tilpassede rapporter",
-        "tw.darkMode": "Bytt Til Lys Modus",
+        "tw.darkMode": "Lys",
         "tw.documentation": "Dokumentasjon",
         "tw.embed.persistent": "Hvis tillatt, vil ytterligere innbygginger på samme nettsted automatisk bli tillatt.",
         "tw.embed.risks": "Selv om innbyggingen vil være sandkassebeskyttet, vil den fortsatt ha tilgang til informasjon om enheten din, som din IP-adresse og generelle plassering.",
@@ -2634,7 +2686,7 @@
         "tw.invalidParameters.clones": "\"klon\" Url-parameteren er ugyldig",
         "tw.invalidParameters.fps": "\"fps\" Url-parameteren er ugyldig",
         "tw.invalidProject.title": "Feil",
-        "tw.lightMode": "Bytt Til Mørk Modus",
+        "tw.lightMode": "Mørk",
         "tw.loadExtension.embedded": "Prosjektet ønsker å laste inn en tilpasset utvidelse med koden:",
         "tw.loadExtension.sandboxed": "Mens koden vil være sandkasse, vil den fortsatt ha tilgang til informasjon om enheten din, som din IP og generelle plassering. Sørg for at du stoler på forfatteren av denne utvidelsen før du fortsetter.",
         "tw.loadExtension.unsandboxed": "Kjør uten sandkasse",
@@ -2767,7 +2819,10 @@
         "tw.usesCloudVariables2": "{APP_NAME}s skyvariabler er ikke koblet til Scratch sine. Alle kan {changeTheirUsername} til hva som helst, så vær forsiktig med å bli utgitt for å være noen andre.",
         "tw.usesCloudVariables2.change": "bytt ditt brukernavn",
         "tw.viewFeaturedProjects": "Klikk til å se anbefalte prosjekter.",
-        "tw.viewOnScratch": "Se prosjektet på Scratch"
+        "tw.viewOnScratch": "Se prosjektet på Scratch",
+        "tw.modernLightMode": "Moderne Lys",
+        "tw.deepDarkMode": "Dyp Mørk",
+        "tw.guiAccent": "Grensesnitt-tema"
     },
     "nl": {
         "tw.accent.blue": "Blauw",
@@ -2821,7 +2876,7 @@
         "tw.customExtensionModal.untrusted": "Wegens veiligheidsredenen worden extensies van onbetrouwbare URL's altijd geladen met de sandbox.",
         "tw.customReporters.description": "Geef zelfgemaakte blokken onder de categorie \"Mijn blokken\" de mogelijkheid om waarden te hebben en te worden gebruikt als invoer.",
         "tw.customReporters.name": "Aangepaste waardeblokken",
-        "tw.darkMode": "Lichte modus gebruiken",
+        "tw.darkMode": "Licht",
         "tw.desktopCloud": "In de desktop-app worden cloudvariabelen gesynchroniseerd tussen alle vensters van de desktop-app op deze computer. Upload het project naar Scratch of gebruik een tool zoals de {packager} om ze globaal te synchroniseren.",
         "tw.documentation": "Documentatie",
         "tw.embed.persistent": "Indien toegestaan worden toekomstige invoegingen naar dezelfde website automatisch toegestaan.",
@@ -2875,7 +2930,7 @@
         "tw.invalidProject.restorePoints": "Herstelpunten bekijken",
         "tw.invalidProject.title": "Fout",
         "tw.invalidProject.validationError": "Deze foutmelding betekent vaak dat een klein deel van het project is beschadigd, maar dat het voor de rest nog wel geldig is. Dit is (meestal) makkelijk op te lossen, dus {reportIt}.",
-        "tw.lightMode": "Donkere modus gebruiken",
+        "tw.lightMode": "Donker",
         "tw.loadExtension.embedded": "Het project wilt een aangepaste extensie laden met de code:",
         "tw.loadExtension.sandboxed": "Hoewel de code wordt gesandboxed heeft het nog steeds toegang tot informatie van je apparaat, zoals je IP-adres en algemene locatie. Ga alleen verder als je de maker van deze extensie vertrouwt.",
         "tw.loadExtension.unsandboxed": "Uitvoeren zonder sandbox",
@@ -3007,7 +3062,10 @@
         "tw.usesCloudVariables2": "De cloudvariabelen van {APP_NAME} zijn niet verbonden met die van Scratch. Iedereen kan {changeTheirUsername} naar wat ze maar willen, dus pas op voor imitatie.",
         "tw.usesCloudVariables2.change": "hun gebruikersnaam veranderen",
         "tw.viewFeaturedProjects": "Klik hier om uitgelichte projecten te zien.",
-        "tw.viewOnScratch": "Dit project bekijken op Scratch"
+        "tw.viewOnScratch": "Dit project bekijken op Scratch",
+        "tw.modernLightMode": "Modern Licht",
+        "tw.deepDarkMode": "Diep Donker",
+        "tw.guiAccent": "Interface-thema"
     },
     "pl": {
         "tw.alerts.creatingRestorePoint": "Tworzenie punktu przywracania…",
@@ -3111,7 +3169,12 @@
         "tw.usernameModal.reset": "Resetuj",
         "tw.usernameModal.title": "Zmień Nazwę Użytkownika",
         "tw.viewFeaturedProjects": "Kliknij, aby zobaczyć polecane projekty.",
-        "tw.viewOnScratch": "Zobacz projekt w Scratchu"
+        "tw.viewOnScratch": "Zobacz projekt w Scratchu",
+        "tw.modernLightMode": "Nowoczesny jasny",
+        "tw.deepDarkMode": "Głęboki ciemny",
+        "tw.guiAccent": "Motyw interfejsu",
+        "tw.lightMode": "Ciemny",
+        "tw.darkMode": "Jasny"
     },
     "pt": {
         "tw.alerts.creatingRestorePoint": "Criando ponto de restauração...",
@@ -3200,7 +3263,12 @@
         "tw.usernameModal.reset": "Redefinir",
         "tw.usernameModal.title": "Mudar nome de usuário",
         "tw.viewFeaturedProjects": "Clique para ver projetos em destaque.",
-        "tw.viewOnScratch": "Ver projeto no Scratch"
+        "tw.viewOnScratch": "Ver projeto no Scratch",
+        "tw.modernLightMode": "Claro Moderno",
+        "tw.deepDarkMode": "Escuro Profundo",
+        "tw.guiAccent": "Tema da Interface",
+        "tw.lightMode": "Escuro",
+        "tw.darkMode": "Claro"
     },
     "pt-br": {
         "tw.accent.blue": "Azul",
@@ -3239,7 +3307,7 @@
         "tw.customExtensionModal.unsandboxedWarning1": "Carregar extensões fora do sandbox é perigoso e não deve ser ativado a não ser que você seja experiente.",
         "tw.customExtensionModal.unsandboxedWarning2": "Extensões sem sandbox podem corromper seu projeto, apagar suas configurações, roubar senhas e causar outros tormentos. Os desenvolvedores do aplicativo {APP_NAME} não são responsáveis por qualquer resultado consequente.",
         "tw.customExtensionModal.untrusted": "Extensões com URLs não confiáveis serão sempre carregadas com sandbox por segurança.",
-        "tw.darkMode": "Alternar para Tema Claro",
+        "tw.darkMode": "Claro",
         "tw.documentation": "Documentação",
         "tw.favorite": "Favoritar",
         "tw.featuredProjectsStudio": "Ver estúdio no Scratch.",
@@ -3270,7 +3338,7 @@
         "tw.invalidParameters.clones": "parâmetro de URL \"clone\" é inválido",
         "tw.invalidParameters.fps": "parâmetro de URL \"fps\" é inválido",
         "tw.invalidProject.title": "Erro",
-        "tw.lightMode": "Alternar para Tema Escuro",
+        "tw.lightMode": "Escuro",
         "tw.loader.downloadingAssets": "Baixando recursos ({complete}/{total}) ...",
         "tw.loader.loadingAssets": "Carregando recursos ({complete}/{total}) …",
         "tw.loader.projectData": "Carregando projeto …",
@@ -3374,7 +3442,10 @@
         "tw.usesCloudVariables2": "As variáveis em nuvem do {APP_NAME} não são conectadas ao servidor do Scratch. Qualquer um pode {changeTheirUsername} para qualquer coisa, então tome cuidado pois algumas pessoas podem se fingir de outras.",
         "tw.usesCloudVariables2.change": "mudar nome de usuário ",
         "tw.viewFeaturedProjects": "Clique para ver projetos em destaque.",
-        "tw.viewOnScratch": "Ver projeto no Scratch"
+        "tw.viewOnScratch": "Ver projeto no Scratch",
+        "tw.modernLightMode": "Claro Moderno",
+        "tw.deepDarkMode": "Escuro Profundo",
+        "tw.guiAccent": "Tema da Interface"
     },
     "ro": {
         "tw.alerts.creatingRestorePoint": "Se creează punctul de recuperare…",
@@ -3423,7 +3494,12 @@
         "tw.usernameModal.new": "Nume de utilizator nou:",
         "tw.usernameModal.reset": "Resetează",
         "tw.usernameModal.title": "Schimbă Utilizatorul",
-        "tw.viewFeaturedProjects": "Vezi proiectele recomandate (dați click)."
+        "tw.viewFeaturedProjects": "Vezi proiectele recomandate (dați click).",
+        "tw.modernLightMode": "Clar Modern",
+        "tw.deepDarkMode": "Întunecat Profund",
+        "tw.guiAccent": "Temă interfață",
+        "tw.lightMode": "Întunecat",
+        "tw.darkMode": "Clar"
     },
     "ru": {
         "tw.accent.blue": "Синий",
@@ -3484,7 +3560,7 @@
         "tw.customExtensionModal.url": "URL-адрес",
         "tw.customReporters.description": "Разрешить пользовательским блокам выводить значения и использовать их в качестве входных данных.",
         "tw.customReporters.name": "Пользовательские Репортеры",
-        "tw.darkMode": "Поменять на Светлый Режим",
+        "tw.darkMode": "Светлый",
         "tw.desktopCloud": "В настольном приложении облачные переменные синхронизируются между всеми окнами настольного приложения на этом компьютере. Загрузите проект в Scratch или используйте инструмент, подобный {packager}, для их глобальной синхронизации.",
         "tw.documentation": "Документация",
         "tw.download.danger": "Этот файл не был рассмотрен разработчиками {APP_NAME}.",
@@ -3548,7 +3624,7 @@
         "tw.invalidProject.title": "Ошибка",
         "tw.invalidProject.validationError": "Эта ошибка появляется тогда, когда маленькая часть проекта была заражена, но в остальное правильно. Это легко можно починить так, пожалуйста, {reportIt}.",
         "tw.invalidProject.zipCorruption": "Эта ошибка часто означает, что файл был повреждён, возможно, из-за неисправного устройства хранения данных, отключения питания или извлечения USB-накопителя без предварительного отключения. Попробуйте {usingSb3fix}, так как это может помочь устранить ошибку такого типа.",
-        "tw.lightMode": "Поменять на Тёмный Режим",
+        "tw.lightMode": "Тёмный",
         "tw.loadExtension.embedded": "Проект хочет загрузить пользовательское расширение с кодом:",
         "tw.loadExtension.sandboxed": "Хотя код будет изолирован, он по-прежнему будет иметь доступ к информации о вашем устройстве, такое как ваш IP адрес и общее местоположение. Прежде чем продолжить, убедитесь, что вы доверяете автору этого расширения.",
         "tw.loadExtension.unsandboxed": "Запустить без песочницы",
@@ -3686,7 +3762,10 @@
         "tw.usesCloudVariables2": "Облачные переменные {APP_NAME} не подключены к Scratch. Любой может {changeTheirUsername} на что угодно, поэтому остерегайтесь олицетворения.",
         "tw.usesCloudVariables2.change": "изменить их же имя пользователя",
         "tw.viewFeaturedProjects": "Нажмите, чтобы посмотреть избранные проекты.",
-        "tw.viewOnScratch": "Посмотреть проект на Scratch"
+        "tw.viewOnScratch": "Посмотреть проект на Scratch",
+        "tw.modernLightMode": "Современный светлый",
+        "tw.deepDarkMode": "Глубокий тёмный",
+        "tw.guiAccent": "Тема интерфейса"
     },
     "sk": {
         "tw.feedbackButton": "{APP_NAME} Spätná väzba",
@@ -3701,7 +3780,12 @@
         "tw.settingsModal.interpolation": "Interpolácia",
         "tw.settingsModal.interpolationHelp": "Spraví projekt plynulejší interpolovaním pohybu postavy. Interpolácia by nemala byť použitá pre 3D projekty, raytracery, \"pen\" projekty a sekajúce projekty, pretože interpolácia ich spomalí bez zlepšenia plynulosti.",
         "tw.settingsModal.title": "Pokročilé Nastavenia",
-        "tw.stageHeader.full": "Prepni na veľkú scénu"
+        "tw.stageHeader.full": "Prepni na veľkú scénu",
+        "tw.modernLightMode": "Moderný svetlý",
+        "tw.deepDarkMode": "Hlboký tmavý",
+        "tw.guiAccent": "Motív rozhrania",
+        "tw.lightMode": "Tmavý",
+        "tw.darkMode": "Svetlý"
     },
     "sl": {
         "tw.accent.blue": "Modra",
@@ -3739,7 +3823,7 @@
         "tw.customExtensionModal.title": "Naloži razširitev po meri",
         "tw.customExtensionModal.unsandboxedWarning1": "Nalaganje razširitev brez peskovnika je nevarno, zato ga ne vključite, če ne veste, kaj to pomeni.",
         "tw.customExtensionModal.unsandboxedWarning2": "Razširitve zunaj peskovnika lahko pokvarijo projekt, izbrišejo vaše nastavitve, kradejo gesla in delajo druge slabe stvari. Razvijalci aplikacije {APP_NAME} niso odgovorni za težave, ki jih to povzroči.",
-        "tw.darkMode": "Spremeni v svetli način",
+        "tw.darkMode": "Svetli",
         "tw.documentation": "Dokumentacija",
         "tw.download.danger": "Te datoteke razvijalci aplikacije {APP_NAME} niso pregledali.",
         "tw.download.executable": "To je izvedljiva datoteka, ki lahko vsebuje škodljivo kodo, če jo zaženete.",
@@ -3788,7 +3872,7 @@
         "tw.invalidProject.reportIt": "prijavite",
         "tw.invalidProject.title": "Napaka",
         "tw.invalidProject.validationError": "Ta napaka pogosto pomeni, da je majhen del projekta pokvarjen, čeprav sicer ni nič narobe. To je včasih enostavno popraviti, zato prosimo, da napako {reportIt}.",
-        "tw.lightMode": "Spremeni v temni način",
+        "tw.lightMode": "Temni",
         "tw.loadExtension.embedded": "Ta projekt želi naložiti razširitev po meri s kodo:",
         "tw.loadExtension.sandboxed": "Čeprav bo koda v peskovniku, bo imela dostop do podatkov o vaši napravi, kot je IP naslov in približna lokacija. Prepričajte se, da zaupajte avtorju te razširitve, preden nadaljujete.",
         "tw.loadExtension.unsandboxedWarning": "Nalaganje razširitev brez peskovnika je nevarno. Razširitev lahko pokvari projekt, izbriše vaše nastavitve, krade gesla in dela druge slabe stvari. Razvijalci aplikacije {APP_NAME} niso odgovorni za težave, ki jih to povzroči.",
@@ -3899,7 +3983,10 @@
         "tw.usernameModal.title": "Spremeni uporabniško ime",
         "tw.usesCloudVariables": "Ta projekt uporablja spremenljivke v oblaku.",
         "tw.viewFeaturedProjects": "Kliknite za ogled izpostavljenih projektov.",
-        "tw.viewOnScratch": "Ogled projekta na Scratchu"
+        "tw.viewOnScratch": "Ogled projekta na Scratchu",
+        "tw.modernLightMode": "Sodobno svetlo",
+        "tw.deepDarkMode": "Globoko temno",
+        "tw.guiAccent": "Tema vmesnika"
     },
     "sr": {
         "tw.alerts.creatingRestorePoint": "Прављење тачке враћања...",
@@ -3987,7 +4074,12 @@
         "tw.usernameModal.reset": "Ресетуј",
         "tw.usernameModal.title": "Промени корисничко име",
         "tw.viewFeaturedProjects": "Кликни да видиш истакнуте пројекте",
-        "tw.viewOnScratch": "Погледај пројекат на Scratch-у"
+        "tw.viewOnScratch": "Погледај пројекат на Scratch-у",
+        "tw.modernLightMode": "Модеран светли",
+        "tw.deepDarkMode": "Дубоки тамни",
+        "tw.guiAccent": "Тема интерфејса",
+        "tw.lightMode": "Тамни",
+        "tw.darkMode": "Светли"
     },
     "sv": {
         "tw.alerts.creatingRestorePoint": "Skapar återställningspunkt...",
@@ -4136,11 +4228,21 @@
         "tw.usernameModal.reset": "Starta om",
         "tw.usernameModal.title": "Ändra användarnamn",
         "tw.viewFeaturedProjects": "Klicka för att se utvalda projekt",
-        "tw.viewOnScratch": "Se projektet på Scratch"
+        "tw.viewOnScratch": "Se projektet på Scratch",
+        "tw.modernLightMode": "Modern Ljus",
+        "tw.deepDarkMode": "Djup Mörk",
+        "tw.guiAccent": "Gränssnittstema",
+        "tw.lightMode": "Mörk",
+        "tw.darkMode": "Ljus"
     },
     "th": {
         "tw.settingsModal.featured": "ได้รับการฟีเจอร์",
-        "tw.usernameModal.reset": "รีเซ็ต"
+        "tw.usernameModal.reset": "รีเซ็ต",
+        "tw.modernLightMode": "สว่างสมัยใหม่",
+        "tw.deepDarkMode": "มืดลึก",
+        "tw.guiAccent": "ธีมอินเทอร์เฟซ",
+        "tw.lightMode": "มืด",
+        "tw.darkMode": "สว่าง"
     },
     "tr": {
         "tw.accent.blue": "Mavi",
@@ -4191,7 +4293,7 @@
         "tw.customExtensionModal.untrusted": "Güvenilmeyen URL'lerden gelen uzantılar, güvenlik amacıyla her zaman korumalı alanla birlikte yüklenecektir.",
         "tw.customReporters.description": "Özel blokların değerlerin çıktısını almasına ve girdi olarak kullanılmasına izin verin.",
         "tw.customReporters.name": "Özel Haberciler",
-        "tw.darkMode": "Işık Moduna Geçiş",
+        "tw.darkMode": "Açık",
         "tw.documentation": "Belgesel",
         "tw.embed.persistent": "İzin verilirse aynı siteye daha fazla yerleştirme yapılmasına otomatik olarak izin verilecektir.",
         "tw.embed.risks": "Yerleştirme korumalı alana alınsa da, cihazınızla ilgili IP'niz ve genel konumunuz gibi bilgilere erişmeye devam edecektir.",
@@ -4238,7 +4340,7 @@
         "tw.invalidParameters.clones": "\"klon\" URL parametresi geçersizdir",
         "tw.invalidParameters.fps": "\"fps\" URL parametresi geçersizdir",
         "tw.invalidProject.title": "Hata",
-        "tw.lightMode": "Koyu Moda Geçin",
+        "tw.lightMode": "Koyu",
         "tw.loadExtension.embedded": "Proje şu kodu içeren özel bir uzantı yüklemek istiyor:",
         "tw.loadExtension.sandboxed": "Kod korumalı alana alınsa da, cihazınızla ilgili IP'niz ve genel konumunuz gibi bilgilere erişmeye devam edecektir. Devam etmeden önce bu uzantının yazarına güvendiğinizden emin olun.",
         "tw.loadExtension.unsandboxedWarning": "Korumalı alan olmadan uzantıların yüklenmesi tehlikelidir. Projenizi bozabilir, ayarlarınızı silebilir, şifreleri ele geçirebilir ve diğer kötü şeyleri yapabilir. {APP_NAME}geliştiricileri ortaya çıkan sorunlardan sorumlu değildir.",
@@ -4368,7 +4470,10 @@
         "tw.usesCloudVariables2": "{APP_NAME}'in bulut değişkenleri Scratch'inkilere bağlı değil. Herkes {changeTheirUsername} herhangi bir şey yapabilir, bu nedenle kimliğe bürünmeye karşı dikkatli olun.",
         "tw.usesCloudVariables2.change": "kullanıcı adını değiştir",
         "tw.viewFeaturedProjects": "Özellikli projeleri görmek için buraya tıklayınız.",
-        "tw.viewOnScratch": "Projeyi Scratch'te görüntüleyin."
+        "tw.viewOnScratch": "Projeyi Scratch'te görüntüleyin.",
+        "tw.modernLightMode": "Modern Açık",
+        "tw.deepDarkMode": "Derin Koyu",
+        "tw.guiAccent": "Arayüz Teması"
     },
     "uk": {
         "tw.accent.blue": "Синій",
@@ -4428,7 +4533,7 @@
         "tw.customExtensionModal.untrusted": "Для безпеки, розширення з не довірених джерел буде завантажено в пісочниці. ",
         "tw.customReporters.description": "Дозволяє користувальницьким блокам повертати значення а також бути використаними як ввід.",
         "tw.customReporters.name": "Користувальницькі Репортери",
-        "tw.darkMode": "Увімкнути Світлу Тему",
+        "tw.darkMode": "Світлий",
         "tw.desktopCloud": "У версії для комп'ютера хмарні змінні синхронізуються між усіма відчиненими вікнами на одному комп'ютері. Завантажте проєкт на Scratch або використайте {packager}, щоб вони синхронізувалися глобально.",
         "tw.documentation": "Документація",
         "tw.download.danger": "Цей файл не був перевірений розробниками {APP_NAME}.",
@@ -4489,7 +4594,7 @@
         "tw.invalidProject.restorePoints": "Переглянути Точки Відновлення",
         "tw.invalidProject.title": "Помилка",
         "tw.invalidProject.validationError": "Зазвичай ця помилка означає, що невеличка частина проєкту була пошкоджена, але це може бути не так. Тому {reportIt} про це, будь ласка.",
-        "tw.lightMode": "Увімкнути Темну Тему",
+        "tw.lightMode": "Темний",
         "tw.loadExtension.embedded": "Цей проєкт хоче завантажити користувальницьке розширення з кодом:",
         "tw.loadExtension.sandboxed": "Незважаючи на те, що код буде ізольований, в нього все одно буде доступ до інформації про ваш пристрій, такої як ваше IP та загальне місцезнаходження. Перед тим як продовжити, переконайтеся, що ви довіряєте автору цього розширення.",
         "tw.loadExtension.unsandboxed": "Запуск без пісочниці",
@@ -4627,7 +4732,10 @@
         "tw.usesCloudVariables2": "Хмарні змінні {APP_NAME} не під'єднані до Scratch. Будь хто може {changeTheirUsername}, тому остерігайтеся уособлення.",
         "tw.usesCloudVariables2.change": "змінити своє ім'я користувача",
         "tw.viewFeaturedProjects": "Натисніть щоб переглянути обрані проєкти.",
-        "tw.viewOnScratch": "Переглянути проєкт на Scratch"
+        "tw.viewOnScratch": "Переглянути проєкт на Scratch",
+        "tw.modernLightMode": "Сучасний світлий",
+        "tw.deepDarkMode": "Глибокий темний",
+        "tw.guiAccent": "Тема інтерфейсу"
     },
     "vi": {
         "tw.alerts.creatingRestorePoint": "Đang tạo điiểm khôi phục",
@@ -4682,7 +4790,12 @@
         "tw.usernameModal.reset": "Cài đặt lại",
         "tw.usernameModal.title": "Đổi tên người dùng",
         "tw.viewFeaturedProjects": "Bấm để xem dự án đặc sắc",
-        "tw.viewOnScratch": "Xem dự án trên Scratch"
+        "tw.viewOnScratch": "Xem dự án trên Scratch",
+        "tw.modernLightMode": "Sáng Hiện Đại",
+        "tw.deepDarkMode": "Tối Sâu",
+        "tw.guiAccent": "Giao Diện",
+        "tw.lightMode": "Tối",
+        "tw.darkMode": "Sáng"
     },
     "zh-cn": {
         "tw.accent.blue": "蓝色",
@@ -4772,7 +4885,7 @@
         "tw.customExtensionModal.untrusted": "为了保障安全，来自不可信任的 URL 网址的扩展将总是在沙盒环境下运行。",
         "tw.customReporters.description": "允许自制积木提供返回值。",
         "tw.customReporters.name": "自定义返回值",
-        "tw.darkMode": "切换到亮色主题",
+        "tw.darkMode": "亮色",
         "tw.desktopCloud": "在桌面版应用中，云变量只会在这台电脑上的所有桌面版应用窗口间同步。将作品上传到 Scratch 或使用类似{packager}的工具来让它们在全球范围内同步。",
         "tw.documentation": "文档",
         "tw.download.danger": "此文件尚未经由{APP_NAME}的开发者审查。",
@@ -4840,7 +4953,7 @@
         "tw.invalidProject.title": "错误",
         "tw.invalidProject.validationError": "这个错误通常意味着作品的一小部分已损坏，但其他部分仍然正常。这很容易修复，所以请{reportIt}。",
         "tw.invalidProject.zipCorruption": "这个错误通常意味着文件已损坏，例如存储设备故障，电源耗尽或者热插拔 USB 存储器。为了修复这种问题，可以尝试 {usingSb3fix}",
-        "tw.lightMode": "切换到暗色主题",
+        "tw.lightMode": "暗色",
         "tw.loadExtension.embedded": "此作品希望通过以下代码加载一个自定义扩展：",
         "tw.loadExtension.sandboxed": "即使代码在沙盒中运行，它仍能访问像IP地址或大概位置等设备信息。请在继续使用扩展前确保你信任此作者。",
         "tw.loadExtension.unsandboxed": "在非沙盒环境下运行",
@@ -5077,7 +5190,10 @@
         "tw.settingsModal.enablehtmlsupportreadmeHelp": "允许README显示HTML标签",
         "tw.settingsModal.enablehtmlsupportreadmeWarn": "一些恶意的README可能会编写危险的HTML内容，我们希望添加检测来避免这种情况，但这非常困难。因此，请仅在您信任您正在打开的项目并了解风险的情况下启用此设置",
         "tw.menuBar.extensionEditor": "扩展编辑器",
-        "tw.defaultProject.readme": "#README #欢迎！\n\n# 欢迎使用 **AstraEditor** ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/document/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！\n\n> [!NOTE]\n> 在[哔哩哔哩上关注我们](https://space.bilibili.com/3691007061264515)"
+        "tw.defaultProject.readme": "#README #欢迎！\n\n# 欢迎使用 **AstraEditor** ！\n\nAE 是一款基于 TurboWarp 开发的 Scratch 编辑器，我们加入了更多功能和插件~~以及很多 BUG 和特性~~！\n\n现在向您演示的是 README 功能。了解更多请前往 [AstraEditor 文档](https://editors.astras.top/document/)！\n\n基于 AstraEditor 进行二次开发可以前往我们的[代码库](https://github.com/AstraEditor)。\n\n前往[这里](https://github.com/AstraEditor/scratch-gui/issues)为我们反馈 BUG ！\n\n> [!NOTE]\n> 在[哔哩哔哩上关注我们](https://space.bilibili.com/3691007061264515)",
+        "tw.modernLightMode": "现代亮色",
+        "tw.deepDarkMode": "深邃暗色",
+        "tw.guiAccent": "界面主题"
     },
     "zh-tw": {
         "tw.alerts.lostPeripheralConnection": "與{extensionName}的連線中斷了。",
@@ -5232,6 +5348,11 @@
         "tw.extensionEditorTabs.back": "返回",
         "tw.extensionEditorTabs.timeJustNow": "剛剛",
         "tw.extensionEditorTabs.timeMinutesAgo": "{minutes}分鐘前",
-        "tw.extensionEditorTabs.timeHoursAgo": "{hours}小時前"
+        "tw.extensionEditorTabs.timeHoursAgo": "{hours}小時前",
+        "tw.modernLightMode": "現代亮色",
+        "tw.deepDarkMode": "深邃暗色",
+        "tw.guiAccent": "界面主題",
+        "tw.lightMode": "暗色",
+        "tw.darkMode": "亮色"
     }
 }

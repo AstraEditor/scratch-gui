@@ -507,8 +507,9 @@ class MenuBar extends React.Component {
                 <img
                     // className={styles.aboutIcon}
                     style={{
-                        width: '25px',
-                        margin: '5px'
+                        width: "25px",
+                        margin: "5px",
+                        filter: "var(--menu-bar-icon-style)",
                     }}
                     src={aboutIcon}
                     draggable={false}
@@ -516,19 +517,19 @@ class MenuBar extends React.Component {
                 <MenuBarMenu
                     className={classNames(styles.menuBarMenu)}
                     open={this.props.aboutMenuOpen}
-                    place={this.props.isRtl ? 'left' : 'right'}  // 原来是反过来的
+                    place={this.props.isRtl ? "left" : "right"} // 原来是反过来的
                 >
-                    {
-                        onClickAbout.map(itemProps => (
-                            <MenuItem
-                                key={itemProps.title}
-                                isRtl={this.props.isRtl}
-                                onClick={this.wrapAboutMenuCallback(itemProps.onClick)}
-                            >
-                                {itemProps.title}
-                            </MenuItem>
-                        ))
-                    }
+                    {onClickAbout.map((itemProps) => (
+                        <MenuItem
+                            key={itemProps.title}
+                            isRtl={this.props.isRtl}
+                            onClick={this.wrapAboutMenuCallback(
+                                itemProps.onClick,
+                            )}
+                        >
+                            {itemProps.title}
+                        </MenuItem>
+                    ))}
                 </MenuBarMenu>
             </MenuLabel>
         );
@@ -642,7 +643,8 @@ class MenuBar extends React.Component {
                         {!aboutButton ? (
                             <img src={aeLogo} draggable={false} style={{
                                 width: '25px',
-                                marginLeft: '10px'
+                                marginLeft: '10px',
+                                filter: 'var(--menu-bar-icon-style)'
                             }} />
                         ) : (
                             aboutButton

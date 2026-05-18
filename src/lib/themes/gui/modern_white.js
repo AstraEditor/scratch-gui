@@ -65,11 +65,11 @@ const guiColors = {
     "drop-highlight":
         "hsla(215, 100%, 77%, 1)" /* lighter than motion-primary */,
 
-    "menu-bar-background": "var(--looks-secondary)",
+    "menu-bar-background": "#ffffff",
     "menu-bar-background-image": "none",
-    "menu-bar-icon-style": "brightness(1)",
-    "menu-bar-feedback": "white",
-    "menu-bar-foreground": "#ffffff",
+    "menu-bar-icon-style": "brightness(0.2)",
+    "menu-bar-feedback": "#404040",
+    "menu-bar-foreground": "#7d7d7d",
 
     "assets-background": "#ffffff",
 

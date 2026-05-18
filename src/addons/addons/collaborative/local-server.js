@@ -69,8 +69,11 @@ class SignalingServer {
 
             const existingPeers = [];
             this.clients.forEach((client, cid) => {
-                if (client.roomId === roomId && cid !== clientId) {
-                    existingPeers.push(cid);
+                if (client.roomId === roomId) {
+                    existingPeers.push({
+                        cid,
+                        owner: cid === clientId
+                    });
                 }
             });
 
@@ -87,6 +90,7 @@ class SignalingServer {
                 {
                     type: "peer-joined",
                     clientId,
+                    existingPeers,
                     timestamp: Date.now(),
                 },
                 clientId,
@@ -113,6 +117,7 @@ class SignalingServer {
                         {
                             type: "peer-left",
                             clientId,
+                            existingPeers,
                             timestamp: Date.now(),
                         },
                         clientId,
