@@ -1,9 +1,11 @@
 const guiColors = {
     "color-scheme": "light",
-
-    "ui-primary": "hsla(215, 100%, 95%, 1)" /* #E5F0FF */,
-    "ui-secondary": "hsla(215, 75%, 95%, 1)" /* #E9F1FC */,
-    "ui-tertiary": "hsla(215, 50%, 90%, 1)" /* #D9E3F2 */,
+    "ui-primary":
+        "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
+    "ui-secondary":
+        "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
+    "ui-tertiary":
+        "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
 
     "ui-modal-overlay": "var(--motion-primary-transparent)",
     "ui-modal-background": "hsla(0, 100%, 100%, 1)" /* #FFFFFF */,
@@ -11,7 +13,7 @@ const guiColors = {
     "ui-modal-header-background": "var(--looks-secondary)",
     "ui-modal-header-foreground": "hsla(0, 100%, 100%, 1)" /* #FFFFFF */,
 
-    "ui-white": "hsla(0, 100%, 100%, 1)" /* #FFFFFF */,
+    "ui-white": "rgb(255, 255, 255)",
     "ui-white-dim":
         "hsla(0, 100%, 100%, 0.75)" /* 25% transparent version of ui-white */,
     "ui-white-transparent":
@@ -65,7 +67,8 @@ const guiColors = {
     "drop-highlight":
         "hsla(215, 100%, 77%, 1)" /* lighter than motion-primary */,
 
-    "menu-bar-background": "#ffffff",
+    "menu-bar-background":
+        "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
     "menu-bar-background-image": "none",
     "menu-bar-icon-style": "brightness(0.2)",
     "menu-bar-feedback": "#404040",
@@ -77,7 +80,7 @@ const guiColors = {
 
     "popover-background": "#ffffff",
 
-    shadow: "hsla(0, 0%, 0%, 0.15)",
+    shadow: "hsla(0, 0%, 0%, 0.05)",
 
     "badge-background": "#dbebff",
     "badge-border": "#b9d6ff",

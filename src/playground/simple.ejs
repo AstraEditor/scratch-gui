@@ -28,15 +28,26 @@
         } catch (e) {
           // ignore
         }
-        if (themeSetting === 'light') {
+        if (themeSetting === 'light' || themeSetting === 'modern_white') {
           theme = 'light';
-        } else if (themeSetting === 'dark') {
+        } else if (themeSetting === 'dark' || themeSetting === 'deep_dark') {
           theme = 'dark';
         } else if (themeSetting) {
           try {
             var parsed = JSON.parse(themeSetting);
-            if (parsed.gui === 'dark' || parsed.gui === 'light') {
-              theme = parsed.gui;
+            switch(parsed.gui){
+              case 'dark':
+              case 'light':
+                theme = parsed.gui;
+                break
+              case 'modern_white':
+                theme = 'light'
+                break
+              case 'deep_dark':
+                theme = 'dark'
+                break
+              default:
+                theme = 'light'
             }
           } catch (e) {
             // ignore

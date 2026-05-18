@@ -1,6 +1,6 @@
 import titlesContent from './titles.json'
 
-import { ACCENT_MAP } from '../themes/index.js';
+import { ACCENT_MAP, GUI_DARK, GUI_LIGHT, GUI_MODERNWHITE } from '../themes/index.js';
 
 const theme = (() => {
     try {
@@ -79,8 +79,9 @@ const getThemeColor = () => {
 
 const getBG = () => {
     try {
-        if (theme.gui == 'light') return '#fff'
-        if (theme.gui == 'dark') return '#000'
+        if (theme.gui == GUI_LIGHT) return '#fff'
+        if (theme.gui == GUI_MODERNWHITE) return '#fff'
+        if (theme.gui == GUI_DARK) return '#000'
         else return '#000'
     } catch {
         return '#000'
@@ -88,9 +89,10 @@ const getBG = () => {
 }
 const getTextBG = () => {
     try {
-        if (theme.gui == 'light') return '#000'
-        if (theme.gui == 'dark') return '#fff'
-        else return '#fff'
+        if (theme.gui == GUI_LIGHT) return "#000";
+        if (theme.gui == GUI_MODERNWHITE) return "#000";
+        if (theme.gui == GUI_DARK) return "#fff";
+        else return "#fff";
     } catch {
         return '#fff'
     }
