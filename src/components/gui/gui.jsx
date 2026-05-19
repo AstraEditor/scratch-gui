@@ -606,17 +606,7 @@ const GUIComponent = props => {
                             ) : null}
                         </Box>
 
-                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
-                            style={Settings.get('EnableMobileLayout') ? {
-                                flexDirection: 'row',
-                                minWidth: `${stageColumnWidth}px`,
-                                maxWidth: `${stageColumnWidth}px`
-                            } : {
-                                flexDirection: 'column',
-                                minWidth: `${stageColumnWidth}px`,
-                                maxWidth: `${stageColumnWidth}px`
-                            }}
-                        >
+                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
                             <StageWrapper
                                 isFullScreen={isFullScreen}
                                 isRendererSupported={isRendererSupported()}

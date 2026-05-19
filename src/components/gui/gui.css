@@ -479,3 +479,8 @@ $fade-out-distance: 15px;
     /* overridden by JS; this will be used if the browser can't understand that color */
     background-color: white;
 }
+
+.stageAndTargetWrapper{
+    flex-direction: column;
+    display: flex;
+}

@@ -67,7 +67,7 @@ const guiColors = {
         "color-mix(in srgb, rgb(255, 255, 255) 98%, var(--looks-secondary))",
     "menu-bar-background-image": "none",
     "icon-style": "brightness(0.2)",
-    "menu-bar-feedback": "#404040",
+    "menu-bar-feedback": "#606060",
     "menu-bar-foreground": "#7d7d7d",
 
     "assets-background": "#ffffff",

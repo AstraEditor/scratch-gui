@@ -20,3 +20,8 @@
     background-color: rgba(255, 81, 81, 0.25);
     border: 1px solid red;
 }
+
+.extensionsIDs{
+    max-height: 25vh;
+    overflow: auto;
+}

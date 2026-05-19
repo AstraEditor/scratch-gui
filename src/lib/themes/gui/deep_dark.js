@@ -1,14 +1,14 @@
 const guiColors = {
-    "color-scheme": "deep_dark",
+    "color-scheme": "dark",
 
     "ui-primary": "#050505",
     "ui-secondary": "#101010",
     "ui-tertiary": "#101010",
 
-    "ui-modal-overlay": "#222222aa",
+    "ui-modal-overlay": "#111111aa",
     "ui-modal-background": "#050505",
     "ui-modal-foreground": "#e0e0e0",
-    "ui-modal-header-background": "#222222",
+    "ui-modal-header-background": "#050505",
     "ui-modal-header-foreground": "#eeeeee",
 
     "ui-white": "#050505",
