@@ -70,24 +70,6 @@ export function createHandler({
                         }
                     }
                 }
-                // 字体 — 直接注入 fontManager，不走 deserialize
-                if (projectData.customFonts) {
-                    const fm = vm.runtime.fontManager;
-                    for (const f of projectData.customFonts) {
-                        if (f.data && !f.system) {
-                            const bytes = dataURLToBytes(f.data);
-                            const asset = storage.createAsset(
-                                storage.AssetType.Font,
-                                f.dataFormat,
-                                bytes,
-                                null,
-                                true
-                            );
-                            fm.addCustomFont(f.family, f.fallback, asset);
-                        }
-                    }
-                    delete projectData.customFonts;
-                }
                 await vm.loadProject(projectData);
                 break;
 
