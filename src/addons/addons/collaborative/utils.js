@@ -1,3 +1,5 @@
+import ReduxStore from "../../redux.js";
+
 /**
  * 带超时的 fetch 封装。
  * @param {string} url
@@ -20,3 +22,10 @@ export async function fetchWithTimeout(url, timeout = 3000) {
         return null;
     }
 }
+
+export function getAPPNAME() {
+    const state = ReduxStore.state;
+    const title = state?.scratchGui?.projectTitle;
+    return title ? title.toString() : "";
+}
+

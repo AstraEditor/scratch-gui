@@ -1,5 +1,5 @@
 import { ID_SEA, DEFAULT_STUN_URLS } from "./constants.js";
-import { fetchWithTimeout } from "./utils.js";
+import { fetchWithTimeout, getAPPNAME } from "./utils.js";
 
 /**
  * 协作编辑的网络层：房间管理（HTTP）+ 信令服务器（WebSocket）+ P2P（WebRTC）。
@@ -162,25 +162,11 @@ export class RTCServer {
     }
 
     async _buildSnapshotWithAssets() {
-        const JSZip = require("jszip");
-        const zip = new JSZip();
-
-        // project.json
-        zip.file("project.json", vm.toJSON());
-
-        // assets
-        for (const asset of vm.assets) {
-            zip.file(`${asset.assetId}.${asset.dataFormat}`, asset.data);
-        }
-
-        const sb3File = await zip.generateAsync({
-            type: "arraybuffer",
-            compression: "DEFLATE",
-        });
+        const sb3 = await this._vm.saveProjectSb3("arraybuffer");
 
         let binary = "";
 
-        const bytes = new Uint8Array(sb3File);
+        const bytes = new Uint8Array(sb3);
 
         for (let i = 0; i < bytes.byteLength; i++) {
             binary += String.fromCharCode(bytes[i]);
@@ -488,6 +474,7 @@ export class RTCServer {
                     const sendProject = {
                         type: "snapshot",
                         data: await this._buildSnapshotWithAssets(),
+                        projectName: getAPPNAME()
                     };
                         this._console.log(
                             `[协作] Host 发送 snapshot:${JSON.stringify(sendProject)}`,

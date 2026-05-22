@@ -1,3 +1,5 @@
+import { APP_NAME } from "../../../lib/brand";
+
 /**
  * P2P 消息路由。解析来自其他节点的数据通道消息，分发到对应的处理逻辑。
  *
@@ -35,6 +37,8 @@ export function createHandler({
                 }
 
                 await vm.loadProject(bytes.buffer);
+                console.log(data)
+                document.title = `${data.projectName} - ${APP_NAME}`;
                 break;
 
             // ── Phase 1: patch ──
