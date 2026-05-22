@@ -54,6 +54,7 @@ class SignalingServer {
             const clientId = this.generateClientId();
             const queryParams = url.parse(req.url, true).query;
             const roomId = queryParams.room;
+            const userName = queryParams.name;
 
             if (!roomId) {
                 ws.close(4000, "Room ID is required");
@@ -62,17 +63,19 @@ class SignalingServer {
             this.clients.set(clientId, {
                 ws,
                 roomId,
+                userName,
                 connectedAt: Date.now(),
             });
 
-            console.log(`客户端 ${clientId} 连接到了 ${roomId} 房间`);
+            console.log(`客户端 ${userName}(${clientId}) 连接到了 ${roomId} 房间`);
 
             const existingPeers = [];
             this.clients.forEach((client, cid) => {
                 if (client.roomId === roomId) {
                     existingPeers.push({
                         cid,
-                        owner: cid === clientId
+                        userName: client.userName,
+                        owner: cid === clientId,
                     });
                 }
             });

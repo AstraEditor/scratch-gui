@@ -4,7 +4,7 @@ import icon from "!../../../lib/tw-recolor/build!./icon.svg";
 import copyImg from "./copy.svg";
 import { join } from "path-browserify";
 import SideBar from "../../ui/side-bar/side-bar.js";
-import { createRTCServer } from "./rtc-server.js";
+import { RTCServer } from "./rtc-server.js";
 import { createHandler } from "./handle.js";
 
 export default async function ({ addon, console, msg }) {
@@ -111,6 +111,7 @@ export default async function ({ addon, console, msg }) {
          * @param {String} config.defaultValue
          * @param {'text' | 'number'} config.type
          * @param {String} config.label
+         * @param {String} config.tip
          * @param {Function} config.onChange
          * @param {String} text
          */
@@ -122,6 +123,7 @@ export default async function ({ addon, console, msg }) {
             const input = document.createElement("input");
             input.type = config.type;
             input.value = text;
+            input.placeholder = config.tip || "";
             input.onchange = (e) => {
                 config.onChange(e.target.value);
             };
@@ -157,19 +159,19 @@ export default async function ({ addon, console, msg }) {
 
             if (isVSCLayout) Container.appendChild(Title);
             Container.appendChild(tipBox("tip", msg("alpha_warn")));
-            Container.appendChild(
-                inputBox(
-                    {
-                        type: "string",
-                        label: msg("url"),
-                        value: url,
-                        onChange: (value) => {
-                            url = value;
-                        },
-                    },
-                    url.toString(),
-                ),
-            );
+            // Container.appendChild(
+            //     inputBox(
+            //         {
+            //             type: "string",
+            //             label: msg("url"),
+            //             value: url,
+            //             onChange: (value) => {
+            //                 url = value;
+            //             },
+            //         },
+            //         url.toString(),
+            //     ),
+            // );
             Container.appendChild(createButton);
 
             Container.appendChild(
@@ -178,6 +180,7 @@ export default async function ({ addon, console, msg }) {
                         type: "string",
                         label: msg("id"),
                         value: id,
+                        tip: "赛博玩AE",
                         onChange: (value) => {
                             id = value;
                         },
@@ -211,14 +214,21 @@ export default async function ({ addon, console, msg }) {
             roomMembers.className = idHead + "roomMembers"
             rtcState.allMembers.forEach((member) => {
                 const roomMember = document.createElement("span");
-                roomMember.textContent = member.cid;
+                roomMember.textContent = member.userName;
                 roomMembers.appendChild(roomMember);
             });
+
+            const exitRoomButton = document.createElement('button');
+            exitRoomButton.textContent = msg('exitRoomButton')
+            exitRoomButton.onclick = () => {
+                rtc.exit()
+            }
 
             roomTitleDiv.appendChild(roomTitleCopyButton);
             roomTitleDiv.appendChild(roomTitle);
             Container.appendChild(roomTitleDiv);
             Container.appendChild(roomMembers);
+            Container.appendChild(exitRoomButton);
         }
 
         return Container;
@@ -230,17 +240,18 @@ export default async function ({ addon, console, msg }) {
 
     // ── 网络层初始化 ────────────────────────────────────────────
 
-    const rtc = createRTCServer({
+    const rtc = new RTCServer({
         msg,
         console,
         updateTipText,
+        vm,
         onStateChange: (newState) => {
             // 首次连接成功时显示房间提示条
             if (newState.clientId) enterRoom(newState.roomId);
             else refreshGUI();
         },
-        onPeerMessage: (peerId, data) => {
-            handlePeerMessage(peerId, data);
+        onPeerMessage: async (peerId, data) => {
+            await handlePeerMessage(peerId, data);
         },
     });
 

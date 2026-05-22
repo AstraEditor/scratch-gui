@@ -31,6 +31,7 @@
 }
 
 .sa-addon-collaborative-inputBox {
+    justify-content: space-between;
     display: flex;
 }
 

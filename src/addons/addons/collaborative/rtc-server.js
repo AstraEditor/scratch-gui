@@ -1,454 +1,491 @@
-import { ID_SEA } from "./constants.js";
+import { ID_SEA, DEFAULT_STUN_URLS } from "./constants.js";
 import { fetchWithTimeout } from "./utils.js";
 
 /**
  * 协作编辑的网络层：房间管理（HTTP）+ 信令服务器（WebSocket）+ P2P（WebRTC）。
- *
- * 通过回调向外暴露消息和状态变更：
- *   onPeerMessage(peerId, data) — P2P 数据通道收到消息
- *   onStateChange(newState)      — 连接/断开/成员变化
- *   updateTipText(text, mode)    — UI 提示（透传）
  */
-export function createRTCServer({ msg, console, updateTipText, onPeerMessage, onStateChange }) {
+export class RTCServer {
+    constructor({ msg, console, updateTipText, vm, onPeerMessage, onStateChange }) {
+        this._msg = msg;
+        this._console = console;
+        this._updateTipText = updateTipText;
+        this._onPeerMessage = onPeerMessage;
+        this._onStateChange = onStateChange;
+        this._vm = vm;
 
-    // ── 内部状态 ────────────────────────────────────────────────
+        this._server = null;
+        this._allSTUN_URLs = null;
+        this._rtcConnections = new Map();
+        this._dataChannels = new Map();
+        this._pendingCandidates = new Map();
+        this._isHost = false;
+        this._chunkBuffers = new Map(); // id → { total, chunks: [] }
+        this.state = { clientId: null, roomId: null, allMembers: [] };
+    }
 
-    let server = null; // WebSocket
-    let allSTUN_URLs = null;
+    // ── 对外 API ─────────────────────────────────────────────────
 
-    const rtcConnections = new Map();  // peerId → RTCPeerConnection
-    const dataChannels = new Map();    // peerId → RTCDataChannel
-    const pendingCandidates = new Map(); // peerId → RTCIceCandidate[]
+    getState() {
+        return { ...this.state };
+    }
 
-    const state = { clientId: null, roomId: null, allMembers: [] };
+    async login(mode = "reg", serverUrl = "localhost:1832", roomId = "") {
+        await this._ensureSTUNList();
+        if (!window.RTCPeerConnection) {
+            this._updateTipText(this._msg("create_rtc_failed"), "error");
+            return;
+        }
+        this._updateTipText(this._msg("linking_to_server"));
+        const spawnedRoomID = await this._spawnRoomID(mode, roomId, serverUrl);
+        const getUserName = () => localStorage.getItem("tw:username") || "user";
+        if (mode === "join") {
+            if (!spawnedRoomID.isUsing) {
+                this._updateTipText(this._msg("join_failed"), "error");
+                return;
+            }
+            this._server = new WebSocket(
+                `ws://${serverUrl}?room=${spawnedRoomID.id}&name=${getUserName()}`,
+            );
+        } else {
+            this._server = new WebSocket(
+                `ws://${serverUrl}?room=${spawnedRoomID}&name=${getUserName()}`,
+            );
+        }
+        this._server.onmessage = (msgs) => {
+            try {
+                this._handleServerMessage(JSON.parse(msgs.data));
+            } catch (e) {
+                this._console.error("[协作] 解析服务器消息失败:", e);
+            }
+        };
+        this._server.onerror = () =>
+            this._updateTipText(this._msg("server_error"), "error");
+        this._server.onclose = () => {
+            this._closeAllPeerConnections();
+            this._updateTipText(this._msg("server_exit"), "error");
+            this._server = null;
+            this.state.clientId = null;
+            this.state.roomId = null;
+            this.state.allMembers = [];
+            this._emitState();
+        };
+        window.addEventListener("beforeunload", () => this.exit());
+    }
 
-    const emitState = () => { onStateChange({ ...state }); };
+    exit() {
+        this._closeAllPeerConnections();
+        if (this._server) {
+            try {
+                this._server.send(
+                    JSON.stringify({
+                        type: "exit",
+                        clientId: this.state.clientId,
+                    }),
+                );
+            } catch (e) {}
+            try {
+                this._server.close();
+            } catch (e) {}
+            this._server = null;
+        }
+        this.state.clientId = null;
+        this.state.roomId = null;
+        this.state.allMembers = [];
+    }
 
-    const getState = () => ({ ...state });
+    static CHUNK_SIZE = 15000; // bytes
 
-    // ── STUN 列表获取 ───────────────────────────────────────────
-
-    const ensureSTUNList = async () => {
-        if (allSTUN_URLs) return;
-        updateTipText(msg("loading_available_stun"));
+    sendToPeer(peerId, data) {
+        const channel = this._dataChannels.get(peerId);
+        if (!channel || channel.readyState !== "open") {
+            this._console.warn("[协作] 无法发送给 " + peerId + ": 通道未就绪");
+            return false;
+        }
         try {
-            const resp = await fetchWithTimeout(
+            const raw = JSON.stringify(data);
+            if (raw.length <= RTCServer.CHUNK_SIZE) {
+                channel.send(raw);
+                return true;
+            }
+            // 分片发送
+            const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+            let offset = 0;
+            let idx = 0;
+            const total = Math.ceil(raw.length / RTCServer.CHUNK_SIZE);
+            this._console.log(`[协作] 分片发送 → ${peerId} id=${id} total=${total} size=${raw.length}`);
+            while (offset < raw.length) {
+                const chunk = raw.slice(offset, offset + RTCServer.CHUNK_SIZE);
+                channel.send(JSON.stringify({
+                    type: "_chunk",
+                    id,
+                    idx: idx++,
+                    total,
+                    data: chunk
+                }));
+                offset += RTCServer.CHUNK_SIZE;
+            }
+            return true;
+        } catch (e) {
+            this._console.error("[协作] 发送失败:", e);
+            return false;
+        }
+    }
+
+    broadcastToPeers(data) {
+        let sent = 0;
+        for (const peerId of this._dataChannels.keys())
+            if (this.sendToPeer(peerId, data)) sent++;
+        return sent;
+    }
+
+    // ── 内部 ─────────────────────────────────────────────────────
+
+    _buildSnapshotWithAssets() {
+        const json = JSON.parse(this._vm.toJSON());
+        const runtime = this._vm.runtime;
+        const rtOriginals = runtime.targets.filter(t => t.isOriginal);
+
+        json.targets.forEach((target, i) => {
+            const rtTarget = rtOriginals[i];
+            if (!rtTarget) return;
+
+            const rtCostumes = rtTarget.getCostumes();
+            if (target.costumes) {
+                for (const c of target.costumes) {
+                    const rc = rtCostumes.find(rc2 => rc2.assetId === c.assetId);
+                    if (rc?.asset) c.data = rc.asset.encodeDataURI();
+                }
+            }
+
+            if (target.sounds) {
+                const rtSounds = rtTarget.sprite ? rtTarget.sprite.sounds : [];
+                for (const s of target.sounds) {
+                    const rs = rtSounds.find(rs2 => rs2.assetId === s.assetId);
+                    if (rs?.asset) s.data = rs.asset.encodeDataURI();
+                }
+            }
+        });
+
+        if (json.customFonts) {
+            const rtFonts = runtime.fontManager.fonts;
+            for (const f of json.customFonts) {
+                if (f.system) continue;
+                const rf = rtFonts.find(rf2 => rf2.family === f.family);
+                if (rf?.asset) {
+                    f.data = rf.asset.encodeDataURI();
+                    f.dataFormat = rf.asset.dataFormat;
+                }
+            }
+        }
+
+        return JSON.stringify(json);
+    }
+
+    _emitState() {
+        this._onStateChange({ ...this.state });
+    }
+
+    async _ensureSTUNList() {
+        if (this._allSTUN_URLs) return;
+        this._updateTipText(this._msg("loading_available_stun"));
+        try {
+            const r = await fetchWithTimeout(
                 "https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt",
                 5000,
             );
-            if (resp) allSTUN_URLs = await resp.text();
+            if (r) this._allSTUN_URLs = await r.text();
         } catch (e) {
-            console.error("[协作] 获取STUN列表失败", e);
+            this._console.error("[协作] 获取STUN列表失败", e);
         }
-        if (!allSTUN_URLs) {
+        if (!this._allSTUN_URLs) {
             try {
-                updateTipText(msg("loading_available_stun_from_proxy"));
-                const resp = await fetchWithTimeout(
+                this._updateTipText(
+                    this._msg("loading_available_stun_from_proxy"),
+                );
+                const r = await fetchWithTimeout(
                     "https://ghproxy.net/https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt",
                     5000,
                 );
-                if (resp) allSTUN_URLs = await resp.text();
+                if (r) this._allSTUN_URLs = await r.text();
             } catch (e) {
-                console.error("[协作] 镜像STUN获取也失败", e);
+                this._console.error("[协作] 镜像STUN获取也失败", e);
             }
         }
-        if (!allSTUN_URLs) {
-            console.warn("[协作] 无法获取STUN列表，使用默认STUN");
-            allSTUN_URLs = "stun.l.google.com:19302\n";
+        if (!this._allSTUN_URLs) {
+            this._console.warn("[协作] 无法获取STUN列表，使用默认STUN");
+            this._allSTUN_URLs = DEFAULT_STUN_URLS;
         }
-    };
+    }
 
-    // ── 房间 ID 生成 ────────────────────────────────────────────
-
-    const spawnRoomID = async (mode = "reg", checkID = "", serverUrl = "localhost:1832") => {
-        const isJoinMode = mode === "join";
-
-        const getRandomNumber = (x, y) =>
-            Math.floor(Math.random() * (y - x + 1)) + x;
-
-        for (let retryNum = 0; retryNum < 10; retryNum++) {
-            let queryId;
-            if (!isJoinMode) {
-                queryId = `${ID_SEA.Who[getRandomNumber(0, ID_SEA.Who.length - 1)]}${ID_SEA.Do[getRandomNumber(0, ID_SEA.Do.length - 1)]}${ID_SEA.Things[getRandomNumber(0, ID_SEA.Things.length - 1)]}`;
-                console.log("[协作]尝试生成一个ID: " + queryId);
-            } else {
-                queryId = checkID;
-            }
-
+    async _spawnRoomID(
+        mode = "reg",
+        checkID = "",
+        serverUrl = "localhost:1832",
+    ) {
+        const isJoin = mode === "join";
+        const rand = (x, y) => Math.floor(Math.random() * (y - x + 1)) + x;
+        for (let i = 0; i < 10; i++) {
+            const qid = isJoin
+                ? checkID
+                : `${ID_SEA.Who[rand(0, ID_SEA.Who.length - 1)]}${ID_SEA.Do[rand(0, ID_SEA.Do.length - 1)]}${ID_SEA.Things[rand(0, ID_SEA.Things.length - 1)]}`;
             try {
-                const response = await fetchWithTimeout(
-                    `http://${serverUrl}/roomIsFree?roomId=${encodeURIComponent(queryId)}`,
+                const r = await fetchWithTimeout(
+                    `http://${serverUrl}/roomIsFree?roomId=${encodeURIComponent(qid)}`,
                 );
-                if (!response) continue;
-                const data = await response.json();
-                console.log("[协作]房间检查:", data);
-                if (isJoinMode) {
-                    return { id: checkID, isUsing: !data.isFree };
-                } else {
-                    if (data.isFree) {
-                        console.log("[协作]房间可用: " + queryId);
-                        return queryId;
-                    }
-                    console.log("[协作]房间已占用，重试...");
-                }
-            } catch (error) {
-                console.error("[协作]检查房间失败:", error);
-            }
+                if (!r) continue;
+                const d = await r.json();
+                if (isJoin) return { id: checkID, isUsing: !d.isFree };
+                if (d.isFree) return qid;
+            } catch (e) {}
         }
+        return isJoin ? { id: checkID, isUsing: false } : `room_${Date.now()}`;
+    }
 
-        if (isJoinMode) return { id: checkID, isUsing: false };
-        return `room_${Date.now()}`;
-    };
-
-    // ── WebRTC 配置与连接生命周期 ─────────────────────────────────
-
-    const getRTCConfig = () => ({
-        iceServers: [
-            {
-                urls: allSTUN_URLs
-                    .split("\n")
-                    .filter((u) => u.trim() !== "")
-                    .map((u) => `stun:${u.trim()}`),
-            },
-        ],
-    });
-
-    const closePeerConnection = (peerId) => {
-        const channel = dataChannels.get(peerId);
-        if (channel) {
-            try { channel.close(); } catch (e) { /* ignore */ }
-            dataChannels.delete(peerId);
-        }
-        const rtc = rtcConnections.get(peerId);
-        if (rtc) {
-            try { rtc.close(); } catch (e) { /* ignore */ }
-            rtcConnections.delete(peerId);
-        }
-        pendingCandidates.delete(peerId);
-        console.log("[协作] 已关闭与 " + peerId + " 的P2P连接");
-    };
-
-    const closeAllPeerConnections = () => {
-        for (const peerId of rtcConnections.keys()) {
-            closePeerConnection(peerId);
-        }
-    };
-
-    // ── 数据通道 ────────────────────────────────────────────────
-
-    const setupDataChannel = (channel, peerId) => {
-        channel.onopen = () => {
-            console.log("[协作] 数据通道已开启: " + peerId);
-            updateTipText(msg("rtc_connected"));
+    _getRTCConfig() {
+        return {
+            iceServers: [
+                {
+                    urls: this._allSTUN_URLs
+                        .split("\n")
+                        .filter((u) => u.trim())
+                        .map((u) => `stun:${u.trim()}`),
+                },
+            ],
         };
+    }
 
-        channel.onclose = () => {
-            console.log("[协作] 数据通道已关闭: " + peerId);
-        };
-
-        channel.onerror = (e) => {
-            console.error("[协作] 数据通道错误: " + peerId, e);
-        };
-
-        channel.onmessage = (event) => {
+    _closePeerConnection(peerId) {
+        const ch = this._dataChannels.get(peerId);
+        if (ch) {
             try {
-                const data = JSON.parse(event.data);
-                onPeerMessage(peerId, data);
+                ch.close();
+            } catch (e) {}
+            this._dataChannels.delete(peerId);
+        }
+        const rtc = this._rtcConnections.get(peerId);
+        if (rtc) {
+            try {
+                rtc.close();
+            } catch (e) {}
+            this._rtcConnections.delete(peerId);
+        }
+        this._pendingCandidates.delete(peerId);
+        this._console.log("[协作] 已关闭与 " + peerId + " 的P2P连接");
+    }
+
+    _closeAllPeerConnections() {
+        this._chunkBuffers.clear();
+        for (const pid of this._rtcConnections.keys())
+            this._closePeerConnection(pid);
+    }
+
+    _setupDataChannel(channel, peerId) {
+        channel.onopen = () => {
+            this._updateTipText(this._msg("rtc_connected"));
+        };
+        channel.onerror = (e) => {
+            this._console.error("[协作] 数据通道错误: " + peerId, e);
+        };
+        channel.onmessage = async (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                // 分片消息 → 缓冲拼装
+                if (msg.type === "_chunk") {
+                    let buf = this._chunkBuffers.get(msg.id);
+                    if (!buf) {
+                        buf = { total: msg.total, chunks: [] };
+                        this._chunkBuffers.set(msg.id, buf);
+                    }
+                    buf.chunks[msg.idx] = msg.data;
+                    // 是否收齐
+                    const received = buf.chunks.filter(c => c !== undefined).length;
+                    if (received === buf.total) {
+                        this._chunkBuffers.delete(msg.id);
+                        const full = JSON.parse(buf.chunks.join(""));
+                        this._console.log(`[协作] 分片组装完成 id=${msg.id} total=${buf.total}`);
+                        await this._onPeerMessage(peerId, full);
+                    }
+                    return;
+                }
+                await this._onPeerMessage(peerId, msg);
             } catch (e) {
-                console.error("[协作] 无效的P2P消息:", e);
+                this._console.error("[协作] 无效的P2P消息:", e);
             }
         };
-    };
+    }
 
-    // ── P2P 发送 ────────────────────────────────────────────────
-
-    const sendToPeer = (peerId, data) => {
-        const channel = dataChannels.get(peerId);
-        if (!channel || channel.readyState !== "open") {
-            console.warn("[协作] 无法发送给 " + peerId + ": 通道未就绪");
-            return false;
-        }
+    async _createAndSendOffer(peerId) {
+        this._closePeerConnection(peerId);
         try {
-            channel.send(JSON.stringify(data));
-            return true;
-        } catch (e) {
-            console.error("[协作] 发送失败:", e);
-            return false;
-        }
-    };
-
-    const broadcastToPeers = (data) => {
-        let sent = 0;
-        for (const peerId of dataChannels.keys()) {
-            if (sendToPeer(peerId, data)) sent++;
-        }
-        return sent;
-    };
-
-    // ── WebRTC 信令 ─────────────────────────────────────────────
-
-    const createAndSendOffer = async (peerId) => {
-        console.log("[协作] 创建offer给: " + peerId);
-        closePeerConnection(peerId);
-
-        try {
-            const rtc = new RTCPeerConnection(getRTCConfig());
-            rtcConnections.set(peerId, rtc);
-
-            const channel = rtc.createDataChannel("collaboration");
-            dataChannels.set(peerId, channel);
-            setupDataChannel(channel, peerId);
-
-            rtc.onicecandidate = (event) => {
-                if (event.candidate && server && server.readyState === WebSocket.OPEN) {
-                    server.send(JSON.stringify({
-                        type: "ice-candidate",
-                        targetId: peerId,
-                        candidate: event.candidate,
-                    }));
-                }
+            const rtc = new RTCPeerConnection(this._getRTCConfig());
+            this._rtcConnections.set(peerId, rtc);
+            const ch = rtc.createDataChannel("collaboration");
+            this._dataChannels.set(peerId, ch);
+            this._setupDataChannel(ch, peerId);
+            rtc.onicecandidate = (e) => {
+                if (e.candidate && this._server?.readyState === WebSocket.OPEN)
+                    this._server.send(
+                        JSON.stringify({
+                            type: "ice-candidate",
+                            targetId: peerId,
+                            candidate: e.candidate,
+                        }),
+                    );
             };
-
             rtc.oniceconnectionstatechange = () => {
-                console.log("[协作] ICE状态(" + peerId + "): " + rtc.iceConnectionState);
-                if (rtc.iceConnectionState === "failed" || rtc.iceConnectionState === "disconnected") {
-                    updateTipText(msg("rtc_failed"), "error");
-                    closePeerConnection(peerId);
+                if (
+                    rtc.iceConnectionState === "failed" ||
+                    rtc.iceConnectionState === "disconnected"
+                ) {
+                    this._updateTipText(this._msg("rtc_failed"), "error");
+                    this._closePeerConnection(peerId);
                 }
             };
-
             const offer = await rtc.createOffer();
             await rtc.setLocalDescription(offer);
-
-            if (server && server.readyState === WebSocket.OPEN) {
-                server.send(JSON.stringify({
-                    type: "offer",
-                    targetId: peerId,
-                    sdp: rtc.localDescription,
-                }));
-            }
+            if (this._server?.readyState === WebSocket.OPEN)
+                this._server.send(
+                    JSON.stringify({
+                        type: "offer",
+                        targetId: peerId,
+                        sdp: rtc.localDescription,
+                    }),
+                );
         } catch (e) {
-            console.error("[协作] 创建offer失败:", e);
-            updateTipText(msg("rtc_failed"), "error");
-            closePeerConnection(peerId);
+            this._console.error("[协作] 创建offer失败:", e);
+            this._updateTipText(this._msg("rtc_failed"), "error");
+            this._closePeerConnection(peerId);
         }
-    };
+    }
 
-    const handleOffer = async (senderId, sdp) => {
-        console.log("[协作] 收到来自 " + senderId + " 的offer");
-        closePeerConnection(senderId);
-
+    async _handleOffer(senderId, sdp) {
+        this._closePeerConnection(senderId);
         try {
-            const rtc = new RTCPeerConnection(getRTCConfig());
-            rtcConnections.set(senderId, rtc);
-
-            rtc.ondatachannel = (event) => {
-                const channel = event.channel;
-                dataChannels.set(senderId, channel);
-                setupDataChannel(channel, senderId);
+            const rtc = new RTCPeerConnection(this._getRTCConfig());
+            this._rtcConnections.set(senderId, rtc);
+            rtc.ondatachannel = (e) => {
+                this._dataChannels.set(senderId, e.channel);
+                this._setupDataChannel(e.channel, senderId);
             };
-
-            rtc.onicecandidate = (event) => {
-                if (event.candidate && server && server.readyState === WebSocket.OPEN) {
-                    server.send(JSON.stringify({
-                        type: "ice-candidate",
-                        targetId: senderId,
-                        candidate: event.candidate,
-                    }));
-                }
+            rtc.onicecandidate = (e) => {
+                if (e.candidate && this._server?.readyState === WebSocket.OPEN)
+                    this._server.send(
+                        JSON.stringify({
+                            type: "ice-candidate",
+                            targetId: senderId,
+                            candidate: e.candidate,
+                        }),
+                    );
             };
-
             rtc.oniceconnectionstatechange = () => {
-                console.log("[协作] ICE状态(" + senderId + "): " + rtc.iceConnectionState);
-                if (rtc.iceConnectionState === "failed" || rtc.iceConnectionState === "disconnected") {
-                    updateTipText(msg("rtc_failed"), "error");
-                    closePeerConnection(senderId);
+                if (
+                    rtc.iceConnectionState === "failed" ||
+                    rtc.iceConnectionState === "disconnected"
+                ) {
+                    this._updateTipText(this._msg("rtc_failed"), "error");
+                    this._closePeerConnection(senderId);
                 }
             };
-
             await rtc.setRemoteDescription(new RTCSessionDescription(sdp));
             const answer = await rtc.createAnswer();
             await rtc.setLocalDescription(answer);
-
-            if (server && server.readyState === WebSocket.OPEN) {
-                server.send(JSON.stringify({
-                    type: "answer",
-                    targetId: senderId,
-                    sdp: rtc.localDescription,
-                }));
-            }
-
-            // 消费排队的 ICE candidates
-            if (pendingCandidates.has(senderId)) {
-                const candidates = pendingCandidates.get(senderId);
-                pendingCandidates.delete(senderId);
-                for (const c of candidates) {
-                    try { await rtc.addIceCandidate(c); } catch (e) { /* ignore */ }
-                }
+            if (this._server?.readyState === WebSocket.OPEN)
+                this._server.send(
+                    JSON.stringify({
+                        type: "answer",
+                        targetId: senderId,
+                        sdp: rtc.localDescription,
+                    }),
+                );
+            if (this._pendingCandidates.has(senderId)) {
+                for (const c of this._pendingCandidates.get(senderId))
+                    try {
+                        await rtc.addIceCandidate(c);
+                    } catch (e) {}
+                this._pendingCandidates.delete(senderId);
             }
         } catch (e) {
-            console.error("[协作] 处理offer失败:", e);
-            updateTipText(msg("rtc_failed"), "error");
-            closePeerConnection(senderId);
+            this._console.error("[协作] 处理offer失败:", e);
+            this._updateTipText(this._msg("rtc_failed"), "error");
+            this._closePeerConnection(senderId);
         }
-    };
+    }
 
-    const handleAnswer = async (senderId, sdp) => {
-        console.log("[协作] 收到来自 " + senderId + " 的answer");
-        const rtc = rtcConnections.get(senderId);
-        if (!rtc) {
-            console.warn("[协作] 未找到 " + senderId + " 的RTC连接");
-            return;
-        }
-
+    async _handleAnswer(senderId, sdp) {
+        const rtc = this._rtcConnections.get(senderId);
+        if (!rtc) return;
         try {
             await rtc.setRemoteDescription(new RTCSessionDescription(sdp));
         } catch (e) {
-            console.error("[协作] 设置remote description失败:", e);
-            closePeerConnection(senderId);
+            this._console.error("[协作] 设置remote description失败:", e);
+            this._closePeerConnection(senderId);
         }
-    };
+    }
 
-    const handleIceCandidateMsg = async (senderId, candidate) => {
-        const rtc = rtcConnections.get(senderId);
+    async _handleIceCandidateMsg(senderId, candidate) {
+        const rtc = this._rtcConnections.get(senderId);
         if (!rtc) return;
-
-        const iceCandidate = new RTCIceCandidate(candidate);
+        const ice = new RTCIceCandidate(candidate);
         try {
-            if (rtc.remoteDescription) {
-                await rtc.addIceCandidate(iceCandidate);
-            } else {
-                if (!pendingCandidates.has(senderId)) {
-                    pendingCandidates.set(senderId, []);
-                }
-                pendingCandidates.get(senderId).push(iceCandidate);
+            if (rtc.remoteDescription) await rtc.addIceCandidate(ice);
+            else {
+                if (!this._pendingCandidates.has(senderId))
+                    this._pendingCandidates.set(senderId, []);
+                this._pendingCandidates.get(senderId).push(ice);
             }
         } catch (e) {
-            console.error("[协作] 添加ICE candidate失败:", e);
+            this._console.error("[协作] 添加ICE candidate失败:", e);
         }
-    };
+    }
 
-    // ── 服务器消息分发 ──────────────────────────────────────────
-
-    const handleServerMessage = (data) => {
-        console.log("[协作] 服务器消息:", data);
+    _handleServerMessage(data) {
         switch (data.type) {
             case "connection":
-                state.clientId = data.clientId;
-                state.roomId = data.roomId;
-                state.allMembers = data.existingPeers || [];
-                updateTipText(msg("connected"));
-                emitState();
-                if (state.allMembers.length > 0) {
-                    console.log("[协作] 房间内已有节点:", state.allMembers);
+                this.state.clientId = data.clientId;
+                this.state.roomId = data.roomId;
+                this.state.allMembers = data.existingPeers || [];
+
+                // 检查谁发snapshot
+                this._isHost = false;
+                data.existingPeers.forEach((peer) => {
+                    if (peer.cid === this.state.clientId && peer.owner) {
+                        this._isHost = true;
+                        return;
+                    }
+                });
+                this._updateTipText(this._msg("connected"));
+                this._emitState();
+                break;
+            case "peer-joined":
+                this.state.allMembers = data.existingPeers || [];
+                this._updateTipText(this._msg("peer_joined"));
+                this._emitState();
+                this._createAndSendOffer(data.clientId);
+                if (this._isHost) {
+                    setTimeout(() => {
+                        this._console.log("[协作] Host 发送 snapshot");
+                        this.broadcastToPeers({
+                            type: "snapshot",
+                            data: this._buildSnapshotWithAssets()
+                        });
+                    }, 500);
                 }
                 break;
-
-            case "peer-joined":
-                console.log("[协作] 节点加入: " + data.clientId);
-                state.allMembers = data.existingPeers || [];
-                updateTipText(msg("peer_joined"));
-                emitState();
-                createAndSendOffer(data.clientId);
-                break;
-
             case "peer-left":
-                console.log("[协作] 节点离开: " + data.clientId);
-                state.allMembers = data.existingPeers || [];
-                updateTipText(msg("peer_left"));
-                emitState();
-                closePeerConnection(data.clientId);
+                this.state.allMembers = data.existingPeers || [];
+                this._updateTipText(this._msg("peer_left"));
+                this._emitState();
+                this._closePeerConnection(data.clientId);
                 break;
-
             case "offer":
-                handleOffer(data.senderId, data.sdp);
+                this._handleOffer(data.senderId, data.sdp);
                 break;
-
             case "answer":
-                handleAnswer(data.senderId, data.sdp);
+                this._handleAnswer(data.senderId, data.sdp);
                 break;
-
             case "ice-candidate":
-                handleIceCandidateMsg(data.senderId, data.candidate);
+                this._handleIceCandidateMsg(data.senderId, data.candidate);
                 break;
-
-            default:
-                console.warn("[协作] 未知消息类型:", data.type);
         }
-    };
-
-    // ── 登入 / 退出 ─────────────────────────────────────────────
-
-    const exit = () => {
-        closeAllPeerConnections();
-        if (server) {
-            try {
-                server.send(JSON.stringify({
-                    type: "exit",
-                    clientId: state.clientId,
-                }));
-            } catch (e) { /* ignore */ }
-            try { server.close(); } catch (e) { /* ignore */ }
-            server = null;
-        }
-        state.clientId = null;
-        state.roomId = null;
-        state.allMembers = [];
-    };
-
-    const login = async (mode = "reg", serverUrl = "localhost:1832", roomId = "") => {
-        await ensureSTUNList();
-
-        if (!window.RTCPeerConnection) {
-            updateTipText(msg("create_rtc_failed"), "error");
-            return;
-        }
-
-        updateTipText(msg("linking_to_server"));
-        const spawnedRoomID = await spawnRoomID(mode, roomId, serverUrl);
-
-        if (mode === "join") {
-            if (!spawnedRoomID.isUsing) {
-                updateTipText(msg("join_failed"), "error");
-                return;
-            }
-            server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID.id}`);
-        } else {
-            server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID}`);
-        }
-
-        server.onmessage = (msgs) => {
-            try {
-                const data = JSON.parse(msgs.data);
-                handleServerMessage(data);
-            } catch (e) {
-                console.error("[协作] 解析服务器消息失败:", e);
-            }
-        };
-
-        server.onerror = () => {
-            updateTipText(msg("server_error"), "error");
-        };
-
-        server.onclose = () => {
-            closeAllPeerConnections();
-            updateTipText(msg("server_exit"), "error");
-            server = null;
-            state.clientId = null;
-            state.roomId = null;
-            state.allMembers = [];
-            emitState();
-        };
-
-        // 页面关闭时退出
-        window.addEventListener("beforeunload", exit);
-    };
-
-    return {
-        login,
-        exit,
-        sendToPeer,
-        broadcastToPeers,
-        getState,
-    };
+    }
 }
