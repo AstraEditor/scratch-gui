@@ -5,7 +5,14 @@ import { fetchWithTimeout } from "./utils.js";
  * 协作编辑的网络层：房间管理（HTTP）+ 信令服务器（WebSocket）+ P2P（WebRTC）。
  */
 export class RTCServer {
-    constructor({ msg, console, updateTipText, vm, onPeerMessage, onStateChange }) {
+    constructor({
+        msg,
+        console,
+        updateTipText,
+        vm,
+        onPeerMessage,
+        onStateChange,
+    }) {
         this._msg = msg;
         this._console = console;
         this._updateTipText = updateTipText;
@@ -19,7 +26,8 @@ export class RTCServer {
         this._dataChannels = new Map();
         this._pendingCandidates = new Map();
         this._isHost = false;
-        this._chunkBuffers = new Map(); // id → { total, chunks: [] }
+        this._chunkBuffers = new Map();
+        this._pendingMessages = new Map(); // peerId → data[]
         this.state = { clientId: null, roomId: null, allMembers: [] };
     }
 
@@ -97,9 +105,18 @@ export class RTCServer {
 
     sendToPeer(peerId, data) {
         const channel = this._dataChannels.get(peerId);
-        if (!channel || channel.readyState !== "open") {
-            this._console.warn("[协作] 无法发送给 " + peerId + ": 通道未就绪");
+        if (!channel) {
+            this._console.warn("[协作] 无法发送给 " + peerId + ": 无通道");
             return false;
+        }
+        if (channel.readyState !== "open") {
+            // 通道存在但未就绪 → 排队，onopen 时自动发送
+            if (!this._pendingMessages.has(peerId)) {
+                this._pendingMessages.set(peerId, []);
+            }
+            this._pendingMessages.get(peerId).push(data);
+            this._console.log(`[协作] 消息排队 → ${peerId} (readyState=${channel.readyState})`);
+            return true;
         }
         try {
             const raw = JSON.stringify(data);
@@ -108,20 +125,26 @@ export class RTCServer {
                 return true;
             }
             // 分片发送
-            const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+            const id = crypto.randomUUID
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2);
             let offset = 0;
             let idx = 0;
             const total = Math.ceil(raw.length / RTCServer.CHUNK_SIZE);
-            this._console.log(`[协作] 分片发送 → ${peerId} id=${id} total=${total} size=${raw.length}`);
+            this._console.log(
+                `[协作] 分片发送 → ${peerId} id=${id} total=${total} size=${raw.length}`,
+            );
             while (offset < raw.length) {
                 const chunk = raw.slice(offset, offset + RTCServer.CHUNK_SIZE);
-                channel.send(JSON.stringify({
-                    type: "_chunk",
-                    id,
-                    idx: idx++,
-                    total,
-                    data: chunk
-                }));
+                channel.send(
+                    JSON.stringify({
+                        type: "_chunk",
+                        id,
+                        idx: idx++,
+                        total,
+                        data: chunk,
+                    }),
+                );
                 offset += RTCServer.CHUNK_SIZE;
             }
             return true;
@@ -138,47 +161,32 @@ export class RTCServer {
         return sent;
     }
 
-    // ── 内部 ─────────────────────────────────────────────────────
+    async _buildSnapshotWithAssets() {
+        const JSZip = require("jszip");
+        const zip = new JSZip();
 
-    _buildSnapshotWithAssets() {
-        const json = JSON.parse(this._vm.toJSON());
-        const runtime = this._vm.runtime;
-        const rtOriginals = runtime.targets.filter(t => t.isOriginal);
+        // project.json
+        zip.file("project.json", vm.toJSON());
 
-        json.targets.forEach((target, i) => {
-            const rtTarget = rtOriginals[i];
-            if (!rtTarget) return;
-
-            const rtCostumes = rtTarget.getCostumes();
-            if (target.costumes) {
-                for (const c of target.costumes) {
-                    const rc = rtCostumes.find(rc2 => rc2.assetId === c.assetId);
-                    if (rc?.asset) c.data = rc.asset.encodeDataURI();
-                }
-            }
-
-            if (target.sounds) {
-                const rtSounds = rtTarget.sprite ? rtTarget.sprite.sounds : [];
-                for (const s of target.sounds) {
-                    const rs = rtSounds.find(rs2 => rs2.assetId === s.assetId);
-                    if (rs?.asset) s.data = rs.asset.encodeDataURI();
-                }
-            }
-        });
-
-        if (json.customFonts) {
-            const rtFonts = runtime.fontManager.fonts;
-            for (const f of json.customFonts) {
-                if (f.system) continue;
-                const rf = rtFonts.find(rf2 => rf2.family === f.family);
-                if (rf?.asset) {
-                    f.data = rf.asset.encodeDataURI();
-                    f.dataFormat = rf.asset.dataFormat;
-                }
-            }
+        // assets
+        for (const asset of vm.assets) {
+            zip.file(`${asset.assetId}.${asset.dataFormat}`, asset.data);
         }
 
-        return JSON.stringify(json);
+        const sb3File = await zip.generateAsync({
+            type: "arraybuffer",
+            compression: "DEFLATE",
+        });
+
+        let binary = "";
+
+        const bytes = new Uint8Array(sb3File);
+
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+
+        return btoa(binary);
     }
 
     _emitState() {
@@ -270,11 +278,13 @@ export class RTCServer {
             this._rtcConnections.delete(peerId);
         }
         this._pendingCandidates.delete(peerId);
+        this._pendingMessages.delete(peerId);
         this._console.log("[协作] 已关闭与 " + peerId + " 的P2P连接");
     }
 
     _closeAllPeerConnections() {
         this._chunkBuffers.clear();
+        this._pendingMessages.clear();
         for (const pid of this._rtcConnections.keys())
             this._closePeerConnection(pid);
     }
@@ -282,6 +292,15 @@ export class RTCServer {
     _setupDataChannel(channel, peerId) {
         channel.onopen = () => {
             this._updateTipText(this._msg("rtc_connected"));
+            // 消费排队消息
+            const pending = this._pendingMessages.get(peerId);
+            if (pending?.length) {
+                this._console.log(`[协作] 发送排队消息 → ${peerId} count=${pending.length}`);
+                for (const msg of pending) {
+                    this.sendToPeer(peerId, msg); // 此时通道已 open，直接发送
+                }
+                this._pendingMessages.delete(peerId);
+            }
         };
         channel.onerror = (e) => {
             this._console.error("[协作] 数据通道错误: " + peerId, e);
@@ -298,11 +317,15 @@ export class RTCServer {
                     }
                     buf.chunks[msg.idx] = msg.data;
                     // 是否收齐
-                    const received = buf.chunks.filter(c => c !== undefined).length;
+                    const received = buf.chunks.filter(
+                        (c) => c !== undefined,
+                    ).length;
                     if (received === buf.total) {
                         this._chunkBuffers.delete(msg.id);
                         const full = JSON.parse(buf.chunks.join(""));
-                        this._console.log(`[协作] 分片组装完成 id=${msg.id} total=${buf.total}`);
+                        this._console.log(
+                            `[协作] 分片组装完成 id=${msg.id} total=${buf.total}`,
+                        );
                         await this._onPeerMessage(peerId, full);
                     }
                     return;
@@ -438,7 +461,7 @@ export class RTCServer {
         }
     }
 
-    _handleServerMessage(data) {
+    async _handleServerMessage(data) {
         switch (data.type) {
             case "connection":
                 this.state.clientId = data.clientId;
@@ -462,13 +485,14 @@ export class RTCServer {
                 this._emitState();
                 this._createAndSendOffer(data.clientId);
                 if (this._isHost) {
-                    setTimeout(() => {
-                        this._console.log("[协作] Host 发送 snapshot");
-                        this.broadcastToPeers({
-                            type: "snapshot",
-                            data: this._buildSnapshotWithAssets()
-                        });
-                    }, 500);
+                    const sendProject = {
+                        type: "snapshot",
+                        data: await this._buildSnapshotWithAssets(),
+                    };
+                        this._console.log(
+                            `[协作] Host 发送 snapshot:${JSON.stringify(sendProject)}`,
+                        );
+                        this.broadcastToPeers(JSON.stringify(sendProject));
                 }
                 break;
             case "peer-left":

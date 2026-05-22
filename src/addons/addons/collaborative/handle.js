@@ -18,59 +18,23 @@ export function createHandler({
      * @param {string} peerId
      * @param {object} data
      */
-    return async function handlePeerMessage(peerId, data) {
-        console.log("[协作] 收到来自 " + peerId + " 的消息:", data);
+    return async function handlePeerMessage(peerId, msgs) {
+        console.log("[协作] 收到来自 " + peerId + " 的消息:", msgs);
+        const data = JSON.parse(msgs);
         switch (data.type) {
             // ── Phase 1: snapshot ──
             case "snapshot":
                 console.log("[协作] 📸 收到 snapshot");
-                const projectData = JSON.parse(data.data);
-                const storage = vm.runtime.storage;
+                const sb3Base = data.data;
+                const binary = atob(sb3Base);
 
-                const dataURLToBytes = (dataURL) => {
-                    const base64 = dataURL.split(",")[1];
-                    const bin = atob(base64);
-                    const bytes = new Uint8Array(bin.length);
-                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                    return bytes;
-                };
+                const bytes = new Uint8Array(binary.length);
 
-                const assetTypeForCostume = (fmt) =>
-                    fmt === "svg" ? storage.AssetType.ImageVector : storage.AssetType.ImageBitmap;
-
-                for (const target of projectData.targets) {
-                    if (target.costumes) {
-                        for (const c of target.costumes) {
-                            if (c.data) {
-                                const bytes = dataURLToBytes(c.data);
-                                const dataObj = {};
-                                for (let i = 0; i < bytes.length; i++) dataObj[i] = bytes[i];
-                                c.asset = {
-                                    assetType: assetTypeForCostume(c.dataFormat),
-                                    dataFormat: c.dataFormat,
-                                    data: dataObj
-                                };
-                                delete c.data;
-                            }
-                        }
-                    }
-                    if (target.sounds) {
-                        for (const s of target.sounds) {
-                            if (s.data) {
-                                const bytes = dataURLToBytes(s.data);
-                                const dataObj = {};
-                                for (let i = 0; i < bytes.length; i++) dataObj[i] = bytes[i];
-                                s.asset = {
-                                    assetType: storage.AssetType.Sound,
-                                    dataFormat: s.dataFormat,
-                                    data: dataObj
-                                };
-                                delete s.data;
-                            }
-                        }
-                    }
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
                 }
-                await vm.loadProject(projectData);
+
+                await vm.loadProject(bytes.buffer);
                 break;
 
             // ── Phase 1: patch ──

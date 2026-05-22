@@ -231,6 +231,32 @@ export default async function ({ addon, console, msg }) {
             Container.appendChild(exitRoomButton);
         }
 
+
+            const testButton = document.createElement("button");
+            testButton.textContent = "Test Button";
+            testButton.onclick = async () => {
+                const JSZip = require("jszip");
+                    const zip = new JSZip();
+
+                    // project.json
+                    zip.file("project.json", vm.toJSON());
+
+                    // assets
+                    for (const asset of vm.assets) {
+                        zip.file(
+                            `${asset.assetId}.${asset.dataFormat}`,
+                            asset.data,
+                        );
+                    }
+
+                    // 一定要 arraybuffer
+                    console.log(await zip.generateAsync({
+                        type: "arraybuffer",
+                        compression: "DEFLATE",
+                    }));
+            };
+
+        Container.appendChild(testButton)
         return Container;
     };
 
