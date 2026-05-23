@@ -562,7 +562,7 @@ const GUIComponent = props => {
                                 </TabList>
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     <Box className={styles.blocksWrapper}>
-                                        {!isFullScreen && <Blocks
+                                        <Blocks
                                             key={`${blocksId}/${theme.id}`}
                                             canUseCloud={canUseCloud}
                                             grow={1}
@@ -574,7 +574,7 @@ const GUIComponent = props => {
                                             onOpenCustomExtensionModal={onOpenCustomExtensionModal}
                                             theme={theme}
                                             vm={vm}
-                                        />}
+                                        />
                                     </Box>
                                     <Box className={styles.extensionButtonContainer}>
                                         <button
