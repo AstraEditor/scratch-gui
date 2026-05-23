@@ -1,4 +1,14 @@
 import { APP_NAME } from "../../../lib/brand";
+import ReduxStore from "../../redux.js";
+import {
+    openLoadingProject,
+    closeLoadingProject,
+} from "../../../reducers/modals";
+import {
+    requestProjectUpload,
+    onLoadedProject,
+} from "../../../reducers/project-state";
+import {setURLParamsFromSearchString} from './utils.js'
 
 /**
  * P2P 消息路由。解析来自其他节点的数据通道消息，分发到对应的处理逻辑。
@@ -35,10 +45,35 @@ export function createHandler({
                 for (let i = 0; i < binary.length; i++) {
                     bytes[i] = binary.charCodeAt(i);
                 }
+                setURLParamsFromSearchString(data.config);
+                const oldLoadingState =
+                    ReduxStore.state.scratchGui.projectState.loadingState;
+                ReduxStore.state.scratchGui.projectTitle = data.projectName;
 
-                await vm.loadProject(bytes.buffer);
-                console.log(data)
-                document.title = `${data.projectName} - ${APP_NAME}`;
+                ReduxStore.dispatch(openLoadingProject());
+
+                const uploadAction = requestProjectUpload(oldLoadingState);
+                if (uploadAction) ReduxStore.dispatch(uploadAction);
+
+                const loadingState =
+                    ReduxStore.state.scratchGui.projectState.loadingState;
+                let success = false;
+
+                try {
+                    localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
+                    await vm.loadProject(bytes.buffer);
+                    vm.renderer.draw();
+                    success = true;
+                    document.title = `${data.projectName} - ${APP_NAME}`;
+                } finally {
+                    const doneAction = onLoadedProject(
+                        loadingState,
+                        false,
+                        success,
+                    );
+                    if (doneAction) ReduxStore.dispatch(doneAction);
+                    ReduxStore.dispatch(closeLoadingProject());
+                }
                 break;
 
             // ── Phase 1: patch ──

@@ -69,6 +69,7 @@ export class RTCServer {
         this._server.onerror = () =>
             this._updateTipText(this._msg("server_error"), "error");
         this._server.onclose = () => {
+            this.exit();
             this._closeAllPeerConnections();
             this._updateTipText(this._msg("server_exit"), "error");
             this._server = null;
@@ -78,6 +79,7 @@ export class RTCServer {
             this._emitState();
         };
         window.addEventListener("beforeunload", () => this.exit());
+        window.addEventListener("pagehide", () => this.exit());
     }
 
     exit() {
@@ -474,7 +476,8 @@ export class RTCServer {
                     const sendProject = {
                         type: "snapshot",
                         data: await this._buildSnapshotWithAssets(),
-                        projectName: getAPPNAME()
+                        projectName: getAPPNAME(),
+                        config: window.location.search
                     };
                         this._console.log(
                             `[协作] Host 发送 snapshot:${JSON.stringify(sendProject)}`,
