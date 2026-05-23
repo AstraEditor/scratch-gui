@@ -7,6 +7,8 @@
 .body {
     background: $ui-modal-background;
     padding: 1.5rem 2.25rem;
+    max-height: 75vh;
+    overflow: auto;
 }
 
 .body input[type="checkbox"],
@@ -22,7 +24,7 @@
     padding: 0 1rem;
     height: 3rem;
     color: $text-primary-transparent;
-    font-size: .875rem;
+    font-size: 0.875rem;
     background-color: $input-background;
 }
 
@@ -44,11 +46,11 @@
     opacity: 0.5;
 }
 
-[dir="ltr"] .button-row button+button {
+[dir="ltr"] .button-row button + button {
     margin-left: 0.5rem;
 }
 
-[dir="rtl"] .button-row button+button {
+[dir="rtl"] .button-row button + button {
     margin-right: 0.5rem;
 }
 
@@ -88,7 +90,6 @@
     border-top: 1px dashed $ui-tertiary;
 }
 
-
 .hr {
     opacity: 0.2;
 }
@@ -106,7 +107,6 @@
 
 .intro {
     text-align: center;
-
 }
 
 .linkDiv {
