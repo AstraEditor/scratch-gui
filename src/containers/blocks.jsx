@@ -476,6 +476,11 @@ class Blocks extends React.Component {
             this.onWorkspaceMetricsChange();
         }
 
+        // emit耗时过长，因此进行抑制 #8
+        if (this.props.vm.editingTarget) {
+            this.props.vm.editingTarget.blocks.suppressProjectChanged();
+        }
+
         // Remove and reattach the workspace listener (but allow flyout events)
         this.workspace.removeChangeListener(this.props.vm.blockListener);
         const dom = this.ScratchBlocks.Xml.textToDom(data.xml);
@@ -497,6 +502,11 @@ class Blocks extends React.Component {
             log.error(error);
         }
         this.workspace.addChangeListener(this.props.vm.blockListener);
+
+        // 恢复emit
+        if (this.props.vm.editingTarget) {
+            this.props.vm.editingTarget.blocks.resumeProjectChanged();
+        }
 
         if (this.props.vm.editingTarget && this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id]) {
             const {scrollX, scrollY, scale} = this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id];
