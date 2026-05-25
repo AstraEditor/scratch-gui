@@ -29,6 +29,13 @@ export class RTCServer {
         this._chunkBuffers = new Map();
         this._pendingMessages = new Map(); // peerId → data[]
         this.state = { clientId: null, roomId: null, allMembers: [] };
+
+        this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
+        this.editingTargetIndex;
+        this.boundMouseMoveHandler = this.mouseMoveHandler.bind(this);
+        this._vm.on("targetsUpdate", this.updateWorkspace);
+
+        this.getUserName = () => localStorage.getItem("tw:username") || "user";
     }
 
     // ── 对外 API ─────────────────────────────────────────────────
@@ -45,18 +52,17 @@ export class RTCServer {
         }
         this._updateTipText(this._msg("linking_to_server"));
         const spawnedRoomID = await this._spawnRoomID(mode, roomId, serverUrl);
-        const getUserName = () => localStorage.getItem("tw:username") || "user";
         if (mode === "join") {
             if (!spawnedRoomID.isUsing) {
                 this._updateTipText(this._msg("join_failed"), "error");
                 return;
             }
             this._server = new WebSocket(
-                `ws://${serverUrl}?room=${spawnedRoomID.id}&name=${getUserName()}`,
+                `ws://${serverUrl}?room=${spawnedRoomID.id}&name=${this.getUserName()}`,
             );
         } else {
             this._server = new WebSocket(
-                `ws://${serverUrl}?room=${spawnedRoomID}&name=${getUserName()}`,
+                `ws://${serverUrl}?room=${spawnedRoomID}&name=${this.getUserName()}`,
             );
         }
         this._server.onmessage = (msgs) => {
@@ -80,9 +86,72 @@ export class RTCServer {
         };
         window.addEventListener("beforeunload", () => this.exit());
         window.addEventListener("pagehide", () => this.exit());
+        this.workspace.addEventListener(
+            "mousemove",
+            this.boundMouseMoveHandler,
+        );
+    }
+
+    updateWorkspace() {
+        try {
+            this.editingTargetIndex = vm.runtime.targets.findIndex(
+                (ele) => vm.runtime._editingTarget.id == ele.id,
+            );
+            // 移除所有pointer
+            document.querySelectorAll(".sa-collaborative-pointer").forEach(ele => ele.remove());
+        } catch {
+            this.editingTargetIndex = -1;
+        }
+    }
+
+    mouseMoveHandler(e) {
+        this.moveMouse(e, this.workspace);
+    }
+
+    moveMouse(e, workspace) {
+        if (this._pointerRaf) return;
+        this._pointerRaf = requestAnimationFrame(() => {
+            this._pointerRaf = null;
+            this._sendPointer(e, workspace);
+        });
+    }
+
+    _sendPointer(e, workspace) {
+        const ws = Blockly.getMainWorkspace();
+        const svg = ws.getParentSvg();
+        const matrix = ws.getInverseScreenCTM();
+        if (!matrix) return;
+
+        const svgPoint = svg.createSVGPoint();
+        svgPoint.x = e.clientX;
+        svgPoint.y = e.clientY;
+        const svgCoord = svgPoint.matrixTransform(matrix);
+
+        const canvasMatrix = ws.getCanvas().getCTM().inverse();
+        const canvasPoint = svg.createSVGPoint();
+        canvasPoint.x = svgCoord.x;
+        canvasPoint.y = svgCoord.y;
+        const canvasCoord = canvasPoint.matrixTransform(canvasMatrix);
+
+        this.broadcastToPeers(
+            JSON.stringify({
+                type: "pointer",
+                id: this.state.clientId,
+                workspaceIndex: this.editingTargetIndex,
+                name: this.getUserName(),
+                position: {
+                    x: canvasCoord.x,
+                    y: canvasCoord.y,
+                },
+            }),
+        );
     }
 
     exit() {
+        this.workspace.removeEventListener(
+            "mousemove",
+            this.boundMouseMoveHandler,
+        );
         this._closeAllPeerConnections();
         if (this._server) {
             try {
@@ -117,7 +186,9 @@ export class RTCServer {
                 this._pendingMessages.set(peerId, []);
             }
             this._pendingMessages.get(peerId).push(data);
-            this._console.log(`[协作] 消息排队 → ${peerId} (readyState=${channel.readyState})`);
+            this._console.log(
+                `[协作] 消息排队 → ${peerId} (readyState=${channel.readyState})`,
+            );
             return true;
         }
         try {
@@ -283,7 +354,9 @@ export class RTCServer {
             // 消费排队消息
             const pending = this._pendingMessages.get(peerId);
             if (pending?.length) {
-                this._console.log(`[协作] 发送排队消息 → ${peerId} count=${pending.length}`);
+                this._console.log(
+                    `[协作] 发送排队消息 → ${peerId} count=${pending.length}`,
+                );
                 for (const msg of pending) {
                     this.sendToPeer(peerId, msg); // 此时通道已 open，直接发送
                 }
@@ -477,12 +550,12 @@ export class RTCServer {
                         type: "snapshot",
                         data: await this._buildSnapshotWithAssets(),
                         projectName: getAPPNAME(),
-                        config: window.location.search
+                        config: window.location.search,
                     };
-                        this._console.log(
-                            `[协作] Host 发送 snapshot:${JSON.stringify(sendProject)}`,
-                        );
-                        this.broadcastToPeers(JSON.stringify(sendProject));
+                    this._console.log(
+                        `[协作] Host 发送 snapshot:${JSON.stringify(sendProject)}`,
+                    );
+                    this.broadcastToPeers(JSON.stringify(sendProject));
                 }
                 break;
             case "peer-left":

@@ -4,6 +4,8 @@
 .hide-text{
         transform: rotate(var(--rotate));
         width: 10px;
+        filter: var(--icon-style);
+        -webkit-filter: var(--icon-style);
 }
 .hide-area{
         background-color: #00000000;
@@ -27,6 +29,10 @@
         border: 0;
         z-index: 480;
         touch-action: manipulation;
+        -webkit-transition: transform 0.25s ease, opacity 0.25s ease;
+        -moz-transition: transform 0.25s ease, opacity 0.25s ease;
+        -ms-transition: transform 0.25s ease, opacity 0.25s ease;
+        -o-transition: transform 0.25s ease, opacity 0.25s ease;
 }
 .hide-switch:hover{
         filter:brightness(1.2);

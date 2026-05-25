@@ -5,13 +5,13 @@ import copyImg from "./copy.svg";
 import { join } from "path-browserify";
 import SideBar from "../../ui/side-bar/side-bar.js";
 import { RTCServer } from "./rtc-server.js";
+import { idHead } from "./constants.js";
 import { createHandler } from "./handle.js";
 
 export default async function ({ addon, console, msg }) {
     const vm = addon.tab.traps.vm;
     if (!vm) return;
 
-    const idHead = "sa-addon-collaborative-";
     const tabID = idHead + "tab";
 
 
@@ -268,6 +268,7 @@ export default async function ({ addon, console, msg }) {
         console,
         sendToPeer: rtc.sendToPeer,
         broadcastToPeers: rtc.broadcastToPeers,
+        rtc
     });
 
     // ── 注册菜单栏 ─────────────────────────────────────────────

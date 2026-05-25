@@ -5,6 +5,33 @@ export const ID_SEA = {
     Things: ["AE", "皮球", "背带裤", "鸡"],
 };
 
+export const idHead = "sa-addon-collaborative-";
+
+function darkenHex(hex, percent = 20) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) {
+        hex = hex
+            .split("")
+            .map((c) => c + c)
+            .join("");
+    }
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    r = Math.max(0, Math.floor(r * (1 - percent / 100)));
+    g = Math.max(0, Math.floor(g * (1 - percent / 100)));
+    b = Math.max(0, Math.floor(b * (1 - percent / 100)));
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+export const pointerSVG = (color, name = '') => `
+  <path d="M5.41971 103.396L5.33334 5.34406L75.0169 74.3253L38.6685 74.8766C37.9902 74.8871 37.3196 74.9616 36.6557 75.0998C35.9917 75.2383 35.3464 75.4379 34.7207 75.6992C34.0951 75.9606 33.4996 76.2793 32.9343 76.6542C32.3694 77.0293 31.845 77.4539 31.3608 77.9291L5.41971 103.396Z" stroke="${darkenHex(color)}" stroke-width="10.666666666666666" stroke-linejoin="round" stroke-linecap="round" fill="${color}"/>
+  <g transform="translate(15,90)">
+    <rect class="${'sa-collab-name-bg'}" x="15" y="0" height="40" rx="4" fill="${color}"></rect>
+    <text class="${'sa-collab-name-text'}" x="25" y="30" fill="white" font-size="24">${name}</text>
+  </g>
+`;
+
 // 来自 pradt2/always-online-stun/master/valid_hosts.txt
 // 2026.5.22 18：51
 export const DEFAULT_STUN_URLS = `
