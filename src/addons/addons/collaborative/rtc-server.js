@@ -31,9 +31,9 @@ export class RTCServer {
         this.state = { clientId: null, roomId: null, allMembers: [] };
 
         this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
-        this.editingTargetIndex;
+        this.editingTargetIndex = -1;
         this.boundMouseMoveHandler = this.mouseMoveHandler.bind(this);
-        this._vm.on("targetsUpdate", this.updateWorkspace);
+        this._vm.on("targetsUpdate", () => this.updateWorkspace());
 
         this.getUserName = () => localStorage.getItem("tw:username") || "user";
     }
@@ -94,8 +94,8 @@ export class RTCServer {
 
     updateWorkspace() {
         try {
-            this.editingTargetIndex = vm.runtime.targets.findIndex(
-                (ele) => vm.runtime._editingTarget.id == ele.id,
+            this.editingTargetIndex = this._vm.runtime.targets.findIndex(
+                (ele) => this._vm.runtime._editingTarget.id == ele.id,
             );
             // 移除所有pointer
             document.querySelectorAll(".sa-collaborative-pointer").forEach(ele => ele.remove());
