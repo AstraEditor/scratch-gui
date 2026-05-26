@@ -17,21 +17,21 @@ let scaleUpdateRaf = null;
 function syncPointerScales() {
     const ws = Blockly.getMainWorkspace();
     if (!ws) return;
-    
+
     const fixedScale = 0.3 / ws.scale;
     const pointers = document.querySelectorAll(`.${idHead}pointer`);
-    
-    pointers.forEach(pointer => {
+
+    pointers.forEach((pointer) => {
         if (!pointer) return;
-        
-        const transform = pointer.getAttribute('transform');
+
+        const transform = pointer.getAttribute("transform");
         if (!transform) return;
-        
+
         const translateMatch = transform.match(/translate\(([^,]+),([^)]+)\)/);
         if (translateMatch) {
             pointer.setAttribute(
-                'transform',
-                `translate(${translateMatch[1]},${translateMatch[2]}) scale(${fixedScale})`
+                "transform",
+                `translate(${translateMatch[1]},${translateMatch[2]}) scale(${fixedScale})`,
             );
         }
     });
@@ -40,40 +40,40 @@ function syncPointerScales() {
 function syncPointerContainerTransform() {
     const ws = Blockly.getMainWorkspace();
     if (!ws) return;
-    
+
     const svg = ws.getParentSvg();
     const pointerContainer = svg.querySelector(`.${idHead}pointer-container`);
     if (!pointerContainer) return;
-    
+
     const canvas = ws.getCanvas();
     if (!canvas) return;
-    
-    const canvasTransform = canvas.getAttribute('transform');
+
+    const canvasTransform = canvas.getAttribute("transform");
     if (canvasTransform) {
-        pointerContainer.setAttribute('transform', canvasTransform);
+        pointerContainer.setAttribute("transform", canvasTransform);
     }
-    
+
     syncPointerScales();
 }
 
 function setupScaleObserver() {
     if (scaleObserver) return;
-    
+
     const ws = Blockly.getMainWorkspace();
     if (!ws) return;
-    
+
     const canvas = ws.getCanvas();
     if (!canvas) return;
-    
+
     scaleObserver = new MutationObserver((mutations) => {
         if (scaleUpdateRaf) return;
-        
+
         scaleUpdateRaf = requestAnimationFrame(() => {
             scaleUpdateRaf = null;
             syncPointerContainerTransform();
         });
     });
-    
+
     scaleObserver.observe(canvas, { attributes: true });
 }
 
@@ -146,33 +146,47 @@ export function createHandler({
                     if (doneAction) ReduxStore.dispatch(doneAction);
                     ReduxStore.dispatch(closeLoadingProject());
                 }
-                break;
+                // 延迟更新快照和恢复flag
+                setTimeout(() => {
+                    rtc._vm_snapshot = rtc.deepClone(vm);
+                    rtc.onIngoreUpdate(false);
+                }, 200);
+                return; // 不执行末尾的onIngoreUpdate(false)
 
             case SERVER_OPCODE.POINTER:
-                if (data.workspaceIndex !== rtc.editingTargetIndex) break;
+                if (data.workspaceIndex !== rtc.editingTargetIndex) {
+                    break;
+                }
 
                 const ws = Blockly.getMainWorkspace();
                 const svg = ws.getParentSvg();
-                
-                let pointerContainer = svg.querySelector(`.${idHead}pointer-container`);
+
+                let pointerContainer = svg.querySelector(
+                    `.${idHead}pointer-container`,
+                );
                 if (!pointerContainer) {
                     pointerContainer = document.createElementNS(
                         "http://www.w3.org/2000/svg",
                         "g",
                     );
-                    pointerContainer.classList.add(`${idHead}pointer-container`);
-                    
+                    pointerContainer.classList.add(
+                        `${idHead}pointer-container`,
+                    );
+
                     const canvas = ws.getCanvas();
-                    const canvasTransform = canvas.getAttribute('transform');
+                    const canvasTransform = canvas.getAttribute("transform");
                     if (canvasTransform) {
-                        pointerContainer.setAttribute('transform', canvasTransform);
+                        pointerContainer.setAttribute(
+                            "transform",
+                            canvasTransform,
+                        );
                     }
-                    
+
                     svg.appendChild(pointerContainer);
-                    
+
                     setupScaleObserver();
                 }
-                
+
                 const fixedScale = 0.3 / ws.scale;
 
                 const oldPointer = document.querySelector(
@@ -190,14 +204,16 @@ export function createHandler({
                     );
                     Pointer.innerHTML = pointerSVG("#0099ff", data.name);
                     Pointer.id = data.id;
-                    Pointer.classList.add(`${idHead}pointer`)
+                    Pointer.classList.add(`${idHead}pointer`);
                     Pointer.setAttribute(
                         "transform",
                         `translate(${data.position.x},${data.position.y}) scale(${fixedScale})`,
                     );
                     pointerContainer.appendChild(Pointer);
 
-                    const textEl = Pointer.querySelector(".sa-collab-name-text");
+                    const textEl = Pointer.querySelector(
+                        ".sa-collab-name-text",
+                    );
                     const bgEl = Pointer.querySelector(".sa-collab-name-bg");
                     if (textEl && bgEl) {
                         const box = textEl.getBBox();
@@ -205,6 +221,11 @@ export function createHandler({
                     }
                 }
                 break;
+            case SERVER_OPCODE.POINTER_LEAVE:
+                if(data.fromIndex !== rtc.editingTargetIndex) break;
+                document.querySelectorAll(`.${idHead}pointer[id="${data.id}"]`).forEach(ele => ele.remove());
+                break
+
             case SERVER_OPCODE.BLOCK_UPDATE:
             case SERVER_OPCODE.BLOCK_CREATE:
             case SERVER_OPCODE.BLOCK_DELETE:
@@ -226,11 +247,32 @@ export function createHandler({
                 break;
 
             case SERVER_OPCODE.SPRITE_DELETE:
-                rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
-                break
+                rtc._vm.deleteSprite(
+                    rtc._vm.runtime.targets[data.targetIndex].id,
+                );
+                break;
             case SERVER_OPCODE.SPRITE_ADD:
-                console.log("add a sprite!", data.targetIndex);
-                break
+                if (data.spriteData) {
+                    try {
+                        const binary = atob(data.spriteData);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        await vm.addSprite(bytes.buffer, false);
+                        // 延迟更新快照和恢复flag，确保所有PROJECT_CHANGED事件都处理完
+                        setTimeout(() => {
+                            rtc._vm_snapshot = rtc.deepClone(vm);
+                            rtc.onIngoreUpdate(false);
+                            console.log("[协作] 角色添加成功");
+                        }, 200);
+                    } catch (e) {
+                        console.error("[协作] 角色添加失败:", e);
+                        rtc.onIngoreUpdate(false);
+                    }
+                    return; // 不执行末尾的onIngoreUpdate(false)
+                }
+                break;
 
             // ── Phase 4: runtime ──
             case SERVER_OPCODE.PING:

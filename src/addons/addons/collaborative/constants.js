@@ -6,6 +6,7 @@ export const ID_SEA = {
 };
 
 export const SERVER_OPCODE = {
+  POINTER_LEAVE: "pointer-leave",
   POINTER: "pointer",
   SNAPSHOT: "snapshot",
   SPRITE_ADD: "sprite-add",

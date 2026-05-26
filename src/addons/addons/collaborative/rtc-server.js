@@ -31,18 +31,29 @@ export class RTCServer {
         this._chunkBuffers = new Map();
         this._pendingMessages = new Map(); // peerId → data[]
         this._ingoreUpdate = false;
+        this._remoteOperationCount = 0; // 跟踪正在进行的远程操作数
         this.state = { clientId: null, roomId: null, allMembers: [] };
 
         this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
         this.editingTargetIndex = -1;
         this.boundMouseMoveHandler = this.mouseMoveHandler.bind(this);
         this._vm.on("targetsUpdate", () => this.updateWorkspace());
-
     }
 
     // ── 对外 API ─────────────────────────────────────────────────
     onIngoreUpdate(ingoreUpdate) {
-        this._ingoreUpdate = ingoreUpdate;
+        if (ingoreUpdate) {
+            this._remoteOperationCount++;
+            this._ingoreUpdate = true;
+        } else {
+            this._remoteOperationCount = Math.max(
+                0,
+                this._remoteOperationCount - 1,
+            );
+            if (this._remoteOperationCount === 0) {
+                this._ingoreUpdate = false;
+            }
+        }
     }
 
     getUserName() {
@@ -103,17 +114,16 @@ export class RTCServer {
         let updateWaiting;
         this._vm.runtime.on("PROJECT_CHANGED", () => {
             if (updateWaiting) clearTimeout(updateWaiting);
-            updateWaiting = setTimeout(() => {
+            updateWaiting = setTimeout(async () => {
                 console.log("UPDATE!");
-                this.updateProject();
-                this._vm_snapshot = this.deepClone(this._vm);
+                await this.updateProject();
             }, 50);
         });
     }
 
     deepClone(obj, hash = new WeakMap(), depth = 0) {
         if (depth > 10) return obj;
-        
+
         if (obj == null || typeof obj !== "object") {
             return obj;
         }
@@ -122,7 +132,11 @@ export class RTCServer {
             return hash.get(obj);
         }
 
-        if (obj instanceof EventTarget || obj.addEventListener || obj.removeEventListener) {
+        if (
+            obj instanceof EventTarget ||
+            obj.addEventListener ||
+            obj.removeEventListener
+        ) {
             return obj;
         }
 
@@ -187,74 +201,122 @@ export class RTCServer {
                 ];
                 for (let key of keys) {
                     try {
-                        clonedObj[key] = this.deepClone(obj[key], hash, depth + 1);
-                    } catch (e) {
-                    }
+                        clonedObj[key] = this.deepClone(
+                            obj[key],
+                            hash,
+                            depth + 1,
+                        );
+                    } catch (e) {}
                 }
                 return clonedObj;
         }
     }
 
-
-    updateProject() {
+    async updateProject() {
         const oldSnapshot = this._vm_snapshot;
         const newSnapshot = this.deepClone(this._vm);
-        
+
         if (!oldSnapshot?.runtime || !newSnapshot?.runtime) {
             this._vm_snapshot = newSnapshot;
             return;
         }
 
-        
         const oldTargets = oldSnapshot.runtime.targets;
         const newTargets = newSnapshot.runtime.targets;
 
-        const oldIds = Object.entries(oldTargets).map(t => t[1].id)
-        const newIds = Object.entries(newTargets).map(t => t[1].id)
-        
-        const waitForBroadcast = [];
+        const oldIds = Object.entries(oldTargets).map((t) => t[1].id);
+        const newIds = Object.entries(newTargets).map((t) => t[1].id);
 
-        console.log(oldTargets)
-        console.log(newTargets)
+        const waitForBroadcast = [];
 
         // 新增
         newIds.forEach((id, index) => {
             if (!oldIds.includes(id)) {
-                waitForBroadcast.push({ type: SERVER_OPCODE.SPRITE_ADD, id, index });
+                waitForBroadcast.push({
+                    type: SERVER_OPCODE.SPRITE_ADD,
+                    id,
+                    index,
+                });
             }
         });
 
         // 删除
         oldIds.forEach((id, index) => {
             if (!newIds.includes(id)) {
-                waitForBroadcast.push({ type: SERVER_OPCODE.SPRITE_DELETE, id, index });
+                waitForBroadcast.push({
+                    type: SERVER_OPCODE.SPRITE_DELETE,
+                    id,
+                    index,
+                });
             }
         });
-        
+
         if (waitForBroadcast.length > 0) {
-            waitForBroadcast.forEach(({ type, id, index }) => {
-                this.broadcastToPeers(
-                    JSON.stringify({
-                        type: type,
-                        id: id ? id : null,
-                        targetIndex: index, // sprite-add, sprite-delete
-                    }),
-                );
-            });
+            for (const { type, id, index } of waitForBroadcast) {
+                if (type === SERVER_OPCODE.SPRITE_ADD) {
+                    try {
+                        const spriteData = await this._vm.exportSprite(
+                            id,
+                            "uint8array",
+                        );
+                        const base64Data =
+                            this._arrayBufferToBase64(spriteData);
+                        this.broadcastToPeers(
+                            JSON.stringify({
+                                type: SERVER_OPCODE.SPRITE_ADD,
+                                targetIndex: index,
+                                spriteData: base64Data,
+                            }),
+                        );
+                    } catch (e) {
+                        this._console.error("[协作] 导出角色失败:", e);
+                    }
+                } else {
+                    this.broadcastToPeers(
+                        JSON.stringify({
+                            type: SERVER_OPCODE.SPRITE_DELETE,
+                            targetIndex: index,
+                        }),
+                    );
+                }
+            }
         }
-        
+
         this._vm_snapshot = newSnapshot;
+    }
+
+    _arrayBufferToBase64(buffer) {
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
     }
 
     updateWorkspace() {
         try {
-            this.editingTargetIndex = this._vm.runtime.targets.findIndex(
-                (ele) => this._vm.runtime._editingTarget.id == ele.id,
-            );
-            // 移除所有pointer
-            document
-                .querySelectorAll(".sa-collaborative-pointer")
-                .forEach((ele) => ele.remove());
+            // 给Blockly一些时间
+            setTimeout(() => {
+                const fromIndex = this.editingTargetIndex;
+
+                this.editingTargetIndex = this._vm.runtime.targets.findIndex(
+                    (ele) => this._vm.runtime._editingTarget.id === ele.id,
+                );
+
+                // 移除所有pointer
+                document
+                    .querySelectorAll(".sa-collaborative-pointer")
+                    .forEach((ele) => ele.remove());
+
+                // 让member删除光标（若需要）
+                this.broadcastToPeers(JSON.stringify({
+                    type: SERVER_OPCODE.POINTER_LEAVE,
+                    id: this.state.clientId,
+                    fromIndex
+                }))
+            }, 50);
         } catch {
             this.editingTargetIndex = -1;
         }
@@ -385,6 +447,7 @@ export class RTCServer {
 
     broadcastToPeers(data) {
         if (this._ingoreUpdate) return;
+
         let sent = 0;
         for (const peerId of this._dataChannels.keys())
             if (this.sendToPeer(peerId, data)) sent++;
