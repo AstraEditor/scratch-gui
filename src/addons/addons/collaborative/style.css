@@ -147,10 +147,6 @@
     border-radius: 5px;
 }
 
-.sa-addon-collaborative-pointer{
-    width: 20px;
-    height: 20px;
-    background: aqua;
-    z-index: 999;
-    position: absolute;
+.sa-addon-collaborative-pointer-container{
+    pointer-events: none;
 }

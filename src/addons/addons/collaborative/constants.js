@@ -5,6 +5,24 @@ export const ID_SEA = {
     Things: ["AE", "皮球", "背带裤", "鸡"],
 };
 
+export const SERVER_OPCODE = {
+  POINTER: "pointer",
+  SNAPSHOT: "snapshot",
+  SPRITE_ADD: "sprite-add",
+  SPRITE_DELETE: "sprite-delete",
+  BLOCK_CREATE: "block-create",
+  BLOCK_DELETE: "block-delete",
+  BLOCK_CONNECT: "block-connect",
+  BLOCK_DISCONNECT: "block-disconnect",
+  COSTUME_ADD: "costume-add",
+  COSTUME_UPDATE: "costume-update",
+  SOUND_ADD: "sound-add",
+  SOUND_UPDATE: "sound-update",
+  SPRITE_DELETE: "sprite-delete",
+  PING: "ping",
+  PONG: "pong",
+}
+
 export const idHead = "sa-addon-collaborative-";
 
 function darkenHex(hex, percent = 20) {

@@ -1,4 +1,4 @@
-import { ID_SEA, DEFAULT_STUN_URLS } from "./constants.js";
+import { ID_SEA, DEFAULT_STUN_URLS, SERVER_OPCODE } from "./constants.js";
 import { fetchWithTimeout, getAPPNAME } from "./utils.js";
 
 /**
@@ -20,6 +20,8 @@ export class RTCServer {
         this._onStateChange = onStateChange;
         this._vm = vm;
 
+        this._vm_snapshot = this.deepClone(vm);
+
         this._server = null;
         this._allSTUN_URLs = null;
         this._rtcConnections = new Map();
@@ -28,6 +30,7 @@ export class RTCServer {
         this._isHost = false;
         this._chunkBuffers = new Map();
         this._pendingMessages = new Map(); // peerId → data[]
+        this._ingoreUpdate = false;
         this.state = { clientId: null, roomId: null, allMembers: [] };
 
         this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
@@ -35,10 +38,16 @@ export class RTCServer {
         this.boundMouseMoveHandler = this.mouseMoveHandler.bind(this);
         this._vm.on("targetsUpdate", () => this.updateWorkspace());
 
-        this.getUserName = () => localStorage.getItem("tw:username") || "user";
     }
 
     // ── 对外 API ─────────────────────────────────────────────────
+    onIngoreUpdate(ingoreUpdate) {
+        this._ingoreUpdate = ingoreUpdate;
+    }
+
+    getUserName() {
+        return localStorage.getItem("tw:username") || "user";
+    }
 
     getState() {
         return { ...this.state };
@@ -90,6 +99,151 @@ export class RTCServer {
             "mousemove",
             this.boundMouseMoveHandler,
         );
+        this._vm_snapshot = this.deepClone(this._vm);
+        let updateWaiting;
+        this._vm.runtime.on("PROJECT_CHANGED", () => {
+            if (updateWaiting) clearTimeout(updateWaiting);
+            updateWaiting = setTimeout(() => {
+                console.log("UPDATE!");
+                this.updateProject();
+                this._vm_snapshot = this.deepClone(this._vm);
+            }, 50);
+        });
+    }
+
+    deepClone(obj, hash = new WeakMap(), depth = 0) {
+        if (depth > 10) return obj;
+        
+        if (obj == null || typeof obj !== "object") {
+            return obj;
+        }
+
+        if (hash.has(obj)) {
+            return hash.get(obj);
+        }
+
+        if (obj instanceof EventTarget || obj.addEventListener || obj.removeEventListener) {
+            return obj;
+        }
+
+        if (typeof ImageData !== "undefined" && obj instanceof ImageData) {
+            const dataCopy = new Uint8ClampedArray(obj.data);
+            const cloned = new ImageData(dataCopy, obj.width, obj.height);
+            hash.set(obj, cloned);
+            return cloned;
+        }
+
+        const Constructor = obj.constructor;
+
+        switch (Constructor) {
+            case Date:
+                const clonedDate = new Date(obj.getTime());
+                hash.set(obj, clonedDate);
+                return clonedDate;
+            case RegExp:
+                const clonedRegExp = new RegExp(obj);
+                hash.set(obj, clonedRegExp);
+                return clonedRegExp;
+            case Map:
+                const clonedMap = new Map();
+                hash.set(obj, clonedMap);
+                for (let [key, val] of obj) {
+                    clonedMap.set(
+                        this.deepClone(key, hash, depth + 1),
+                        this.deepClone(val, hash, depth + 1),
+                    );
+                }
+                return clonedMap;
+            case Set:
+                const clonedSet = new Set();
+                hash.set(obj, clonedSet);
+                for (let val of obj) {
+                    clonedSet.add(this.deepClone(val, hash, depth + 1));
+                }
+                return clonedSet;
+            case ArrayBuffer:
+                const clonedBuffer = obj.slice(0);
+                hash.set(obj, clonedBuffer);
+                return clonedBuffer;
+            case Uint8Array:
+            case Int8Array:
+            case Uint16Array:
+            case Int16Array:
+            case Uint32Array:
+            case Int32Array:
+            case Float32Array:
+            case Float64Array:
+            case Uint8ClampedArray: // ImageData.data 的类型
+                const clonedTypedArray = new Constructor(obj);
+                hash.set(obj, clonedTypedArray);
+                return clonedTypedArray;
+            default:
+                const clonedObj = Object.create(Object.getPrototypeOf(obj));
+                hash.set(obj, clonedObj);
+
+                const keys = [
+                    ...Object.keys(obj),
+                    ...Object.getOwnPropertySymbols(obj),
+                ];
+                for (let key of keys) {
+                    try {
+                        clonedObj[key] = this.deepClone(obj[key], hash, depth + 1);
+                    } catch (e) {
+                    }
+                }
+                return clonedObj;
+        }
+    }
+
+
+    updateProject() {
+        const oldSnapshot = this._vm_snapshot;
+        const newSnapshot = this.deepClone(this._vm);
+        
+        if (!oldSnapshot?.runtime || !newSnapshot?.runtime) {
+            this._vm_snapshot = newSnapshot;
+            return;
+        }
+
+        
+        const oldTargets = oldSnapshot.runtime.targets;
+        const newTargets = newSnapshot.runtime.targets;
+
+        const oldIds = Object.entries(oldTargets).map(t => t[1].id)
+        const newIds = Object.entries(newTargets).map(t => t[1].id)
+        
+        const waitForBroadcast = [];
+
+        console.log(oldTargets)
+        console.log(newTargets)
+
+        // 新增
+        newIds.forEach((id, index) => {
+            if (!oldIds.includes(id)) {
+                waitForBroadcast.push({ type: SERVER_OPCODE.SPRITE_ADD, id, index });
+            }
+        });
+
+        // 删除
+        oldIds.forEach((id, index) => {
+            if (!newIds.includes(id)) {
+                waitForBroadcast.push({ type: SERVER_OPCODE.SPRITE_DELETE, id, index });
+            }
+        });
+        
+        if (waitForBroadcast.length > 0) {
+            waitForBroadcast.forEach(({ type, id, index }) => {
+                this.broadcastToPeers(
+                    JSON.stringify({
+                        type: type,
+                        id: id ? id : null,
+                        targetIndex: index, // sprite-add, sprite-delete
+                    }),
+                );
+            });
+        }
+        
+        this._vm_snapshot = newSnapshot;
     }
 
     updateWorkspace() {
@@ -98,7 +252,9 @@ export class RTCServer {
                 (ele) => this._vm.runtime._editingTarget.id == ele.id,
             );
             // 移除所有pointer
-            document.querySelectorAll(".sa-collaborative-pointer").forEach(ele => ele.remove());
+            document
+                .querySelectorAll(".sa-collaborative-pointer")
+                .forEach((ele) => ele.remove());
         } catch {
             this.editingTargetIndex = -1;
         }
@@ -228,6 +384,7 @@ export class RTCServer {
     }
 
     broadcastToPeers(data) {
+        if (this._ingoreUpdate) return;
         let sent = 0;
         for (const peerId of this._dataChannels.keys())
             if (this.sendToPeer(peerId, data)) sent++;
@@ -547,7 +704,7 @@ export class RTCServer {
                 this._createAndSendOffer(data.clientId);
                 if (this._isHost) {
                     const sendProject = {
-                        type: "snapshot",
+                        type: SERVER_OPCODE.SNAPSHOT,
                         data: await this._buildSnapshotWithAssets(),
                         projectName: getAPPNAME(),
                         config: window.location.search,

@@ -9,7 +9,7 @@ import {
     onLoadedProject,
 } from "../../../reducers/project-state";
 import { setURLParamsFromSearchString } from "./utils.js";
-import { idHead, pointerSVG } from "./constants.js";
+import { idHead, pointerSVG, SERVER_OPCODE } from "./constants.js";
 
 let scaleObserver = null;
 let scaleUpdateRaf = null;
@@ -101,10 +101,11 @@ export function createHandler({
     return async function handlePeerMessage(peerId, msgs) {
         console.log("[协作] 收到来自 " + peerId + " 的消息:", msgs);
         const data = JSON.parse(msgs);
+        rtc.onIngoreUpdate(true);
+
         switch (data.type) {
             // ── Phase 1: snapshot ──
-            case "snapshot":
-                console.log("[协作] 📸 收到 snapshot");
+            case SERVER_OPCODE.SNAPSHOT:
                 const sb3Base = data.data;
                 const binary = atob(sb3Base);
 
@@ -147,7 +148,7 @@ export function createHandler({
                 }
                 break;
 
-            case "pointer":
+            case SERVER_OPCODE.POINTER:
                 if (data.workspaceIndex !== rtc.editingTargetIndex) break;
 
                 const ws = Blockly.getMainWorkspace();
@@ -204,31 +205,43 @@ export function createHandler({
                     }
                 }
                 break;
-            // ── Phase 1: patch ──
-            case "block-update":
-            case "block-create":
-            case "block-delete":
-            case "block-connect":
-            case "block-disconnect":
+            case SERVER_OPCODE.BLOCK_UPDATE:
+            case SERVER_OPCODE.BLOCK_CREATE:
+            case SERVER_OPCODE.BLOCK_DELETE:
+            case SERVER_OPCODE.BLOCK_CONNECT:
+            case SERVER_OPCODE.BLOCK_DISCONNECT:
                 // patch 层在此处理
                 break;
-
-            // ── Phase 3: assets ──
-            case "costume-add":
-            case "costume-update":
-            case "sound-add":
-            case "sound-update":
+            case SERVER_OPCODE.BLOCK_UPDATE:
+            case SERVER_OPCODE.BLOCK_CREATE:
+            case SERVER_OPCODE.BLOCK_DELETE:
+            case SERVER_OPCODE.BLOCK_CONNECT:
+            case SERVER_OPCODE.BLOCK_DISCONNECT:
+                // patch 层在此处理
                 break;
+            case SERVER_OPCODE.COSTUME_ADD:
+            case SERVER_OPCODE.COSTUME_UPDATE:
+            case SERVER_OPCODE.SOUND_ADD:
+            case SERVER_OPCODE.SOUND_UPDATE:
+                break;
+
+            case SERVER_OPCODE.SPRITE_DELETE:
+                rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
+                break
+            case SERVER_OPCODE.SPRITE_ADD:
+                console.log("add a sprite!", data.targetIndex);
+                break
 
             // ── Phase 4: runtime ──
-            case "ping":
-                sendToPeer(peerId, { type: "pong" });
+            case SERVER_OPCODE.PING:
+                sendToPeer(peerId, { type: SERVER_OPCODE.PONG });
                 break;
-            case "pong":
+            case SERVER_OPCODE.PONG:
                 break;
 
             default:
                 console.warn("[协作] 未知P2P消息类型:", data.type);
         }
+        rtc.onIngoreUpdate(false);
     };
 }
