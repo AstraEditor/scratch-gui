@@ -5,6 +5,7 @@ const webpack = require('webpack');
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 // PostCss
 const autoprefixer = require('autoprefixer');
@@ -37,7 +38,15 @@ const globalCssFiles = new Set([
     'bottom-panel.css',
     'side-bar.css'
 ]);
-const useCssModules = resourcePath => !globalCssFiles.has(path.basename(resourcePath));
+const useCssModules = resourcePath => {
+    if (globalCssFiles.has(path.basename(resourcePath))) {
+        return false;
+    }
+    if (resourcePath.includes('monaco-editor')) {
+        return false;
+    }
+    return true;
+};
 
 // print logo and tip test
 console.log(`\x1b[34m
@@ -192,6 +201,10 @@ const base = {
                     esModule: false
                 }
             }]
+        },
+        {
+            test: /\.ttf$/,
+            type: 'asset/resource'
         }]
     },
     plugins: [
@@ -217,6 +230,27 @@ const base = {
                     to: 'static/blocks-media/high-contrast',
                     force: true
                 }
+            ]
+        }),
+        new MonacoWebpackPlugin({
+            languages: ['javascript', 'typescript', 'python', 'json'],
+            features: [
+                'bracketMatching',
+                'caretOperations',
+                'clipboard',
+                'comment',
+                'contextmenu',
+                'coreCommands',
+                'dnd',
+                'find',
+                'folding',
+                'hover',
+                'indentation',
+                'linesOperations',
+                'links',
+                'multicursor',
+                'suggest',
+                'toggleMinimap'
             ]
         })
     ]
