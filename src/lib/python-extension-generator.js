@@ -9,45 +9,81 @@ const toCamelCase = (str) => {
         .join('');
 };
 
-const generatePythonExtension = (parseResult, fullCode, extensionId = 'pythonExtension') => {
-    const exportedFunctions = parseResult.exportedFunctions;
-    if (exportedFunctions.length === 0) {
+const generateMultiFileExtension = (filesData) => {
+    if (!filesData || filesData.length === 0) {
         return null;
     }
 
-    const safeExtensionId = toCamelCase(extensionId);
-    const extensionName = 'Python Extension';
-    const blocks = [];
+    const allBlocks = [];
+    const allMethods = [];
+    const allPythonCode = [];
+    const fileLabels = [];
 
-    exportedFunctions.forEach(func => {
-        const blockId = toCamelCase(func.name);
-        const blockText = func.name + (func.parameters.length > 0 
-            ? ' ' + func.parameters.map(p => `[${p.name.toUpperCase()}]`).join(' ')
-            : '');
+    filesData.forEach(fileData => {
+        const { fileName, parseResult, fullCode } = fileData;
         
-        const blockArgs = {};
-        func.parameters.forEach(param => {
-            blockArgs[param.name.toUpperCase()] = {
-                type: 'string',
-                defaultValue: ''
-            };
+        if (parseResult.exportedFunctions.length === 0) {
+            return;
+        }
+
+        allPythonCode.push(`# File: ${fileName}\n${fullCode}`);
+
+        const labelBlockId = `label_${toCamelCase(fileName.replace('.py', ''))}`;
+        fileLabels.push({
+            blockId: labelBlockId,
+            labelText: fileName.replace('.py', '')
         });
 
-        const argsCode = func.parameters.map(p => `args.${p.name.toUpperCase()}`).join(', ');
+        allBlocks.push({
+            opcode: labelBlockId,
+            blockType: 'label',
+            text: fileName.replace('.py', '')
+        });
 
-        const blockType = func.returnType || 'command';
+        parseResult.exportedFunctions.forEach(func => {
+            const blockId = toCamelCase(func.name);
+            const blockText = func.name + (func.parameters.length > 0 
+                ? ' ' + func.parameters.map(p => `[${p.name.toUpperCase()}]`).join(' ')
+                : '');
+            
+            const blockArgs = {};
+            func.parameters.forEach(param => {
+                blockArgs[param.name.toUpperCase()] = {
+                    type: 'string',
+                    defaultValue: ''
+                };
+            });
 
-        blocks.push({
-            opcode: blockId,
-            blockType: blockType,
-            text: blockText,
-            arguments: blockArgs,
-            funcName: func.name,
-            argsCode: argsCode
+            const argsCode = func.parameters.map(p => `args.${p.name.toUpperCase()}`).join(', ');
+            const blockType = func.returnType || 'command';
+
+            allBlocks.push({
+                opcode: blockId,
+                blockType: blockType,
+                text: blockText,
+                arguments: blockArgs
+            });
+
+            allMethods.push({
+                opcode: blockId,
+                funcName: func.name,
+                argsCode: argsCode
+            });
         });
     });
 
-    const blocksCode = blocks.map(b => {
+    if (allBlocks.length === 0) {
+        return null;
+    }
+
+    const blocksCode = allBlocks.map(b => {
+        if (b.blockType === 'label') {
+            return `                {
+                    opcode: '${b.opcode}',
+                    blockType: Scratch.BlockType.LABEL,
+                    text: '${b.text}'
+                }`;
+        }
         const blockTypeStr = `Scratch.BlockType.${b.blockType.toUpperCase()}`;
         return `                {
                     opcode: '${b.opcode}',
@@ -57,15 +93,15 @@ const generatePythonExtension = (parseResult, fullCode, extensionId = 'pythonExt
                 }`;
     }).join(',\n');
 
-    const methodsCode = blocks.map(b => `
-    async ${b.opcode}(args, util) {
+    const methodsCode = allMethods.map(m => `
+    async ${m.opcode}(args, util) {
         if (!window._pyodideReady || !window._pyodideInstance) {
             await initPyodide();
         }
         try {
-            const func = window._pyodideInstance.globals.get('${b.funcName}');
+            const func = window._pyodideInstance.globals.get('${m.funcName}');
             if (func) {
-                const pyResult = await func(${b.argsCode});
+                const pyResult = await func(${m.argsCode});
                 return pyResult;
             }
             return null;
@@ -74,6 +110,8 @@ const generatePythonExtension = (parseResult, fullCode, extensionId = 'pythonExt
             return null;
         }
     }`).join('\n');
+
+    const combinedPythonCode = allPythonCode.join('\n\n');
 
     const extensionCode = `
 (function() {
@@ -87,7 +125,7 @@ const generatePythonExtension = (parseResult, fullCode, extensionId = 'pythonExt
                 indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
             });
             window._pyodideReady = true;
-            window._pythonExtensionCode = ${JSON.stringify(fullCode)};
+            window._pythonExtensionCode = ${JSON.stringify(combinedPythonCode)};
             await window._pyodideInstance.runPythonAsync(window._pythonExtensionCode);
             console.log('Pyodide initialized successfully');
             return window._pyodideInstance;
@@ -101,8 +139,11 @@ const generatePythonExtension = (parseResult, fullCode, extensionId = 'pythonExt
     class PythonExtension {
         getInfo() {
             return {
-                id: '${safeExtensionId}',
-                name: '${extensionName}',
+                id: 'pythonBlocks',
+                name: 'Python',
+                color1: '#66ccff',
+                color2: '#55aadd',
+                color3: '#4499cc',
                 blocks: [
 ${blocksCode}
                 ]
@@ -115,65 +156,62 @@ ${methodsCode}
 })();
 `;
 
+    const totalBlocks = allBlocks.filter(b => b.blockType !== 'label').length;
+
     return {
-        extensionId: safeExtensionId,
+        extensionId: 'pythonBlocks',
         extensionCode,
-        blockCount: exportedFunctions.length,
-        functionNames: exportedFunctions.map(f => f.name)
+        blockCount: totalBlocks,
+        fileCount: filesData.length,
+        fileNames: filesData.map(f => f.fileName)
     };
 };
 
-const generateExtensionFromPythonCode = (pythonCode, fileName = null) => {
-    const parseResult = parsePythonFunctions(pythonCode);
+const generateExtensionFromFiles = (files) => {
+    const filesData = [];
     
-    if (!parseResult.hasExports) {
+    for (const file of files) {
+        if (!file.content || !file.name.endsWith('.py')) {
+            continue;
+        }
+        
+        const parseResult = parsePythonFunctions(file.content);
+        
+        if (!parseResult.hasExports || parseResult.exportedFunctions.length === 0) {
+            continue;
+        }
+        
+        filesData.push({
+            fileName: file.name,
+            parseResult,
+            fullCode: file.content
+        });
+    }
+
+    if (filesData.length === 0) {
         return {
             success: false,
-            error: 'No __all__ export list found. Add __all__ = ["function_name"] to your code.',
-            parseResult
+            error: 'No valid Python files with __all__ exports found.'
         };
     }
 
-    if (parseResult.exportedFunctions.length === 0) {
-        return {
-            success: false,
-            error: 'Functions specified in __all__ were not found in the code.',
-            parseResult
-        };
-    }
-
-    let baseId = 'pythonExt';
-    if (fileName) {
-        const safeFileName = fileName
-            .replace(/\.py$/i, '')
-            .replace(/[^a-zA-Z0-9]/g, '_')
-            .split('_')
-            .map((word, index) => 
-                index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-            )
-            .join('');
-        baseId = `py${safeFileName.charAt(0).toUpperCase() + safeFileName.slice(1)}`;
-    }
-    
-    const id = `${baseId}${Date.now()}`;
-    const extension = generatePythonExtension(parseResult, pythonCode, id);
+    const extension = generateMultiFileExtension(filesData);
 
     if (!extension) {
         return {
             success: false,
-            error: 'Failed to generate extension.',
-            parseResult
+            error: 'Failed to generate extension.'
         };
     }
 
     return {
         success: true,
         extension,
-        parseResult
+        filesData
     };
 };
 
 export {
-    generatePythonExtension,
-    generateExtensionFromPythonCode
+    generateMultiFileExtension,
+    generateExtensionFromFiles
 };

@@ -4,8 +4,11 @@ import { FormattedMessage, injectIntl, intlShape } from 'react-intl';
 import VM from 'scratch-vm';
 import { Theme } from '../../lib/themes';
 import { validatePythonCode } from '../../lib/python-parser';
-import { generateExtensionFromPythonCode } from '../../lib/python-extension-generator';
+import { generateExtensionFromFiles } from '../../lib/python-extension-generator';
 import { manuallyTrustExtension } from '../../containers/tw-security-manager.jsx';
+import Modal from '../../containers/modal.jsx';
+import Box from '../box/box.jsx';
+import './monaco-editor.css';
 
 let monaco = null;
 
@@ -123,7 +126,8 @@ class MonacoEditorComponent extends React.Component {
             blockGenerationStatus: null,
             pyodideLoading: false,
             pyodideReady: false,
-            loadedExtensionIds: {}
+            selectedFileIds: [],
+            showFileSelectionModal: false
         };
     }
 
@@ -370,28 +374,6 @@ class MonacoEditorComponent extends React.Component {
         }));
     };
 
-    unloadFileExtension = (fileId) => {
-        const extensionId = this.state.loadedExtensionIds[fileId];
-        if (!extensionId) return;
-        
-        if (this.props.vm && this.props.vm.extensionManager && this.props.vm.runtime) {
-            if (this.props.vm.extensionManager.isExtensionLoaded(extensionId)) {
-                console.log('Unloading extension for file:', fileId, extensionId);
-                const threads = [...this.props.vm.runtime.threads];
-                for (const thread of threads) {
-                    this.props.vm.runtime.stopThread(thread);
-                }
-                this.props.vm.extensionManager.unloadExtension(extensionId);
-                setTimeout(() => {
-                    if (this.props.vm) {
-                        this.props.vm.refreshWorkspace();
-                        this.props.vm.emitWorkspaceUpdate();
-                    }
-                }, 100);
-            }
-        }
-    };
-
     selectFile = (fileId) => {
         this.setState({ activeFileId: fileId, editingFileName: null, blockGenerationStatus: null });
     };
@@ -451,35 +433,68 @@ class MonacoEditorComponent extends React.Component {
     };
 
     deleteFile = (fileId) => {
-        this.unloadFileExtension(fileId);
-        
         this.setState(prevState => {
             const newFiles = prevState.files.filter(f => f.id !== fileId);
             let newActiveFileId = prevState.activeFileId;
             if (prevState.activeFileId === fileId) {
                 newActiveFileId = newFiles.length > 0 ? newFiles[0].id : null;
             }
-            const newLoadedExtensionIds = { ...prevState.loadedExtensionIds };
-            delete newLoadedExtensionIds[fileId];
+            const newSelectedFileIds = prevState.selectedFileIds.filter(id => id !== fileId);
             return {
                 files: newFiles,
                 activeFileId: newActiveFileId,
                 blockGenerationStatus: null,
-                loadedExtensionIds: newLoadedExtensionIds
+                selectedFileIds: newSelectedFileIds
             };
         });
     };
 
-    generateBlocks = async () => {
-        const activeFile = this.state.files.find(f => f.id === this.state.activeFileId);
-        if (!activeFile) return;
+    toggleFileSelection = (fileId) => {
+        this.setState(prevState => {
+            const isSelected = prevState.selectedFileIds.includes(fileId);
+            if (isSelected) {
+                return {
+                    selectedFileIds: prevState.selectedFileIds.filter(id => id !== fileId)
+                };
+            } else {
+                return {
+                    selectedFileIds: [...prevState.selectedFileIds, fileId]
+                };
+            }
+        });
+    };
 
-        const extension = getFileExtension(activeFile.name);
-        if (extension !== 'py') {
+    openFileSelectionModal = () => {
+        const pythonFiles = this.state.files.filter(f => f.name.endsWith('.py'));
+        if (pythonFiles.length === 0) {
             this.setState({
                 blockGenerationStatus: {
                     type: 'error',
-                    message: '只能从 Python 文件生成积木'
+                    message: '没有 Python 文件可供生成积木'
+                }
+            });
+            return;
+        }
+        this.setState({ showFileSelectionModal: true });
+    };
+
+    closeFileSelectionModal = () => {
+        this.setState({ showFileSelectionModal: false });
+    };
+
+    confirmFileSelectionAndGenerate = async () => {
+        this.setState({ showFileSelectionModal: false });
+        await this.generateBlocks();
+    };
+
+    generateBlocks = async () => {
+        const selectedFiles = this.state.files.filter(f => this.state.selectedFileIds.includes(f.id));
+        
+        if (selectedFiles.length === 0) {
+            this.setState({
+                blockGenerationStatus: {
+                    type: 'error',
+                    message: '请先选择要生成积木的 Python 文件'
                 }
             });
             return;
@@ -492,7 +507,12 @@ class MonacoEditorComponent extends React.Component {
             }
         });
 
-        const result = generateExtensionFromPythonCode(activeFile.content, activeFile.name);
+        const filesForGeneration = selectedFiles.map(f => ({
+            name: f.name,
+            content: f.content
+        }));
+
+        const result = generateExtensionFromFiles(filesForGeneration);
         
         if (!result.success) {
             this.setState({
@@ -518,17 +538,10 @@ class MonacoEditorComponent extends React.Component {
 
         try {
             const vm = this.props.vm;
-            const fileId = this.state.activeFileId;
             
-            const oldExtensionId = this.state.loadedExtensionIds[fileId];
-            if (oldExtensionId && vm.extensionManager.isExtensionLoaded(oldExtensionId)) {
-                console.log('Unloading previously loaded extension:', oldExtensionId);
-                vm.extensionManager.unloadExtension(oldExtensionId);
-            }
-            
-            if (vm.extensionManager.isExtensionLoaded(extInfo.extensionId)) {
-                console.log('Unloading extension with same ID:', extInfo.extensionId);
-                vm.extensionManager.unloadExtension(extInfo.extensionId);
+            if (vm.extensionManager.isExtensionLoaded('pythonBlocks')) {
+                console.log('Unloading existing Python extension');
+                vm.extensionManager.unloadExtension('pythonBlocks');
             }
             
             const threads = [...vm.runtime.threads];
@@ -557,12 +570,8 @@ class MonacoEditorComponent extends React.Component {
             this.setState({
                 blockGenerationStatus: {
                     type: 'success',
-                    message: `成功加载扩展！生成 ${extInfo.blockCount} 个积木：${extInfo.functionNames.join(', ')}`,
+                    message: `成功加载扩展！从 ${extInfo.fileCount} 个文件生成 ${extInfo.blockCount} 个积木`,
                     extensionId: extInfo.extensionId
-                },
-                loadedExtensionIds: {
-                    ...this.state.loadedExtensionIds,
-                    [fileId]: extInfo.extensionId
                 }
             });
 
@@ -812,6 +821,7 @@ class MonacoEditorComponent extends React.Component {
         const isPythonFile = activeExtension === 'py';
 
         return (
+            <React.Fragment>
             <div style={containerStyle}>
                 <div style={sidebarStyle}>
                     <div style={sidebarHeaderStyle}>
@@ -971,19 +981,17 @@ class MonacoEditorComponent extends React.Component {
                                 </div>
                                 <span style={{ fontSize: '13px' }}>{activeFile.name}</span>
                             </div>
-                            {isPythonFile && (
-                                <button
-                                    style={generateButtonStyle}
-                                    onClick={this.generateBlocks}
-                                    title="从 Python 函数生成 Scratch 积木"
-                                >
-                                    <FormattedMessage
-                                        defaultMessage="生成积木"
-                                        description="Generate blocks button"
-                                        id="gui.monacoEditor.generateBlocks"
-                                    />
-                                </button>
-                            )}
+                            <button
+                                style={generateButtonStyle}
+                                onClick={this.openFileSelectionModal}
+                                title="选择 Python 文件生成 Scratch 积木"
+                            >
+                                <FormattedMessage
+                                    defaultMessage="生成积木"
+                                    description="Generate blocks button"
+                                    id="gui.monacoEditor.generateBlocks"
+                                />
+                            </button>
                         </div>
                     )}
                     {this.state.blockGenerationStatus && (
@@ -997,8 +1005,178 @@ class MonacoEditorComponent extends React.Component {
                     />
                 </div>
             </div>
+            {this.state.showFileSelectionModal && this.renderFileSelectionModal()}
+            </React.Fragment>
         );
     }
+
+    renderFileSelectionModal = () => {
+        const colors = this.getThemeColors();
+        const pythonFiles = this.state.files.filter(f => f.name.endsWith('.py'));
+        const allSelected = pythonFiles.length > 0 && this.state.selectedFileIds.length === pythonFiles.length;
+
+        const modalBodyStyle = {
+            padding: '12px',
+            maxHeight: '280px',
+            overflowY: 'auto'
+        };
+
+        const fileItemStyle = {
+            display: 'flex',
+            alignItems: 'center',
+            padding: '8px 10px',
+            marginBottom: '6px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'background-color 0.15s',
+            border: `1px solid ${colors.border}`
+        };
+
+        const checkboxStyle = {
+            marginRight: '10px',
+            width: '16px',
+            height: '16px',
+            cursor: 'pointer',
+            accentColor: '#66ccff'
+        };
+
+        const fileNameStyle = {
+            fontSize: '13px',
+            fontWeight: '500',
+            color: colors.text
+        };
+
+        const functionCountStyle = {
+            fontSize: '11px',
+            color: colors.textSecondary,
+            marginLeft: '8px'
+        };
+
+        const headerStyle = {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px',
+            borderBottom: `1px solid ${colors.border}`
+        };
+
+        const selectAllButtonStyle = {
+            padding: '4px 12px',
+            fontSize: '12px',
+            cursor: 'pointer',
+            background: allSelected ? '#66ccff' : 'transparent',
+            border: `1px solid ${allSelected ? '#66ccff' : colors.border}`,
+            color: allSelected ? '#fff' : colors.textSecondary,
+            borderRadius: '4px'
+        };
+
+        const buttonRowStyle = {
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '10px',
+            padding: '12px',
+            borderTop: `1px solid ${colors.border}`
+        };
+
+        const cancelButtonStyle = {
+            padding: '6px 14px',
+            fontSize: '13px',
+            cursor: 'pointer',
+            background: 'transparent',
+            border: `1px solid ${colors.border}`,
+            color: colors.textSecondary,
+            borderRadius: '4px'
+        };
+
+        const confirmButtonStyle = {
+            padding: '6px 14px',
+            fontSize: '13px',
+            cursor: 'pointer',
+            background: '#66ccff',
+            border: 'none',
+            color: '#fff',
+            borderRadius: '4px',
+            fontWeight: '500'
+        };
+
+        const selectAllPythonFiles = () => {
+            if (allSelected) {
+                this.setState({ selectedFileIds: [] });
+            } else {
+                this.setState({ selectedFileIds: pythonFiles.map(f => f.id) });
+            }
+        };
+
+        return (
+            <Modal
+                className="file-selection-modal"
+                contentLabel="选择 Python 文件"
+                onRequestClose={this.closeFileSelectionModal}
+                id="fileSelectionModal"
+            >
+                <Box style={{ background: colors.bgSecondary }}>
+                    <div style={headerStyle}>
+                        <span style={{ fontSize: '13px', color: colors.textSecondary }}>
+                            选择要生成积木的 Python 文件
+                        </span>
+                        <button style={selectAllButtonStyle} onClick={selectAllPythonFiles}>
+                            {allSelected ? '取消全选' : '全选'}
+                        </button>
+                    </div>
+                    <div style={modalBodyStyle}>
+                        {pythonFiles.map(file => {
+                            const isSelected = this.state.selectedFileIds.includes(file.id);
+                            const validationResult = validatePythonCode(file.content);
+                            const funcCount = validationResult?.parseResult?.exportedFunctions?.length || 0;
+
+                            return (
+                                <div
+                                    key={file.id}
+                                    style={{
+                                        ...fileItemStyle,
+                                        backgroundColor: isSelected ? 'rgba(102, 204, 255, 0.15)' : colors.bgSecondary
+                                    }}
+                                    onClick={() => this.toggleFileSelection(file.id)}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => this.toggleFileSelection(file.id)}
+                                        style={checkboxStyle}
+                                    />
+                                    <span style={fileNameStyle}>{file.name}</span>
+                                    <span style={functionCountStyle}>
+                                        {funcCount > 0 ? `${funcCount} 函数` : '无导出'}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                        {pythonFiles.length === 0 && (
+                            <p style={{ color: colors.textSecondary, textAlign: 'center', padding: '20px' }}>
+                                没有 Python 文件
+                            </p>
+                        )}
+                    </div>
+                    <div style={buttonRowStyle}>
+                        <button style={cancelButtonStyle} onClick={this.closeFileSelectionModal}>
+                            取消
+                        </button>
+                        <button 
+                            style={{
+                                ...confirmButtonStyle,
+                                opacity: this.state.selectedFileIds.length > 0 ? 1 : 0.5,
+                                cursor: this.state.selectedFileIds.length > 0 ? 'pointer' : 'not-allowed'
+                            }}
+                            onClick={this.state.selectedFileIds.length > 0 ? this.confirmFileSelectionAndGenerate : undefined}
+                            disabled={this.state.selectedFileIds.length === 0}
+                        >
+                            生成 ({this.state.selectedFileIds.length})
+                        </button>
+                    </div>
+                </Box>
+            </Modal>
+        );
+    };
 }
 
 MonacoEditorComponent.propTypes = {

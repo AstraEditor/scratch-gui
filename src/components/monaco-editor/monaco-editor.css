@@ -109,3 +109,8 @@
     padding: 1rem;
     text-align: center;
 }
+
+:global(.file-selection-modal) {
+    width: 320px !important;
+    max-width: 320px !important;
+}
