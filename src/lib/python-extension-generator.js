@@ -19,6 +19,78 @@ const generateMultiFileExtension = (filesData) => {
     const allPythonCode = [];
     const fileLabels = [];
 
+    allBlocks.push({
+        opcode: 'initPython',
+        blockType: 'command',
+        text: 'init python',
+        arguments: {}
+    });
+
+    allBlocks.push({
+        opcode: 'initSuccess',
+        blockType: 'boolean',
+        text: 'init success?',
+        arguments: {}
+    });
+
+    allBlocks.push({
+        opcode: 'initLoading',
+        blockType: 'boolean',
+        text: 'init loading?',
+        arguments: {}
+    });
+
+    allBlocks.push({
+        opcode: 'runPython',
+        blockType: 'command',
+        text: 'run python [CODE]',
+        arguments: {
+            CODE: {
+                type: 'string',
+                defaultValue: 'print("Hello")'
+            }
+        }
+    });
+
+    allBlocks.push({
+        opcode: 'evalPython',
+        blockType: 'reporter',
+        text: 'eval python [EXPR]',
+        arguments: {
+            EXPR: {
+                type: 'string',
+                defaultValue: '1 + 2'
+            }
+        }
+    });
+
+    allMethods.push({
+        opcode: 'initPython',
+        isInitBlock: true
+    });
+
+    allMethods.push({
+        opcode: 'initSuccess',
+        isStatusBlock: true,
+        statusType: 'success'
+    });
+
+    allMethods.push({
+        opcode: 'initLoading',
+        isStatusBlock: true,
+        statusType: 'loading'
+    });
+
+    allMethods.push({
+        opcode: 'runPython',
+        isRunBlock: true
+    });
+
+    allMethods.push({
+        opcode: 'evalPython',
+        isEvalBlock: true
+    });
+
     filesData.forEach(fileData => {
         const { fileName, parseResult, fullCode } = fileData;
         
@@ -67,7 +139,8 @@ const generateMultiFileExtension = (filesData) => {
             allMethods.push({
                 opcode: blockId,
                 funcName: func.name,
-                argsCode: argsCode
+                argsCode: argsCode,
+                isPythonBlock: true
             });
         });
     });
@@ -93,47 +166,261 @@ const generateMultiFileExtension = (filesData) => {
                 }`;
     }).join(',\n');
 
-    const methodsCode = allMethods.map(m => `
+    const methodsCode = allMethods.map(m => {
+        if (m.isInitBlock) {
+            return `
+    ${m.opcode}(args, util) {
+        if (window._pyodideLoading) {
+            return;
+        }
+        if (window._pyodideReady && window._pyodideWorker) {
+            window._pyodideWorker.postMessage({ type: 'updateCode', data: PYTHON_CODE });
+            return;
+        }
+        window._pyodideLoading = true;
+        window._pyodideReady = false;
+        window._pyodideError = null;
+        
+        initPyodideBackground();
+    }`;
+        }
+        
+        if (m.isStatusBlock) {
+            return `
+    ${m.opcode}(args, util) {
+        return ${m.statusType === 'success' ? 'window._pyodideReady === true' : 'window._pyodideLoading === true'};
+    }`;
+        }
+
+        if (m.isRunBlock) {
+            return `
     async ${m.opcode}(args, util) {
-        if (!window._pyodideReady || !window._pyodideInstance) {
-            await initPyodide();
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            console.warn('Python not initialized');
+            return;
         }
         try {
-            const func = window._pyodideInstance.globals.get('${m.funcName}');
-            if (func) {
-                const pyResult = await func(${m.argsCode});
-                return pyResult;
-            }
-            return null;
+            await runPythonCode(args.CODE);
         } catch (error) {
-            console.error('Python execution error:', error);
+            console.error('Python run error:', error);
+        }
+    }`;
+        }
+
+        if (m.isEvalBlock) {
+            return `
+    async ${m.opcode}(args, util) {
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            console.warn('Python not initialized');
             return null;
         }
-    }`).join('\n');
+        try {
+            const result = await evalPythonCode(args.EXPR);
+            return result;
+        } catch (error) {
+            console.error('Python eval error:', error);
+            return null;
+        }
+    }`;
+        }
+
+        if (m.isPythonBlock) {
+            return `
+    async ${m.opcode}(args, util) {
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            console.warn('Python not initialized. Please run "init python" first.');
+            return null;
+        }
+        try {
+            const argsArray = [${m.argsCode}];
+            const result = await runPythonFunction('${m.funcName}', argsArray);
+            return result;
+        } catch (error) {
+            console.error('Python execution error in ${m.funcName}:', error);
+            return null;
+        }
+    }`;
+        }
+        
+        return '';
+    }).join('\n');
 
     const combinedPythonCode = allPythonCode.join('\n\n');
 
     const extensionCode = `
 (function() {
-    async function initPyodide() {
-        if (window._pyodideInstance) {
-            window._pyodideReady = true;
-            return window._pyodideInstance;
+    const PYODIDE_INDEX_URL = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/";
+    const PYTHON_CODE = ${JSON.stringify(combinedPythonCode)};
+
+    function createPyodideWorker() {
+        const workerCode = \`
+            let pyodide = null;
+            let pythonCode = null;
+
+            async function loadPyodide() {
+                if (pyodide) return pyodide;
+                
+                importScripts('https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js');
+                
+                pyodide = await loadPyodide({
+                    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/',
+                    fullStdLib: false
+                });
+                
+                return pyodide;
+            }
+
+            self.onmessage = async function(e) {
+                const { type, data } = e.data;
+                
+                try {
+                    if (type === 'init') {
+                        pythonCode = data;
+                        await loadPyodide();
+                        await pyodide.runPythonAsync(pythonCode);
+                        self.postMessage({ type: 'ready' });
+                    } else if (type === 'run') {
+                        if (!pyodide) {
+                            self.postMessage({ type: 'error', error: 'Pyodide not initialized' });
+                            return;
+                        }
+                        const func = pyodide.globals.get(data.funcName);
+                        if (func) {
+                            const result = await func(...data.args);
+                            let jsResult = result;
+                            if (result && typeof result.toJs === 'function') {
+                                jsResult = result.toJs();
+                            }
+                            self.postMessage({ type: 'result', result: jsResult });
+                        } else {
+                            self.postMessage({ type: 'error', error: 'Function not found: ' + data.funcName });
+                        }
+                    } else if (type === 'runCode') {
+                        if (!pyodide) {
+                            self.postMessage({ type: 'error', error: 'Pyodide not initialized' });
+                            return;
+                        }
+                        await pyodide.runPythonAsync(data);
+                        self.postMessage({ type: 'codeRun' });
+                    } else if (type === 'evalCode') {
+                        if (!pyodide) {
+                            self.postMessage({ type: 'error', error: 'Pyodide not initialized' });
+                            return;
+                        }
+                        const result = await pyodide.runPythonAsync(data);
+                        let jsResult = result;
+                        if (result && typeof result.toJs === 'function') {
+                            jsResult = result.toJs();
+                        }
+                        self.postMessage({ type: 'evalResult', result: jsResult });
+                    } else if (type === 'updateCode') {
+                        pythonCode = data;
+                        if (pyodide) {
+                            await pyodide.runPythonAsync(pythonCode);
+                            self.postMessage({ type: 'codeUpdated' });
+                        }
+                    }
+                } catch (error) {
+                    self.postMessage({ type: 'error', error: error.message || String(error) });
+                }
+            };
+        \`;
+        
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        return new Worker(URL.createObjectURL(blob));
+    }
+
+    function initPyodideBackground() {
+        if (window._pyodideWorker) {
+            window._pyodideWorker.postMessage({ type: 'updateCode', data: PYTHON_CODE });
+            return;
         }
-        try {
-            window._pyodideInstance = await loadPyodide({
-                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
-            });
-            window._pyodideReady = true;
-            window._pythonExtensionCode = ${JSON.stringify(combinedPythonCode)};
-            await window._pyodideInstance.runPythonAsync(window._pythonExtensionCode);
-            console.log('Pyodide initialized successfully');
-            return window._pyodideInstance;
-        } catch (error) {
-            console.error('Failed to initialize Pyodide:', error);
+
+        window._pyodideWorker = createPyodideWorker();
+        window._pyodideWorker.onmessage = function(e) {
+            const { type, result, error } = e.data;
+            if (type === 'ready') {
+                window._pyodideReady = true;
+                window._pyodideLoading = false;
+                console.log('[Pyodide] Loaded in background worker!');
+            } else if (type === 'error') {
+                console.error('[Pyodide Worker Error]', error);
+            }
+        };
+        window._pyodideWorker.onerror = function(e) {
+            console.error('[Pyodide Worker Error]', e.message);
             window._pyodideReady = false;
-            throw error;
+            window._pyodideLoading = false;
+            window._pyodideError = e.message;
+        };
+
+        window._pyodideWorker.postMessage({ type: 'init', data: PYTHON_CODE });
+        console.log('[Pyodide] Starting background worker...');
+    }
+
+    async function runPythonFunction(funcName, args) {
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            return null;
         }
+        
+        return new Promise((resolve, reject) => {
+            const handler = function(e) {
+                const { type, result, error } = e.data;
+                if (type === 'result') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    resolve(result);
+                } else if (type === 'error') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    resolve(null);
+                }
+            };
+            window._pyodideWorker.addEventListener('message', handler);
+            window._pyodideWorker.postMessage({ type: 'run', data: { funcName, args } });
+        });
+    }
+
+    async function runPythonCode(code) {
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            return;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const handler = function(e) {
+                const { type, error } = e.data;
+                if (type === 'codeRun') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    resolve();
+                } else if (type === 'error') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    console.error('Python code error:', error);
+                    resolve();
+                }
+            };
+            window._pyodideWorker.addEventListener('message', handler);
+            window._pyodideWorker.postMessage({ type: 'runCode', data: code });
+        });
+    }
+
+    async function evalPythonCode(code) {
+        if (!window._pyodideReady || !window._pyodideWorker) {
+            return null;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const handler = function(e) {
+                const { type, result, error } = e.data;
+                if (type === 'evalResult') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    resolve(result);
+                } else if (type === 'error') {
+                    window._pyodideWorker.removeEventListener('message', handler);
+                    console.error('Python eval error:', error);
+                    resolve(null);
+                }
+            };
+            window._pyodideWorker.addEventListener('message', handler);
+            window._pyodideWorker.postMessage({ type: 'evalCode', data: code });
+        });
     }
 
     class PythonExtension {

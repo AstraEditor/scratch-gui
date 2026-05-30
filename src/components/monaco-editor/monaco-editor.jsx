@@ -29,18 +29,175 @@ function hello() {
 
 hello();
 `,
-    py: `# Python 扩展示例
-def awa(a, b):
-    """示例函数：调用 qwq 并处理参数"""
-    result = qwq()
-    return a + b + result
+    py: `# ============================================
+# Python 扩展开发入门指南
+# ============================================
+# 本文件将教你如何在 Scratch 中使用 Python 功能
+# 
+# 【重要提示】
+# 1. 运行 Python 积木前，必须先执行 "init python" 积木，首次初始化需要联网，而且初始化可能会导致些许卡顿，这是内置库正在加载与编译
+# 2. 使用 "init success?" 检查是否初始化完成，初始化完成之后才可以执行代码
+# 3. 只有 __all__ 列表中的函数才会生成积木
+# ============================================
 
-def qwq():
-    """辅助函数"""
-    return 10
+import json
+from pyodide.http import pyfetch
 
-# 导出列表：只有 awa 会被创建为积木
-__all__ = ["awa"]
+# ============================================
+# 第一部分：JSON 数据处理
+# ============================================
+# JSON 是最常用的数据交换格式，学会处理 JSON 很重要
+
+def json_get(data_str, key):
+    """
+    从 JSON 数据中获取指定键的值
+    
+    使用场景：
+    - 解析 API 返回的数据
+    - 读取配置文件
+    - 处理游戏存档数据
+    
+    参数：
+        data_str: JSON 字符串，例如 '{"name":"小明","score":100}'
+        key: 要获取的键名，例如 "name"
+    
+    返回：
+        键对应的值（字符串形式）
+    
+    Scratch 使用示例：
+        说 (json_get '{"name":"小明"}' 'name')
+        → 显示 "小明"
+    """
+    data = json.loads(data_str)
+    value = data.get(key)
+    return str(value) if value is not None else "未找到"
+
+
+def json_set(data_str, key, value):
+    """
+    在 JSON 数据中设置或更新一个键值
+    
+    使用场景：
+    - 修改配置数据
+    - 更新游戏状态
+    - 构建要发送的数据
+    
+    参数：
+        data_str: 原始 JSON 字符串
+        key: 要设置的键名
+        value: 要设置的值
+    
+    返回：
+        更新后的 JSON 字符串
+    
+    Scratch 使用示例：
+        设 [data] 为 (json_set '{"name":"小明"}' 'age' '18')
+        → data 变为 '{"name":"小明","age":"18"}'
+    """
+    data = json.loads(data_str)
+    data[key] = value
+    return json.dumps(data)
+
+
+# ============================================
+# 第二部分：网络请求（GET）
+# ============================================
+# 通过 HTTP GET 请求获取网络数据
+# 注意：只能访问允许跨域的 API
+
+async def http_get(url):
+    """
+    发送 HTTP GET 请求并获取响应内容
+    
+    使用场景：
+    - 获取天气数据
+    - 获取随机笑话、名言
+    - 获取游戏排行榜
+    
+    参数：
+        url: 要请求的网址
+    
+    返回：
+        响应内容（字符串）
+    
+    Scratch 使用示例：
+        当绿旗被点击
+        init python
+        等待直到 <init success?>
+        设 [response] 为 (http_get 'https://api.example.com/data')
+    
+    推荐的免费 API：
+    - 随机名言：https://api.quotable.io/random
+    - 随机笑话：https://official-joke-api.appspot.com/random_joke
+    """
+    try:
+        response = await pyfetch(url)
+        content = await response.string()
+        return content
+    except Exception as e:
+        return f"请求失败: {str(e)}"
+
+
+async def http_get_json(url):
+    """
+    发送 GET 请求并直接返回解析后的 JSON 对象
+    
+    使用场景：
+    - 直接获取 API 返回的 JSON 数据
+    - 无需再调用 json_get 解析
+    
+    参数：
+        url: 返回 JSON 数据的 API 地址
+    
+    返回：
+        解析后的 JSON 数据（字符串形式）
+    
+    Scratch 使用示例：
+        设 [data] 为 (http_get_json 'https://api.example.com/json')
+        设 [name] 为 (json_get [data] 'name')
+    """
+    try:
+        response = await pyfetch(url)
+        data = await response.json()
+        return json.dumps(data)
+    except Exception as e:
+        return f"请求失败: {str(e)}"
+
+
+# ============================================
+# 导出列表
+# ============================================
+# 只有写在这里的函数才会变成 Scratch 积木
+# 你可以添加更多函数到这个列表中
+
+__all__ = [
+    "json_get",
+    "json_set",
+    "http_get",
+    "http_get_json"
+]
+
+# ============================================
+# 扩展阅读：如何添加自己的函数
+# ============================================
+# 
+# 1. 定义函数：
+#    def my_function(param1, param2):
+#        # 你的代码
+#        return result
+#
+# 2. 添加到 __all__：
+#    __all__ = ["json_get", "my_function"]
+#
+# 3. 函数类型说明：
+#    - 返回值的函数 → 报告积木（圆形）
+#    - 返回 True/False → 布尔积木（六边形）
+#    - 不返回值 → 命令积木（方形）
+#
+# 4. async 函数说明：
+#    - 使用 async def 定义的函数可以等待网络请求
+#    - Scratch 会自动处理异步
+# ============================================
 `,
     glsl: `// GLSL 着色器示例
 precision mediump float;
@@ -570,7 +727,7 @@ class MonacoEditorComponent extends React.Component {
             this.setState({
                 blockGenerationStatus: {
                     type: 'success',
-                    message: `成功加载扩展！从 ${extInfo.fileCount} 个文件生成 ${extInfo.blockCount} 个积木`,
+                    message: 'Python 扩展已成功加载！请先运行 "init python" 积木初始化环境',
                     extensionId: extInfo.extensionId
                 }
             });
