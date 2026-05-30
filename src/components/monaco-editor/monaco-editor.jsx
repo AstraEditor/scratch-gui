@@ -267,13 +267,9 @@ class MonacoEditorComponent extends React.Component {
         super(props);
         this.containerRef = React.createRef();
         this.editor = null;
+        this.saveTimeout = null;
         this.state = {
-            files: [
-                { id: generateId(), name: 'extension.py', content: DEFAULT_CODE.py },
-                { id: generateId(), name: 'script.js', content: DEFAULT_CODE.js },
-                { id: generateId(), name: 'shader.glsl', content: DEFAULT_CODE.glsl },
-                { id: generateId(), name: 'config.json', content: DEFAULT_CODE.json }
-            ],
+            files: [],
             activeFileId: null,
             isLoading: true,
             error: null,
@@ -285,9 +281,72 @@ class MonacoEditorComponent extends React.Component {
             pyodideReady: false,
             selectedFileIds: [],
             showFileSelectionModal: false,
-            fontSize: 14
+            fontSize: 14,
+            projectLoaded: false
         };
     }
+
+    loadFilesFromProject = () => {
+        const vm = this.props.vm;
+        if (!vm || !vm.runtime) return;
+
+        try {
+            const metadata = vm.runtime.getProjectMetadata();
+            if (metadata && metadata.custom && metadata.custom.file) {
+                const savedFiles = metadata.custom.file;
+                if (Array.isArray(savedFiles) && savedFiles.length > 0) {
+                    const files = savedFiles.map(f => ({
+                        id: generateId(),
+                        name: f.name,
+                        content: f.content
+                    }));
+                    this.setState({
+                        files,
+                        activeFileId: files[0].id,
+                        projectLoaded: true
+                    });
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load files from project:', e);
+        }
+
+        if (this.editor) {
+            this.editor.dispose();
+            this.editor = null;
+        }
+        this.setState({
+            files: [],
+            activeFileId: null,
+            projectLoaded: true
+        });
+    };
+
+    saveFilesToProject = () => {
+        const vm = this.props.vm;
+        if (!vm || !vm.runtime) return;
+
+        const filesToSave = this.state.files.map(f => ({
+            name: f.name,
+            content: f.content
+        }));
+
+        try {
+            vm.runtime.addCustomEntrie('file', filesToSave);
+        } catch (e) {
+            console.warn('Failed to save files to project:', e);
+        }
+    };
+
+    scheduleSave = () => {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = setTimeout(() => {
+            this.saveFilesToProject();
+        }, 500);
+    };
 
     zoomIn = () => {
         this.setState(prevState => {
@@ -361,6 +420,14 @@ class MonacoEditorComponent extends React.Component {
             this.props.onEditorReady(window._editorApi);
         }
         this.initMonaco();
+
+        const vm = this.props.vm;
+        if (vm && vm.runtime) {
+            vm.runtime.on('PROJECT_LOADED', this.loadFilesFromProject);
+            if (vm.runtime.getProjectMetadata()) {
+                this.loadFilesFromProject();
+            }
+        }
     }
 
     async initMonaco() {
@@ -385,8 +452,36 @@ class MonacoEditorComponent extends React.Component {
         if (prevProps.theme !== this.props.theme && this.editor) {
             this.updateEditorTheme();
         }
-        if (!prevState.isLoading && this.state.isLoading === false && !this.editor && this.containerRef.current) {
+        if (!prevState.isLoading && this.state.isLoading === false && !this.editor && this.containerRef.current && this.state.files.length > 0) {
             this.initEditor();
+        }
+        if (!prevState.isLoading && this.state.isLoading === false && !this.editor && this.containerRef.current && prevState.files.length === 0 && this.state.files.length > 0) {
+            this.initEditor();
+        }
+
+        if (prevState.files !== this.state.files && this.state.projectLoaded) {
+            this.scheduleSave();
+        }
+
+        if (!prevProps.vm && this.props.vm && this.props.vm.runtime) {
+            this.props.vm.runtime.on('PROJECT_LOADED', this.loadFilesFromProject);
+            if (this.props.vm.runtime.getProjectMetadata()) {
+                this.loadFilesFromProject();
+            }
+        }
+    }
+
+    componentWillUnmount() {
+        const vm = this.props.vm;
+        if (vm && vm.runtime) {
+            vm.runtime.off('PROJECT_LOADED', this.loadFilesFromProject);
+        }
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+            this.saveFilesToProject();
+        }
+        if (this.editor) {
+            this.editor.dispose();
         }
     }
 
@@ -506,8 +601,9 @@ class MonacoEditorComponent extends React.Component {
         const activeFile = this.state.files.find(f => f.id === this.state.activeFileId);
         if (this.containerRef.current && !this.editor && monaco) {
             const extension = activeFile ? getFileExtension(activeFile.name) : 'js';
+            const value = activeFile ? activeFile.content : '';
             this.editor = monaco.editor.create(this.containerRef.current, {
-                value: activeFile ? activeFile.content : '',
+                value,
                 language: getFileLanguage(extension),
                 theme: this.getEditorTheme(),
                 minimap: {
@@ -835,12 +931,6 @@ class MonacoEditorComponent extends React.Component {
             warning: '#ff9800',
             error: '#f44336'
         };
-    }
-
-    componentWillUnmount() {
-        if (this.editor) {
-            this.editor.dispose();
-        }
     }
 
     render() {
@@ -1263,15 +1353,41 @@ class MonacoEditorComponent extends React.Component {
                             </div>
                         </div>
                     )}
+                    {!activeFile && this.state.files.length === 0 && (
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            color: colors.textSecondary,
+                            fontSize: '14px'
+                        }}>
+                            <FormattedMessage
+                                defaultMessage="No files yet"
+                                description="Empty state message"
+                                id="gui.monacoEditor.noFiles"
+                            />
+                            <span style={{ fontSize: '12px', marginTop: '8px' }}>
+                                <FormattedMessage
+                                    defaultMessage="Click 'New File' to create one"
+                                    description="Empty state hint"
+                                    id="gui.monacoEditor.createFileHint"
+                                />
+                            </span>
+                        </div>
+                    )}
                     {this.state.blockGenerationStatus && (
                         <div style={statusMessageStyle(this.state.blockGenerationStatus.type)}>
                             {this.state.blockGenerationStatus.message}
                         </div>
                     )}
-                    <div
-                        ref={this.containerRef}
-                        style={editorContainerStyle}
-                    />
+                    {(activeFile || this.state.files.length > 0) && (
+                        <div
+                            ref={this.containerRef}
+                            style={editorContainerStyle}
+                        />
+                    )}
                 </div>
             </div>
             {this.state.showFileSelectionModal && this.renderFileSelectionModal()}
