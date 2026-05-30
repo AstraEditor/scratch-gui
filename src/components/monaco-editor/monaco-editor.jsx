@@ -21,15 +21,24 @@ const FILE_TYPE_COLORS = {
     json: { color: '#cbcb41', name: 'JSON' }
 };
 
-const DEFAULT_CODE = {
-    js: `// JavaScript 代码示例
+const getDefaultCode = (locale, extension) => {
+    const isZh = locale && (locale.startsWith('zh') || locale === 'zh-cn' || locale === 'zh-tw');
+    
+    const codes = {
+        js: isZh ? `// JavaScript 代码示例
+function hello() {
+    console.log("你好，世界！");
+}
+
+hello();
+` : `// JavaScript code example
 function hello() {
     console.log("Hello, World!");
 }
 
 hello();
 `,
-    py: `# ============================================
+        py: isZh ? `# ============================================
 # Python 扩展开发入门指南
 # ============================================
 # 本文件将教你如何在 Scratch 中使用 Python 功能
@@ -198,8 +207,177 @@ __all__ = [
 #    - 使用 async def 定义的函数可以等待网络请求
 #    - Scratch 会自动处理异步
 # ============================================
+` : `# ============================================
+# Python Extension Development Guide
+# ============================================
+# This file teaches you how to use Python in Scratch
+# 
+# 【IMPORTANT NOTES】
+# 1. Before running Python blocks, you must execute the "init python" block first. Initial initialization requires internet, and may cause slight lag as built-in libraries are loading and compiling
+# 2. Use "init success?" to check if initialization is complete. Code can only be executed after initialization
+# 3. Only functions in the __all__ list will generate blocks
+# ============================================
+
+import json
+from pyodide.http import pyfetch
+
+# ============================================
+# Part 1: JSON Data Processing
+# ============================================
+# JSON is the most common data exchange format, learning to handle JSON is important
+
+def json_get(data_str, key):
+    """
+    Get a value from JSON data by key
+    
+    Use cases:
+    - Parse API returned data
+    - Read configuration files
+    - Process game save data
+    
+    Parameters:
+        data_str: JSON string, e.g. '{"name":"John","score":100}'
+        key: Key name to get, e.g. "name"
+    
+    Returns:
+        The value corresponding to the key (as string)
+    
+    Scratch usage example:
+        say (json_get '{"name":"John"}' 'name')
+        → displays "John"
+    """
+    data = json.loads(data_str)
+    value = data.get(key)
+    return str(value) if value is not None else "Not found"
+
+
+def json_set(data_str, key, value):
+    """
+    Set or update a key-value pair in JSON data
+    
+    Use cases:
+    - Modify configuration data
+    - Update game state
+    - Build data to send
+    
+    Parameters:
+        data_str: Original JSON string
+        key: Key name to set
+        value: Value to set
+    
+    Returns:
+        Updated JSON string
+    
+    Scratch usage example:
+        set [data] to (json_set '{"name":"John"}' 'age' '18')
+        → data becomes '{"name":"John","age":"18"}'
+    """
+    data = json.loads(data_str)
+    data[key] = value
+    return json.dumps(data)
+
+
+# ============================================
+# Part 2: Network Requests (GET)
+# ============================================
+# Get network data via HTTP GET requests
+# Note: Only APIs that allow CORS can be accessed
+
+async def http_get(url):
+    """
+    Send HTTP GET request and get response content
+    
+    Use cases:
+    - Get weather data
+    - Get random jokes, quotes
+    - Get game leaderboards
+    
+    Parameters:
+        url: URL to request
+    
+    Returns:
+        Response content (string)
+    
+    Scratch usage example:
+        when green flag clicked
+        init python
+        wait until <init success?>
+        set [response] to (http_get 'https://api.example.com/data')
+    
+    Recommended free APIs:
+    - Random quotes: https://api.quotable.io/random
+    - Random jokes: https://official-joke-api.appspot.com/random_joke
+    """
+    try:
+        response = await pyfetch(url)
+        content = await response.string()
+        return content
+    except Exception as e:
+        return f"Request failed: {str(e)}"
+
+
+async def http_get_json(url):
+    """
+    Send GET request and return parsed JSON object directly
+    
+    Use cases:
+    - Get JSON data returned by API directly
+    - No need to call json_get to parse
+    
+    Parameters:
+        url: API address that returns JSON data
+    
+    Returns:
+        Parsed JSON data (string form)
+    
+    Scratch usage example:
+        set [data] to (http_get_json 'https://api.example.com/json')
+        set [name] to (json_get [data] 'name')
+    """
+    try:
+        response = await pyfetch(url)
+        data = await response.json()
+        return json.dumps(data)
+    except Exception as e:
+        return f"Request failed: {str(e)}"
+
+
+# ============================================
+# Export List
+# ============================================
+# Only functions listed here will become Scratch blocks
+# You can add more functions to this list
+
+__all__ = [
+    "json_get",
+    "json_set",
+    "http_get",
+    "http_get_json"
+]
+
+# ============================================
+# Extended Reading: How to Add Your Own Functions
+# ============================================
+# 
+# 1. Define function:
+#    def my_function(param1, param2):
+#        # your code
+#        return result
+#
+# 2. Add to __all__:
+#    __all__ = ["json_get", "my_function"]
+#
+# 3. Function type notes:
+#    - Functions that return values → Reporter blocks (round)
+#    - Functions that return True/False → Boolean blocks (hexagonal)
+#    - Functions that don't return → Command blocks (square)
+#
+# 4. async function notes:
+#    - Functions defined with async def can wait for network requests
+#    - Scratch handles async automatically
+# ============================================
 `,
-    glsl: `// GLSL 着色器示例
+        glsl: `// GLSL shader example
 precision mediump float;
 
 uniform float time;
@@ -210,7 +388,7 @@ void main() {
     gl_FragColor = vec4(uv.x, uv.y, 0.5, 1.0);
 }
 `,
-    frag: `// Fragment Shader
+        frag: `// Fragment Shader
 precision mediump float;
 
 uniform float time;
@@ -221,14 +399,14 @@ void main() {
     gl_FragColor = vec4(uv.x, uv.y, 0.5, 1.0);
 }
 `,
-    vert: `// Vertex Shader
+        vert: `// Vertex Shader
 attribute vec2 a_position;
 
 void main() {
     gl_Position = vec4(a_position, 0.0, 1.0);
 }
 `,
-    json: `{
+        json: isZh ? `{
     "name": "示例配置",
     "version": "1.0.0",
     "settings": {
@@ -236,7 +414,18 @@ void main() {
         "count": 10
     }
 }
+` : `{
+    "name": "Example Config",
+    "version": "1.0.0",
+    "settings": {
+        "enabled": true,
+        "count": 10
+    }
+}
 `
+    };
+    
+    return codes[extension] || '';
 };
 
 const getFileExtension = filename => {
@@ -715,14 +904,28 @@ class MonacoEditorComponent extends React.Component {
     };
 
     handleNewFileSubmit = () => {
-        const { newFileName } = this.state;
+        const { newFileName, files } = this.state;
         if (!newFileName.trim()) return;
 
-        const extension = getFileExtension(newFileName);
-        const defaultContent = DEFAULT_CODE[extension] || '';
+        let finalName = newFileName.trim();
+        const existingNames = files.map(f => f.name);
+        
+        if (existingNames.includes(finalName)) {
+            const extension = getFileExtension(finalName);
+            const baseName = extension ? finalName.slice(0, -(extension.length + 1)) : finalName;
+            let counter = 1;
+            while (existingNames.includes(`${baseName}_${counter}${extension ? '.' + extension : ''}`)) {
+                counter++;
+            }
+            finalName = `${baseName}_${counter}${extension ? '.' + extension : ''}`;
+        }
+
+        const extension = getFileExtension(finalName);
+        const locale = this.props.intl && this.props.intl.locale;
+        const defaultContent = getDefaultCode(locale, extension);
         const newFile = {
             id: generateId(),
-            name: newFileName.trim(),
+            name: finalName,
             content: defaultContent
         };
 
@@ -744,12 +947,25 @@ class MonacoEditorComponent extends React.Component {
     };
 
     handleRenameSubmit = () => {
-        const { editingFileName, newFileName } = this.state;
+        const { editingFileName, newFileName, files } = this.state;
         if (!newFileName.trim()) return;
+
+        let finalName = newFileName.trim();
+        const existingNames = files.filter(f => f.id !== editingFileName).map(f => f.name);
+        
+        if (existingNames.includes(finalName)) {
+            const extension = getFileExtension(finalName);
+            const baseName = extension ? finalName.slice(0, -(extension.length + 1)) : finalName;
+            let counter = 1;
+            while (existingNames.includes(`${baseName}_${counter}${extension ? '.' + extension : ''}`)) {
+                counter++;
+            }
+            finalName = `${baseName}_${counter}${extension ? '.' + extension : ''}`;
+        }
 
         this.setState(prevState => ({
             files: prevState.files.map(f =>
-                f.id === editingFileName ? { ...f, name: newFileName.trim() } : f
+                f.id === editingFileName ? { ...f, name: finalName } : f
             ),
             editingFileName: null,
             newFileName: ''
@@ -974,7 +1190,7 @@ class MonacoEditorComponent extends React.Component {
             padding: '6px 12px',
             cursor: 'pointer',
             backgroundColor: isActive ? colors.hover : 'transparent',
-            borderLeft: isActive ? `2px solid ${colors.accent}` : '2px solid transparent',
+            borderLeft: isActive ? '2px solid var(--looks-secondary)' : '2px solid transparent',
             transition: 'background-color 0.15s'
         });
 
@@ -1018,7 +1234,7 @@ class MonacoEditorComponent extends React.Component {
 
         const newFileButtonStyle = {
             padding: '8px 16px',
-            borderTop: `1px solid ${colors.border}`,
+            borderTop: '1px solid var(--looks-secondary)',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -1033,7 +1249,7 @@ class MonacoEditorComponent extends React.Component {
             width: '100%',
             padding: '6px 8px',
             fontSize: '13px',
-            border: `1px solid ${colors.accent}`,
+            border: '1px solid var(--looks-secondary)',
             borderRadius: '3px',
             backgroundColor: colors.bg,
             color: colors.text,
@@ -1085,7 +1301,7 @@ class MonacoEditorComponent extends React.Component {
         const generateButtonStyle = {
             padding: '6px 12px',
             fontSize: '12px',
-            backgroundColor: colors.accent,
+            backgroundColor: 'var(--looks-secondary)',
             color: '#fff',
             border: 'none',
             borderRadius: '3px',
@@ -1205,7 +1421,7 @@ class MonacoEditorComponent extends React.Component {
                                                     e.stopPropagation();
                                                     this.startRenameFile(file.id);
                                                 }}
-                                                title="Rename"
+                                                title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.rename' })}
                                             >
                                                 ✎
                                             </button>
@@ -1215,7 +1431,7 @@ class MonacoEditorComponent extends React.Component {
                                                     e.stopPropagation();
                                                     this.deleteFile(file.id);
                                                 }}
-                                                title="Delete"
+                                                title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.delete' })}
                                             >
                                                 ✕
                                             </button>
@@ -1229,7 +1445,10 @@ class MonacoEditorComponent extends React.Component {
                         <div style={{ padding: '8px 12px', borderTop: `1px solid ${colors.border}` }}>
                             <input
                                 type="text"
-                                placeholder="filename.py / filename.js / filename.json"
+                                placeholder={this.props.intl.formatMessage({
+                                    defaultMessage: 'filename.py / filename.js / filename.json',
+                                    id: 'gui.monacoEditor.fileNamePlaceholder'
+                                })}
                                 value={this.state.newFileName}
                                 onChange={this.handleNewFileNameChange}
                                 onKeyDown={(e) => {
@@ -1245,7 +1464,7 @@ class MonacoEditorComponent extends React.Component {
                                     style={{
                                         padding: '4px 12px',
                                         fontSize: '12px',
-                                        backgroundColor: colors.accent,
+                                        backgroundColor: 'var(--looks-secondary)',
                                         color: '#fff',
                                         border: 'none',
                                         borderRadius: '3px',
@@ -1316,7 +1535,7 @@ class MonacoEditorComponent extends React.Component {
                                             padding: '2px 6px',
                                             borderRadius: '3px'
                                         }}
-                                        title="缩小"
+                                        title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomOut' })}
                                     >
                                         −
                                     </button>
@@ -1334,7 +1553,7 @@ class MonacoEditorComponent extends React.Component {
                                             padding: '2px 6px',
                                             borderRadius: '3px'
                                         }}
-                                        title="放大"
+                                        title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomIn' })}
                                     >
                                         +
                                     </button>
@@ -1342,7 +1561,7 @@ class MonacoEditorComponent extends React.Component {
                                 <button
                                     style={generateButtonStyle}
                                     onClick={this.openFileSelectionModal}
-                                    title="选择 Python 文件生成 Scratch 积木"
+                                    title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.generateBlocksTooltip' })}
                                 >
                                     <FormattedMessage
                                         defaultMessage="生成积木"
@@ -1422,7 +1641,7 @@ class MonacoEditorComponent extends React.Component {
             width: '16px',
             height: '16px',
             cursor: 'pointer',
-            accentColor: '#66ccff'
+            accentColor: 'var(--looks-secondary)'
         };
 
         const fileNameStyle = {
@@ -1449,8 +1668,8 @@ class MonacoEditorComponent extends React.Component {
             padding: '4px 12px',
             fontSize: '12px',
             cursor: 'pointer',
-            background: allSelected ? '#66ccff' : 'transparent',
-            border: `1px solid ${allSelected ? '#66ccff' : colors.border}`,
+            background: allSelected ? 'var(--looks-secondary)' : 'transparent',
+            border: '1px solid var(--looks-secondary)',
             color: allSelected ? '#fff' : colors.textSecondary,
             borderRadius: '4px'
         };
@@ -1468,7 +1687,7 @@ class MonacoEditorComponent extends React.Component {
             fontSize: '13px',
             cursor: 'pointer',
             background: 'transparent',
-            border: `1px solid ${colors.border}`,
+            border: '1px solid var(--looks-secondary)',
             color: colors.textSecondary,
             borderRadius: '4px'
         };
@@ -1477,7 +1696,7 @@ class MonacoEditorComponent extends React.Component {
             padding: '6px 14px',
             fontSize: '13px',
             cursor: 'pointer',
-            background: '#66ccff',
+            background: 'var(--looks-secondary)',
             border: 'none',
             color: '#fff',
             borderRadius: '4px',
@@ -1495,17 +1714,30 @@ class MonacoEditorComponent extends React.Component {
         return (
             <Modal
                 className="file-selection-modal"
-                contentLabel="选择 Python 文件"
+                contentLabel={this.props.intl.formatMessage({ id: 'gui.monacoEditor.selectFiles' })}
                 onRequestClose={this.closeFileSelectionModal}
                 id="fileSelectionModal"
             >
                 <Box style={{ background: colors.bgSecondary }}>
                     <div style={headerStyle}>
                         <span style={{ fontSize: '13px', color: colors.textSecondary }}>
-                            选择要生成积木的 Python 文件
+                            <FormattedMessage
+                                defaultMessage="Select Python files to generate blocks"
+                                id="gui.monacoEditor.selectFiles"
+                            />
                         </span>
                         <button style={selectAllButtonStyle} onClick={selectAllPythonFiles}>
-                            {allSelected ? '取消全选' : '全选'}
+                            {allSelected ? (
+                                <FormattedMessage
+                                    defaultMessage="Deselect all"
+                                    id="gui.monacoEditor.deselectAll"
+                                />
+                            ) : (
+                                <FormattedMessage
+                                    defaultMessage="Select all"
+                                    id="gui.monacoEditor.selectAll"
+                                />
+                            )}
                         </button>
                     </div>
                     <div style={modalBodyStyle}>
@@ -1519,7 +1751,7 @@ class MonacoEditorComponent extends React.Component {
                                     key={file.id}
                                     style={{
                                         ...fileItemStyle,
-                                        backgroundColor: isSelected ? 'rgba(102, 204, 255, 0.15)' : colors.bgSecondary
+                                        backgroundColor: isSelected ? colors.hover : colors.bgSecondary
                                     }}
                                     onClick={() => this.toggleFileSelection(file.id)}
                                 >
@@ -1531,20 +1763,38 @@ class MonacoEditorComponent extends React.Component {
                                     />
                                     <span style={fileNameStyle}>{file.name}</span>
                                     <span style={functionCountStyle}>
-                                        {funcCount > 0 ? `${funcCount} 函数` : '无导出'}
+                                        {funcCount > 0 ? (
+                                            <FormattedMessage
+                                                defaultMessage="{count} functions"
+                                                id="gui.monacoEditor.functionCount"
+                                                values={{ count: funcCount }}
+                                            />
+                                        ) : (
+                                            <FormattedMessage
+                                                defaultMessage="No exports"
+                                                id="gui.monacoEditor.noExports"
+                                            />
+                                        )}
                                     </span>
                                 </div>
                             );
                         })}
                         {pythonFiles.length === 0 && (
                             <p style={{ color: colors.textSecondary, textAlign: 'center', padding: '20px' }}>
-                                没有 Python 文件
+                                <FormattedMessage
+                                    defaultMessage="No Python files"
+                                    id="gui.monacoEditor.noPythonFiles"
+                                />
                             </p>
                         )}
                     </div>
                     <div style={buttonRowStyle}>
                         <button style={cancelButtonStyle} onClick={this.closeFileSelectionModal}>
-                            取消
+                            <FormattedMessage
+                                defaultMessage="Cancel"
+                                description="Cancel button"
+                                id="gui.monacoEditor.cancel"
+                            />
                         </button>
                         <button 
                             style={{
@@ -1555,7 +1805,11 @@ class MonacoEditorComponent extends React.Component {
                             onClick={this.state.selectedFileIds.length > 0 ? this.confirmFileSelectionAndGenerate : undefined}
                             disabled={this.state.selectedFileIds.length === 0}
                         >
-                            生成 ({this.state.selectedFileIds.length})
+                            <FormattedMessage
+                                defaultMessage="Generate ({count})"
+                                id="gui.monacoEditor.generateCount"
+                                values={{ count: this.state.selectedFileIds.length }}
+                            />
                         </button>
                     </div>
                 </Box>
