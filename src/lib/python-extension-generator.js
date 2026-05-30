@@ -64,6 +64,19 @@ const generateMultiFileExtension = (filesData) => {
         }
     });
 
+    allBlocks.push({
+        opcode: 'getFileContent',
+        blockType: 'reporter',
+        text: 'file [NAME]',
+        arguments: {
+            NAME: {
+                type: 'string',
+                menu: 'fileMenu',
+                defaultValue: 'extension.py'
+            }
+        }
+    });
+
     allMethods.push({
         opcode: 'initPython',
         isInitBlock: true
@@ -89,6 +102,11 @@ const generateMultiFileExtension = (filesData) => {
     allMethods.push({
         opcode: 'evalPython',
         isEvalBlock: true
+    });
+
+    allMethods.push({
+        opcode: 'getFileContent',
+        isFileBlock: true
     });
 
     filesData.forEach(fileData => {
@@ -221,6 +239,16 @@ const generateMultiFileExtension = (filesData) => {
             console.error('Python eval error:', error);
             return null;
         }
+    }`;
+        }
+
+        if (m.isFileBlock) {
+            return `
+    ${m.opcode}(args, util) {
+        if (window._editorApi && window._editorApi.getFileContent) {
+            return window._editorApi.getFileContent(args.NAME) || '';
+        }
+        return '';
     }`;
         }
 
@@ -424,6 +452,14 @@ const generateMultiFileExtension = (filesData) => {
     }
 
     class PythonExtension {
+        getFileMenu() {
+            if (window._editorApi && window._editorApi.getFileNames) {
+                const names = window._editorApi.getFileNames();
+                return names.map(name => ({ text: name, value: name }));
+            }
+            return [{ text: 'extension.py', value: 'extension.py' }];
+        }
+
         getInfo() {
             return {
                 id: 'pythonBlocks',
@@ -433,7 +469,13 @@ const generateMultiFileExtension = (filesData) => {
                 color3: '#4499cc',
                 blocks: [
 ${blocksCode}
-                ]
+                ],
+                menus: {
+                    fileMenu: {
+                        acceptReporters: false,
+                        items: 'getFileMenu'
+                    }
+                }
             };
         }
 ${methodsCode}

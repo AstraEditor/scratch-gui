@@ -284,11 +284,86 @@ class MonacoEditorComponent extends React.Component {
             pyodideLoading: false,
             pyodideReady: false,
             selectedFileIds: [],
-            showFileSelectionModal: false
+            showFileSelectionModal: false,
+            fontSize: 14
         };
     }
 
-    async componentDidMount() {
+    zoomIn = () => {
+        this.setState(prevState => {
+            const newSize = Math.min(prevState.fontSize + 2, 32);
+            if (this.editor) {
+                this.editor.updateOptions({ fontSize: newSize });
+            }
+            return { fontSize: newSize };
+        });
+    };
+
+    zoomOut = () => {
+        this.setState(prevState => {
+            const newSize = Math.max(prevState.fontSize - 2, 8);
+            if (this.editor) {
+                this.editor.updateOptions({ fontSize: newSize });
+            }
+            return { fontSize: newSize };
+        });
+    };
+
+    resetZoom = () => {
+        if (this.editor) {
+            this.editor.updateOptions({ fontSize: 14 });
+        }
+        this.setState({ fontSize: 14 });
+    };
+
+    getFiles = () => {
+        return this.state.files.map(f => ({ id: f.id, name: f.name, content: f.content }));
+    };
+
+    getActiveFile = () => {
+        const activeFile = this.state.files.find(f => f.id === this.state.activeFileId);
+        return activeFile ? { id: activeFile.id, name: activeFile.name, content: activeFile.content } : null;
+    };
+
+    getPythonFiles = () => {
+        return this.state.files
+            .filter(f => f.name.endsWith('.py'))
+            .map(f => ({ id: f.id, name: f.name, content: f.content }));
+    };
+
+    getFileByName = (fileName) => {
+        const file = this.state.files.find(f => f.name === fileName);
+        return file ? { id: file.id, name: file.name, content: file.content } : null;
+    };
+
+    getFileContent = (fileName) => {
+        const file = this.state.files.find(f => f.name === fileName);
+        return file ? file.content : null;
+    };
+
+    getFileNames = () => {
+        return this.state.files.map(f => f.name);
+    };
+
+    componentDidMount() {
+        window._editorApi = {
+            getFiles: this.getFiles,
+            getActiveFile: this.getActiveFile,
+            getPythonFiles: this.getPythonFiles,
+            getFileByName: this.getFileByName,
+            getFileContent: this.getFileContent,
+            getFileNames: this.getFileNames,
+            zoomIn: this.zoomIn,
+            zoomOut: this.zoomOut,
+            resetZoom: this.resetZoom
+        };
+        if (this.props.onEditorReady) {
+            this.props.onEditorReady(window._editorApi);
+        }
+        this.initMonaco();
+    }
+
+    async initMonaco() {
         try {
             const monacoModule = await import('monaco-editor');
             monaco = monacoModule;
@@ -442,7 +517,7 @@ class MonacoEditorComponent extends React.Component {
                     renderCharacters: true,
                     maxColumn: 120
                 },
-                fontSize: 14,
+                fontSize: this.state.fontSize,
                 lineNumbers: 'on',
                 roundedSelection: false,
                 scrollBeyondLastLine: false,
@@ -1138,17 +1213,54 @@ class MonacoEditorComponent extends React.Component {
                                 </div>
                                 <span style={{ fontSize: '13px' }}>{activeFile.name}</span>
                             </div>
-                            <button
-                                style={generateButtonStyle}
-                                onClick={this.openFileSelectionModal}
-                                title="选择 Python 文件生成 Scratch 积木"
-                            >
-                                <FormattedMessage
-                                    defaultMessage="生成积木"
-                                    description="Generate blocks button"
-                                    id="gui.monacoEditor.generateBlocks"
-                                />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', backgroundColor: colors.surface, borderRadius: '4px' }}>
+                                    <button
+                                        onClick={this.zoomOut}
+                                        style={{ 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            color: colors.text, 
+                                            cursor: 'pointer', 
+                                            fontSize: '14px',
+                                            padding: '2px 6px',
+                                            borderRadius: '3px'
+                                        }}
+                                        title="缩小"
+                                    >
+                                        −
+                                    </button>
+                                    <span style={{ fontSize: '11px', color: colors.textSecondary, minWidth: '30px', textAlign: 'center' }}>
+                                        {this.state.fontSize}px
+                                    </span>
+                                    <button
+                                        onClick={this.zoomIn}
+                                        style={{ 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            color: colors.text, 
+                                            cursor: 'pointer', 
+                                            fontSize: '14px',
+                                            padding: '2px 6px',
+                                            borderRadius: '3px'
+                                        }}
+                                        title="放大"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <button
+                                    style={generateButtonStyle}
+                                    onClick={this.openFileSelectionModal}
+                                    title="选择 Python 文件生成 Scratch 积木"
+                                >
+                                    <FormattedMessage
+                                        defaultMessage="生成积木"
+                                        description="Generate blocks button"
+                                        id="gui.monacoEditor.generateBlocks"
+                                    />
+                                </button>
+                            </div>
                         </div>
                     )}
                     {this.state.blockGenerationStatus && (
