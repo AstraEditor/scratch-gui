@@ -1,5 +1,7 @@
 @import "../../css/colors.css";
 
+/* ========== 原有样式 ========== */
+
 .container {
     position: relative;
     height: 100%;
@@ -113,4 +115,517 @@
 :global(.file-selection-modal) {
     width: 320px !important;
     max-width: 320px !important;
+}
+
+/* ========== 编辑器主体布局样式 ========== */
+
+.editor-wrapper {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+/* ========== 侧边栏样式 ========== */
+
+.sidebar {
+    width: 200px;
+    background-color: $ui-secondary;
+    border-right: 1px solid $ui-tertiary;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid $ui-tertiary;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: $ui-tertiary;
+}
+
+.sidebar-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: $text-primary;
+}
+
+.file-list {
+    flex: 1;
+    overflow: auto;
+    padding: 8px 0;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    background-color: transparent;
+    border-left: 2px solid transparent;
+    transition: background-color 0.15s;
+}
+
+.file-item:hover {
+    background-color: $badge-border;
+}
+
+.file-item.active {
+    background-color: $badge-border;
+    border-left-color: $looks-secondary;
+}
+
+.file-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.file-icon.light-text {
+    color: #000;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: $text-primary;
+}
+
+.file-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.file-item:hover .file-actions {
+    opacity: 1;
+}
+
+.file-action-btn {
+    padding: 2px 4px;
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: $text-primary-transparent;
+}
+
+.file-action-btn:hover {
+    color: $text-primary;
+}
+
+/* ========== 新建文件区域 ========== */
+
+.new-file-section {
+    padding: 8px 12px;
+    border-top: 1px solid $looks-secondary;
+}
+
+.new-file-input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid $looks-secondary;
+    border-radius: 3px;
+    background-color: $ui-primary;
+    color: $text-primary;
+    outline: none;
+    font-family: inherit;
+}
+
+.new-file-input::placeholder {
+    color: $text-primary-transparent;
+}
+
+.new-file-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.new-file-btn-create {
+    padding: 4px 12px;
+    font-size: 12px;
+    background-color: $looks-secondary;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.new-file-btn-create:hover {
+    filter: brightness(1.1);
+}
+
+.new-file-btn-cancel {
+    padding: 4px 12px;
+    font-size: 12px;
+    background-color: transparent;
+    color: $text-primary-transparent;
+    border: 1px solid $ui-tertiary;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.new-file-btn-cancel:hover {
+    border-color: $text-primary-transparent;
+}
+
+.new-file-trigger {
+    padding: 8px 16px;
+    border-top: 1px solid $looks-secondary;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background-color: $ui-secondary;
+    color: $text-primary-transparent;
+    font-size: 13px;
+    transition: background-color 0.15s;
+    font-family: inherit;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.new-file-trigger:hover {
+    background-color: $badge-border;
+}
+
+.new-file-icon {
+    font-size: 16px;
+}
+
+/* ========== 编辑器区域样式 ========== */
+
+.editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.editor-header {
+    padding: 8px 16px;
+    border-bottom: 1px solid $ui-tertiary;
+    background-color: $ui-tertiary;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.editor-header-left,
+.editor-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editor-filename {
+    font-size: 13px;
+    color: $text-primary;
+}
+
+/* ========== 缩放控制 ========== */
+
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background-color: $ui-tertiary;
+    border-radius: 4px;
+}
+
+.zoom-btn {
+    background: none;
+    border: none;
+    color: $text-primary;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: inherit;
+}
+
+.zoom-btn:hover {
+    background-color: $badge-border;
+}
+
+.zoom-value {
+    font-size: 11px;
+    color: $text-primary-transparent;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* ========== 生成积木按钮 ========== */
+
+.generate-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    background-color: $looks-secondary;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+}
+
+.generate-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* ========== 编辑器容器 ========== */
+
+.editor-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ========== 空状态 ========== */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: $text-primary-transparent;
+    font-size: 14px;
+}
+
+.empty-state-hint {
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+/* ========== 状态消息 ========== */
+
+.status-message {
+    padding: 8px 16px;
+    font-size: 12px;
+    border-bottom: 1px solid $ui-tertiary;
+}
+
+.status-message.success {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.status-message.warning {
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+}
+
+.status-message.loading {
+    background-color: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+}
+
+.status-message.error {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+/* ========== 文件选择模态框 ========== */
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid $ui-tertiary;
+}
+
+.modal-title {
+    font-size: 13px;
+    color: $text-primary-transparent;
+}
+
+.select-all-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid $looks-secondary;
+    color: $text-primary-transparent;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.select-all-btn.selected {
+    background: $looks-secondary;
+    color: #fff;
+}
+
+.modal-body {
+    padding: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.modal-file-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    border: 1px solid $ui-tertiary;
+    background-color: $ui-secondary;
+}
+
+.modal-file-item.selected {
+    background-color: $badge-border;
+}
+
+.modal-file-item:hover {
+    background-color: $badge-border;
+}
+
+.modal-checkbox {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: $looks-secondary;
+}
+
+.modal-file-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: $text-primary;
+}
+
+.modal-function-count {
+    font-size: 11px;
+    color: $text-primary-transparent;
+    margin-left: 8px;
+}
+
+.modal-empty-hint {
+    color: $text-primary-transparent;
+    text-align: center;
+    padding: 20px;
+}
+
+.modal-button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px;
+    border-top: 1px solid $ui-tertiary;
+}
+
+.modal-cancel-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid $looks-secondary;
+    color: $text-primary-transparent;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.modal-confirm-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    background: $looks-secondary;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.modal-confirm-btn:hover {
+    filter: brightness(1.1);
+}
+
+.modal-confirm-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-box {
+    background-color: $ui-secondary;
+}
+
+.rename-input {
+    flex: 1;
+}
+
+/* ========== Monaco 内部变量强制覆盖（防止外部红色污染） ========== */
+
+.editor-wrapper {
+    /* 覆盖可能被外部插件污染的 --vscode-* 变量 */
+    --vscode-scrollbar-shadow: transparent !important;
+    --vscode-scrollbarSlider-background: $ui-tertiary;
+    --vscode-scrollbarSlider-hoverBackground: $ui-transparent;
+    --vscode-scrollbarSlider-activeBackground: $looks-secondary;
+    --vscode-scrollbarSlider-border: transparent !important;
+
+    --vscode-editor-lineHighlightBorder: transparent !important;
+    --vscode-editor-background: $ui-primary;
+    --vscode-editor-foreground: $text-primary;
+    --vscode-editor-selectionBackground: $looks-transparent;
+    --vscode-editor-inactiveSelectionBackground: $ui-tertiary;
+    --vscode-editor-selectionHighlightBackground: $looks-light-transparent;
+    --vscode-editorLineNumbers-foreground: $ui-tertiary;
+    --vscode-editorCursor-foreground: $text-primary;
+
+    --vscode-minimap-background: $ui-primary;
+    --vscode-minimap-selectionHighlight: $looks-light-transparent;
+
+    --vscode-input-background: $ui-primary;
+    --vscode-input-border: $ui-tertiary;
+    --vscode-input-foreground: $text-primary;
+
+    --vscode-editorWidget-background: $ui-primary;
+    --vscode-editorWidget-border: $ui-tertiary;
+
+    --vscode-editorOverviewRuler-border: transparent;
+
+    /* 防止任何 outline/border 继承到红色 */
+    .monaco-editor * {
+        outline-color: inherit !important;
+        border-color: inherit !important;
+    }
+
+    /* view-line 确保无边框 */
+    .view-line {
+        border-color: transparent !important;
+        outline: none !important;
+    }
+
+    /* scroll decoration / scrollbar 边框 */
+    .scroll-decoration,
+    .monaco-scrollable-element > .scrollbar > .slider {
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
 }

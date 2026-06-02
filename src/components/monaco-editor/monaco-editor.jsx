@@ -8,6 +8,7 @@ import { generateExtensionFromFiles } from '../../lib/python-extension-generator
 import { manuallyTrustExtension } from '../../containers/tw-security-manager.jsx';
 import Modal from '../../containers/modal.jsx';
 import Box from '../box/box.jsx';
+import classNames from 'classnames';
 import './monaco-editor.css';
 
 let monaco = null;
@@ -774,10 +775,170 @@ class MonacoEditorComponent extends React.Component {
     }
 
     getEditorTheme() {
-        if (this.props.theme && this.props.theme.isDark()) {
-            return 'vs-dark';
+        const isDark = this.props.theme && this.props.theme.isDark();
+        const themeName = isDark ? 'scratch-dark' : 'scratch-light';
+
+        // 每次都重新定义，确保 CSS 变量值为最新
+        this.defineMonacoThemes();
+
+        return themeName;
+    }
+
+    getCssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    // 将 CSS 颜色值（含 color-mix/rgb/hsl 等）解析为 Monaco 可接受的 #RRGGBB 格式
+    resolveColor(cssColor) {
+        if (!cssColor) return null;
+        const el = this._colorEl || (this._colorEl = document.createElement('div'));
+        el.style.color = cssColor;
+        document.body.appendChild(el);
+        const computed = getComputedStyle(el).color;
+        document.body.removeChild(el);
+        // "rgb(r, g, b)" -> "#rrggbb"
+        const match = computed.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (match) {
+            return '#' + [match[1], match[2], match[3]]
+                .map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
         }
-        return 'vs';
+        return null;
+    }
+
+    // 将颜色与背景色按 alpha 混合，返回 #RRGGBB
+    blendColor(hexColor, alpha, bgHex) {
+        if (!hexColor) return null;
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+        const br = parseInt(bgHex.slice(1, 3), 16);
+        const bg = parseInt(bgHex.slice(3, 5), 16);
+        const bb = parseInt(bgHex.slice(5, 7), 16);
+        const mr = Math.round(r * alpha + br * (1 - alpha));
+        const mg = Math.round(g * alpha + bg * (1 - alpha));
+        const mb = Math.round(b * alpha + bb * (1 - alpha));
+        return '#' + [mr, mg, mb].map(n => n.toString(16).padStart(2, '0')).join('');
+    }
+
+    defineMonacoThemes() {
+        const looksSecondary = this.resolveColor(this.getCssVar('--looks-secondary')) || '#4C97FF';
+        const looksSecondaryDark = this.resolveColor(this.getCssVar('--looks-secondary-dark')) || looksSecondary;
+        const textPrimary = this.resolveColor(this.getCssVar('--text-primary')) || '#24292E';
+        const uiPrimary = this.resolveColor(this.getCssVar('--ui-primary')) || '#FFFFFF';
+        const uiSecondary = this.resolveColor(this.getCssVar('--ui-secondary')) || '#F6F8FA';
+        const uiTertiary = this.resolveColor(this.getCssVar('--ui-tertiary')) || '#E1E4E8';
+
+        // 亮色主题
+        monaco.editor.defineTheme('scratch-light', {
+            base: 'vs',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '6A737D' },
+                { token: 'keyword', foreground: 'D73A49' },
+                { token: 'string', foreground: '032F62' },
+                { token: 'number', foreground: '005CC5' },
+                { token: 'type', foreground: '6F42C1' },
+                { token: 'function', foreground: '6F42C1' },
+                { token: 'variable', foreground: 'E36209' },
+                { token: 'constant', foreground: '005CC5' },
+                { token: 'identifier', foreground: textPrimary },
+            ],
+            colors: {
+                'editor.background': uiPrimary,
+                'editor.foreground': textPrimary,
+                'editor.lineHighlightBackground': uiSecondary,
+                'editor.lineHighlightBorder': 'transparent',
+                'editor.selectionBackground': this.blendColor(looksSecondary, 0.25, uiPrimary),
+                'editor.selectionHighlightBackground': this.blendColor(looksSecondary, 0.19, uiPrimary),
+                'editor.inactiveSelectionBackground': uiTertiary,
+                'editorCursor.foreground': textPrimary,
+                'editorLineNumber.foreground': uiTertiary,
+                'editorLineNumber.activeForeground': textPrimary,
+                'editorIndentGuide.background': uiTertiary,
+                'editorIndentGuide.activeBackground': looksSecondary,
+                'editorBracketMatch.background': this.blendColor(looksSecondary, 0.13, uiPrimary),
+                'editorBracketMatch.border': looksSecondary,
+                'editorGutter.background': uiPrimary,
+                'editorWhitespace.foreground': uiTertiary,
+                'editorWidget.background': uiPrimary,
+                'editorWidget.border': uiTertiary,
+                'input.background': uiPrimary,
+                'input.border': uiTertiary,
+                'input.foreground': textPrimary,
+                'editorOverviewRuler.border': 'transparent',
+                'editorLink.activeForeground': looksSecondary,
+                'scrollbar.shadow': 'transparent',
+                'scrollbarSlider.background': this.blendColor(uiTertiary, 0.25, uiPrimary),
+                'scrollbarSlider.hoverBackground': this.blendColor(uiTertiary, 0.4, uiPrimary),
+                'scrollbarSlider.activeBackground': this.blendColor(looksSecondary, 0.25, uiPrimary),
+                'scrollbarSlider.border': 'transparent',
+                'minimap.findMatchHighlight': this.blendColor(looksSecondary, 0.31, uiPrimary),
+                'minimap.background': uiPrimary,
+                'minimap.selectionHighlight': this.blendColor(looksSecondary, 0.19, uiPrimary),
+                'editorError.foreground': '#CF222E',
+                'editorWarning.foreground': '#9A6700',
+                'editorInfo.foreground': '#0550AE',
+                'diffEditor.insertedTextBackground': this.blendColor('#2DA44E', 0.15, uiPrimary),
+                'diffEditor.removedTextBackground': this.blendColor('#CF222E', 0.15, uiPrimary),
+            }
+        });
+
+        // 暗色主题
+        const darkBg = uiPrimary || '#0D1117';
+        const darkSurface = uiSecondary || '#161B22';
+        monaco.editor.defineTheme('scratch-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '6A737D' },
+                { token: 'keyword', foreground: 'F97583' },
+                { token: 'string', foreground: 'A5D6FF' },
+                { token: 'number', foreground: '79C0FF' },
+                { token: 'type', foreground: 'D2A8FF' },
+                { token: 'function', foreground: 'D2A8FF' },
+                { token: 'variable', foreground: 'FFA657' },
+                { token: 'constant', foreground: '79C0FF' },
+                { token: 'identifier', foreground: '#E6EDF3' },
+            ],
+            colors: {
+                'editor.background': darkBg,
+                'editor.foreground': '#E6EDF3',
+                'editor.lineHighlightBackground': darkSurface,
+                'editor.lineHighlightBorder': 'transparent',
+                'editor.selectionBackground': this.blendColor(looksSecondaryDark, 0.25, darkBg),
+                'editor.selectionHighlightBackground': this.blendColor(looksSecondaryDark, 0.19, darkBg),
+                'editor.inactiveSelectionBackground': uiTertiary || '#21262D',
+                'editorCursor.foreground': '#E6EDF3',
+                'editorLineNumber.foreground': '#484F58',
+                'editorLineNumber.activeForeground': '#E6EDF3',
+                'editorIndentGuide.background': '#21262D',
+                'editorIndentGuide.activeBackground': looksSecondaryDark,
+                'editorBracketMatch.background': this.blendColor(looksSecondaryDark, 0.13, darkBg),
+                'editorBracketMatch.border': looksSecondaryDark,
+                'editorGutter.background': darkBg,
+                'editorWhitespace.foreground': '#21262D',
+                'editorWidget.background': darkSurface,
+                'editorWidget.border': uiTertiary || '#30363D',
+                'input.background': darkSurface,
+                'input.border': uiTertiary || '#30363D',
+                'input.foreground': '#E6EDF3',
+                'scrollbar.shadow': 'transparent',
+                'scrollbarSlider.background': this.blendColor('#30363D', 0.4, darkBg),
+                'scrollbarSlider.hoverBackground': this.blendColor('#30363D', 0.6, darkBg),
+                'scrollbarSlider.activeBackground': this.blendColor(looksSecondaryDark, 0.25, darkBg),
+                'scrollbarSlider.border': 'transparent',
+                'minimap.findMatchHighlight': this.blendColor(looksSecondaryDark, 0.31, darkBg),
+                'minimap.background': darkBg,
+                'minimap.selectionHighlight': this.blendColor(looksSecondaryDark, 0.19, darkBg),
+                'editorOverviewRuler.border': 'transparent',
+                'editorLink.activeForeground': looksSecondaryDark,
+                'editorError.foreground': '#F85149',
+                'editorWarning.foreground': '#D29922',
+                'editorInfo.foreground': '#58A6FF',
+                'diffEditor.insertedTextBackground': this.blendColor('#3FB950', 0.15, darkBg),
+                'diffEditor.removedTextBackground': this.blendColor('#F85149', 0.15, darkBg),
+            }
+        });
     }
 
     updateEditorTheme() {
@@ -1150,185 +1311,10 @@ class MonacoEditorComponent extends React.Component {
     }
 
     render() {
-        const colors = this.getThemeColors();
-
-        const containerStyle = {
-            display: 'flex',
-            height: '100%',
-            width: '100%',
-            backgroundColor: colors.bg,
-            color: colors.text
-        };
-
-        const sidebarStyle = {
-            width: '200px',
-            backgroundColor: colors.bgSecondary,
-            borderRight: `1px solid ${colors.border}`,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        };
-
-        const sidebarHeaderStyle = {
-            padding: '12px 16px',
-            borderBottom: `1px solid ${colors.border}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: colors.bgTertiary
-        };
-
-        const fileListStyle = {
-            flex: 1,
-            overflow: 'auto',
-            padding: '8px 0'
-        };
-
-        const fileItemStyle = (isActive) => ({
-            display: 'flex',
-            alignItems: 'center',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            backgroundColor: isActive ? colors.hover : 'transparent',
-            borderLeft: isActive ? '2px solid var(--looks-secondary)' : '2px solid transparent',
-            transition: 'background-color 0.15s'
-        });
-
-        const fileIconStyle = (color) => ({
-            width: '16px',
-            height: '16px',
-            borderRadius: '3px',
-            backgroundColor: color,
-            marginRight: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            color: color === '#f7df1e' || color === '#cbcb41' ? '#000' : '#fff'
-        });
-
-        const fileNameStyle = {
-            flex: 1,
-            fontSize: '13px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-        };
-
-        const fileActionsStyle = {
-            display: 'flex',
-            gap: '4px',
-            opacity: 0,
-            transition: 'opacity 0.15s'
-        };
-
-        const fileActionButtonStyle = {
-            padding: '2px 4px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            background: 'transparent',
-            border: 'none',
-            color: colors.textSecondary
-        };
-
-        const newFileButtonStyle = {
-            padding: '8px 16px',
-            borderTop: '1px solid var(--looks-secondary)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            backgroundColor: colors.bgSecondary,
-            color: colors.textSecondary,
-            fontSize: '13px',
-            transition: 'background-color 0.15s'
-        };
-
-        const inputStyle = {
-            width: '100%',
-            padding: '6px 8px',
-            fontSize: '13px',
-            border: '1px solid var(--looks-secondary)',
-            borderRadius: '3px',
-            backgroundColor: colors.bg,
-            color: colors.text,
-            outline: 'none'
-        };
-
-        const editorAreaStyle = {
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        };
-
-        const editorHeaderStyle = {
-            padding: '8px 16px',
-            borderBottom: `1px solid ${colors.border}`,
-            backgroundColor: colors.bgTertiary,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '8px'
-        };
-
-        const editorContainerStyle = {
-            flex: 1,
-            overflow: 'hidden'
-        };
-
-        const loadingStyle = {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            color: colors.text,
-            fontSize: '1rem'
-        };
-
-        const errorStyle = {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            color: '#ff6680',
-            fontSize: '1rem',
-            padding: '1rem',
-            textAlign: 'center'
-        };
-
-        const generateButtonStyle = {
-            padding: '6px 12px',
-            fontSize: '12px',
-            backgroundColor: 'var(--looks-secondary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-        };
-
-        const statusMessageStyle = (type) => ({
-            padding: '8px 16px',
-            fontSize: '12px',
-            backgroundColor: type === 'success' ? 'rgba(76, 175, 80, 0.2)' 
-                : type === 'warning' ? 'rgba(255, 152, 0, 0.2)' 
-                : type === 'loading' ? 'rgba(33, 150, 243, 0.2)'
-                : 'rgba(244, 67, 54, 0.2)',
-            color: type === 'success' ? colors.success 
-                : type === 'warning' ? colors.warning 
-                : type === 'loading' ? '#2196f3'
-                : colors.error,
-            borderBottom: `1px solid ${colors.border}`
-        });
-
         if (this.state.isLoading) {
             return (
-                <div style={containerStyle}>
-                    <div style={loadingStyle}>
+                <div className="editor-wrapper">
+                    <div className="loading">
                         <FormattedMessage
                             defaultMessage="Loading editor..."
                             description="Loading message for Monaco Editor"
@@ -1341,8 +1327,8 @@ class MonacoEditorComponent extends React.Component {
 
         if (this.state.error) {
             return (
-                <div style={containerStyle}>
-                    <div style={errorStyle}>
+                <div className="editor-wrapper">
+                    <div className="error">
                         <FormattedMessage
                             defaultMessage="Failed to load editor: {error}"
                             description="Error message for Monaco Editor"
@@ -1360,10 +1346,10 @@ class MonacoEditorComponent extends React.Component {
 
         return (
             <React.Fragment>
-            <div style={containerStyle}>
-                <div style={sidebarStyle}>
-                    <div style={sidebarHeaderStyle}>
-                        <span style={{ fontSize: '12px', fontWeight: '600', letterSpacing: '0.5px' }}>
+            <div className="editor-wrapper">
+                <div className="sidebar">
+                    <div className="sidebar-header">
+                        <span className="sidebar-title">
                             <FormattedMessage
                                 defaultMessage="FILES"
                                 description="Header for file panel"
@@ -1371,30 +1357,24 @@ class MonacoEditorComponent extends React.Component {
                             />
                         </span>
                     </div>
-                    <div style={fileListStyle}>
+                    <div className="file-list">
                         {this.state.files.map(file => {
                             const extension = getFileExtension(file.name);
                             const typeInfo = getFileTypeInfo(extension);
                             const isActive = file.id === this.state.activeFileId;
                             const isEditing = file.id === this.state.editingFileName;
+                            const isLightIcon = typeInfo.color === '#f7df1e' || typeInfo.color === '#cbcb41';
 
                             return (
                                 <div
                                     key={file.id}
-                                    style={fileItemStyle(isActive)}
+                                    className={classNames('file-item', { 'active': isActive })}
                                     onClick={() => !isEditing && this.selectFile(file.id)}
-                                    onMouseEnter={(e) => {
-                                        if (!isActive) e.currentTarget.style.backgroundColor = colors.hover;
-                                        const actionsEl = e.currentTarget.querySelector('.file-actions');
-                                        if (actionsEl) actionsEl.style.opacity = '1';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                                        const actionsEl = e.currentTarget.querySelector('.file-actions');
-                                        if (actionsEl) actionsEl.style.opacity = '0';
-                                    }}
                                 >
-                                    <div style={fileIconStyle(typeInfo.color)}>
+                                    <div
+                                        className={classNames('file-icon', { 'light-text': isLightIcon })}
+                                        style={{ backgroundColor: typeInfo.color }}
+                                    >
                                         {extension.toUpperCase().slice(0, 2)}
                                     </div>
                                     {isEditing ? (
@@ -1408,15 +1388,15 @@ class MonacoEditorComponent extends React.Component {
                                             }}
                                             onBlur={this.handleRenameSubmit}
                                             autoFocus
-                                            style={{ ...inputStyle, flex: 1 }}
+                                            className={classNames('new-file-input', 'rename-input')}
                                         />
                                     ) : (
-                                        <span style={fileNameStyle}>{file.name}</span>
+                                        <span className="file-name">{file.name}</span>
                                     )}
                                     {!isEditing && (
-                                        <div className="file-actions" style={fileActionsStyle}>
+                                        <div className="file-actions">
                                             <button
-                                                style={fileActionButtonStyle}
+                                                className="file-action-btn"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     this.startRenameFile(file.id);
@@ -1426,7 +1406,7 @@ class MonacoEditorComponent extends React.Component {
                                                 ✎
                                             </button>
                                             <button
-                                                style={fileActionButtonStyle}
+                                                className="file-action-btn"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     this.deleteFile(file.id);
@@ -1442,7 +1422,7 @@ class MonacoEditorComponent extends React.Component {
                         })}
                     </div>
                     {this.state.showNewFileInput ? (
-                        <div style={{ padding: '8px 12px', borderTop: `1px solid ${colors.border}` }}>
+                        <div className="new-file-section">
                             <input
                                 type="text"
                                 placeholder={this.props.intl.formatMessage({
@@ -1456,20 +1436,12 @@ class MonacoEditorComponent extends React.Component {
                                     if (e.key === 'Escape') this.handleNewFileCancel();
                                 }}
                                 autoFocus
-                                style={inputStyle}
+                                className="new-file-input"
                             />
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <div className="new-file-actions">
                                 <button
                                     onClick={this.handleNewFileSubmit}
-                                    style={{
-                                        padding: '4px 12px',
-                                        fontSize: '12px',
-                                        backgroundColor: 'var(--looks-secondary)',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer'
-                                    }}
+                                    className="new-file-btn-create"
                                 >
                                     <FormattedMessage
                                         defaultMessage="Create"
@@ -1479,15 +1451,7 @@ class MonacoEditorComponent extends React.Component {
                                 </button>
                                 <button
                                     onClick={this.handleNewFileCancel}
-                                    style={{
-                                        padding: '4px 12px',
-                                        fontSize: '12px',
-                                        backgroundColor: 'transparent',
-                                        color: colors.textSecondary,
-                                        border: `1px solid ${colors.border}`,
-                                        borderRadius: '3px',
-                                        cursor: 'pointer'
-                                    }}
+                                    className="new-file-btn-cancel"
                                 >
                                     <FormattedMessage
                                         defaultMessage="Cancel"
@@ -1499,12 +1463,10 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     ) : (
                         <div
-                            style={newFileButtonStyle}
+                            className="new-file-trigger"
                             onClick={this.createNewFile}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.bgSecondary}
                         >
-                            <span style={{ fontSize: '16px' }}>+</span>
+                            <span className="new-file-icon">+</span>
                             <FormattedMessage
                                 defaultMessage="New File"
                                 description="New file button"
@@ -1513,53 +1475,40 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                 </div>
-                <div style={editorAreaStyle}>
+                <div className="editor-area">
                     {activeFile && (
-                        <div style={editorHeaderStyle}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={fileIconStyle(getFileTypeInfo(activeExtension).color)}>
+                        <div className="editor-header">
+                            <div className="editor-header-left">
+                                <div
+                                    className={classNames('file-icon', { 'light-text': getFileTypeInfo(activeExtension).color === '#f7df1e' || getFileTypeInfo(activeExtension).color === '#cbcb41' })}
+                                    style={{ backgroundColor: getFileTypeInfo(activeExtension).color }}
+                                >
                                     {activeExtension.toUpperCase().slice(0, 2)}
                                 </div>
-                                <span style={{ fontSize: '13px' }}>{activeFile.name}</span>
+                                <span className="editor-filename">{activeFile.name}</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', backgroundColor: colors.surface, borderRadius: '4px' }}>
+                            <div className="editor-header-right">
+                                <div className="zoom-control">
                                     <button
                                         onClick={this.zoomOut}
-                                        style={{ 
-                                            background: 'none', 
-                                            border: 'none', 
-                                            color: colors.text, 
-                                            cursor: 'pointer', 
-                                            fontSize: '14px',
-                                            padding: '2px 6px',
-                                            borderRadius: '3px'
-                                        }}
+                                        className="zoom-btn"
                                         title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomOut' })}
                                     >
                                         −
                                     </button>
-                                    <span style={{ fontSize: '11px', color: colors.textSecondary, minWidth: '30px', textAlign: 'center' }}>
+                                    <span className="zoom-value">
                                         {this.state.fontSize}px
                                     </span>
                                     <button
                                         onClick={this.zoomIn}
-                                        style={{ 
-                                            background: 'none', 
-                                            border: 'none', 
-                                            color: colors.text, 
-                                            cursor: 'pointer', 
-                                            fontSize: '14px',
-                                            padding: '2px 6px',
-                                            borderRadius: '3px'
-                                        }}
+                                        className="zoom-btn"
                                         title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomIn' })}
                                     >
                                         +
                                     </button>
                                 </div>
                                 <button
-                                    style={generateButtonStyle}
+                                    className="generate-btn"
                                     onClick={this.openFileSelectionModal}
                                     title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.generateBlocksTooltip' })}
                                 >
@@ -1573,21 +1522,13 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                     {!activeFile && this.state.files.length === 0 && (
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '100%',
-                            color: colors.textSecondary,
-                            fontSize: '14px'
-                        }}>
+                        <div className="empty-state">
                             <FormattedMessage
                                 defaultMessage="No files yet"
                                 description="Empty state message"
                                 id="gui.monacoEditor.noFiles"
                             />
-                            <span style={{ fontSize: '12px', marginTop: '8px' }}>
+                            <span className="empty-state-hint">
                                 <FormattedMessage
                                     defaultMessage="Click 'New File' to create one"
                                     description="Empty state hint"
@@ -1597,14 +1538,14 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                     {this.state.blockGenerationStatus && (
-                        <div style={statusMessageStyle(this.state.blockGenerationStatus.type)}>
+                        <div className={classNames('status-message', this.state.blockGenerationStatus.type)}>
                             {this.state.blockGenerationStatus.message}
                         </div>
                     )}
                     {(activeFile || this.state.files.length > 0) && (
                         <div
                             ref={this.containerRef}
-                            style={editorContainerStyle}
+                            className="editor-content"
                         />
                     )}
                 </div>
@@ -1615,93 +1556,8 @@ class MonacoEditorComponent extends React.Component {
     }
 
     renderFileSelectionModal = () => {
-        const colors = this.getThemeColors();
         const pythonFiles = this.state.files.filter(f => f.name.endsWith('.py'));
         const allSelected = pythonFiles.length > 0 && this.state.selectedFileIds.length === pythonFiles.length;
-
-        const modalBodyStyle = {
-            padding: '12px',
-            maxHeight: '280px',
-            overflowY: 'auto'
-        };
-
-        const fileItemStyle = {
-            display: 'flex',
-            alignItems: 'center',
-            padding: '8px 10px',
-            marginBottom: '6px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s',
-            border: `1px solid ${colors.border}`
-        };
-
-        const checkboxStyle = {
-            marginRight: '10px',
-            width: '16px',
-            height: '16px',
-            cursor: 'pointer',
-            accentColor: 'var(--looks-secondary)'
-        };
-
-        const fileNameStyle = {
-            fontSize: '13px',
-            fontWeight: '500',
-            color: colors.text
-        };
-
-        const functionCountStyle = {
-            fontSize: '11px',
-            color: colors.textSecondary,
-            marginLeft: '8px'
-        };
-
-        const headerStyle = {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px',
-            borderBottom: `1px solid ${colors.border}`
-        };
-
-        const selectAllButtonStyle = {
-            padding: '4px 12px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            background: allSelected ? 'var(--looks-secondary)' : 'transparent',
-            border: '1px solid var(--looks-secondary)',
-            color: allSelected ? '#fff' : colors.textSecondary,
-            borderRadius: '4px'
-        };
-
-        const buttonRowStyle = {
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '10px',
-            padding: '12px',
-            borderTop: `1px solid ${colors.border}`
-        };
-
-        const cancelButtonStyle = {
-            padding: '6px 14px',
-            fontSize: '13px',
-            cursor: 'pointer',
-            background: 'transparent',
-            border: '1px solid var(--looks-secondary)',
-            color: colors.textSecondary,
-            borderRadius: '4px'
-        };
-
-        const confirmButtonStyle = {
-            padding: '6px 14px',
-            fontSize: '13px',
-            cursor: 'pointer',
-            background: 'var(--looks-secondary)',
-            border: 'none',
-            color: '#fff',
-            borderRadius: '4px',
-            fontWeight: '500'
-        };
 
         const selectAllPythonFiles = () => {
             if (allSelected) {
@@ -1718,15 +1574,18 @@ class MonacoEditorComponent extends React.Component {
                 onRequestClose={this.closeFileSelectionModal}
                 id="fileSelectionModal"
             >
-                <Box style={{ background: colors.bgSecondary }}>
-                    <div style={headerStyle}>
-                        <span style={{ fontSize: '13px', color: colors.textSecondary }}>
+                <Box className="modal-box">
+                    <div className="modal-header">
+                        <span className="modal-title">
                             <FormattedMessage
                                 defaultMessage="Select Python files to generate blocks"
                                 id="gui.monacoEditor.selectFiles"
                             />
                         </span>
-                        <button style={selectAllButtonStyle} onClick={selectAllPythonFiles}>
+                        <button
+                            className={classNames('select-all-btn', { 'selected': allSelected })}
+                            onClick={selectAllPythonFiles}
+                        >
                             {allSelected ? (
                                 <FormattedMessage
                                     defaultMessage="Deselect all"
@@ -1740,7 +1599,7 @@ class MonacoEditorComponent extends React.Component {
                             )}
                         </button>
                     </div>
-                    <div style={modalBodyStyle}>
+                    <div className="modal-body">
                         {pythonFiles.map(file => {
                             const isSelected = this.state.selectedFileIds.includes(file.id);
                             const validationResult = validatePythonCode(file.content);
@@ -1749,20 +1608,17 @@ class MonacoEditorComponent extends React.Component {
                             return (
                                 <div
                                     key={file.id}
-                                    style={{
-                                        ...fileItemStyle,
-                                        backgroundColor: isSelected ? colors.hover : colors.bgSecondary
-                                    }}
+                                    className={classNames('modal-file-item', { 'selected': isSelected })}
                                     onClick={() => this.toggleFileSelection(file.id)}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={isSelected}
                                         onChange={() => this.toggleFileSelection(file.id)}
-                                        style={checkboxStyle}
+                                        className="modal-checkbox"
                                     />
-                                    <span style={fileNameStyle}>{file.name}</span>
-                                    <span style={functionCountStyle}>
+                                    <span className="modal-file-name">{file.name}</span>
+                                    <span className="modal-func-count">
                                         {funcCount > 0 ? (
                                             <FormattedMessage
                                                 defaultMessage="{count} functions"
@@ -1780,7 +1636,7 @@ class MonacoEditorComponent extends React.Component {
                             );
                         })}
                         {pythonFiles.length === 0 && (
-                            <p style={{ color: colors.textSecondary, textAlign: 'center', padding: '20px' }}>
+                            <p className="modal-empty-text">
                                 <FormattedMessage
                                     defaultMessage="No Python files"
                                     id="gui.monacoEditor.noPythonFiles"
@@ -1788,20 +1644,16 @@ class MonacoEditorComponent extends React.Component {
                             </p>
                         )}
                     </div>
-                    <div style={buttonRowStyle}>
-                        <button style={cancelButtonStyle} onClick={this.closeFileSelectionModal}>
+                    <div className="modal-buttons">
+                        <button className="modal-cancel-btn" onClick={this.closeFileSelectionModal}>
                             <FormattedMessage
                                 defaultMessage="Cancel"
                                 description="Cancel button"
                                 id="gui.monacoEditor.cancel"
                             />
                         </button>
-                        <button 
-                            style={{
-                                ...confirmButtonStyle,
-                                opacity: this.state.selectedFileIds.length > 0 ? 1 : 0.5,
-                                cursor: this.state.selectedFileIds.length > 0 ? 'pointer' : 'not-allowed'
-                            }}
+                        <button
+                            className={classNames('modal-confirm-btn', { 'disabled': this.state.selectedFileIds.length === 0 })}
                             onClick={this.state.selectedFileIds.length > 0 ? this.confirmFileSelectionAndGenerate : undefined}
                             disabled={this.state.selectedFileIds.length === 0}
                         >
