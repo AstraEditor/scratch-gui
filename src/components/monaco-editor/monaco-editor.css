@@ -628,4 +628,30 @@
         border-color: transparent !important;
         box-shadow: none !important;
     }
+
+    /* 滚动条轨道/底板 - 彻底清除红色 */
+    .monaco-scrollable-element > .scrollbar {
+        background-color: $ui-secondary !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+    .monaco-scrollable-element > .scrollbar.vertical,
+    .monaco-scrollable-element > .scrollbar.horizontal {
+        border: none !important;
+    }
+    .monaco-scrollable-element > .scrollbar > .arrow {
+        border-color: transparent !important;
+        background-color: $ui-tertiary !important;
+    }
+
+    /* 滚动条滑块 - 确保与轨道有区分 */
+    .monaco-scrollable-element > .scrollbar > .slider {
+        background-color: $ui-tertiary !important;
+    }
+    .monaco-scrollable-element > .scrollbar > .slider:hover {
+        background-color: $text-primary !important;
+    }
+    .monaco-scrollable-element > .scrollbar > .slider.active {
+        background-color: $looks-secondary !important;
+    }
 }
