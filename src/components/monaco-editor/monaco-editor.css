@@ -525,13 +525,13 @@
     margin-left: 8px;
 }
 
-.modal-empty-hint {
+.modal-empty-text {
     color: $text-primary-transparent;
     text-align: center;
     padding: 20px;
 }
 
-.modal-button-row {
+.modal-buttons {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -609,49 +609,49 @@
     --vscode-editorWidget-border: $ui-tertiary;
 
     --vscode-editorOverviewRuler-border: transparent;
+}
 
-    /* 防止任何 outline/border 继承到红色 */
-    .monaco-editor * {
-        outline-color: inherit !important;
-        border-color: inherit !important;
-    }
+/* 防止任何 outline/border 继承到红色 - 仅限编辑器内部 */
+.editor-wrapper .monaco-editor * {
+    outline-color: inherit !important;
+    border-color: inherit !important;
+}
 
-    /* view-line 确保无边框 */
-    .view-line {
-        border-color: transparent !important;
-        outline: none !important;
-    }
+/* view-line 确保无边框 */
+.editor-wrapper .view-line {
+    border-color: transparent !important;
+    outline: none !important;
+}
 
-    /* scroll decoration / scrollbar 边框 */
-    .scroll-decoration,
-    .monaco-scrollable-element > .scrollbar > .slider {
-        border-color: transparent !important;
-        box-shadow: none !important;
-    }
+/* scroll decoration / scrollbar 边框 */
+.editor-wrapper .scroll-decoration,
+.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider {
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
 
-    /* 滚动条轨道/底板 - 彻底清除红色 */
-    .monaco-scrollable-element > .scrollbar {
-        background-color: $ui-secondary !important;
-        border-color: transparent !important;
-        box-shadow: none !important;
-    }
-    .monaco-scrollable-element > .scrollbar.vertical,
-    .monaco-scrollable-element > .scrollbar.horizontal {
-        border: none !important;
-    }
-    .monaco-scrollable-element > .scrollbar > .arrow {
-        border-color: transparent !important;
-        background-color: $ui-tertiary !important;
-    }
+/* 滚动条轨道/底板 */
+.editor-wrapper .monaco-scrollable-element > .scrollbar {
+    background-color: $ui-secondary !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+.editor-wrapper .monaco-scrollable-element > .scrollbar.vertical,
+.editor-wrapper .monaco-scrollable-element > .scrollbar.horizontal {
+    border: none !important;
+}
+.editor-wrapper .monaco-scrollable-element > .scrollbar > .arrow {
+    border-color: transparent !important;
+    background-color: $ui-tertiary !important;
+}
 
-    /* 滚动条滑块 - 确保与轨道有区分 */
-    .monaco-scrollable-element > .scrollbar > .slider {
-        background-color: $ui-tertiary !important;
-    }
-    .monaco-scrollable-element > .scrollbar > .slider:hover {
-        background-color: $text-primary !important;
-    }
-    .monaco-scrollable-element > .scrollbar > .slider.active {
-        background-color: $looks-secondary !important;
-    }
+/* 滚动条滑块 */
+.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider {
+    background-color: $ui-tertiary !important;
+}
+.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider:hover {
+    background-color: $text-primary !important;
+}
+.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider.active {
+    background-color: $looks-secondary !important;
 }
