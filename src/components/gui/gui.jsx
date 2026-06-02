@@ -20,6 +20,7 @@ import MenuBar from '../menu-bar/menu-bar.jsx';
 import CostumeLibrary from '../../containers/costume-library.jsx';
 import BackdropLibrary from '../../containers/backdrop-library.jsx';
 import Watermark from '../../containers/watermark.jsx';
+import MonacoEditor from '../../containers/monaco-editor.jsx';
 
 import Backpack from '../../containers/backpack.jsx';
 import BrowserModal from '../browser-modal/browser-modal.jsx';
@@ -52,6 +53,7 @@ import PreviewExt from '../../containers/ae-preview-ext.jsx';
 import { STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH } from '../../lib/layout-constants';
 import { getStageDimensions, resolveStageSize } from '../../lib/screen-utils';
 import { Theme } from '../../lib/themes';
+import { MONACO_EDITOR_TAB_INDEX } from '../../reducers/editor-tab';
 
 import { isRendererSupported, isBrowserSupported } from '../../lib/tw-environment-support-prober';
 
@@ -60,6 +62,7 @@ import addExtensionIcon from './icon--extensions.svg';
 import codeIcon from '!../../lib/tw-recolor/build!./icon--code.svg';
 import costumesIcon from '!../../lib/tw-recolor/build!./icon--costumes.svg';
 import soundsIcon from '!../../lib/tw-recolor/build!./icon--sounds.svg';
+import monacoIcon from '!../../lib/tw-recolor/build!./icon--monaco.svg';
 import readmeIcon from '!../../lib/tw-recolor/build!./readme.svg'
 import { openReadme } from '../../reducers/modals.js';
 
@@ -546,6 +549,19 @@ const GUIComponent = props => {
                                             id="gui.gui.soundsTab"
                                         />
                                     </Tab>
+                                    <Tab
+                                        className={tabClassNames.tab}
+                                    >
+                                        <img
+                                            draggable={false}
+                                            src={monacoIcon()}
+                                        />
+                                        <FormattedMessage
+                                            defaultMessage="Editor"
+                                            description="Button to get to the monaco editor panel"
+                                            id="gui.gui.monacoEditorTab"
+                                        />
+                                    </Tab>
                                     {canShowReadme &&
                                         <button
                                             className={styles.readmeButton}
@@ -600,6 +616,11 @@ const GUIComponent = props => {
                                 <TabPanel className={tabClassNames.tabPanel}>
                                     {soundsTabVisible ? <SoundTab vm={vm} /> : null}
                                 </TabPanel>
+                                <TabPanel className={tabClassNames.tabPanel}>
+                                    <Box className={styles.monacoEditorWrapper}>
+                                        <MonacoEditor vm={vm} />
+                                    </Box>
+                                </TabPanel>
                             </Tabs>
                             {backpackVisible ? (
                                 <Backpack host={backpackHost} />
@@ -607,19 +628,23 @@ const GUIComponent = props => {
                         </Box>
 
                         <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
-                            <StageWrapper
-                                isFullScreen={isFullScreen}
-                                isRendererSupported={isRendererSupported()}
-                                isRtl={isRtl}
-                                stageSize={stageSize}
-                                vm={vm}
-                            />
-                            <Box className={styles.targetWrapper}>
-                                <TargetPane
+                            {activeTabIndex !== MONACO_EDITOR_TAB_INDEX && (
+                                <StageWrapper
+                                    isFullScreen={isFullScreen}
+                                    isRendererSupported={isRendererSupported()}
+                                    isRtl={isRtl}
                                     stageSize={stageSize}
                                     vm={vm}
                                 />
-                            </Box>
+                            )}
+                            {activeTabIndex !== MONACO_EDITOR_TAB_INDEX && (
+                                <Box className={styles.targetWrapper}>
+                                    <TargetPane
+                                        stageSize={stageSize}
+                                        vm={vm}
+                                    />
+                                </Box>
+                            )}
                         </Box>
 
 

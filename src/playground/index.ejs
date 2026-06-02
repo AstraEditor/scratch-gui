@@ -205,6 +205,17 @@
     (function () {
       'use strict';
 
+      // Ignore ResizeObserver errors (common benign browser warning)
+      var debounceResizeObserver = function(e) {
+        if (e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+            e.message.indexOf('ResizeObserver') !== -1) {
+          e.stopImmediatePropagation();
+          return false;
+        }
+      };
+      window.addEventListener('error', debounceResizeObserver, true);
+      window.addEventListener('unhandledrejection', debounceResizeObserver, true);
+
       var logoAll = document.getElementsByClassName('logo')[0];
       logoAll.style.transform = 'scale(1.5, 1.5) translateY(40px)';
 

@@ -1,0 +1,116 @@
+@import "../../css/colors.css";
+
+.container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: $ui-secondary;
+    border-bottom: 1px solid $ui-tertiary;
+    min-height: 40px;
+    height: 40px;
+    box-sizing: border-box;
+}
+
+.languageSelector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toolbarLabel {
+    font-size: 0.875rem;
+    color: $ui-modal-foreground;
+    font-weight: 500;
+}
+
+.languageButton {
+    font-family: inherit;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    margin: 0;
+    border: 1px solid $ui-tertiary;
+    border-radius: 4px;
+    cursor: pointer;
+    background: $ui-tertiary;
+    color: $ui-modal-foreground;
+    transition: all 0.2s ease;
+}
+
+.languageButton:hover {
+    background: $badge-border;
+    border-color: $looks-secondary;
+}
+
+.activeLanguage {
+    background: $looks-secondary;
+    color: white;
+    border-color: $looks-secondary;
+}
+
+.activeLanguage:hover {
+    background: $looks-secondary;
+    filter: brightness(1.1);
+}
+
+.toolbarActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toolbarButton {
+    font-family: inherit;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    margin: 0;
+    border: 1px solid $ui-tertiary;
+    border-radius: 4px;
+    cursor: pointer;
+    background: $ui-tertiary;
+    color: $ui-modal-foreground;
+    transition: all 0.2s ease;
+}
+
+.toolbarButton:hover {
+    background: $badge-border;
+    border-color: $looks-secondary;
+}
+
+.editorContainer {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: $ui-modal-foreground;
+    font-size: 1rem;
+}
+
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: $error-primary;
+    font-size: 1rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+:global(.file-selection-modal) {
+    width: 320px !important;
+    max-width: 320px !important;
+}
