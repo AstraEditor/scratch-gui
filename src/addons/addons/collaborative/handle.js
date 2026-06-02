@@ -1,289 +1,353 @@
 import { APP_NAME } from "../../../lib/brand";
 import ReduxStore from "../../redux.js";
 import {
-    openLoadingProject,
-    closeLoadingProject,
+    openLoadingProject, closeLoadingProject,
 } from "../../../reducers/modals";
 import {
-    requestProjectUpload,
-    onLoadedProject,
+    requestProjectUpload, onLoadedProject,
 } from "../../../reducers/project-state";
 import { setURLParamsFromSearchString } from "./utils.js";
 import { idHead, pointerSVG, SERVER_OPCODE } from "./constants.js";
 
-let scaleObserver = null;
-let scaleUpdateRaf = null;
+let _Blockly = null;
+let scaleObserver = null, scaleUpdateRaf = null;
 
 function syncPointerScales() {
-    const ws = Blockly.getMainWorkspace();
+    const ws = _Blockly && _Blockly.getMainWorkspace();
     if (!ws) return;
-
-    const fixedScale = 0.3 / ws.scale;
-    const pointers = document.querySelectorAll(`.${idHead}pointer`);
-
-    pointers.forEach((pointer) => {
-        if (!pointer) return;
-
-        const transform = pointer.getAttribute("transform");
-        if (!transform) return;
-
-        const translateMatch = transform.match(/translate\(([^,]+),([^)]+)\)/);
-        if (translateMatch) {
-            pointer.setAttribute(
-                "transform",
-                `translate(${translateMatch[1]},${translateMatch[2]}) scale(${fixedScale})`,
-            );
-        }
+    const f = 0.3 / ws.scale;
+    document.querySelectorAll(`.${idHead}pointer`).forEach(p => {
+        if (!p) return;
+        const m = (p.getAttribute("transform") || "").match(/translate\(([^,]+),([^)]+)\)/);
+        if (m) p.setAttribute("transform", `translate(${m[1]},${m[2]}) scale(${f})`);
     });
 }
-
 function syncPointerContainerTransform() {
-    const ws = Blockly.getMainWorkspace();
+    const ws = _Blockly && _Blockly.getMainWorkspace();
     if (!ws) return;
-
-    const svg = ws.getParentSvg();
-    const pointerContainer = svg.querySelector(`.${idHead}pointer-container`);
-    if (!pointerContainer) return;
-
-    const canvas = ws.getCanvas();
-    if (!canvas) return;
-
-    const canvasTransform = canvas.getAttribute("transform");
-    if (canvasTransform) {
-        pointerContainer.setAttribute("transform", canvasTransform);
-    }
-
+    const svg = ws.getParentSvg(), pc = svg.querySelector(`.${idHead}pointer-container`);
+    if (!pc) return;
+    const c = ws.getCanvas(); if (!c) return;
+    const t = c.getAttribute("transform"); if (t) pc.setAttribute("transform", t);
     syncPointerScales();
 }
-
 function setupScaleObserver() {
     if (scaleObserver) return;
-
-    const ws = Blockly.getMainWorkspace();
+    const ws = _Blockly && _Blockly.getMainWorkspace();
     if (!ws) return;
-
-    const canvas = ws.getCanvas();
-    if (!canvas) return;
-
-    scaleObserver = new MutationObserver((mutations) => {
+    const c = ws.getCanvas(); if (!c) return;
+    scaleObserver = new MutationObserver(() => {
         if (scaleUpdateRaf) return;
-
-        scaleUpdateRaf = requestAnimationFrame(() => {
-            scaleUpdateRaf = null;
-            syncPointerContainerTransform();
-        });
+        scaleUpdateRaf = requestAnimationFrame(() => { scaleUpdateRaf = null; syncPointerContainerTransform(); });
     });
-
-    scaleObserver.observe(canvas, { attributes: true });
+    scaleObserver.observe(c, { attributes: true });
 }
 
-/**
- * P2P 消息路由。解析来自其他节点的数据通道消息，分发到对应的处理逻辑。
- *
- * 依赖注入：
- *   addon       — addon 对象（内部获取 vm 等）
- *   sendToPeer  — 由网络层提供的 P2P 回发函数
- */
-export function createHandler({
-    addon,
-    msg,
-    console,
-    sendToPeer,
-    broadcastToPeers,
-    rtc,
-}) {
+// ── XML → blocks (parser) ────────────────────────────────────────
+
+function xmlDomToBlockObj(node, blocks, isTop, parentId) {
+    if (!node || !node.tagName) return null;
+    const isShadow = node.tagName.toLowerCase() === 'shadow';
+    const id = node.getAttribute('id') || null;
+    const b = {
+        id, opcode: node.getAttribute('type') || '',
+        inputs: {}, fields: {}, next: null,
+        topLevel: isTop, parent: parentId || null, shadow: isShadow,
+        x: isTop ? (parseFloat(node.getAttribute('x')) || 0) : undefined,
+        y: isTop ? (parseFloat(node.getAttribute('y')) || 0) : undefined,
+    };
+    for (const ch of Array.from(node.children || [])) {
+        const nm = ch.tagName ? ch.tagName.toLowerCase() : '';
+        switch (nm) {
+            case 'field': {
+                const fn = ch.getAttribute('name'), fi = ch.getAttribute('id');
+                let tv = ''; if (ch.childNodes.length > 0) tv = ch.childNodes[0].textContent || '';
+                b.fields[fn] = { name: fn, id: fi, value: tv }; break;
+            }
+            case 'value': case 'statement': {
+                const iname = ch.getAttribute('name'); let cbn = null, csn = null;
+                for (const gc of Array.from(ch.children || [])) {
+                    const gn = gc.tagName ? gc.tagName.toLowerCase() : '';
+                    if (gn === 'block') cbn = gc; else if (gn === 'shadow') csn = gc;
+                }
+                if (!cbn && csn) cbn = csn;
+                let cb = null, cs = null;
+                if (cbn) { const co = xmlDomToBlockObj(cbn, blocks, false, id); if (co) { blocks[co.id] = co; cb = co.id; } }
+                if (csn && cbn !== csn) { const so = xmlDomToBlockObj(csn, blocks, false, id); if (so) { blocks[so.id] = so; cs = so.id; } }
+                b.inputs[iname] = { name: iname, block: cb, shadow: cs }; break;
+            }
+            case 'next': {
+                let nn = null;
+                for (const gc of Array.from(ch.children || []))
+                    if (gc.tagName && gc.tagName.toLowerCase() === 'block') nn = gc;
+                if (nn) { const no = xmlDomToBlockObj(nn, blocks, false, id); if (no) { blocks[no.id] = no; b.next = no.id; } }
+                break;
+            }
+            case 'mutation': {
+                b.mutation = { tagName: 'mutation', children: [] };
+                for (let i = 0; i < ch.attributes.length; i++) b.mutation[ch.attributes[i].name] = ch.attributes[i].value;
+                for (const gc of Array.from(ch.children || [])) {
+                    if (!gc.tagName) continue;
+                    const nm2 = { tagName: gc.tagName.toLowerCase(), children: [] };
+                    for (let i = 0; i < gc.attributes.length; i++) nm2[gc.attributes[i].name] = gc.attributes[i].value;
+                    b.mutation.children.push(nm2);
+                }
+                break;
+            }
+        }
+    }
+    return b;
+}
+
+function parseXml(xmlString) {
+    const p = new DOMParser().parseFromString(xmlString, 'text/xml');
+    const blocks = {};
+    const rn = p.documentElement, tn = rn.tagName ? rn.tagName.toLowerCase() : '';
+    if (tn === 'block' || tn === 'shadow') { const o = xmlDomToBlockObj(rn, blocks, true, null); if (o) blocks[o.id] = o; }
+    return Object.values(blocks);
+}
+
+// ── Batching ─────────────────────────────────────────────────────
+
+const _pending = new Map(); let _raf = null, _def = null, _defRaf = null;
+
+function enqueue(op, rtc) {
+    _pending.set(`${op.targetIndex}:${op.rootId || 'unknown'}`, op);
+    if (!_raf) _raf = requestAnimationFrame(() => { _raf = null; flush(rtc); });
+}
+
+function getWS() { return _Blockly ? _Blockly.getMainWorkspace() : null; }
+
+// ── Replace a block tree (shared by create + update) ─────────────
+
+function replaceTree(target, xmlString, rootId, isEditingTarget) {
+    const blockObjs = parseXml(xmlString);
+    if (blockObjs.length === 0) return;
+
+    // Remove old tree from _blocks + _scripts
+    for (const b of blockObjs) {
+        delete target.blocks._blocks[b.id];
+        const si = target.blocks._scripts.indexOf(b.id);
+        if (si > -1) target.blocks._scripts.splice(si, 1);
+    }
+    // Create from XML — createBlock handles _blocks + _scripts
+    for (const b of blockObjs) target.blocks.createBlock(b);
+
+    // Only update Blockly workspace DOM if this target is currently being edited
+    // Prevents cross-sprite contamination (e.g., sprite A's blocks appearing in sprite B's workspace)
+    if (!isEditingTarget) return;
+
+    const ws = getWS();
+    if (ws && rootId) {
+        const old = ws.getBlockById(rootId);
+        _Blockly.Events.disable();
+        try {
+            if (old) old.dispose(false);
+            const dom = _Blockly.Xml.textToDom(`<xml>${xmlString}</xml>`);
+            const bn = dom.querySelector('block, shadow');
+            if (bn) {
+                const px = parseFloat(bn.getAttribute('x')), py = parseFloat(bn.getAttribute('y'));
+                const newBlock = _Blockly.Xml.domToBlock(bn, ws);
+                if (newBlock && isFinite(px) && isFinite(py)) newBlock.moveBy(px, py);
+            }
+        } catch (e) { console.error("[协作] replaceTree 失败:", e); }
+        finally { _Blockly.Events.enable(); }
+    }
+}
+
+function applyDelete(target, op, isEditingTarget) {
+    target.blocks.deleteBlock(op.rootId, false);
+    if (!isEditingTarget) return;
+    const ws = getWS();
+    if (ws) { const b = ws.getBlockById(op.rootId); if (b) { _Blockly.Events.disable(); try { b.dispose(true); } finally { _Blockly.Events.enable(); } } }
+}
+
+function applyMove(target, op, isEditingTarget) {
+    const b = target.blocks._blocks[op.rootId];
+    if (b) { b.x = op.x; b.y = op.y; }
+    if (!isEditingTarget) return;
+    const ws = getWS();
+    if (ws) { const blk = ws.getBlockById(op.rootId); if (blk) { const cp = blk.getRelativeToSurfaceXY(); blk.moveBy(op.x - cp.x, op.y - cp.y); } }
+}
+
+function applyFieldChange(target, op) {
+    const ws = getWS();
+    for (const fc of op.fields) {
+        const isVar = fc.name === 'VARIABLE' || fc.name === 'LIST' || fc.name === 'BROADCAST_OPTION';
+        target.blocks.changeBlock({ id: fc.blockId, element: 'field', name: fc.name, value: isVar ? (fc.id || fc.value) : fc.value });
+        if (ws) { const blk = ws.getBlockById(fc.blockId); if (blk) { try { blk.setFieldValue(fc.value, fc.name); } catch (e) {} } }
+    }
+}
+
+function applyMutationChange(target, op) {
+    target.blocks.changeBlock({ id: op.rootId, element: 'mutation', value: op.mutation });
+    // Mutation changes structural — treat like a tree replacement
+    const xml = target.blocks.blockToXML(op.rootId, target.comments || {});
+    if (xml) replaceTree(target, xml, op.rootId);
+}
+
+// ── Flush ────────────────────────────────────────────────────────
+
+function flush(rtc) {
+    if (_pending.size === 0 && !_def) return;
+    const newOps = Array.from(_pending.values()); _pending.clear();
+    const ops = _def ? _def.concat(newOps) : newOps; _def = null;
+
+    if (!rtc || !rtc._vm) return;
+    const vm = rtc._vm;
+
+    // Defer during local drag
+    const editIdx = vm.runtime.targets.findIndex(t => vm.runtime._editingTarget && t.id === vm.runtime._editingTarget.id);
+    const ws = _Blockly && _Blockly.getMainWorkspace();
+    if (ws && ws.isDragging()) {
+        for (const op of ops) { if (op.targetIndex === editIdx) { _def = ops; if (!_defRaf) _defRaf = requestAnimationFrame(() => { _defRaf = null; flush(rtc); }); return; } }
+    }
+
+    // Flush local debounce before applying remote
+    if (rtc._updateTimer) { clearTimeout(rtc._updateTimer); rtc._updateTimer = null; rtc.updateProject(); }
+
+    rtc.onIngoreUpdate(true);
+    try {
+        const byTarget = new Map();
+        for (const op of ops) { if (!byTarget.has(op.targetIndex)) byTarget.set(op.targetIndex, []); byTarget.get(op.targetIndex).push(op); }
+        for (const [ti, tops] of byTarget) {
+            const target = vm.runtime.targets[ti];
+            if (!target?.blocks) continue;
+
+            // Strict target isolation: only update Blockly DOM for the currently edited target
+            // This prevents cross-sprite contamination where sprite A's blocks appear in sprite B's workspace
+            const isEditingTarget = vm.runtime._editingTarget && target.id === vm.runtime._editingTarget.id;
+
+            const order = { delete: 0, fieldChange: 1, mutationChange: 2, move: 3, create: 4, update: 5 };
+            tops.sort((a, b) => (order[a.type] || 9) - (order[b.type] || 9));
+            target.blocks.suppressProjectChanged();
+            try {
+                for (const op of tops) {
+                    switch (op.type) {
+                        case 'delete': applyDelete(target, op, isEditingTarget); break;
+                        case 'move': applyMove(target, op, isEditingTarget); break;
+                        case 'create': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
+                        case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
+                        case 'fieldChange': applyFieldChange(target, op); break;
+                        case 'mutationChange': applyMutationChange(target, op); break;
+                    }
+                }
+                target.blocks.resetCache();
+            } finally { target.blocks.resumeProjectChanged(); }
+
+            if (!rtc._scriptBlockCache.has(target.id)) rtc._scriptBlockCache.set(target.id, new Map());
+            const cache = rtc._scriptBlockCache.get(target.id);
+            for (const op of tops) {
+                switch (op.type) {
+                    case 'delete': cache.delete(op.rootId); break;
+                    default: if (op.rootId) cache.set(op.rootId, target.blocks.blockToXML(op.rootId, target.comments || {}));
+                }
+            }
+        }
+    } finally { rtc.onIngoreUpdate(false); }
+}
+
+// ── Message router ───────────────────────────────────────────────
+
+export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeers, rtc, Blockly }) {
+    _Blockly = Blockly;
     const vm = addon.tab.traps.vm;
 
-    /**
-     * @param {string} peerId
-     * @param {object} data
-     */
     return async function handlePeerMessage(peerId, msgs) {
-        console.log("[协作] 收到来自 " + peerId + " 的消息:", msgs);
         const data = JSON.parse(msgs);
-        rtc.onIngoreUpdate(true);
-
         switch (data.type) {
-            // ── Phase 1: snapshot ──
-            case SERVER_OPCODE.SNAPSHOT:
-                const sb3Base = data.data;
-                const binary = atob(sb3Base);
-
-                const bytes = new Uint8Array(binary.length);
-
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
+            case SERVER_OPCODE.SNAPSHOT: {
+                const bin = atob(data.data); const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                 setURLParamsFromSearchString(data.config);
-                const oldLoadingState =
-                    ReduxStore.state.scratchGui.projectState.loadingState;
+                const oldSt = ReduxStore.state.scratchGui.projectState.loadingState;
                 ReduxStore.state.scratchGui.projectTitle = data.projectName;
-
                 ReduxStore.dispatch(openLoadingProject());
-
-                const uploadAction = requestProjectUpload(oldLoadingState);
-                if (uploadAction) ReduxStore.dispatch(uploadAction);
-
-                const loadingState =
-                    ReduxStore.state.scratchGui.projectState.loadingState;
-                let success = false;
-
+                const ua = requestProjectUpload(oldSt); if (ua) ReduxStore.dispatch(ua);
+                const ls = ReduxStore.state.scratchGui.projectState.loadingState;
+                let ok = false;
+                rtc.onIngoreUpdate(true);
                 try {
-                    localStorage.setItem(
-                        "IM_SURE_IT_WONT_BREAK_MY_PROJECT",
-                        true,
-                    );
-                    await vm.loadProject(bytes.buffer);
-                    vm.renderer.draw();
-                    success = true;
+                    localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
+                    await vm.loadProject(bytes.buffer); vm.renderer.draw(); ok = true;
                     document.title = `${data.projectName} - ${APP_NAME}`;
                 } finally {
-                    const doneAction = onLoadedProject(
-                        loadingState,
-                        false,
-                        success,
-                    );
-                    if (doneAction) ReduxStore.dispatch(doneAction);
+                    const d = onLoadedProject(ls, false, ok); if (d) ReduxStore.dispatch(d);
                     ReduxStore.dispatch(closeLoadingProject());
                 }
-                // 延迟更新快照和恢复flag
-                setTimeout(() => {
-                    rtc._vm_snapshot = rtc.deepClone(vm);
-                    rtc.onIngoreUpdate(false);
-                }, 200);
-                return; // 不执行末尾的onIngoreUpdate(false)
-
-            case SERVER_OPCODE.POINTER:
-                if (data.workspaceIndex !== rtc.editingTargetIndex) {
-                    break;
+                setTimeout(() => rtc.onIngoreUpdate(false), 200);
+                return;
+            }
+            case SERVER_OPCODE.POINTER: {
+                if (data.workspaceIndex !== rtc.editingTargetIndex) break;
+                const ws2 = _Blockly.getMainWorkspace(); if (!ws2) break;
+                const svg = ws2.getParentSvg();
+                let pc = svg.querySelector(`.${idHead}pointer-container`);
+                if (!pc) {
+                    pc = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    pc.classList.add(`${idHead}pointer-container`);
+                    const ct = ws2.getCanvas().getAttribute("transform"); if (ct) pc.setAttribute("transform", ct);
+                    svg.appendChild(pc); setupScaleObserver();
                 }
-
-                const ws = Blockly.getMainWorkspace();
-                const svg = ws.getParentSvg();
-
-                let pointerContainer = svg.querySelector(
-                    `.${idHead}pointer-container`,
-                );
-                if (!pointerContainer) {
-                    pointerContainer = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "g",
-                    );
-                    pointerContainer.classList.add(
-                        `${idHead}pointer-container`,
-                    );
-
-                    const canvas = ws.getCanvas();
-                    const canvasTransform = canvas.getAttribute("transform");
-                    if (canvasTransform) {
-                        pointerContainer.setAttribute(
-                            "transform",
-                            canvasTransform,
-                        );
-                    }
-
-                    svg.appendChild(pointerContainer);
-
-                    setupScaleObserver();
-                }
-
-                const fixedScale = 0.3 / ws.scale;
-
-                const oldPointer = document.querySelector(
-                    `.${idHead}pointer[id="${data.id}"]`,
-                );
-                if (oldPointer) {
-                    oldPointer.setAttribute(
-                        "transform",
-                        `translate(${data.position.x},${data.position.y}) scale(${fixedScale})`,
-                    );
-                } else {
-                    const Pointer = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "g",
-                    );
-                    Pointer.innerHTML = pointerSVG("#0099ff", data.name);
-                    Pointer.id = data.id;
-                    Pointer.classList.add(`${idHead}pointer`);
-                    Pointer.setAttribute(
-                        "transform",
-                        `translate(${data.position.x},${data.position.y}) scale(${fixedScale})`,
-                    );
-                    pointerContainer.appendChild(Pointer);
-
-                    const textEl = Pointer.querySelector(
-                        ".sa-collab-name-text",
-                    );
-                    const bgEl = Pointer.querySelector(".sa-collab-name-bg");
-                    if (textEl && bgEl) {
-                        const box = textEl.getBBox();
-                        bgEl.setAttribute("width", box.width + 20);
-                    }
+                const fs = 0.3 / ws2.scale;
+                const old = document.querySelector(`.${idHead}pointer[id="${data.id}"]`);
+                if (old) { old.setAttribute("transform", `translate(${data.position.x},${data.position.y}) scale(${fs})`); }
+                else {
+                    const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    el.innerHTML = pointerSVG("#0099ff", data.name); el.id = data.id; el.classList.add(`${idHead}pointer`);
+                    el.setAttribute("transform", `translate(${data.position.x},${data.position.y}) scale(${fs})`);
+                    pc.appendChild(el);
+                    const te = el.querySelector(".sa-collab-name-text"), be = el.querySelector(".sa-collab-name-bg");
+                    if (te && be) { const b = te.getBBox(); be.setAttribute("width", b.width + 20); }
                 }
                 break;
+            }
             case SERVER_OPCODE.POINTER_LEAVE:
-                if(data.fromIndex !== rtc.editingTargetIndex) break;
-                document.querySelectorAll(`.${idHead}pointer[id="${data.id}"]`).forEach(ele => ele.remove());
-                break
-
-            case SERVER_OPCODE.BLOCK_UPDATE:
+                if (data.fromIndex !== rtc.editingTargetIndex) break;
+                document.querySelectorAll(`.${idHead}pointer[id="${data.id}"]`).forEach(e => e.remove());
+                break;
             case SERVER_OPCODE.BLOCK_CREATE:
-            case SERVER_OPCODE.BLOCK_DELETE:
-            case SERVER_OPCODE.BLOCK_CONNECT:
-            case SERVER_OPCODE.BLOCK_DISCONNECT:
-                // patch 层在此处理
+                if (data.targetIndex !== undefined && data.xml && data.rootId)
+                    enqueue({ type: 'create', targetIndex: data.targetIndex, rootId: data.rootId, xml: data.xml }, rtc);
                 break;
             case SERVER_OPCODE.BLOCK_UPDATE:
-            case SERVER_OPCODE.BLOCK_CREATE:
+                if (data.targetIndex !== undefined && data.xml)
+                    enqueue({ type: 'update', targetIndex: data.targetIndex, rootId: data.rootId, xml: data.xml }, rtc);
+                break;
+            case SERVER_OPCODE.BLOCK_MOVE:
+                if (data.targetIndex !== undefined && data.rootId)
+                    enqueue({ type: 'move', targetIndex: data.targetIndex, rootId: data.rootId, x: data.x, y: data.y }, rtc);
+                break;
             case SERVER_OPCODE.BLOCK_DELETE:
-            case SERVER_OPCODE.BLOCK_CONNECT:
-            case SERVER_OPCODE.BLOCK_DISCONNECT:
-                // patch 层在此处理
+                if (data.rootIds && data.targetIndex !== undefined)
+                    for (const rid of data.rootIds) enqueue({ type: 'delete', targetIndex: data.targetIndex, rootId: rid }, rtc);
                 break;
-            case SERVER_OPCODE.COSTUME_ADD:
-            case SERVER_OPCODE.COSTUME_UPDATE:
-            case SERVER_OPCODE.SOUND_ADD:
-            case SERVER_OPCODE.SOUND_UPDATE:
+            case SERVER_OPCODE.BLOCK_FIELD_CHANGE:
+                if (data.targetIndex !== undefined && data.fields && data.rootId)
+                    enqueue({ type: 'fieldChange', targetIndex: data.targetIndex, rootId: data.rootId, fields: data.fields }, rtc);
                 break;
-
+            case SERVER_OPCODE.BLOCK_MUTATION_CHANGE:
+                if (data.targetIndex !== undefined && data.rootId && data.mutation)
+                    enqueue({ type: 'mutationChange', targetIndex: data.targetIndex, rootId: data.rootId, mutation: data.mutation }, rtc);
+                break;
             case SERVER_OPCODE.SPRITE_DELETE:
-                rtc._vm.deleteSprite(
-                    rtc._vm.runtime.targets[data.targetIndex].id,
-                );
+                rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
+                if (rtc._spriteIdCache) rtc._spriteIdCache.delete(rtc._vm.runtime.targets[data.targetIndex]?.id);
                 break;
             case SERVER_OPCODE.SPRITE_ADD:
                 if (data.spriteData) {
+                    rtc.onIngoreUpdate(true);
                     try {
-                        const binary = atob(data.spriteData);
-                        const bytes = new Uint8Array(binary.length);
-                        for (let i = 0; i < binary.length; i++) {
-                            bytes[i] = binary.charCodeAt(i);
-                        }
-                        await vm.addSprite(bytes.buffer, false);
-                        // 延迟更新快照和恢复flag，确保所有PROJECT_CHANGED事件都处理完
-                        setTimeout(() => {
-                            rtc._vm_snapshot = rtc.deepClone(vm);
-                            rtc.onIngoreUpdate(false);
-                            console.log("[协作] 角色添加成功");
-                        }, 200);
-                    } catch (e) {
-                        console.error("[协作] 角色添加失败:", e);
-                        rtc.onIngoreUpdate(false);
-                    }
-                    return; // 不执行末尾的onIngoreUpdate(false)
+                        const b2 = atob(data.spriteData); const bytes2 = new Uint8Array(b2.length);
+                        for (let i = 0; i < b2.length; i++) bytes2[i] = b2.charCodeAt(i);
+                        await vm.addSprite(bytes2.buffer, false);
+                        if (rtc._spriteIdCache) rtc._spriteIdCache = new Set(rtc._vm.runtime.targets.map(t => t.id));
+                        setTimeout(() => rtc.onIngoreUpdate(false), 200);
+                    } catch (e) { console.error("[协作] 角色添加失败:", e); rtc.onIngoreUpdate(false); }
+                    return;
                 }
                 break;
-
-            // ── Phase 4: runtime ──
-            case SERVER_OPCODE.PING:
-                sendToPeer(peerId, { type: SERVER_OPCODE.PONG });
-                break;
-            case SERVER_OPCODE.PONG:
-                break;
-
-            default:
-                console.warn("[协作] 未知P2P消息类型:", data.type);
+            case SERVER_OPCODE.PING: sendToPeer(peerId, { type: SERVER_OPCODE.PONG }); break;
         }
-        rtc.onIngoreUpdate(false);
     };
 }

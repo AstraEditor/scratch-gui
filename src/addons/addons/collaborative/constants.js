@@ -11,15 +11,17 @@ export const SERVER_OPCODE = {
   SNAPSHOT: "snapshot",
   SPRITE_ADD: "sprite-add",
   SPRITE_DELETE: "sprite-delete",
-  BLOCK_CREATE: "block-create",
-  BLOCK_DELETE: "block-delete",
-  BLOCK_CONNECT: "block-connect",
-  BLOCK_DISCONNECT: "block-disconnect",
+  BLOCK_CREATE: "block-create",           // 新增积木（完整 XML）
+  BLOCK_DELETE: "block-delete",           // 删除积木（只发 rootId）
+  BLOCK_MOVE: "block-move",               // 移动积木（只发 rootId + 坐标）
+  BLOCK_UPDATE: "block-update",           // 修改字段/连接（完整 XML）
+  BLOCK_FIELD_CHANGE: "block-field-change",     // 字段值变更（增量）
+  BLOCK_MUTATION_CHANGE: "block-mutation-change", // mutation 变更（增量）
+  BLOCK_INPUT_CHANGE: "block-input-change",     // 输入连接变更（增量）
   COSTUME_ADD: "costume-add",
   COSTUME_UPDATE: "costume-update",
   SOUND_ADD: "sound-add",
   SOUND_UPDATE: "sound-update",
-  SPRITE_DELETE: "sprite-delete",
   PING: "ping",
   PONG: "pong",
 }

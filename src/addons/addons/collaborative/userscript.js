@@ -262,13 +262,17 @@ export default async function ({ addon, console, msg }) {
         },
     });
 
+    const Blockly = await addon.tab.traps.getBlockly();
+    rtc.setBlockly(Blockly);
+
     handlePeerMessage = createHandler({
         addon,
         msg,
         console,
         sendToPeer: rtc.sendToPeer,
         broadcastToPeers: rtc.broadcastToPeers,
-        rtc
+        rtc,
+        Blockly,
     });
 
     // ── 注册菜单栏 ─────────────────────────────────────────────
