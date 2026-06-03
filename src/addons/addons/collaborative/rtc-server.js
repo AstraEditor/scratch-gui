@@ -21,6 +21,7 @@ export class RTCServer {
         this._vm = vm;
 
         this._scriptBlockCache = new Map();
+        this._commentCache = new Map();  // targetId → Array<serialized comment> (sorted by key)
         this._spriteIdCache = null;
 
         this._server = null;
@@ -193,33 +194,92 @@ export class RTCServer {
                 }
                 for (const rid of removedRootIds) cache.delete(rid);
             }
+
+            // ── Comments: detect changes by index ──
+            const liveComments = target.comments || {};
+            const sortedKeys = Object.keys(liveComments).sort();
+            const liveSerialized = sortedKeys.map(k => this._serializeComment(liveComments[k]));
+
+            if (!this._commentCache.has(targetId)) this._commentCache.set(targetId, []);
+            const cachedSerialized = this._commentCache.get(targetId);
+
+            const maxLen = Math.max(liveSerialized.length, cachedSerialized.length);
+            for (let ci = 0; ci < maxLen; ci++) {
+                const live = liveSerialized[ci];
+                const cached = cachedSerialized[ci];
+
+                if (ci >= cachedSerialized.length) {
+                    // New comment at this index
+                    waitForBroadcast.push({
+                        type: SERVER_OPCODE.COMMENT_CREATE,
+                        targetIndex,
+                        commentIndex: ci,
+                        commentId: sortedKeys[ci],
+                        data: live,
+                    });
+                } else if (ci >= liveSerialized.length) {
+                    // Comment removed at this index
+                    waitForBroadcast.push({
+                        type: SERVER_OPCODE.COMMENT_DELETE,
+                        targetIndex,
+                        commentIndex: ci,
+                    });
+                } else if (live !== cached) {
+                    // Comment changed at this index
+                    const oldData = JSON.parse(cached);
+                    const newData = JSON.parse(live);
+                    if (oldData.text === newData.text &&
+                        oldData.width === newData.width &&
+                        oldData.height === newData.height &&
+                        oldData.minimized === newData.minimized &&
+                        oldData.blockId === newData.blockId) {
+                        // Only position changed
+                        waitForBroadcast.push({
+                            type: SERVER_OPCODE.COMMENT_MOVE,
+                            targetIndex,
+                            commentIndex: ci,
+                            x: newData.x,
+                            y: newData.y,
+                        });
+                    } else {
+                        waitForBroadcast.push({
+                            type: SERVER_OPCODE.COMMENT_UPDATE,
+                            targetIndex,
+                            commentIndex: ci,
+                            data: live,
+                        });
+                    }
+                }
+            }
+            this._commentCache.set(targetId, liveSerialized);
         }
 
-        // Dedup: BLOCK_DELETE trumps all; BLOCK_UPDATE trumps BLOCK_CREATE
-        // for the same key (a block can't be both created and updated).
-        const blockOpsByKey = new Map();
+        // Dedup: for same key, last write wins
+        const opMap = new Map();
         for (const item of waitForBroadcast) {
             if (item.type === SERVER_OPCODE.SPRITE_ADD || item.type === SERVER_OPCODE.SPRITE_DELETE) continue;
+            let key;
             if (item.type === SERVER_OPCODE.BLOCK_DELETE) {
-                for (const rid of item.rootIds)
-                    blockOpsByKey.set(`${item.targetIndex}:${rid}`, [item]);
-            } else {
-                const key = `${item.targetIndex}:${item.rootId}`;
-                const ex = blockOpsByKey.get(key);
-                if (!ex) { blockOpsByKey.set(key, [item]); }
-                else if (item.type === SERVER_OPCODE.BLOCK_UPDATE) { blockOpsByKey.set(key, [item]); }
-                else if (item.type === SERVER_OPCODE.BLOCK_CREATE && !ex.some(o => o.type === SERVER_OPCODE.BLOCK_UPDATE)) { ex.push(item); }
-            }
+                for (const rid of item.rootIds) opMap.set(`${item.targetIndex}:block:${rid}`, { type: SERVER_OPCODE.BLOCK_DELETE, targetIndex: item.targetIndex, rootId: rid });
+                continue;
+            } else if (item.rootId) {
+                key = `${item.targetIndex}:block:${item.rootId}`;
+            } else if (item.commentIndex !== undefined) {
+                key = `${item.targetIndex}:comment:${item.commentIndex}`;
+            } else continue;
+            opMap.set(key, item);
         }
 
         const finalMessages = [];
         for (const item of waitForBroadcast) {
             if (item.type === SERVER_OPCODE.SPRITE_ADD || item.type === SERVER_OPCODE.SPRITE_DELETE) finalMessages.push(item);
         }
-        for (const [, ops] of blockOpsByKey) { for (const op of ops) finalMessages.push(op); }
+        for (const [, op] of opMap) finalMessages.push(op);
 
         if (finalMessages.length > 0) {
-            const msgSummary = finalMessages.map(m => `${m.type}:${m.rootId || m.rootIds || m.id}`).join(', ');
+            const msgSummary = finalMessages.map(m =>
+                `${m.type}:${m.rootId || m.rootIds || m.commentIndex !== undefined ? 'c' + m.commentIndex : m.id || '?'}`
+            ).join(', ');
             this._console.log(`[协作] broadcasting ${finalMessages.length} msgs: ${msgSummary}`);
             for (const item of finalMessages) {
                 if (item.type === SERVER_OPCODE.SPRITE_ADD) {
@@ -235,6 +295,18 @@ export class RTCServer {
                 }
             }
         }
+    }
+
+    _serializeComment(comment) {
+        return JSON.stringify({
+            text: comment.text,
+            x: comment.x,
+            y: comment.y,
+            width: comment.width,
+            height: comment.height,
+            minimized: comment.minimized,
+            blockId: comment.blockId,
+        });
     }
 
     _arrayBufferToBase64(buffer) {

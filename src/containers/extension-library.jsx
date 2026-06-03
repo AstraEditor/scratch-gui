@@ -17,10 +17,6 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
 
-const extensionsLibs = [
-    { id: "tw", url: "https://extensions.turbowarp.org/" },
-    { id: "ae", url: "https://editors.astras.top/extensions" },
-]
 
 const messages = defineMessages({
     extensionTitle: {
@@ -51,16 +47,19 @@ let cachedTwError = false;
 let cachedAeError = false;
 
 const fetchLibrary = async () => {
-    const getExtLists = extensionsLibs.map(async (item) => {
+    const getExtLists = extensionTags.map(async (item) => {
+        if (item.tag === 'scratch') {
+            return { id: item.tag, data: {extensions: []}, error: false };
+        }
         try {
             const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
             if (!res.ok) {
-                return { id: item.id, error: true };
+                return { id: item.tag, error: true };
             }
             const data = await res.json();
-            return { id: item.id, data, error: false };
+            return { id: item.tag, data, error: false };
         } catch (e) {
-            return { id: item.id, error: true };
+            return { id: item.tag, error: true };
         }
     });
 
@@ -81,7 +80,7 @@ const fetchLibrary = async () => {
             return;
         }
         
-        extensionsData.extensions.push(extensionsLibs[index]);
+        extensionsData.extensions.push(extensionTags[index]);
         result.data.extensions.forEach(extension => {
             extensionsData.extensions.push(extension);
         });
@@ -92,8 +91,8 @@ const fetchLibrary = async () => {
     let tag = "";
     let link = "";
     extensionsData.extensions.forEach((extension, index) => {
-        if (extension.id !== undefined && extension.url !== undefined) {
-            tag = extension.id; //平台
+        if (extension.tag !== undefined && extension.url !== undefined) {
+            tag = extension.tag; //平台
             link = extension.url //链接
         } else { //扩展
             returnData.push({

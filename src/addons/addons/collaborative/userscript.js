@@ -15,7 +15,7 @@ export default async function ({ addon, console, msg }) {
     const tabID = idHead + "tab";
 
 
-    let url = "localhost:1832";
+    let url = "154.9.252.181:1832";
     let id = "";
     const isVSCLayout = getSetting("EnableVSCodeLayout");
 

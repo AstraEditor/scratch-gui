@@ -206,11 +206,15 @@
       'use strict';
 
       // Ignore ResizeObserver errors (common benign browser warning)
-      var debounceResizeObserver = function(e) {
-        if (e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+      var debounceResizeObserver = function (e) {
+        try {
+          if (e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
             e.message.indexOf('ResizeObserver') !== -1) {
-          e.stopImmediatePropagation();
-          return false;
+            e.stopImmediatePropagation();
+            return false;
+          }
+        } catch {
+          return true
         }
       };
       window.addEventListener('error', debounceResizeObserver, true);
@@ -289,7 +293,7 @@
       } catch {
         // ignore
       }
-      
+
       // dark, accent: ae
       theme = 'dark';
       accent = '#0099ff';

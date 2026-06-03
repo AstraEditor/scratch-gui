@@ -1,3 +1,4 @@
+process.noDeprecation = true; // 禁用过时警告
 // 这是用于进行信令服务器的文件
 // 直接`node local-server.js`执行
 
@@ -57,7 +58,7 @@ class SignalingServer {
             const userName = queryParams.name;
 
             if (!roomId) {
-                ws.close(4000, "Room ID is required");
+                ws.close(4000, "房间ID不能为空");
                 return;
             }
             this.clients.set(clientId, {
@@ -104,7 +105,7 @@ class SignalingServer {
                     const data = JSON.parse(message.toString());
                     this.handleMessage(clientId, data);
                 } catch (error) {
-                    console.error("Invalid message format:", error);
+                    console.error(`客户端 ${userName}(${clientId}) 发送了无效的消息格式:`, error);
                 }
             });
 
@@ -112,7 +113,7 @@ class SignalingServer {
                 const client = this.clients.get(clientId);
                 if (client) {
                     console.log(
-                        `客户端 ${clientId} 断开了 ${client.roomId} 房间的连接`,
+                        `客户端 ${userName}(${clientId}) 断开了 ${client.roomId} 房间的连接`,
                     );
 
                     this.broadcastToRoom(
@@ -131,13 +132,13 @@ class SignalingServer {
             });
 
             ws.on("error", (error) => {
-                console.error(`Client ${clientId} error:`, error);
+                console.error(`客户端 ${userName}(${clientId}) 发生错误:`, error);
             });
         });
 
         this.server.listen(this.port, () => {
-            console.log(`Server running on ws://localhost:${this.port}`);
-            console.log(`Server stats: http://localhost:${this.port}/stats`);
+            console.log(`服务器运行在 ws://localhost:${this.port}`);
+            console.log(`服务器统计信息: http://localhost:${this.port}/stats`);
         });
     }
 
@@ -158,18 +159,18 @@ class SignalingServer {
                 }
                 break;
 
-            case "chat-message":
-                // 广播聊天消息到房间
+            case "exit":
+                // 广播退出消息到房间
                 this.broadcastToRoom(client.roomId, {
-                    type: "chat-message",
-                    senderId: clientId,
-                    message: data.message,
+                    type: "exit",
+                    clientId,
+                    userName: client.userName,
                     timestamp: Date.now(),
                 });
                 break;
 
             default:
-                console.warn(`Unknown message type: ${data.type}`);
+                console.warn(`客户端 ${clientId} 发送了未知的消息类型: ${data.type}`);
         }
     }
 

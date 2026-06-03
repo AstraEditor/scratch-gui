@@ -181,9 +181,126 @@ function applyFieldChange(target, op) {
 
 function applyMutationChange(target, op) {
     target.blocks.changeBlock({ id: op.rootId, element: 'mutation', value: op.mutation });
-    // Mutation changes structural — treat like a tree replacement
     const xml = target.blocks.blockToXML(op.rootId, target.comments || {});
     if (xml) replaceTree(target, xml, op.rootId);
+}
+
+// ── Comment operations (use commentIndex, not commentId) ──────────
+
+function _getCommentByIndex(target, index) {
+    const keys = Object.keys(target.comments).sort();
+    if (index < 0 || index >= keys.length) return null;
+    const key = keys[index];
+    return { key, comment: target.comments[key] };
+}
+
+function _getWsCommentByIndex(ws, target, index) {
+    const keys = Object.keys(target.comments).sort();
+    if (index < 0 || index >= keys.length) return null;
+    return ws.getCommentById(keys[index]);
+}
+
+function applyCommentCreate(target, op, isEditingTarget) {
+    const data = typeof op.data === 'string' ? JSON.parse(op.data) : op.data;
+    // If a comment already exists at this index, update it instead of creating a duplicate
+    const existing = _getCommentByIndex(target, op.commentIndex);
+    if (existing) {
+        const c = existing.comment;
+        if (data.text !== undefined) c.text = data.text;
+        if (data.x !== undefined) c.x = data.x;
+        if (data.y !== undefined) c.y = data.y;
+        if (data.width !== undefined) c.width = data.width;
+        if (data.height !== undefined) c.height = data.height;
+        if (data.minimized !== undefined) c.minimized = data.minimized;
+        if (data.blockId !== undefined) c.blockId = data.blockId;
+        return;
+    }
+    // Use commentId from message (not data.id, which is excluded from serialization)
+    const commentId = op.commentId || `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    target.createComment(commentId, data.blockId || null, data.text || '',
+        data.x || 0, data.y || 0, data.width || 100, data.height || 100, !!data.minimized);
+
+    if (!isEditingTarget) return;
+    const ws = getWS();
+    if (!ws || !_Blockly.WorkspaceCommentSvg) return;
+    try {
+        _Blockly.Events.disable();
+        const comment = new _Blockly.WorkspaceCommentSvg(
+            ws,
+            data.text || '',
+            data.height || 100,
+            data.width || 100,
+            !!data.minimized,
+            commentId
+        );
+        comment.moveBy(data.x || 0, data.y || 0);
+        comment.initSvg();
+    } catch (e) { console.error("[协作] 创建注释DOM失败:", e); }
+    finally { _Blockly.Events.enable(); }
+}
+
+function applyCommentUpdate(target, op, isEditingTarget) {
+    const entry = _getCommentByIndex(target, op.commentIndex);
+    if (!entry) return;
+    const comment = entry.comment;
+    const data = typeof op.data === 'string' ? JSON.parse(op.data) : op.data;
+    if (data.text !== undefined) comment.text = data.text;
+    if (data.width !== undefined) comment.width = Math.max(data.width, 20);
+    if (data.height !== undefined) comment.height = Math.max(data.height, 20);
+    if (data.minimized !== undefined) comment.minimized = data.minimized;
+    if (data.blockId !== undefined) comment.blockId = data.blockId;
+
+    if (!isEditingTarget) return;
+    const ws = getWS();
+    if (!ws) return;
+    const wsComment = _getWsCommentByIndex(ws, target, op.commentIndex);
+    if (!wsComment) return;
+    try {
+        _Blockly.Events.disable();
+        if (data.text !== undefined) wsComment.setText(data.text);
+        if (data.width !== undefined) wsComment.setWidth(Math.max(data.width, 20));
+        if (data.height !== undefined) wsComment.setHeight(Math.max(data.height, 20));
+    } catch (e) { console.error("[协作] 更新注释DOM失败:", e); }
+    finally { _Blockly.Events.enable(); }
+}
+
+function applyCommentMove(target, op, isEditingTarget) {
+    const entry = _getCommentByIndex(target, op.commentIndex);
+    if (!entry) return;
+    entry.comment.x = op.x;
+    entry.comment.y = op.y;
+
+    if (!isEditingTarget) return;
+    const ws = getWS();
+    if (!ws) return;
+    const wsComment = _getWsCommentByIndex(ws, target, op.commentIndex);
+    if (wsComment) {
+        try {
+            _Blockly.Events.disable();
+            const cur = wsComment.getXY();
+            wsComment.moveBy(op.x - cur.x, op.y - cur.y);
+        } finally { _Blockly.Events.enable(); }
+    }
+}
+
+function applyCommentDelete(target, op, isEditingTarget) {
+    const entry = _getCommentByIndex(target, op.commentIndex);
+    if (!entry) return;
+
+    if (!isEditingTarget) {
+        delete target.comments[entry.key];
+        return;
+    }
+    const ws = getWS();
+    if (!ws) { delete target.comments[entry.key]; return; }
+    const wsComment = ws.getCommentById(entry.key);
+    if (wsComment) {
+        try {
+            _Blockly.Events.disable();
+            wsComment.dispose();
+        } finally { _Blockly.Events.enable(); }
+    }
+    delete target.comments[entry.key];
 }
 
 // ── Flush ────────────────────────────────────────────────────────
@@ -218,7 +335,8 @@ function flush(rtc) {
             // This prevents cross-sprite contamination where sprite A's blocks appear in sprite B's workspace
             const isEditingTarget = vm.runtime._editingTarget && target.id === vm.runtime._editingTarget.id;
 
-            const order = { delete: 0, fieldChange: 1, mutationChange: 2, move: 3, create: 4, update: 5 };
+            const order = { delete: 0, fieldChange: 1, mutationChange: 2, move: 3, create: 4, update: 5,
+                commentDelete: -1, commentMove: 0.5, commentCreate: 4.5, commentUpdate: 5.5 };
             tops.sort((a, b) => (order[a.type] || 9) - (order[b.type] || 9));
             target.blocks.suppressProjectChanged();
             try {
@@ -230,6 +348,10 @@ function flush(rtc) {
                         case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
                         case 'fieldChange': applyFieldChange(target, op); break;
                         case 'mutationChange': applyMutationChange(target, op); break;
+                        case 'commentCreate': applyCommentCreate(target, op, isEditingTarget); break;
+                        case 'commentUpdate': applyCommentUpdate(target, op, isEditingTarget); break;
+                        case 'commentMove': applyCommentMove(target, op, isEditingTarget); break;
+                        case 'commentDelete': applyCommentDelete(target, op, isEditingTarget); break;
                     }
                 }
                 target.blocks.resetCache();
@@ -243,6 +365,14 @@ function flush(rtc) {
                     default: if (op.rootId) cache.set(op.rootId, target.blocks.blockToXML(op.rootId, target.comments || {}));
                 }
             }
+
+            // Sync comment cache (array-based, keyed by sorted index)
+            const sortedKeys = Object.keys(target.comments).sort();
+            const newCache = sortedKeys.map(k => {
+                const c = target.comments[k];
+                return JSON.stringify({ text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId });
+            });
+            rtc._commentCache.set(target.id, newCache);
         }
     } finally { rtc.onIngoreUpdate(false); }
 }
@@ -275,7 +405,19 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                     const d = onLoadedProject(ls, false, ok); if (d) ReduxStore.dispatch(d);
                     ReduxStore.dispatch(closeLoadingProject());
                 }
-                setTimeout(() => rtc.onIngoreUpdate(false), 200);
+                setTimeout(() => {
+                    // Rebuild comment cache from current state after snapshot load
+                    // (IDs change on load, so we must re-index from the new state)
+                    for (const target of vm.runtime.targets) {
+                        const sortedKeys = Object.keys(target.comments || {}).sort();
+                        const serialized = sortedKeys.map(k => {
+                            const c = target.comments[k];
+                            return JSON.stringify({ text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId });
+                        });
+                        rtc._commentCache.set(target.id, serialized);
+                    }
+                    rtc.onIngoreUpdate(false);
+                }, 200);
                 return;
             }
             case SERVER_OPCODE.POINTER: {
@@ -329,6 +471,23 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
             case SERVER_OPCODE.BLOCK_MUTATION_CHANGE:
                 if (data.targetIndex !== undefined && data.rootId && data.mutation)
                     enqueue({ type: 'mutationChange', targetIndex: data.targetIndex, rootId: data.rootId, mutation: data.mutation }, rtc);
+                break;
+            // ── Comment operations ──
+            case SERVER_OPCODE.COMMENT_CREATE:
+                if (data.targetIndex !== undefined && data.commentIndex !== undefined && data.data)
+                    enqueue({ type: 'commentCreate', targetIndex: data.targetIndex, commentIndex: data.commentIndex, commentId: data.commentId, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.COMMENT_UPDATE:
+                if (data.targetIndex !== undefined && data.commentIndex !== undefined && data.data)
+                    enqueue({ type: 'commentUpdate', targetIndex: data.targetIndex, commentIndex: data.commentIndex, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.COMMENT_MOVE:
+                if (data.targetIndex !== undefined && data.commentIndex !== undefined)
+                    enqueue({ type: 'commentMove', targetIndex: data.targetIndex, commentIndex: data.commentIndex, x: data.x, y: data.y }, rtc);
+                break;
+            case SERVER_OPCODE.COMMENT_DELETE:
+                if (data.targetIndex !== undefined && data.commentIndex !== undefined)
+                    enqueue({ type: 'commentDelete', targetIndex: data.targetIndex, commentIndex: data.commentIndex }, rtc);
                 break;
             case SERVER_OPCODE.SPRITE_DELETE:
                 rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
