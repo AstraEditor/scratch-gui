@@ -185,122 +185,43 @@ function applyMutationChange(target, op) {
     if (xml) replaceTree(target, xml, op.rootId);
 }
 
-// ── Comment operations (use commentIndex, not commentId) ──────────
+// ── Comment sync (full replacement, no ID/index issues) ─────────
 
-function _getCommentByIndex(target, index) {
-    const keys = Object.keys(target.comments).sort();
-    if (index < 0 || index >= keys.length) return null;
-    const key = keys[index];
-    return { key, comment: target.comments[key] };
-}
+function applyCommentSync(target, op, isEditingTarget) {
+    const newComments = op.comments || [];
+    const oldKeys = Object.keys(target.comments);
 
-function _getWsCommentByIndex(ws, target, index) {
-    const keys = Object.keys(target.comments).sort();
-    if (index < 0 || index >= keys.length) return null;
-    return ws.getCommentById(keys[index]);
-}
+    // 1. Clear old comments from VM
+    for (const key of oldKeys) delete target.comments[key];
 
-function applyCommentCreate(target, op, isEditingTarget) {
-    const data = typeof op.data === 'string' ? JSON.parse(op.data) : op.data;
-    // If a comment already exists at this index, update it instead of creating a duplicate
-    const existing = _getCommentByIndex(target, op.commentIndex);
-    if (existing) {
-        const c = existing.comment;
-        if (data.text !== undefined) c.text = data.text;
-        if (data.x !== undefined) c.x = data.x;
-        if (data.y !== undefined) c.y = data.y;
-        if (data.width !== undefined) c.width = data.width;
-        if (data.height !== undefined) c.height = data.height;
-        if (data.minimized !== undefined) c.minimized = data.minimized;
-        if (data.blockId !== undefined) c.blockId = data.blockId;
-        return;
+    // 2. Create new comments in VM (with fresh IDs)
+    for (const c of newComments) {
+        const id = `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        target.createComment(id, c.blockId || null, c.text || '',
+            c.x || 0, c.y || 0, c.width || 100, c.height || 100, !!c.minimized);
     }
-    // Use commentId from message (not data.id, which is excluded from serialization)
-    const commentId = op.commentId || `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    target.createComment(commentId, data.blockId || null, data.text || '',
-        data.x || 0, data.y || 0, data.width || 100, data.height || 100, !!data.minimized);
 
-    if (!isEditingTarget) return;
-    const ws = getWS();
-    if (!ws || !_Blockly.WorkspaceCommentSvg) return;
-    try {
-        _Blockly.Events.disable();
-        const comment = new _Blockly.WorkspaceCommentSvg(
-            ws,
-            data.text || '',
-            data.height || 100,
-            data.width || 100,
-            !!data.minimized,
-            commentId
-        );
-        comment.moveBy(data.x || 0, data.y || 0);
-        comment.initSvg();
-    } catch (e) { console.error("[协作] 创建注释DOM失败:", e); }
-    finally { _Blockly.Events.enable(); }
-}
-
-function applyCommentUpdate(target, op, isEditingTarget) {
-    const entry = _getCommentByIndex(target, op.commentIndex);
-    if (!entry) return;
-    const comment = entry.comment;
-    const data = typeof op.data === 'string' ? JSON.parse(op.data) : op.data;
-    if (data.text !== undefined) comment.text = data.text;
-    if (data.width !== undefined) comment.width = Math.max(data.width, 20);
-    if (data.height !== undefined) comment.height = Math.max(data.height, 20);
-    if (data.minimized !== undefined) comment.minimized = data.minimized;
-    if (data.blockId !== undefined) comment.blockId = data.blockId;
-
+    // 3. Update Blockly DOM only for current editing target
     if (!isEditingTarget) return;
     const ws = getWS();
     if (!ws) return;
-    const wsComment = _getWsCommentByIndex(ws, target, op.commentIndex);
-    if (!wsComment) return;
     try {
         _Blockly.Events.disable();
-        if (data.text !== undefined) wsComment.setText(data.text);
-        if (data.width !== undefined) wsComment.setWidth(Math.max(data.width, 20));
-        if (data.height !== undefined) wsComment.setHeight(Math.max(data.height, 20));
-    } catch (e) { console.error("[协作] 更新注释DOM失败:", e); }
+        // Remove all existing workspace comments
+        const existing = ws.getTopComments(true);
+        for (const ec of existing) ec.dispose();
+        // Recreate all comments
+        for (const c of newComments) {
+            if (!_Blockly.WorkspaceCommentSvg) continue;
+            const comment = new _Blockly.WorkspaceCommentSvg(
+                ws, c.text || '', c.height || 100, c.width || 100, !!c.minimized,
+                `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+            );
+            comment.moveBy(c.x || 0, c.y || 0);
+            comment.initSvg();
+        }
+    } catch (e) { console.error("[协作] 同步注释DOM失败:", e); }
     finally { _Blockly.Events.enable(); }
-}
-
-function applyCommentMove(target, op, isEditingTarget) {
-    const entry = _getCommentByIndex(target, op.commentIndex);
-    if (!entry) return;
-    entry.comment.x = op.x;
-    entry.comment.y = op.y;
-
-    if (!isEditingTarget) return;
-    const ws = getWS();
-    if (!ws) return;
-    const wsComment = _getWsCommentByIndex(ws, target, op.commentIndex);
-    if (wsComment) {
-        try {
-            _Blockly.Events.disable();
-            const cur = wsComment.getXY();
-            wsComment.moveBy(op.x - cur.x, op.y - cur.y);
-        } finally { _Blockly.Events.enable(); }
-    }
-}
-
-function applyCommentDelete(target, op, isEditingTarget) {
-    const entry = _getCommentByIndex(target, op.commentIndex);
-    if (!entry) return;
-
-    if (!isEditingTarget) {
-        delete target.comments[entry.key];
-        return;
-    }
-    const ws = getWS();
-    if (!ws) { delete target.comments[entry.key]; return; }
-    const wsComment = ws.getCommentById(entry.key);
-    if (wsComment) {
-        try {
-            _Blockly.Events.disable();
-            wsComment.dispose();
-        } finally { _Blockly.Events.enable(); }
-    }
-    delete target.comments[entry.key];
 }
 
 // ── Flush ────────────────────────────────────────────────────────
@@ -348,10 +269,7 @@ function flush(rtc) {
                         case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
                         case 'fieldChange': applyFieldChange(target, op); break;
                         case 'mutationChange': applyMutationChange(target, op); break;
-                        case 'commentCreate': applyCommentCreate(target, op, isEditingTarget); break;
-                        case 'commentUpdate': applyCommentUpdate(target, op, isEditingTarget); break;
-                        case 'commentMove': applyCommentMove(target, op, isEditingTarget); break;
-                        case 'commentDelete': applyCommentDelete(target, op, isEditingTarget); break;
+                        case 'commentSync': applyCommentSync(target, op, isEditingTarget); break;
                     }
                 }
                 target.blocks.resetCache();
@@ -366,13 +284,13 @@ function flush(rtc) {
                 }
             }
 
-            // Sync comment cache (array-based, keyed by sorted index)
+            // Sync comment cache (full JSON string for simple comparison)
             const sortedKeys = Object.keys(target.comments).sort();
-            const newCache = sortedKeys.map(k => {
+            const liveList = sortedKeys.map(k => {
                 const c = target.comments[k];
-                return JSON.stringify({ text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId });
+                return { text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
             });
-            rtc._commentCache.set(target.id, newCache);
+            rtc._commentCache.set(target.id, JSON.stringify(liveList));
         }
     } finally { rtc.onIngoreUpdate(false); }
 }
@@ -407,14 +325,13 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 }
                 setTimeout(() => {
                     // Rebuild comment cache from current state after snapshot load
-                    // (IDs change on load, so we must re-index from the new state)
                     for (const target of vm.runtime.targets) {
                         const sortedKeys = Object.keys(target.comments || {}).sort();
-                        const serialized = sortedKeys.map(k => {
+                        const liveList = sortedKeys.map(k => {
                             const c = target.comments[k];
-                            return JSON.stringify({ text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId });
+                            return { text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
                         });
-                        rtc._commentCache.set(target.id, serialized);
+                        rtc._commentCache.set(target.id, JSON.stringify(liveList));
                     }
                     rtc.onIngoreUpdate(false);
                 }, 200);
@@ -472,22 +389,10 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 if (data.targetIndex !== undefined && data.rootId && data.mutation)
                     enqueue({ type: 'mutationChange', targetIndex: data.targetIndex, rootId: data.rootId, mutation: data.mutation }, rtc);
                 break;
-            // ── Comment operations ──
-            case SERVER_OPCODE.COMMENT_CREATE:
-                if (data.targetIndex !== undefined && data.commentIndex !== undefined && data.data)
-                    enqueue({ type: 'commentCreate', targetIndex: data.targetIndex, commentIndex: data.commentIndex, commentId: data.commentId, data: data.data }, rtc);
-                break;
-            case SERVER_OPCODE.COMMENT_UPDATE:
-                if (data.targetIndex !== undefined && data.commentIndex !== undefined && data.data)
-                    enqueue({ type: 'commentUpdate', targetIndex: data.targetIndex, commentIndex: data.commentIndex, data: data.data }, rtc);
-                break;
-            case SERVER_OPCODE.COMMENT_MOVE:
-                if (data.targetIndex !== undefined && data.commentIndex !== undefined)
-                    enqueue({ type: 'commentMove', targetIndex: data.targetIndex, commentIndex: data.commentIndex, x: data.x, y: data.y }, rtc);
-                break;
-            case SERVER_OPCODE.COMMENT_DELETE:
-                if (data.targetIndex !== undefined && data.commentIndex !== undefined)
-                    enqueue({ type: 'commentDelete', targetIndex: data.targetIndex, commentIndex: data.commentIndex }, rtc);
+            // ── Comment sync ──
+            case SERVER_OPCODE.COMMENT_SYNC:
+                if (data.targetIndex !== undefined && data.comments)
+                    enqueue({ type: 'commentSync', targetIndex: data.targetIndex, comments: data.comments }, rtc);
                 break;
             case SERVER_OPCODE.SPRITE_DELETE:
                 rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);

@@ -18,10 +18,7 @@ export const SERVER_OPCODE = {
   BLOCK_FIELD_CHANGE: "block-field-change",     // 字段值变更（增量）
   BLOCK_MUTATION_CHANGE: "block-mutation-change", // mutation 变更（增量）
   BLOCK_INPUT_CHANGE: "block-input-change",     // 输入连接变更（增量）
-  COMMENT_CREATE: "comment-create",       // 新增注释
-  COMMENT_UPDATE: "comment-update",       // 更新注释内容/尺寸/最小化状态
-  COMMENT_MOVE: "comment-move",           // 移动注释位置
-  COMMENT_DELETE: "comment-delete",       // 删除注释
+  COMMENT_SYNC: "comment-sync",           // 注释全量同步（简单可靠）
   COSTUME_ADD: "costume-add",
   COSTUME_UPDATE: "costume-update",
   SOUND_ADD: "sound-add",

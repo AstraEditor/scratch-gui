@@ -195,63 +195,31 @@ export class RTCServer {
                 for (const rid of removedRootIds) cache.delete(rid);
             }
 
-            // ── Comments: detect changes by index ──
+            // ── Comments: full sync on any change ──
             const liveComments = target.comments || {};
             const sortedKeys = Object.keys(liveComments).sort();
-            const liveSerialized = sortedKeys.map(k => this._serializeComment(liveComments[k]));
+            const liveList = sortedKeys.map(k => ({
+                text: liveComments[k].text,
+                x: liveComments[k].x,
+                y: liveComments[k].y,
+                width: liveComments[k].width,
+                height: liveComments[k].height,
+                minimized: liveComments[k].minimized,
+                blockId: liveComments[k].blockId,
+            }));
+            const liveSerialized = JSON.stringify(liveList);
 
-            if (!this._commentCache.has(targetId)) this._commentCache.set(targetId, []);
+            if (!this._commentCache.has(targetId)) this._commentCache.set(targetId, '');
             const cachedSerialized = this._commentCache.get(targetId);
 
-            const maxLen = Math.max(liveSerialized.length, cachedSerialized.length);
-            for (let ci = 0; ci < maxLen; ci++) {
-                const live = liveSerialized[ci];
-                const cached = cachedSerialized[ci];
-
-                if (ci >= cachedSerialized.length) {
-                    // New comment at this index
-                    waitForBroadcast.push({
-                        type: SERVER_OPCODE.COMMENT_CREATE,
-                        targetIndex,
-                        commentIndex: ci,
-                        commentId: sortedKeys[ci],
-                        data: live,
-                    });
-                } else if (ci >= liveSerialized.length) {
-                    // Comment removed at this index
-                    waitForBroadcast.push({
-                        type: SERVER_OPCODE.COMMENT_DELETE,
-                        targetIndex,
-                        commentIndex: ci,
-                    });
-                } else if (live !== cached) {
-                    // Comment changed at this index
-                    const oldData = JSON.parse(cached);
-                    const newData = JSON.parse(live);
-                    if (oldData.text === newData.text &&
-                        oldData.width === newData.width &&
-                        oldData.height === newData.height &&
-                        oldData.minimized === newData.minimized &&
-                        oldData.blockId === newData.blockId) {
-                        // Only position changed
-                        waitForBroadcast.push({
-                            type: SERVER_OPCODE.COMMENT_MOVE,
-                            targetIndex,
-                            commentIndex: ci,
-                            x: newData.x,
-                            y: newData.y,
-                        });
-                    } else {
-                        waitForBroadcast.push({
-                            type: SERVER_OPCODE.COMMENT_UPDATE,
-                            targetIndex,
-                            commentIndex: ci,
-                            data: live,
-                        });
-                    }
-                }
+            if (liveSerialized !== cachedSerialized) {
+                waitForBroadcast.push({
+                    type: SERVER_OPCODE.COMMENT_SYNC,
+                    targetIndex,
+                    comments: liveList,
+                });
+                this._commentCache.set(targetId, liveSerialized);
             }
-            this._commentCache.set(targetId, liveSerialized);
         }
 
         // Dedup: for same key, last write wins
@@ -264,8 +232,8 @@ export class RTCServer {
                 continue;
             } else if (item.rootId) {
                 key = `${item.targetIndex}:block:${item.rootId}`;
-            } else if (item.commentIndex !== undefined) {
-                key = `${item.targetIndex}:comment:${item.commentIndex}`;
+            } else if (item.type === SERVER_OPCODE.COMMENT_SYNC) {
+                key = `${item.targetIndex}:comment`;  // one sync per target
             } else continue;
             opMap.set(key, item);
         }
@@ -278,7 +246,7 @@ export class RTCServer {
 
         if (finalMessages.length > 0) {
             const msgSummary = finalMessages.map(m =>
-                `${m.type}:${m.rootId || m.rootIds || m.commentIndex !== undefined ? 'c' + m.commentIndex : m.id || '?'}`
+                `${m.type}:${m.rootId || m.rootIds || m.type === SERVER_OPCODE.COMMENT_SYNC ? 'comments' : m.id || '?'}`
             ).join(', ');
             this._console.log(`[协作] broadcasting ${finalMessages.length} msgs: ${msgSummary}`);
             for (const item of finalMessages) {
