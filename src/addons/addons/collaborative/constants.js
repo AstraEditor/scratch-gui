@@ -19,10 +19,14 @@ export const SERVER_OPCODE = {
   BLOCK_MUTATION_CHANGE: "block-mutation-change", // mutation 变更（增量）
   BLOCK_INPUT_CHANGE: "block-input-change",     // 输入连接变更（增量）
   COMMENT_SYNC: "comment-sync",           // 注释全量同步（简单可靠）
-  COSTUME_ADD: "costume-add",
-  COSTUME_UPDATE: "costume-update",
-  SOUND_ADD: "sound-add",
-  SOUND_UPDATE: "sound-update",
+  EXTENSION_ADD: "extension-add",         // 添加扩展
+  EXTENSION_REMOVE: "extension-remove",   // 移除扩展
+  COSTUME_ADD: "costume-add",             // 添加造型
+  COSTUME_UPDATE: "costume-update",       // 更新造型（含数据变更）
+  COSTUME_DELETE: "costume-delete",       // 删除造型
+  SOUND_ADD: "sound-add",                 // 添加音频
+  SOUND_UPDATE: "sound-update",           // 更新音频（含数据变更）
+  SOUND_DELETE: "sound-delete",           // 删除音频
   PING: "ping",
   PONG: "pong",
 }

@@ -21,7 +21,10 @@ export class RTCServer {
         this._vm = vm;
 
         this._scriptBlockCache = new Map();
-        this._commentCache = new Map();  // targetId → Array<serialized comment> (sorted by key)
+        this._commentCache = new Map();  // targetId → JSON string
+        this._extensionCache = new Set(); // Set<extensionId>
+        this._costumeCache = new Map();   // targetId → Array<{name, dataFormat, bitmapResolution, rotationCenterX, rotationCenterY}>
+        this._soundCache = new Map();     // targetId → Array<{name, dataFormat, rate, sampleCount}>
         this._spriteIdCache = null;
 
         this._server = null;
@@ -107,6 +110,23 @@ export class RTCServer {
                 this.updateProject();
             }, 200);
         });
+
+        // Hook extension loading since it doesn't emit PROJECT_CHANGED
+        const origLoad = this._vm.extensionManager.loadExtensionURL.bind(this._vm.extensionManager);
+        this._vm.extensionManager.loadExtensionURL = (...args) => {
+            return origLoad(...args).then(result => {
+                if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
+                    this.updateProject();
+                }
+                return result;
+            });
+        };
+
+        this._vm.runtime.on("EXTENSION_REMOVED", () => {
+            if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
+                this.updateProject();
+            }
+        });
     }
 
     async updateProject() {
@@ -130,6 +150,30 @@ export class RTCServer {
             }
         }
         this._spriteIdCache = newIdsSet;
+
+        // ── Extensions: detect changes ──
+        // Use _loadedExtensions keys (includes builtins like pen, music)
+        // getExtensionURLs() skips builtins, so we can't rely on it alone
+        const loadedExtIds = new Set(this._vm.extensionManager._loadedExtensions.keys());
+        for (const id of loadedExtIds) {
+            if (!this._extensionCache.has(id)) {
+                this._console.log(`[协作] extension ADD: ${id}`);
+                // For builtins, send just the id; for custom, send the URL too
+                const urls = this._vm.extensionManager.getExtensionURLs ? this._vm.extensionManager.getExtensionURLs() : {};
+                waitForBroadcast.push({
+                    type: SERVER_OPCODE.EXTENSION_ADD,
+                    id,
+                    url: urls[id] || null,
+                });
+            }
+        }
+        for (const id of this._extensionCache) {
+            if (!loadedExtIds.has(id)) {
+                this._console.log(`[协作] extension REMOVE: ${id}`);
+                waitForBroadcast.push({ type: SERVER_OPCODE.EXTENSION_REMOVE, id });
+            }
+        }
+        this._extensionCache = loadedExtIds;
 
         // Seed XML cache for targets that appeared since last run (remote
         // SPRITE_ADD). Only seed if the target was NOT previously tracked
@@ -163,7 +207,43 @@ export class RTCServer {
             const addedRootIds = liveScripts.filter(rid => !cacheKeys.has(rid));
             const removedRootIds = Array.from(cacheKeys).filter(rid => !liveSet.has(rid));
 
+            // Detect replacements: when a head block is replaced, its rootId changes
+            // but the stack is at the same position. Match by coordinates.
+            const replacements = new Map(); // oldRootId -> newRootId
+            const handledAdded = new Set();
+            for (const oldRid of removedRootIds) {
+                const oldXml = cache.get(oldRid);
+                if (!oldXml) continue;
+                const oldX = parseFloat(oldXml.match(/x="([^"]+)"/)?.[1]);
+                const oldY = parseFloat(oldXml.match(/y="([^"]+)"/)?.[1]);
+                if (!isFinite(oldX) || !isFinite(oldY)) continue;
+
+                for (const newRid of addedRootIds) {
+                    if (handledAdded.has(newRid)) continue;
+                    try {
+                        const newXml = target.blocks.blockToXML(newRid, target.comments || {});
+                        if (!newXml) continue;
+                        const newX = parseFloat(newXml.match(/x="([^"]+)"/)?.[1]);
+                        const newY = parseFloat(newXml.match(/y="([^"]+)"/)?.[1]);
+                        if (isFinite(newX) && isFinite(newY) && Math.abs(oldX - newX) < 5 && Math.abs(oldY - newY) < 5) {
+                            replacements.set(oldRid, { newRid, newXml });
+                            handledAdded.add(newRid);
+                            break;
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // Send replacements as UPDATE (with oldRootId for receiver to delete old tree)
+            for (const [oldRid, { newRid, newXml }] of replacements) {
+                waitForBroadcast.push({ type: SERVER_OPCODE.BLOCK_UPDATE, targetIndex, rootId: newRid, oldRootId: oldRid, xml: newXml });
+                cache.delete(oldRid);
+                cache.set(newRid, newXml);
+            }
+
+            // Remaining added = genuinely new stacks
             for (const rid of addedRootIds) {
+                if (handledAdded.has(rid)) continue;
                 try {
                     const xml = target.blocks.blockToXML(rid, target.comments || {});
                     if (xml) {
@@ -173,26 +253,40 @@ export class RTCServer {
                 } catch (e) { this._console.error(`[协作] 序列化脚本 ${rid} 失败:`, e); }
             }
 
-            // Modified scripts: compare XML
-            const commonIds = liveScripts.filter(rid => cacheKeys.has(rid));
+            // Modified scripts: compare XML (same rootId)
+            // Performance: use lightweight fingerprint first, only serialize if fingerprint changed
+            const commonIds = liveScripts.filter(rid => cacheKeys.has(rid) && !replacements.has(rid));
             for (const rid of commonIds) {
                 try {
+                    // Fast fingerprint: count blocks + top-level coords
+                    const rootBlock = target.blocks._blocks[rid];
+                    if (!rootBlock) continue;
+                    const blockCount = this._countBlocks(target.blocks, rid);
+                    const fp = `${blockCount}|${rootBlock.x}|${rootBlock.y}|${rootBlock.opcode}|${rootBlock.next}`;
+                    const cachedFp = this._scriptFingerprints?.get(`${targetId}:${rid}`);
+                    
+                    if (cachedFp && cachedFp === fp) continue; // No change detected by fingerprint
+
                     const curXml = target.blocks.blockToXML(rid, target.comments || {});
                     if (!curXml) continue;
                     const oldXml = cache.get(rid);
                     if (curXml === oldXml) continue;
+                    
+                    if (!this._scriptFingerprints) this._scriptFingerprints = new Map();
+                    this._scriptFingerprints.set(`${targetId}:${rid}`, fp);
                     cache.set(rid, curXml);
                     waitForBroadcast.push({ type: SERVER_OPCODE.BLOCK_UPDATE, targetIndex, rootId: rid, xml: curXml });
                 } catch (e) { this._console.error(`[协作] 比较脚本 ${rid} 失败:`, e); }
             }
 
-            // Removed scripts: only delete if truly gone (not just re-parented)
-            if (removedRootIds.length > 0) {
-                const trulyDeleted = removedRootIds.filter(rid => !target.blocks._blocks[rid]);
+            // Removed scripts: only delete if truly gone (not replaced)
+            const trulyRemoved = removedRootIds.filter(rid => !replacements.has(rid));
+            if (trulyRemoved.length > 0) {
+                const trulyDeleted = trulyRemoved.filter(rid => !target.blocks._blocks[rid]);
                 if (trulyDeleted.length > 0) {
                     waitForBroadcast.push({ type: SERVER_OPCODE.BLOCK_DELETE, targetIndex, rootIds: trulyDeleted });
                 }
-                for (const rid of removedRootIds) cache.delete(rid);
+                for (const rid of trulyRemoved) cache.delete(rid);
             }
 
             // ── Comments: full sync on any change ──
@@ -220,12 +314,147 @@ export class RTCServer {
                 });
                 this._commentCache.set(targetId, liveSerialized);
             }
+
+            // ── Costumes: detect changes (index-based diffing) ──
+            const costumes = target.sprite?.costumes || [];
+            // 快照包含 assetId，用于检测纯内容变更（画面改变但元数据不变的情况）
+            const costumeSnapshot = costumes.map(c => ({
+                assetId: c.assetId,
+                name: c.name, dataFormat: c.dataFormat,
+                bitmapResolution: c.bitmapResolution,
+                rotationCenterX: c.rotationCenterX, rotationCenterY: c.rotationCenterY,
+            }));
+            if (!this._costumeCache.has(targetId)) {
+                this._costumeCache.set(targetId, costumeSnapshot);
+                this._console.log(`[协作-造型] 初始化缓存 target=${targetId} count=${costumes.length} assetIds=[${costumes.map(c=>c.assetId).join(',')}]`);
+            }
+            const cachedCostumes = this._costumeCache.get(targetId);
+            // 基于索引位置逐位比较
+            if (JSON.stringify(costumeSnapshot) !== JSON.stringify(cachedCostumes)) {
+                this._console.log(`[协作-造型] 检测到变更 target=${targetId} live=${costumes.length} cached=${cachedCostumes.length}`);
+                const maxLen = Math.max(costumes.length, cachedCostumes.length);
+                for (let i = 0; i < maxLen; i++) {
+                    const live = costumes[i];
+                    const cached = cachedCostumes[i];
+                    if (!live && cached) {
+                        this._console.log(`[协作-造型] DELETE index=${i} name=${cached.name}`);
+                        waitForBroadcast.push({ type: SERVER_OPCODE.COSTUME_DELETE, targetIndex, index: i });
+                    } else if (live && !cached) {
+                        const data = live.asset?.data;
+                        if (data) {
+                            let binary = '';
+                            const bytes = new Uint8Array(data);
+                            for (let bi = 0; bi < bytes.byteLength; bi++) binary += String.fromCharCode(bytes[bi]);
+                            waitForBroadcast.push({
+                                type: SERVER_OPCODE.COSTUME_ADD, targetIndex, index: i,
+                                name: live.name, assetId: live.assetId, dataFormat: live.dataFormat,
+                                bitmapResolution: live.bitmapResolution,
+                                rotationCenterX: live.rotationCenterX, rotationCenterY: live.rotationCenterY,
+                                data: btoa(binary),
+                            });
+                            this._console.log(`[协作-造型] ADD index=${i} name=${live.name} assetId=${live.assetId} fmt=${live.dataFormat} size=${bytes.byteLength}`);
+                        } else {
+                            this._console.warn(`[协作-造型] ADD index=${i} name=${live.name} 但 asset.data 为空，跳过！assetId=${live.assetId} asset=${!!live.asset}`);
+                        }
+                    } else if (live && cached) {
+                        // assetId 变化说明内容变了，元数据变化说明属性变了
+                        const liveKey = { assetId: live.assetId, name: live.name, dataFormat: live.dataFormat, bitmapResolution: live.bitmapResolution, rotationCenterX: live.rotationCenterX, rotationCenterY: live.rotationCenterY };
+                        const cachedKey = { assetId: cached.assetId, name: cached.name, dataFormat: cached.dataFormat, bitmapResolution: cached.bitmapResolution, rotationCenterX: cached.rotationCenterX, rotationCenterY: cached.rotationCenterY };
+                        if (JSON.stringify(liveKey) !== JSON.stringify(cachedKey)) {
+                            const data = live.asset?.data;
+                            if (data) {
+                                let binary = '';
+                                const bytes = new Uint8Array(data);
+                                for (let bi = 0; bi < bytes.byteLength; bi++) binary += String.fromCharCode(bytes[bi]);
+                                waitForBroadcast.push({
+                                    type: SERVER_OPCODE.COSTUME_UPDATE, targetIndex, index: i,
+                                    name: live.name, assetId: live.assetId,
+                                    dataFormat: live.dataFormat, bitmapResolution: live.bitmapResolution,
+                                    rotationCenterX: live.rotationCenterX, rotationCenterY: live.rotationCenterY,
+                                    data: btoa(binary),
+                                });
+                                this._console.log(`[协作-造型] UPDATE index=${i} name=${live.name} oldAssetId=${cached.assetId} newAssetId=${live.assetId} fmt=${live.dataFormat} size=${bytes.byteLength}`);
+                            } else {
+                                this._console.warn(`[协作-造型] UPDATE index=${i} name=${live.name} 但 asset.data 为空，跳过！assetId=${live.assetId} asset=${!!live.asset}`);
+                            }
+                        }
+                    }
+                }
+                this._costumeCache.set(targetId, costumeSnapshot);
+            }
+
+            // ── Sounds: detect changes (index-based diffing) ──
+            const sounds = target.sprite?.sounds || [];
+            const soundSnapshot = sounds.map(s => ({
+                assetId: s.assetId,
+                name: s.name, dataFormat: s.dataFormat, rate: s.rate, sampleCount: s.sampleCount,
+            }));
+            if (!this._soundCache.has(targetId)) {
+                this._soundCache.set(targetId, soundSnapshot);
+                this._console.log(`[协作-音频] 初始化缓存 target=${targetId} count=${sounds.length} assetIds=[${sounds.map(s=>s.assetId).join(',')}]`);
+            }
+            const cachedSounds = this._soundCache.get(targetId);
+            if (JSON.stringify(soundSnapshot) !== JSON.stringify(cachedSounds)) {
+                this._console.log(`[协作-音频] 检测到变更 target=${targetId} live=${sounds.length} cached=${cachedSounds.length}`);
+                const maxLen = Math.max(sounds.length, cachedSounds.length);
+                for (let i = 0; i < maxLen; i++) {
+                    const live = sounds[i];
+                    const cached = cachedSounds[i];
+                    if (!live && cached) {
+                        this._console.log(`[协作-音频] DELETE index=${i} name=${cached.name}`);
+                        waitForBroadcast.push({ type: SERVER_OPCODE.SOUND_DELETE, targetIndex, index: i });
+                    } else if (live && !cached) {
+                        const data = live.asset?.data;
+                        if (data) {
+                            let binary = '';
+                            const bytes = new Uint8Array(data);
+                            for (let bi = 0; bi < bytes.byteLength; bi++) binary += String.fromCharCode(bytes[bi]);
+                            waitForBroadcast.push({
+                                type: SERVER_OPCODE.SOUND_ADD, targetIndex, index: i,
+                                name: live.name, assetId: live.assetId, dataFormat: live.dataFormat,
+                                rate: live.rate, sampleCount: live.sampleCount,
+                                data: btoa(binary),
+                            });
+                            this._console.log(`[协作-音频] ADD index=${i} name=${live.name} assetId=${live.assetId} fmt=${live.dataFormat} size=${bytes.byteLength}`);
+                        } else {
+                            this._console.warn(`[协作-音频] ADD index=${i} name=${live.name} 但 asset.data 为空，跳过！assetId=${live.assetId} asset=${!!live.asset}`);
+                        }
+                    } else if (live && cached) {
+                        const liveKey = { assetId: live.assetId, name: live.name, dataFormat: live.dataFormat, rate: live.rate, sampleCount: live.sampleCount };
+                        const cachedKey = { assetId: cached.assetId, name: cached.name, dataFormat: cached.dataFormat, rate: cached.rate, sampleCount: cached.sampleCount };
+                        if (JSON.stringify(liveKey) !== JSON.stringify(cachedKey)) {
+                            const data = live.asset?.data;
+                            if (data) {
+                                let binary = '';
+                                const bytes = new Uint8Array(data);
+                                for (let bi = 0; bi < bytes.byteLength; bi++) binary += String.fromCharCode(bytes[bi]);
+                                waitForBroadcast.push({
+                                    type: SERVER_OPCODE.SOUND_UPDATE, targetIndex, index: i,
+                                    name: live.name, assetId: live.assetId,
+                                    dataFormat: live.dataFormat, rate: live.rate, sampleCount: live.sampleCount,
+                                    data: btoa(binary),
+                                });
+                                this._console.log(`[协作-音频] UPDATE index=${i} name=${live.name} oldAssetId=${cached.assetId} newAssetId=${live.assetId} fmt=${live.dataFormat} size=${bytes.byteLength}`);
+                            } else {
+                                this._console.warn(`[协作-音频] UPDATE index=${i} name=${live.name} 但 asset.data 为空，跳过！assetId=${live.assetId} asset=${!!live.asset}`);
+                            }
+                        }
+                    }
+                }
+                this._soundCache.set(targetId, soundSnapshot);
+            }
         }
+
+
 
         // Dedup: for same key, last write wins
         const opMap = new Map();
         for (const item of waitForBroadcast) {
             if (item.type === SERVER_OPCODE.SPRITE_ADD || item.type === SERVER_OPCODE.SPRITE_DELETE) continue;
+            if (item.type === SERVER_OPCODE.EXTENSION_ADD || item.type === SERVER_OPCODE.EXTENSION_REMOVE) {
+                opMap.set(`ext:${item.url}`, item);
+                continue;
+            }
             let key;
             if (item.type === SERVER_OPCODE.BLOCK_DELETE) {
                 for (const rid of item.rootIds) opMap.set(`${item.targetIndex}:block:${rid}`, { type: SERVER_OPCODE.BLOCK_DELETE, targetIndex: item.targetIndex, rootId: rid });
@@ -233,7 +462,11 @@ export class RTCServer {
             } else if (item.rootId) {
                 key = `${item.targetIndex}:block:${item.rootId}`;
             } else if (item.type === SERVER_OPCODE.COMMENT_SYNC) {
-                key = `${item.targetIndex}:comment`;  // one sync per target
+                key = `${item.targetIndex}:comment`;
+            } else if (item.type === SERVER_OPCODE.COSTUME_ADD || item.type === SERVER_OPCODE.COSTUME_DELETE || item.type === SERVER_OPCODE.COSTUME_UPDATE) {
+                key = `${item.targetIndex}:costume:${item.index}`;
+            } else if (item.type === SERVER_OPCODE.SOUND_ADD || item.type === SERVER_OPCODE.SOUND_DELETE || item.type === SERVER_OPCODE.SOUND_UPDATE) {
+                key = `${item.targetIndex}:sound:${item.index}`;
             } else continue;
             opMap.set(key, item);
         }
@@ -245,9 +478,13 @@ export class RTCServer {
         for (const [, op] of opMap) finalMessages.push(op);
 
         if (finalMessages.length > 0) {
-            const msgSummary = finalMessages.map(m =>
-                `${m.type}:${m.rootId || m.rootIds || m.type === SERVER_OPCODE.COMMENT_SYNC ? 'comments' : m.id || '?'}`
-            ).join(', ');
+            const msgSummary = finalMessages.map(m => {
+                if (m.type === SERVER_OPCODE.BLOCK_DELETE) return `${m.type}:${m.rootId || m.rootIds}`;
+                if (m.type === SERVER_OPCODE.COMMENT_SYNC) return `${m.type}:comments`;
+                if (m.type === SERVER_OPCODE.COSTUME_ADD || m.type === SERVER_OPCODE.COSTUME_DELETE || m.type === SERVER_OPCODE.COSTUME_UPDATE) return `${m.type}:${m.name}`;
+                if (m.type === SERVER_OPCODE.SOUND_ADD || m.type === SERVER_OPCODE.SOUND_DELETE || m.type === SERVER_OPCODE.SOUND_UPDATE) return `${m.type}:${m.name}`;
+                return `${m.type}:${m.rootId || m.id || '?'}`;
+            }).join(', ');
             this._console.log(`[协作] broadcasting ${finalMessages.length} msgs: ${msgSummary}`);
             for (const item of finalMessages) {
                 if (item.type === SERVER_OPCODE.SPRITE_ADD) {
@@ -263,6 +500,26 @@ export class RTCServer {
                 }
             }
         }
+    }
+
+    _countBlocks(blocks, rootId) {
+        let count = 0;
+        const visited = new Set();
+        const stack = [rootId];
+        while (stack.length > 0) {
+            const id = stack.pop();
+            if (!id || visited.has(id)) continue;
+            visited.add(id);
+            count++;
+            const b = blocks._blocks[id];
+            if (!b) continue;
+            if (b.next) stack.push(b.next);
+            for (const input of Object.values(b.inputs || {})) {
+                if (input.block) stack.push(input.block);
+                if (input.shadow) stack.push(input.shadow);
+            }
+        }
+        return count;
     }
 
     _serializeComment(comment) {
@@ -285,17 +542,19 @@ export class RTCServer {
     }
 
     updateWorkspace() {
-        try {
-            setTimeout(() => {
+        setTimeout(() => {
+            try {
                 const fromIndex = this.editingTargetIndex;
                 this.editingTargetIndex = this._vm.runtime.targets.findIndex(
-                    (ele) => this._vm.runtime._editingTarget.id === ele.id);
+                    (ele) => this._vm.runtime._editingTarget?.id === ele.id);
                 document.querySelectorAll(".sa-collaborative-pointer").forEach((ele) => ele.remove());
-                this.broadcastToPeers(JSON.stringify({
-                    type: SERVER_OPCODE.POINTER_LEAVE, id: this.state.clientId, fromIndex,
-                }));
-            }, 50);
-        } catch { this.editingTargetIndex = -1; }
+                if (fromIndex >= 0) {
+                    this.broadcastToPeers(JSON.stringify({
+                        type: SERVER_OPCODE.POINTER_LEAVE, id: this.state.clientId, fromIndex,
+                    }));
+                }
+            } catch { this.editingTargetIndex = -1; }
+        }, 30);
     }
 
     mouseMoveHandler(e) { this.moveMouse(e, this.workspace); }

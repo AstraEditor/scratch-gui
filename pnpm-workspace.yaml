@@ -1,6 +1,12 @@
 packages:
   - '.'
 
+blockExoticSubdeps: false
+shamefullyHoist: true
+allowBuilds:
+  chromedriver: false
+  core-js: false
+  scratch-blocks: true
 ignoredBuiltDependencies:
   - chromedriver
   - core-js

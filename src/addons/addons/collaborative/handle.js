@@ -112,7 +112,16 @@ function parseXml(xmlString) {
 const _pending = new Map(); let _raf = null, _def = null, _defRaf = null;
 
 function enqueue(op, rtc) {
-    _pending.set(`${op.targetIndex}:${op.rootId || 'unknown'}`, op);
+    // costume/sound 操作用 type+index 做 key，block 操作用 rootId
+    let key;
+    if (op.type === 'costumeAdd' || op.type === 'costumeUpdate' || op.type === 'costumeDelete') {
+        key = `${op.targetIndex}:costume:${op.index}`;
+    } else if (op.type === 'soundAdd' || op.type === 'soundUpdate' || op.type === 'soundDelete') {
+        key = `${op.targetIndex}:sound:${op.index}`;
+    } else {
+        key = `${op.targetIndex}:${op.rootId || 'unknown'}`;
+    }
+    _pending.set(key, op);
     if (!_raf) _raf = requestAnimationFrame(() => { _raf = null; flush(rtc); });
 }
 
@@ -120,29 +129,74 @@ function getWS() { return _Blockly ? _Blockly.getMainWorkspace() : null; }
 
 // ── Replace a block tree (shared by create + update) ─────────────
 
-function replaceTree(target, xmlString, rootId, isEditingTarget) {
+function deleteTree(target, rootId) {
+    const root = target.blocks._blocks[rootId];
+    if (!root) return 0;
+    const collectIds = (id, ids) => {
+        const b = target.blocks._blocks[id];
+        if (!b || ids.has(id)) return;
+        ids.add(id);
+        if (b.next) collectIds(b.next, ids);
+        for (const input of Object.values(b.inputs || {})) {
+            if (input.block) collectIds(input.block, ids);
+            if (input.shadow) collectIds(input.shadow, ids);
+        }
+    };
+    const ids = new Set();
+    collectIds(rootId, ids);
+    for (const id of ids) {
+        delete target.blocks._blocks[id];
+        const si = target.blocks._scripts.indexOf(id);
+        if (si > -1) target.blocks._scripts.splice(si, 1);
+    }
+    return ids;
+}
+
+function replaceTree(target, xmlString, rootId, isEditingTarget, oldRootId) {
     const blockObjs = parseXml(xmlString);
     if (blockObjs.length === 0) return;
 
-    // Remove old tree from _blocks + _scripts
-    for (const b of blockObjs) {
-        delete target.blocks._blocks[b.id];
-        const si = target.blocks._scripts.indexOf(b.id);
-        if (si > -1) target.blocks._scripts.splice(si, 1);
+    // 1. Find and delete ALL existing trees that overlap with new blocks
+    // This handles the case where a head block is replaced: the new XML
+    // contains old block IDs that are still in _blocks under a different rootId
+    const newIds = new Set(blockObjs.map(b => b.id));
+    const rootsToDelete = new Set();
+    for (const id of newIds) {
+        if (target.blocks._blocks[id]) {
+            // Find the root of this block's tree
+            let cur = id;
+            while (target.blocks._blocks[cur]?.parent) {
+                cur = target.blocks._blocks[cur].parent;
+            }
+            rootsToDelete.add(cur);
+        }
     }
-    // Create from XML — createBlock handles _blocks + _scripts
-    for (const b of blockObjs) target.blocks.createBlock(b);
+    // Also delete the tree rooted at oldRootId if provided
+    if (oldRootId) rootsToDelete.add(oldRootId);
 
-    // Only update Blockly workspace DOM if this target is currently being edited
-    // Prevents cross-sprite contamination (e.g., sprite A's blocks appearing in sprite B's workspace)
+    let totalDeleted = 0;
+    for (const rid of rootsToDelete) {
+        totalDeleted += deleteTree(target, rid);
+    }
+
+    // 2. Create new blocks from XML
+    for (const b of blockObjs) {
+        if (!target.blocks._blocks[b.id]) {
+            target.blocks.createBlock(b);
+        }
+    }
+
+    // 3. Update Blockly workspace DOM only for current editing target
     if (!isEditingTarget) return;
-
     const ws = getWS();
-    if (ws && rootId) {
-        const old = ws.getBlockById(rootId);
+    if (ws) {
         _Blockly.Events.disable();
         try {
-            if (old) old.dispose(false);
+            // Dispose all old DOM blocks
+            for (const rid of rootsToDelete) {
+                const old = ws.getBlockById(rid);
+                if (old) old.dispose(false);
+            }
             const dom = _Blockly.Xml.textToDom(`<xml>${xmlString}</xml>`);
             const bn = dom.querySelector('block, shadow');
             if (bn) {
@@ -156,10 +210,18 @@ function replaceTree(target, xmlString, rootId, isEditingTarget) {
 }
 
 function applyDelete(target, op, isEditingTarget) {
-    target.blocks.deleteBlock(op.rootId, false);
+    const ids = deleteTree(target, op.rootId);
     if (!isEditingTarget) return;
     const ws = getWS();
-    if (ws) { const b = ws.getBlockById(op.rootId); if (b) { _Blockly.Events.disable(); try { b.dispose(true); } finally { _Blockly.Events.enable(); } } }
+    if (ws) {
+        _Blockly.Events.disable();
+        try {
+            for (const id of ids) {
+                const b = ws.getBlockById(id);
+                if (b) b.dispose(false);
+            }
+        } finally { _Blockly.Events.enable(); }
+    }
 }
 
 function applyMove(target, op, isEditingTarget) {
@@ -224,9 +286,201 @@ function applyCommentSync(target, op, isEditingTarget) {
     finally { _Blockly.Events.enable(); }
 }
 
+// ── Costume / Sound sync (index-based, in-place update) ─────────
+
+function applyCostumeAdd(target, op) {
+    const vm = target.runtime?.vm || window.vm;
+    if (!vm || !op.data) { console.warn("[协作-造型] ADD 跳过: vm或data缺失"); return Promise.resolve(); }
+    const runtime = vm.runtime;
+    const storage = runtime && runtime.storage;
+    if (!storage) { console.warn("[协作] storage 不可用，无法添加造型"); return Promise.resolve(); }
+    try {
+        const bin = atob(op.data);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const fmt = (op.dataFormat || '').toLowerCase();
+        const assetType = fmt === 'svg' ? storage.AssetType.ImageVector : storage.AssetType.ImageBitmap;
+        const asset = storage.createAsset(assetType, op.dataFormat, bytes, null, true);
+        const md5ext = `${asset.assetId}.${op.dataFormat}`;
+        console.log(`[协作-造型] ADD target=${target.id} index=${op.index} name=${op.name} assetId=${asset.assetId} fmt=${fmt} size=${bytes.byteLength}`);
+        const costumeObj = {
+            name: op.name,
+            assetId: asset.assetId,
+            dataFormat: op.dataFormat,
+            md5: md5ext,
+            bitmapResolution: op.bitmapResolution || 2,
+            rotationCenterX: op.rotationCenterX || 0,
+            rotationCenterY: op.rotationCenterY || 0,
+            asset: asset,
+        };
+        return vm.addCostume(md5ext, costumeObj, target.id).then(() => {
+            const costumes = target.sprite?.costumes || [];
+            const insertIdx = (op.index !== undefined) ? Math.min(op.index, costumes.length) : costumes.length;
+            const newIdx = costumes.length - 1;
+            if (newIdx !== insertIdx && newIdx >= 0) {
+                target.reorderCostume(newIdx, insertIdx);
+            }
+        }).catch(e => console.error("[协作] 添加造型失败:", e));
+    } catch (e) { console.error("[协作] 创建造型 asset 失败:", e); return Promise.resolve(); }
+}
+
+function applyCostumeUpdate(target, op) {
+    // 原地修改指定索引的造型，模仿 vm._updateSvg / vm._updateBitmap
+    // 支持格式转换（SVG<->Bitmap）
+    // 销毁旧 skin 并创建新 skin，使 skinId 变化触发画板刷新
+    const vm = target.runtime?.vm || window.vm;
+    if (!vm || !op.data) { console.warn("[协作-造型] UPDATE 跳过: vm或data缺失"); return; }
+    const runtime = vm.runtime;
+    const storage = runtime && runtime.storage;
+    const renderer = runtime && runtime.renderer;
+    if (!storage || !renderer) { console.warn("[协作] storage/renderer 不可用，无法更新造型"); return; }
+    const costumes = target.sprite?.costumes || [];
+    if (op.index === undefined || op.index < 0 || op.index >= costumes.length) {
+        console.warn(`[协作-造型] UPDATE 跳过: index=${op.index} 越界 costumes.length=${costumes.length}`);
+        return;
+    }
+    const costume = costumes[op.index];
+    if (!costume) { console.warn(`[协作-造型] UPDATE 跳过: index=${op.index} costume为null`); return; }
+    console.log(`[协作-造型] UPDATE target=${target.id} index=${op.index} name=${op.name} oldAssetId=${costume.assetId} newAssetId=${op.assetId} fmt=${op.dataFormat} oldSkinId=${costume.skinId}`);
+    try {
+        const bin = atob(op.data);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const fmt = (op.dataFormat || '').toLowerCase();
+
+        // 更新元数据
+        if (op.name !== undefined) costume.name = op.name;
+        if (op.rotationCenterX !== undefined) costume.rotationCenterX = op.rotationCenterX;
+        if (op.rotationCenterY !== undefined) costume.rotationCenterY = op.rotationCenterY;
+
+        // 销毁旧 skin 并创建新 skin（skinId 变化 → imageId 变化 → 画板刷新）
+        if (costume.skinId != null) renderer.destroySkin(costume.skinId);
+
+        if (fmt === 'svg') {
+            // SVG：同步创建 skin
+            const textDecoder = new TextDecoder();
+            const svgString = textDecoder.decode(bytes);
+            costume.dataFormat = storage.DataFormat.SVG;
+            costume.bitmapResolution = 1;
+            costume.skinId = renderer.createSVGSkin(svgString, [costume.rotationCenterX, costume.rotationCenterY]);
+            costume.size = renderer.getSkinSize(costume.skinId);
+            costume.asset = storage.createAsset(storage.AssetType.ImageVector, costume.dataFormat, (new TextEncoder()).encode(svgString), null, true);
+            costume.assetId = costume.asset.assetId;
+            costume.md5 = `${costume.assetId}.${costume.dataFormat}`;
+            if (target.currentCostume === op.index) {
+                renderer.updateDrawableSkinId(target.drawableID, costume.skinId);
+            }
+            vm.emitTargetsUpdate();
+        } else {
+            // Bitmap：需要异步加载图片后创建 skin
+            costume.dataFormat = storage.DataFormat.PNG;
+            costume.bitmapResolution = op.bitmapResolution ?? costume.bitmapResolution ?? 2;
+            costume.asset = storage.createAsset(storage.AssetType.ImageBitmap, costume.dataFormat, bytes, null, true);
+            costume.assetId = costume.asset.assetId;
+            costume.md5 = `${costume.assetId}.${costume.dataFormat}`;
+            const blob = new Blob([bytes], { type: 'image/png' });
+            const img = new Image();
+            img.onload = () => {
+                costume.skinId = renderer.createBitmapSkin(img, costume.bitmapResolution, [costume.rotationCenterX / costume.bitmapResolution, costume.rotationCenterY / costume.bitmapResolution]);
+                costume.size = renderer.getSkinSize(costume.skinId);
+                if (target.currentCostume === op.index) {
+                    renderer.updateDrawableSkinId(target.drawableID, costume.skinId);
+                }
+                vm.emitTargetsUpdate();
+                URL.revokeObjectURL(img.src);
+            };
+            img.src = URL.createObjectURL(blob);
+        }
+    } catch (e) { console.error("[协作] 更新造型失败:", e); }
+}
+
+function applyCostumeDelete(target, op) {
+    if (op.index !== undefined && op.index >= 0) {
+        const costumes = target.sprite?.costumes || [];
+        if (op.index < costumes.length) {
+            console.log(`[协作-造型] DELETE target=${target.id} index=${op.index} name=${costumes[op.index].name}`);
+            target.deleteCostume(op.index);
+        }
+    }
+}
+
+function applySoundAdd(target, op) {
+    const vm = target.runtime?.vm || window.vm;
+    if (!vm || !op.data) { console.warn("[协作-音频] ADD 跳过: vm或data缺失"); return Promise.resolve(); }
+    const runtime = vm.runtime;
+    const storage = runtime && runtime.storage;
+    if (!storage) { console.warn("[协作] storage 不可用，无法添加音频"); return Promise.resolve(); }
+    try {
+        const bin = atob(op.data);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const asset = storage.createAsset(storage.AssetType.Sound, op.dataFormat, bytes, null, true);
+        console.log(`[协作-音频] ADD target=${target.id} index=${op.index} name=${op.name} assetId=${asset.assetId} fmt=${op.dataFormat} size=${bytes.byteLength}`);
+        const soundObj = {
+            name: op.name,
+            assetId: asset.assetId,
+            dataFormat: op.dataFormat,
+            md5: `${asset.assetId}.${op.dataFormat}`,
+            rate: op.rate || 44100,
+            sampleCount: op.sampleCount || 0,
+            asset: asset,
+        };
+        return vm.addSound(soundObj, target.id).then(() => {
+            const sounds = target.sprite?.sounds || [];
+            const insertIdx = (op.index !== undefined) ? Math.min(op.index, sounds.length) : sounds.length;
+            const newIdx = sounds.length - 1;
+            if (newIdx !== insertIdx && newIdx >= 0) {
+                target.reorderSound(newIdx, insertIdx);
+            }
+        }).catch(e => console.error("[协作] 添加音频失败:", e));
+    } catch (e) { console.error("[协作] 创建音频 asset 失败:", e); return Promise.resolve(); }
+}
+
+function applySoundUpdate(target, op) {
+    // 原地修改指定索引的音频，模仿 vm.updateSoundBuffer
+    const vm = target.runtime?.vm || window.vm;
+    if (!vm || !op.data) { console.warn("[协作-音频] UPDATE 跳过: vm或data缺失"); return; }
+    const runtime = vm.runtime;
+    const storage = runtime && runtime.storage;
+    if (!storage) { console.warn("[协作] storage 不可用，无法更新音频"); return; }
+    const sounds = target.sprite?.sounds || [];
+    if (op.index === undefined || op.index < 0 || op.index >= sounds.length) {
+        console.warn(`[协作-音频] UPDATE 跳过: index=${op.index} 越界 sounds.length=${sounds.length}`);
+        return;
+    }
+    const sound = sounds[op.index];
+    if (!sound) { console.warn(`[协作-音频] UPDATE 跳过: index=${op.index} sound为null`); return; }
+    console.log(`[协作-音频] UPDATE target=${target.id} index=${op.index} name=${op.name} oldAssetId=${sound.assetId} newAssetId=${op.assetId} fmt=${op.dataFormat}`);
+    try {
+        const bin = atob(op.data);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        // 更新元数据
+        if (op.name !== undefined) sound.name = op.name;
+        if (op.rate !== undefined) sound.rate = op.rate;
+        if (op.sampleCount !== undefined) sound.sampleCount = op.sampleCount;
+        // 更新 asset
+        sound.asset = storage.createAsset(storage.AssetType.Sound, op.dataFormat || sound.dataFormat, bytes, null, true);
+        sound.assetId = sound.asset.assetId;
+        sound.dataFormat = op.dataFormat || sound.dataFormat;
+        sound.md5 = `${sound.assetId}.${sound.dataFormat}`;
+        vm.emitTargetsUpdate();
+    } catch (e) { console.error("[协作] 更新音频失败:", e); }
+}
+
+function applySoundDelete(target, op) {
+    if (op.index !== undefined && op.index >= 0) {
+        const sounds = target.sprite?.sounds || [];
+        if (op.index < sounds.length) {
+            console.log(`[协作-音频] DELETE target=${target.id} index=${op.index} name=${sounds[op.index].name}`);
+            target.deleteSound(op.index);
+        }
+    }
+}
+
 // ── Flush ────────────────────────────────────────────────────────
 
-function flush(rtc) {
+async function flush(rtc) {
     if (_pending.size === 0 && !_def) return;
     const newOps = Array.from(_pending.values()); _pending.clear();
     const ops = _def ? _def.concat(newOps) : newOps; _def = null;
@@ -252,26 +506,32 @@ function flush(rtc) {
             const target = vm.runtime.targets[ti];
             if (!target?.blocks) continue;
 
-            // Strict target isolation: only update Blockly DOM for the currently edited target
-            // This prevents cross-sprite contamination where sprite A's blocks appear in sprite B's workspace
             const isEditingTarget = vm.runtime._editingTarget && target.id === vm.runtime._editingTarget.id;
 
-            const order = { delete: 0, fieldChange: 1, mutationChange: 2, move: 3, create: 4, update: 5,
-                commentDelete: -1, commentMove: 0.5, commentCreate: 4.5, commentUpdate: 5.5 };
+            const order = { delete: 0, fieldChange: 1, mutationChange: 2, move: 3, create: 4, update: 5, commentSync: 6, costumeUpdate: 7, costumeDelete: 7, costumeAdd: 8, soundUpdate: 8, soundDelete: 8, soundAdd: 9 };
             tops.sort((a, b) => (order[a.type] || 9) - (order[b.type] || 9));
             target.blocks.suppressProjectChanged();
             try {
+                const assetPromises = [];
                 for (const op of tops) {
                     switch (op.type) {
                         case 'delete': applyDelete(target, op, isEditingTarget); break;
                         case 'move': applyMove(target, op, isEditingTarget); break;
                         case 'create': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
-                        case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
+                        case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget, op.oldRootId); break;
                         case 'fieldChange': applyFieldChange(target, op); break;
                         case 'mutationChange': applyMutationChange(target, op); break;
                         case 'commentSync': applyCommentSync(target, op, isEditingTarget); break;
+                        case 'costumeAdd': { const p = applyCostumeAdd(target, op); if (p) assetPromises.push(p); break; }
+                        case 'costumeUpdate': applyCostumeUpdate(target, op); break;
+                        case 'costumeDelete': applyCostumeDelete(target, op); break;
+                        case 'soundAdd': { const p = applySoundAdd(target, op); if (p) assetPromises.push(p); break; }
+                        case 'soundUpdate': applySoundUpdate(target, op); break;
+                        case 'soundDelete': applySoundDelete(target, op); break;
                     }
                 }
+                // 等待所有异步的 addCostume/addSound 完成后再更新缓存，防止缓存与实际状态不一致导致循环广播
+                if (assetPromises.length > 0) await Promise.all(assetPromises);
                 target.blocks.resetCache();
             } finally { target.blocks.resumeProjectChanged(); }
 
@@ -291,6 +551,25 @@ function flush(rtc) {
                 return { text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
             });
             rtc._commentCache.set(target.id, JSON.stringify(liveList));
+
+            // Update costume/sound caches (含 assetId，与检测端快照格式一致)
+            if (rtc._costumeCache) {
+                const costumes = target.sprite?.costumes || [];
+                rtc._costumeCache.set(target.id, costumes.map(c => ({
+                    assetId: c.assetId,
+                    name: c.name, dataFormat: c.dataFormat,
+                    bitmapResolution: c.bitmapResolution,
+                    rotationCenterX: c.rotationCenterX, rotationCenterY: c.rotationCenterY,
+                })));
+            }
+            if (rtc._soundCache) {
+                const sounds = target.sprite?.sounds || [];
+                rtc._soundCache.set(target.id, sounds.map(s => ({
+                    assetId: s.assetId,
+                    name: s.name, dataFormat: s.dataFormat,
+                    rate: s.rate, sampleCount: s.sampleCount,
+                })));
+            }
         }
     } finally { rtc.onIngoreUpdate(false); }
 }
@@ -324,14 +603,30 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                     ReduxStore.dispatch(closeLoadingProject());
                 }
                 setTimeout(() => {
-                    // Rebuild comment cache from current state after snapshot load
+                    // Rebuild all caches from current state after snapshot load
                     for (const target of vm.runtime.targets) {
+                        // Comment cache
                         const sortedKeys = Object.keys(target.comments || {}).sort();
                         const liveList = sortedKeys.map(k => {
                             const c = target.comments[k];
                             return { text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
                         });
                         rtc._commentCache.set(target.id, JSON.stringify(liveList));
+                        // Costume cache
+                        const costumes = target.sprite?.costumes || [];
+                        rtc._costumeCache.set(target.id, costumes.map(c => ({
+                            assetId: c.assetId,
+                            name: c.name, dataFormat: c.dataFormat,
+                            bitmapResolution: c.bitmapResolution,
+                            rotationCenterX: c.rotationCenterX, rotationCenterY: c.rotationCenterY,
+                        })));
+                        // Sound cache
+                        const sounds = target.sprite?.sounds || [];
+                        rtc._soundCache.set(target.id, sounds.map(s => ({
+                            assetId: s.assetId,
+                            name: s.name, dataFormat: s.dataFormat,
+                            rate: s.rate, sampleCount: s.sampleCount,
+                        })));
                     }
                     rtc.onIngoreUpdate(false);
                 }, 200);
@@ -361,25 +656,29 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 }
                 break;
             }
-            case SERVER_OPCODE.POINTER_LEAVE:
-                if (data.fromIndex !== rtc.editingTargetIndex) break;
+            case SERVER_OPCODE.POINTER_LEAVE: {
+                const myTargetId = rtc._vm.runtime._editingTarget?.id;
+                if (data.targetId !== myTargetId) break;
                 document.querySelectorAll(`.${idHead}pointer[id="${data.id}"]`).forEach(e => e.remove());
                 break;
+            }
             case SERVER_OPCODE.BLOCK_CREATE:
                 if (data.targetIndex !== undefined && data.xml && data.rootId)
                     enqueue({ type: 'create', targetIndex: data.targetIndex, rootId: data.rootId, xml: data.xml }, rtc);
                 break;
             case SERVER_OPCODE.BLOCK_UPDATE:
                 if (data.targetIndex !== undefined && data.xml)
-                    enqueue({ type: 'update', targetIndex: data.targetIndex, rootId: data.rootId, xml: data.xml }, rtc);
+                    enqueue({ type: 'update', targetIndex: data.targetIndex, rootId: data.rootId, oldRootId: data.oldRootId, xml: data.xml }, rtc);
                 break;
             case SERVER_OPCODE.BLOCK_MOVE:
                 if (data.targetIndex !== undefined && data.rootId)
                     enqueue({ type: 'move', targetIndex: data.targetIndex, rootId: data.rootId, x: data.x, y: data.y }, rtc);
                 break;
             case SERVER_OPCODE.BLOCK_DELETE:
-                if (data.rootIds && data.targetIndex !== undefined)
-                    for (const rid of data.rootIds) enqueue({ type: 'delete', targetIndex: data.targetIndex, rootId: rid }, rtc);
+                if (data.targetIndex !== undefined) {
+                    const rids = data.rootIds || (data.rootId ? [data.rootId] : []);
+                    for (const rid of rids) enqueue({ type: 'delete', targetIndex: data.targetIndex, rootId: rid }, rtc);
+                }
                 break;
             case SERVER_OPCODE.BLOCK_FIELD_CHANGE:
                 if (data.targetIndex !== undefined && data.fields && data.rootId)
@@ -393,6 +692,24 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
             case SERVER_OPCODE.COMMENT_SYNC:
                 if (data.targetIndex !== undefined && data.comments)
                     enqueue({ type: 'commentSync', targetIndex: data.targetIndex, comments: data.comments }, rtc);
+                break;
+            case SERVER_OPCODE.EXTENSION_ADD:
+                if (data.id) {
+                    rtc.onIngoreUpdate(true);
+                    const loadPromise = data.url
+                        ? rtc._vm.extensionManager.loadExtensionURL(data.url, true)
+                        : rtc._vm.extensionManager.loadExtensionIdSync(data.id);
+                    Promise.resolve(loadPromise).then(() => {
+                        console.log(`[协作] extension loaded: ${data.id}`);
+                    }).catch(e => {
+                        console.error("[协作] 加载扩展失败:", e);
+                    }).finally(() => rtc.onIngoreUpdate(false));
+                }
+                break;
+            case SERVER_OPCODE.EXTENSION_REMOVE:
+                if (data.id && rtc._vm.extensionManager.isExtensionLoaded(data.id)) {
+                    rtc._vm.extensionManager.unloadExtension(data.id);
+                }
                 break;
             case SERVER_OPCODE.SPRITE_DELETE:
                 rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
@@ -410,6 +727,30 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                     } catch (e) { console.error("[协作] 角色添加失败:", e); rtc.onIngoreUpdate(false); }
                     return;
                 }
+                break;
+            case SERVER_OPCODE.COSTUME_ADD:
+                if (data.targetIndex !== undefined && data.data)
+                    enqueue({ type: 'costumeAdd', targetIndex: data.targetIndex, index: data.index, name: data.name, assetId: data.assetId, dataFormat: data.dataFormat, bitmapResolution: data.bitmapResolution, rotationCenterX: data.rotationCenterX, rotationCenterY: data.rotationCenterY, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.COSTUME_UPDATE:
+                if (data.targetIndex !== undefined && data.data)
+                    enqueue({ type: 'costumeUpdate', targetIndex: data.targetIndex, index: data.index, name: data.name, assetId: data.assetId, dataFormat: data.dataFormat, bitmapResolution: data.bitmapResolution, rotationCenterX: data.rotationCenterX, rotationCenterY: data.rotationCenterY, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.COSTUME_DELETE:
+                if (data.targetIndex !== undefined && data.index !== undefined)
+                    enqueue({ type: 'costumeDelete', targetIndex: data.targetIndex, index: data.index }, rtc);
+                break;
+            case SERVER_OPCODE.SOUND_ADD:
+                if (data.targetIndex !== undefined && data.data)
+                    enqueue({ type: 'soundAdd', targetIndex: data.targetIndex, index: data.index, name: data.name, assetId: data.assetId, dataFormat: data.dataFormat, rate: data.rate, sampleCount: data.sampleCount, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.SOUND_UPDATE:
+                if (data.targetIndex !== undefined && data.data)
+                    enqueue({ type: 'soundUpdate', targetIndex: data.targetIndex, index: data.index, name: data.name, assetId: data.assetId, dataFormat: data.dataFormat, rate: data.rate, sampleCount: data.sampleCount, data: data.data }, rtc);
+                break;
+            case SERVER_OPCODE.SOUND_DELETE:
+                if (data.targetIndex !== undefined && data.index !== undefined)
+                    enqueue({ type: 'soundDelete', targetIndex: data.targetIndex, index: data.index }, rtc);
                 break;
             case SERVER_OPCODE.PING: sendToPeer(peerId, { type: SERVER_OPCODE.PONG }); break;
         }
