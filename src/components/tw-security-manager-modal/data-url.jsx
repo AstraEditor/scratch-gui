@@ -1,7 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {base64ToArrayBuffer} from '../../lib/tw-base64-utils';
 import styles from './data-url.css';
 
+/**
+ * @param {string} dataURI data: URI
+ * @returns {string} A hopefully human-readable version
+ */
 const decodeDataURI = dataURI => {
     const delimeter = dataURI.indexOf(',');
     if (delimeter === -1) {
@@ -11,18 +16,9 @@ const decodeDataURI = dataURI => {
     const data = dataURI.substring(delimeter + 1);
     if (contentType.endsWith(';base64')) {
         try {
-            // 获取原始字节的字符串表示
-            const binaryString = atob(data);
-
-            // 转换为 Uint8Array 字节数组
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-
-            // UTF-8 解码器
-            const decoder = new TextDecoder('utf-8');
-            return decoder.decode(bytes);
+            // A direct atob() mishandles international characters
+            // https://github.com/TurboWarp/scratch-gui/issues/1151
+            return new TextDecoder().decode(base64ToArrayBuffer(data));
         } catch (e) {
             return dataURI;
         }

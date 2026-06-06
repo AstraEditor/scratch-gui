@@ -129,7 +129,7 @@
         "credits": "Crédits:",
         "dirty": "Rechargez les onglets pour appliquer les paramètres.",
         "dirtyButton": "Recharger maintenant",
-        "enableDangerous": "Cet addon est dangereux et va intentionnellement DÉSACTIVER certaines fonctionnalitées. La plupart des utilisateurs NE DOIVENT PAS activer cet addon. Êtes-vous sûr de vouloir l'activer ?",
+        "enableDangerous": "Cet addon est dangereux et va intentionnellement DÉSACTIVER certaines fonctionnalitées. La plupart des utilisateurs NE DEVRAIENT PAS activer cet addon. Êtes-vous sûr de vouloir l'activer ?",
         "export": "Exporter les paramètres",
         "groupDanger": "Dangereux ({number})",
         "groupOthers": "Autres ({number})",
