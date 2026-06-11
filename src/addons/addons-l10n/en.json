@@ -530,5 +530,11 @@
     "collaborative-editing/peer_joined": "A peer joined the room",
     "collaborative-editing/peer_left": "A peer left the room",
     "collaborative-editing/rtc_connected": "P2P connection established",
-    "collaborative-editing/rtc_failed": "P2P connection failed"
+    "collaborative-editing/rtc_failed": "P2P connection failed",
+    "collaborative-editing/enter_message_tip": "Enter message...",
+    "collaborative-editing/exitRoomButton": "Exit Room",
+    "collaborative-editing/kick": "Kick",
+    "collaborative-editing/copied_room_id": "Copied Room ID",
+    "collaborative-editing/copy_room_id_failed": "Copy Room ID Failed",
+    "collaborative-editing/host":"Host"
 }

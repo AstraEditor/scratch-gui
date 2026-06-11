@@ -6,7 +6,7 @@ import { join } from "path-browserify";
 import SideBar from "../../ui/side-bar/side-bar.js";
 import { RTCServer } from "./rtc-server.js";
 import { idHead } from "./constants.js";
-import { createHandler } from "./handle.js";
+import { createHandler, clearLocksByUser } from "./handle.js";
 
 export default async function ({ addon, console, msg }) {
     const vm = addon.tab.traps.vm;
@@ -15,7 +15,7 @@ export default async function ({ addon, console, msg }) {
     const tabID = idHead + "tab";
 
 
-    let url = "154.9.252.181:1832";
+    let url = "localhost:1832";
     let id = "";
     const isVSCLayout = getSetting("EnableVSCodeLayout");
 
@@ -23,6 +23,46 @@ export default async function ({ addon, console, msg }) {
     const tipBox = document.createElement("div");
     tipBox.className = idHead + "tipBoxScreen";
     document.body.appendChild(tipBox);
+
+    let roomMembersEl = null; // 模块级引用，用于实时更新成员列表
+
+    // 渲染/更新成员列表（含 Host 标识和踢出按钮）
+    const renderMemberList = (rtcState, rtc) => {
+        if (!roomMembersEl) return;
+        roomMembersEl.innerHTML = '';
+        const isHost = rtc._isHost;
+
+        rtcState.allMembers.forEach((member) => {
+            const item = document.createElement("span");
+            item.className = idHead + "roomMember";
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = member.userName;
+
+            if (member.cid === rtcState.clientId) {
+                nameSpan.textContent += " (你)";
+            }
+            if (member.owner) {
+                nameSpan.textContent += ` [${msg('host')}]`;
+                nameSpan.style.fontWeight = "bold";
+            }
+
+            item.appendChild(nameSpan);
+
+            // Host 可以踢出其他成员
+            if (isHost && member.cid !== rtcState.clientId) {
+                const kickBtn = document.createElement("button");
+                kickBtn.textContent = msg('kick');
+                kickBtn.className = idHead + "kickBtn";
+                kickBtn.onclick = () => {
+                    rtc.kickMember(member.cid);
+                };
+                item.appendChild(kickBtn);
+            }
+
+            roomMembersEl.appendChild(item);
+        });
+    };
 
     /**
      * @param {string} text
@@ -36,8 +76,8 @@ export default async function ({ addon, console, msg }) {
             mode === "normal"
                 ? "#09f"
                 : mode === "error"
-                  ? "#f00"
-                  : mode === "warn" && "#ff0";
+                    ? "#f00"
+                    : mode === "warn" && "#ff0";
         tipMsg.textContent = text;
 
         setTimeout(() => {
@@ -132,7 +172,7 @@ export default async function ({ addon, console, msg }) {
 
         const Container = document.createElement("div");
         Container.className = idHead + "container";
-        const Title = document.createElement("h2");
+        const Title = document.createElement("h1");
         Title.textContent = msg("title");
         Title.className = idHead + "title";
 
@@ -209,12 +249,9 @@ export default async function ({ addon, console, msg }) {
             roomTitle.textContent = rtcState.roomId;
             roomTitle.className = idHead + "roomTitle";
             const roomMembers = document.createElement("div");
-            roomMembers.className = idHead + "roomMembers"
-            rtcState.allMembers.forEach((member) => {
-                const roomMember = document.createElement("span");
-                roomMember.textContent = member.userName;
-                roomMembers.appendChild(roomMember);
-            });
+            roomMembers.className = idHead + "roomMembers";
+            roomMembersEl = roomMembers; // 保存引用供 renderMemberList 使用
+            renderMemberList(rtcState, rtc); // 初始渲染
 
             const exitRoomButton = document.createElement('button');
             exitRoomButton.textContent = msg('exitRoomButton')
@@ -230,14 +267,14 @@ export default async function ({ addon, console, msg }) {
         }
 
 
-            const testButton = document.createElement("button");
-            testButton.textContent = "Test Button";
-            testButton.onclick = async () => {
-                const sb3 = await vm.saveProjectSb3("arraybuffer");
-                console.log("sb3 size:", sb3.byteLength);
-            };
+        const testButton = document.createElement("button");
+        testButton.textContent = "Test Button";
+        testButton.onclick = async () => {
+            const sb3 = await vm.saveProjectSb3("arraybuffer");
+            console.log("sb3 size:", sb3.byteLength);
+        };
 
-        Container.appendChild(testButton)
+        // Container.appendChild(testButton)
         return Container;
     };
 
@@ -254,11 +291,18 @@ export default async function ({ addon, console, msg }) {
         vm,
         onStateChange: (newState) => {
             // 首次连接成功时显示房间提示条
-            if (newState.clientId) enterRoom(newState.roomId);
-            else refreshGUI();
+            if (newState.clientId) {
+                enterRoom(newState.roomId);
+                renderMemberList(newState, rtc); // 成员变化时刷新列表
+            } else {
+                refreshGUI();
+            }
         },
         onPeerMessage: async (peerId, data) => {
             await handlePeerMessage(peerId, data);
+        },
+        onPeerLeft: (peerId) => {
+            clearLocksByUser(peerId);
         },
     });
 
@@ -267,10 +311,8 @@ export default async function ({ addon, console, msg }) {
 
     handlePeerMessage = createHandler({
         addon,
-        msg,
         console,
         sendToPeer: rtc.sendToPeer,
-        broadcastToPeers: rtc.broadcastToPeers,
         rtc,
         Blockly,
     });
@@ -282,6 +324,6 @@ export default async function ({ addon, console, msg }) {
         icon: icon,
         name: msg("title"),
         getContent: createElements,
-        onClick: () => {},
+        onClick: () => { },
     });
 }

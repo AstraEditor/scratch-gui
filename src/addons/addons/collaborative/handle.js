@@ -127,6 +127,255 @@ function enqueue(op, rtc) {
 
 function getWS() { return _Blockly ? _Blockly.getMainWorkspace() : null; }
 
+// ── 编辑锁定遮罩 ──────────────────────────────────────────────
+
+// 远端用户的锁定状态：Map<lockKey, { userId, userName, lockType, lockId }>
+const _remoteLocks = new Map();
+
+function lockKey(lockType, lockId) { return `${lockType}:${lockId}`; }
+
+// 在积木/注释的 svgGroup_ 上添加遮罩，阻止交互
+function addLockOverlay(svgGroup, userName) {
+    if (!svgGroup) return;
+    // 移除旧遮罩（如果有）
+    removeLockOverlay(svgGroup);
+
+    const bbox = svgGroup.getBBox();
+    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    overlay.setAttribute('x', bbox.x - 2);
+    overlay.setAttribute('y', bbox.y - 2);
+    overlay.setAttribute('width', bbox.width + 4);
+    overlay.setAttribute('height', bbox.height + 4);
+    overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
+    overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
+    overlay.setAttribute('stroke-width', '2');
+    overlay.setAttribute('rx', '4');
+    overlay.setAttribute('pointer-events', 'all');
+    overlay.setAttribute('cursor', 'not-allowed');
+    overlay.dataset.collabLockOverlay = 'true';
+
+    // 拦截所有鼠标/触摸事件，阻止冒泡到 Blockly
+    const stop = e => { e.stopPropagation(); e.preventDefault(); };
+    overlay.addEventListener('mousedown', stop, true);
+    overlay.addEventListener('touchstart', stop, true);
+    overlay.addEventListener('contextmenu', stop, true);
+
+    // 用户名标签
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', bbox.x + bbox.width / 2);
+    label.setAttribute('y', bbox.y - 6);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
+    label.setAttribute('pointer-events', 'none');
+    label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
+    label.dataset.collabLockOverlay = 'true';
+
+    svgGroup.appendChild(overlay);
+    svgGroup.appendChild(label);
+}
+
+function removeLockOverlay(svgGroup) {
+    if (!svgGroup) return;
+    svgGroup.querySelectorAll('[data-collab-lock-overlay]').forEach(el => el.remove());
+}
+
+// 根据 lockType + lockId 查找对应的 SVG 元素
+// 积木用 ID 查找，注释用 index 查找（因为两端注释 ID 不同）
+function findSvgElement(lockType, lockId) {
+    const ws = getWS();
+    if (!ws) return null;
+    if (lockType === 'block') {
+        return ws.getBlockById(lockId)?.svgGroup_ || null;
+    } else if (lockType === 'comment') {
+        // lockId 是注释在 target.comments 排序后的 index
+        const idx = parseInt(lockId, 10);
+        if (isNaN(idx)) return null;
+        const vm = _Blockly?.getMainWorkspace()?.targetWorkspace?.vm || window.vm;
+        const target = vm?.runtime?.getEditingTarget();
+        if (!target || !target.comments) return null;
+        const sortedKeys = Object.keys(target.comments).sort();
+        if (idx < 0 || idx >= sortedKeys.length) return null;
+        const commentId = sortedKeys[idx];
+        const commentData = target.comments[commentId];
+
+        // Block comment：锁定注释气泡
+        if (commentData?.blockId) {
+            const block = ws.getBlockById(commentData.blockId);
+            return block?.comment?.bubble_?.bubbleGroup_ || null;
+        }
+        // Workspace comment：锁定注释本身
+        const comment = ws.getCommentById(commentId);
+        if (comment) return comment.svgGroup_ || null;
+        return null;
+    }
+    return null;
+}
+
+// 应用远端锁定：添加遮罩（找不到 SVG 时仍存储锁定，等元素出现后补加）
+function applyRemoteLock(lockType, lockId, userName, userId) {
+    const key = lockKey(lockType, lockId);
+    _remoteLocks.set(key, { lockType, lockId, userName, userId });
+    const svgEl = findSvgElement(lockType, lockId);
+    console.log("[协作-锁定] applyRemoteLock:", lockType, lockId, "svgEl:", svgEl?.tagName, svgEl?.classList);
+    if (svgEl) addLockOverlay(svgEl, userName);
+    // 关闭可能已打开的输入框
+    if (_Blockly) {
+        _Blockly.WidgetDiv.hide?.();
+        _Blockly.DropDownDiv.hide?.();
+    }
+}
+
+// 移除远端锁定：移除遮罩
+function removeRemoteLock(lockType, lockId) {
+    const key = lockKey(lockType, lockId);
+    _remoteLocks.delete(key);
+    const svgEl = findSvgElement(lockType, lockId);
+    if (svgEl) removeLockOverlay(svgEl);
+}
+
+// 重新应用所有远端锁定遮罩（replaceTree 后旧 svgGroup_ 被 dispose，需要重新添加）
+function reapplyRemoteLocks() {
+    for (const [key, lock] of _remoteLocks) {
+        const svgEl = findSvgElement(lock.lockType, lock.lockId);
+        if (svgEl) {
+            removeLockOverlay(svgEl);
+            addLockOverlay(svgEl, lock.userName);
+        }
+    }
+}
+
+// 清理某个用户的所有锁定（断线时调用）
+export function clearLocksByUser(userId) {
+    for (const [key, lock] of _remoteLocks) {
+        if (lock.userId === userId) {
+            const svgEl = findSvgElement(lock.lockType, lock.lockId);
+            if (svgEl) removeLockOverlay(svgEl);
+            _remoteLocks.delete(key);
+        }
+    }
+}
+
+// 清理所有远端锁定
+function clearAllRemoteLocks() {
+    for (const [, lock] of _remoteLocks) {
+        const svgEl = findSvgElement(lock.lockType, lock.lockId);
+        if (svgEl) removeLockOverlay(svgEl);
+    }
+    _remoteLocks.clear();
+}
+
+// 退出时清理所有远端元素（指针、聊天气泡、锁定遮罩）
+export function cleanupAllRemote() {
+    clearAllRemoteLocks();
+    _remoteChatBubbles.clear();
+    // 移除所有指针容器
+    const ws = getWS();
+    if (ws) {
+        const svg = ws.getParentSvg();
+        const pc = svg?.querySelector(`.${idHead}pointer-container`);
+        if (pc) pc.remove();
+    }
+}
+
+// ── 远端聊天气泡（复用指针SVG内部的名字组） ────────────────
+
+const _remoteChatBubbles = new Map();
+
+function applyRemoteChatBubble(data) {
+    const { id: userId, text } = data;
+    const pointerEl = document.querySelector(`.${idHead}pointer[id="${userId}"]`);
+    if (!pointerEl) return;
+
+    const nameGroup = pointerEl.querySelector('g');
+    if (!nameGroup) return;
+
+    // 保存原始状态（首次）
+    if (!_remoteChatBubbles.has(userId)) {
+        const nameText = nameGroup.querySelector('.sa-collab-name-text');
+        const nameBg = nameGroup.querySelector('.sa-collab-name-bg');
+        _remoteChatBubbles.set(userId, {
+            nameGroup,
+            originalName: nameText?.textContent || '',
+            originalY: nameText?.getAttribute('y') || '60',
+            originalBgH: nameBg?.getAttribute('height') || '80',
+            originalBgW: nameBg?.getAttribute('width') || '0',
+            originalBgY: nameBg?.getAttribute('y') || '0',
+            smallNameEl: null,  // 小字名字元素（动态创建）
+        });
+    }
+
+    const chatData = _remoteChatBubbles.get(userId);
+    const nameText = nameGroup.querySelector('.sa-collab-name-text');
+    const nameBg = nameGroup.querySelector('.sa-collab-name-bg');
+    if (!nameText || !nameBg) return;
+
+    // text === null 表示清除
+    if (text === null) {
+        // 移除小字名字元素
+        chatData.smallNameEl?.remove();
+        chatData.smallNameEl = null;
+        // 恢复原状
+        nameText.textContent = chatData.originalName;
+        nameText.setAttribute('y', chatData.originalY);
+        nameText.removeAttribute('font-weight');
+        nameBg.setAttribute('height', chatData.originalBgH);
+        nameBg.setAttribute('width', chatData.originalBgW);
+        nameBg.setAttribute('y', chatData.originalBgY);
+        _remoteChatBubbles.delete(userId);
+        return;
+    }
+
+    if (text && text.length > 0) {
+        // 创建/复用小字名字元素（放在上方）
+        if (!chatData.smallNameEl) {
+            const smallName = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smallName.setAttribute('class', `${idHead}chat-small-name`);
+            smallName.setAttribute('fill', 'white');
+            smallName.setAttribute('font-size', '48');
+            smallName.setAttribute('x', '35');
+            smallName.setAttribute('y', '55');
+            Object.assign(smallName.style, { opacity: '0', transition: 'opacity 0.25s ease' });
+            nameGroup.appendChild(smallName);
+            chatData.smallNameEl = smallName;
+            requestAnimationFrame(() => { smallName.style.opacity = '1'; });
+        }
+        chatData.smallNameEl.textContent = chatData.originalName;
+
+        // 主文字改为聊天内容 + 动画
+        if (!nameText.style.transition) {
+            nameText.style.transition = 'all 0.25s ease';
+            nameBg.style.transition = 'all 0.25s ease';
+        }
+
+        nameText.textContent = text;
+        nameText.setAttribute('font-size', '48');
+        nameText.setAttribute('font-weight', 'bold');
+        nameText.setAttribute('y', '105');
+
+        // 背景宽度用实际测量
+        const textBBox = nameText.getBBox();
+        const newWidth = Math.max(chatData.originalBgW ? parseFloat(chatData.originalBgW) + 15 : 60, textBBox.width + 30);
+        nameBg.setAttribute('width', newWidth);
+        nameBg.setAttribute('height', '130');   // 原80 + 上方35放名字 + 下方15间距
+    } else {
+        // 空内容：恢复原状但保留缓存
+        chatData.smallNameEl?.remove();
+        chatData.smallNameEl = null;
+        nameText.textContent = chatData.originalName;
+        nameText.setAttribute('font-size', '48');
+        nameText.removeAttribute('font-weight');
+        nameText.setAttribute('y', chatData.originalY);
+        nameBg.setAttribute('height', chatData.originalBgH);
+        nameBg.setAttribute('width', chatData.originalBgW);
+        nameBg.setAttribute('y', chatData.originalBgY);
+    }
+}
+
+function removeRemoteChatBubble(userId) {
+    applyRemoteChatBubble({ id: userId, text: null });
+}
+
 // ── Replace a block tree (shared by create + update) ─────────────
 
 function deleteTree(target, rootId) {
@@ -152,18 +401,15 @@ function deleteTree(target, rootId) {
     return ids;
 }
 
-function replaceTree(target, xmlString, rootId, isEditingTarget, oldRootId) {
+function replaceTree(target, xmlString, _rootId, isEditingTarget, oldRootId) {
     const blockObjs = parseXml(xmlString);
     if (blockObjs.length === 0) return;
 
     // 1. Find and delete ALL existing trees that overlap with new blocks
-    // This handles the case where a head block is replaced: the new XML
-    // contains old block IDs that are still in _blocks under a different rootId
     const newIds = new Set(blockObjs.map(b => b.id));
     const rootsToDelete = new Set();
     for (const id of newIds) {
         if (target.blocks._blocks[id]) {
-            // Find the root of this block's tree
             let cur = id;
             while (target.blocks._blocks[cur]?.parent) {
                 cur = target.blocks._blocks[cur].parent;
@@ -171,31 +417,56 @@ function replaceTree(target, xmlString, rootId, isEditingTarget, oldRootId) {
             rootsToDelete.add(cur);
         }
     }
-    // Also delete the tree rooted at oldRootId if provided
     if (oldRootId) rootsToDelete.add(oldRootId);
 
-    let totalDeleted = 0;
-    for (const rid of rootsToDelete) {
-        totalDeleted += deleteTree(target, rid);
+    // 2. 收集所有需要从 Blockly workspace 移除的 block ID（在 deleteTree 之前收集）
+    let domIdsToDelete = [];
+    if (isEditingTarget) {
+        const ws = getWS();
+        if (ws) {
+            for (const rid of rootsToDelete) {
+                const root = target.blocks._blocks[rid];
+                if (!root) continue;
+                const collectIds = (id, ids) => {
+                    const b = target.blocks._blocks[id];
+                    if (!b || ids.has(id)) return;
+                    ids.add(id);
+                    if (b.next) collectIds(b.next, ids);
+                    for (const input of Object.values(b.inputs || {})) {
+                        if (input.block) collectIds(input.block, ids);
+                        if (input.shadow) collectIds(input.shadow, ids);
+                    }
+                };
+                const ids = new Set();
+                collectIds(rid, ids);
+                for (const id of ids) {
+                    if (ws.getBlockById(id)) domIdsToDelete.push(id);
+                }
+            }
+        }
     }
 
-    // 2. Create new blocks from XML
+    // 3. 从 VM 中删除旧树
+    for (const rid of rootsToDelete) {
+        deleteTree(target, rid);
+    }
+
+    // 4. 在 VM 中创建新 block
     for (const b of blockObjs) {
         if (!target.blocks._blocks[b.id]) {
             target.blocks.createBlock(b);
         }
     }
 
-    // 3. Update Blockly workspace DOM only for current editing target
+    // 5. 更新 Blockly workspace DOM（先 dispose 旧 block，再 create 新 block）
     if (!isEditingTarget) return;
     const ws = getWS();
     if (ws) {
         _Blockly.Events.disable();
         try {
-            // Dispose all old DOM blocks
-            for (const rid of rootsToDelete) {
-                const old = ws.getBlockById(rid);
-                if (old) old.dispose(false);
+            for (const id of domIdsToDelete) {
+                const b = ws.getBlockById(id);
+                if (b) b.dispose(false);
             }
             const dom = _Blockly.Xml.textToDom(`<xml>${xmlString}</xml>`);
             const bn = dom.querySelector('block, shadow');
@@ -206,11 +477,15 @@ function replaceTree(target, xmlString, rootId, isEditingTarget, oldRootId) {
             }
         } catch (e) { console.error("[协作] replaceTree 失败:", e); }
         finally { _Blockly.Events.enable(); }
+        // replaceTree 后重新应用远端锁定遮罩（旧 svgGroup_ 已被 dispose）
+        reapplyRemoteLocks();
     }
 }
 
 function applyDelete(target, op, isEditingTarget) {
     const ids = deleteTree(target, op.rootId);
+    // 清理被删除积木的远端锁定
+    for (const id of ids) _remoteLocks.delete(lockKey('block', id));
     if (!isEditingTarget) return;
     const ws = getWS();
     if (ws) {
@@ -241,10 +516,10 @@ function applyFieldChange(target, op) {
     }
 }
 
-function applyMutationChange(target, op) {
+function applyMutationChange(target, op, isEditingTarget) {
     target.blocks.changeBlock({ id: op.rootId, element: 'mutation', value: op.mutation });
     const xml = target.blocks.blockToXML(op.rootId, target.comments || {});
-    if (xml) replaceTree(target, xml, op.rootId);
+    if (xml) replaceTree(target, xml, op.rootId, isEditingTarget);
 }
 
 // ── Comment sync (full replacement, no ID/index issues) ─────────
@@ -256,9 +531,9 @@ function applyCommentSync(target, op, isEditingTarget) {
     // 1. Clear old comments from VM
     for (const key of oldKeys) delete target.comments[key];
 
-    // 2. Create new comments in VM (with fresh IDs)
+    // 2. Create new comments in VM (preserve original IDs)
     for (const c of newComments) {
-        const id = `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        const id = c.id || `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
         target.createComment(id, c.blockId || null, c.text || '',
             c.x || 0, c.y || 0, c.width || 100, c.height || 100, !!c.minimized);
     }
@@ -269,19 +544,45 @@ function applyCommentSync(target, op, isEditingTarget) {
     if (!ws) return;
     try {
         _Blockly.Events.disable();
-        // Remove all existing workspace comments
+
+        // 3a. 移除所有 workspace comments（无 blockId 的注释）
         const existing = ws.getTopComments(true);
         for (const ec of existing) ec.dispose();
-        // Recreate all comments
-        for (const c of newComments) {
-            if (!_Blockly.WorkspaceCommentSvg) continue;
-            const comment = new _Blockly.WorkspaceCommentSvg(
-                ws, c.text || '', c.height || 100, c.width || 100, !!c.minimized,
-                `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-            );
-            comment.moveBy(c.x || 0, c.y || 0);
-            comment.initSvg();
+
+        // 3b. 处理 block comments（有 blockId 的注释）
+        // 先移除所有积木上的旧注释
+        const allBlocks = ws.getAllBlocks(false);
+        for (const block of allBlocks) {
+            if (block.comment) {
+                block.comment.dispose();
+                block.comment = null;
+            }
         }
+
+        // 3c. 重建所有注释
+        for (const c of newComments) {
+            const id = c.id || `c_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+            if (c.blockId) {
+                // Block comment：通过积木的 setCommentText 创建
+                const block = ws.getBlockById(c.blockId);
+                if (block) {
+                    block.setCommentText(c.text || '', id, c.x, c.y, !!c.minimized);
+                    if (block.comment && c.width && c.height) {
+                        block.comment.setBubbleSize(c.width, c.height);
+                    }
+                }
+            } else {
+                // Workspace comment：独立创建
+                if (!_Blockly.WorkspaceCommentSvg) continue;
+                const comment = new _Blockly.WorkspaceCommentSvg(
+                    ws, c.text || '', c.height || 100, c.width || 100, !!c.minimized, id
+                );
+                comment.moveBy(c.x || 0, c.y || 0);
+                comment.initSvg();
+            }
+        }
+        // 注释重建后重新应用远端锁定遮罩
+        reapplyRemoteLocks();
     } catch (e) { console.error("[协作] 同步注释DOM失败:", e); }
     finally { _Blockly.Events.enable(); }
 }
@@ -520,7 +821,7 @@ async function flush(rtc) {
                         case 'create': replaceTree(target, op.xml, op.rootId, isEditingTarget); break;
                         case 'update': replaceTree(target, op.xml, op.rootId, isEditingTarget, op.oldRootId); break;
                         case 'fieldChange': applyFieldChange(target, op); break;
-                        case 'mutationChange': applyMutationChange(target, op); break;
+                        case 'mutationChange': applyMutationChange(target, op, isEditingTarget); break;
                         case 'commentSync': applyCommentSync(target, op, isEditingTarget); break;
                         case 'costumeAdd': { const p = applyCostumeAdd(target, op); if (p) assetPromises.push(p); break; }
                         case 'costumeUpdate': applyCostumeUpdate(target, op); break;
@@ -540,7 +841,13 @@ async function flush(rtc) {
             for (const op of tops) {
                 switch (op.type) {
                     case 'delete': cache.delete(op.rootId); break;
-                    default: if (op.rootId) cache.set(op.rootId, target.blocks.blockToXML(op.rootId, target.comments || {}));
+                    default:
+                        if (op.rootId) {
+                            try {
+                                const xml = target.blocks.blockToXML(op.rootId, target.comments || {});
+                                if (xml) cache.set(op.rootId, xml);
+                            } catch (e) {}
+                        }
                 }
             }
 
@@ -576,7 +883,7 @@ async function flush(rtc) {
 
 // ── Message router ───────────────────────────────────────────────
 
-export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeers, rtc, Blockly }) {
+export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
     _Blockly = Blockly;
     const vm = addon.tab.traps.vm;
 
@@ -594,6 +901,7 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 const ls = ReduxStore.state.scratchGui.projectState.loadingState;
                 let ok = false;
                 rtc.onIngoreUpdate(true);
+                clearAllRemoteLocks();
                 try {
                     localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
                     await vm.loadProject(bytes.buffer); vm.renderer.draw(); ok = true;
@@ -605,6 +913,14 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 setTimeout(() => {
                     // Rebuild all caches from current state after snapshot load
                     for (const target of vm.runtime.targets) {
+                        // Block cache + fingerprint cache
+                        if (target.blocks && target.blocks._scripts) {
+                            const nc = new Map();
+                            for (const rid of target.blocks._scripts) {
+                                try { nc.set(rid, target.blocks.blockToXML(rid, target.comments || {})); } catch (e) {}
+                            }
+                            rtc._scriptBlockCache.set(target.id, nc);
+                        }
                         // Comment cache
                         const sortedKeys = Object.keys(target.comments || {}).sort();
                         const liveList = sortedKeys.map(k => {
@@ -628,6 +944,10 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                             rate: s.rate, sampleCount: s.sampleCount,
                         })));
                     }
+                    // 重建 sprite ID 缓存
+                    rtc._spriteIdCache = new Set(vm.runtime.targets.map(t => t.id));
+                    // 重建 extension 缓存
+                    rtc._extensionCache = new Set(vm.extensionManager._loadedExtensions.keys());
                     rtc.onIngoreUpdate(false);
                 }, 200);
                 return;
@@ -648,7 +968,7 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 if (old) { old.setAttribute("transform", `translate(${data.position.x},${data.position.y}) scale(${fs})`); }
                 else {
                     const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                    el.innerHTML = pointerSVG("#0099ff", data.name); el.id = data.id; el.classList.add(`${idHead}pointer`);
+                    el.innerHTML = pointerSVG(data.themeColor || '#0099ff', data.name); el.id = data.id; el.classList.add(`${idHead}pointer`);
                     el.setAttribute("transform", `translate(${data.position.x},${data.position.y}) scale(${fs})`);
                     pc.appendChild(el);
                     const te = el.querySelector(".sa-collab-name-text"), be = el.querySelector(".sa-collab-name-bg");
@@ -660,6 +980,12 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 const myTargetId = rtc._vm.runtime._editingTarget?.id;
                 if (data.targetId !== myTargetId) break;
                 document.querySelectorAll(`.${idHead}pointer[id="${data.id}"]`).forEach(e => e.remove());
+                removeRemoteChatBubble(data.id);
+                break;
+            }
+            case SERVER_OPCODE.CHAT_MESSAGE: {
+                if (data.id === rtc.state.clientId) break;
+                applyRemoteChatBubble(data);
                 break;
             }
             case SERVER_OPCODE.BLOCK_CREATE:
@@ -752,7 +1078,20 @@ export function createHandler({ addon, msg, console, sendToPeer, broadcastToPeer
                 if (data.targetIndex !== undefined && data.index !== undefined)
                     enqueue({ type: 'soundDelete', targetIndex: data.targetIndex, index: data.index }, rtc);
                 break;
+            case SERVER_OPCODE.EDIT_LOCK:
+                if (data.lockType && data.lockId && data.userId !== rtc.state.clientId)
+                    applyRemoteLock(data.lockType, data.lockId, data.userName || '?', data.userId);
+                break;
+            case SERVER_OPCODE.EDIT_UNLOCK:
+                if (data.lockType && data.lockId && data.userId !== rtc.state.clientId)
+                    removeRemoteLock(data.lockType, data.lockId);
+                break;
             case SERVER_OPCODE.PING: sendToPeer(peerId, { type: SERVER_OPCODE.PONG }); break;
+            case SERVER_OPCODE.KICK:
+                if (data.targetId === rtc.state.clientId) {
+                    rtc.exit();
+                }
+                break;
         }
     };
 }

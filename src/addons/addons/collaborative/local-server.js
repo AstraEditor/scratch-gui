@@ -70,13 +70,26 @@ class SignalingServer {
 
             console.log(`客户端 ${userName}(${clientId}) 连接到了 ${roomId} 房间`);
 
+            let hostCid = null;
+            let earliestConnect = Infinity;
+            this.clients.forEach((client, cid) => {
+                if (client.roomId === roomId && client.connectedAt < earliestConnect) {
+                    earliestConnect = client.connectedAt;
+                    hostCid = cid;
+                }
+            });
+
+            if (clientId && (hostCid === null || Date.now() < earliestConnect)) {
+                hostCid = clientId;
+            }
+
             const existingPeers = [];
             this.clients.forEach((client, cid) => {
                 if (client.roomId === roomId) {
                     existingPeers.push({
                         cid,
                         userName: client.userName,
-                        owner: cid === clientId,
+                        owner: cid === hostCid,
                     });
                 }
             });
@@ -116,12 +129,34 @@ class SignalingServer {
                         `客户端 ${userName}(${clientId}) 断开了 ${client.roomId} 房间的连接`,
                     );
 
+                    // 重新计算当前在线成员（含房主标识）
+                    const currentPeers = [];
+                    let hostCid = null;
+                    let earliestConnect = Infinity;
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId && cid !== clientId) {
+                            if (c.connectedAt < earliestConnect) {
+                                earliestConnect = c.connectedAt;
+                                hostCid = cid;
+                            }
+                        }
+                    });
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId && cid !== clientId) {
+                            currentPeers.push({
+                                cid,
+                                userName: c.userName,
+                                owner: cid === hostCid,
+                            });
+                        }
+                    });
+
                     this.broadcastToRoom(
                         client.roomId,
                         {
                             type: "peer-left",
                             clientId,
-                            existingPeers,
+                            existingPeers: currentPeers,
                             timestamp: Date.now(),
                         },
                         clientId,
@@ -167,6 +202,23 @@ class SignalingServer {
                     userName: client.userName,
                     timestamp: Date.now(),
                 });
+                break;
+
+            case "kick":
+                if (data.targetId && data.targetId !== clientId) {
+                    const roomClients = [];
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId) roomClients.push(cid);
+                    });
+                    if (roomClients[0] === clientId) {
+                        const target = this.clients.get(data.targetId);
+                        if (target) {
+                            this.sendToClient(target.ws, { type: "kicked", reason: data.reason || "" });
+                            target.ws.close(4001, "被房主踢出");
+                            console.log(`房主 ${client.userName} 踢出了 ${target.userName}(${data.targetId})`);
+                        }
+                    }
+                }
                 break;
 
             default:

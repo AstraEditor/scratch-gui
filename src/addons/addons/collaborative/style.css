@@ -150,3 +150,21 @@
 .sa-addon-collaborative-pointer-container{
     pointer-events: none;
 }
+
+.sa-addon-collaborative-chat-input::placeholder{
+    color: #ffffff90;
+}
+
+[class*=sa-addon-collaborative] button {
+    font-family: inherit;
+    font-size: 14px;
+    background-color: var(--looks-secondary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+}

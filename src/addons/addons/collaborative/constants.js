@@ -27,8 +27,15 @@ export const SERVER_OPCODE = {
   SOUND_ADD: "sound-add",                 // 添加音频
   SOUND_UPDATE: "sound-update",           // 更新音频（含数据变更）
   SOUND_DELETE: "sound-delete",           // 删除音频
+  VARIABLE_ADD: "variable-add",             // 创建变量/列表
+  VARIABLE_DELETE: "variable-delete",       // 删除变量/列表
+  VARIABLE_RENAME: "variable-rename",       // 重命名变量/列表
+  CHAT_MESSAGE: "chat-message",             // 实时聊天消息
+  EDIT_LOCK: "edit-lock",               // 锁定积木/注释（其他用户不可编辑）
+  EDIT_UNLOCK: "edit-unlock",           // 解锁积木/注释
   PING: "ping",
   PONG: "pong",
+  KICK: "kick",
 }
 
 export const idHead = "sa-addon-collaborative-";

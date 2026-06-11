@@ -1,5 +1,6 @@
-import { ID_SEA, DEFAULT_STUN_URLS, SERVER_OPCODE } from "./constants.js";
+import { ID_SEA, DEFAULT_STUN_URLS, SERVER_OPCODE, idHead } from "./constants.js";
 import { fetchWithTimeout, getAPPNAME } from "./utils.js";
+import { cleanupAllRemote } from "./handle.js";
 
 /**
  * 协作编辑的网络层：房间管理（HTTP）+ 信令服务器（WebSocket）+ P2P（WebRTC）。
@@ -12,12 +13,14 @@ export class RTCServer {
         vm,
         onPeerMessage,
         onStateChange,
+        onPeerLeft,
     }) {
         this._msg = msg;
         this._console = console;
         this._updateTipText = updateTipText;
         this._onPeerMessage = onPeerMessage;
         this._onStateChange = onStateChange;
+        this._onPeerLeft = onPeerLeft || null;
         this._vm = vm;
 
         this._scriptBlockCache = new Map();
@@ -25,6 +28,7 @@ export class RTCServer {
         this._extensionCache = new Set(); // Set<extensionId>
         this._costumeCache = new Map();   // targetId → Array<{name, dataFormat, bitmapResolution, rotationCenterX, rotationCenterY}>
         this._soundCache = new Map();     // targetId → Array<{name, dataFormat, rate, sampleCount}>
+        this._variableCache = new Map();   // targetId → Map<varId, {name, type}>
         this._spriteIdCache = null;
 
         this._server = null;
@@ -42,13 +46,46 @@ export class RTCServer {
 
         this._Blockly = null; // Set via setBlockly() after construction
 
+        // 编辑锁定状态：记录当前用户正在编辑的对象
+        this._localEditState = null; // { type: 'block'|'comment', id: string } | null
+        this._editLockListeners = []; // 事件监听器，退出时清理
+
+        // 聊天输入框状态
+        this._chatInputEl = null;      // HTML input 元素
+        this._chatBubbleEl = null;     // 本地聊天气泡 SVG 元素
+        this._chatText = '';           // 当前输入的文字
+        this._lastPointerPos = { x: 0, y: 0 }; // 上次光标位置（用于定位输入框）
+        this._chatActive = false;      // 输入框是否激活
+
         this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
         this.editingTargetIndex = -1;
         this.boundMouseMoveHandler = this.mouseMoveHandler.bind(this);
         this._vm.on("targetsUpdate", () => this.updateWorkspace());
     }
 
-    setBlockly(b) { this._Blockly = b; }
+    setBlockly(b) {
+        this._Blockly = b;
+        if (!this._editLockListenersReady) {
+            this._setupEditLockListeners();
+            this._editLockListenersReady = true;
+        }
+        // 重新绑定 mousemove 到当前 workspace（切换 sprite 时旧 workspace 已 dispose）
+        this._bindPointerToCurrentWorkspace();
+    }
+
+    _bindPointerToCurrentWorkspace() {
+        // 优先用 targetWorkspace（WorkspaceSvg，有 addEventListener）；fallback 到 getMainWorkspace
+        const ws = this._Blockly?.getMainWorkspace()?.targetWorkspace || this._Blockly?.getMainWorkspace();
+        if (!ws || typeof ws.addEventListener !== 'function') return;
+        if (this._boundWorkspace === ws) return;  // 同一个 workspace，跳过
+        // 解绑旧的
+        if (this._boundWorkspace && this.boundMouseMoveHandler) {
+            try { this._boundWorkspace.removeEventListener("mousemove", this.boundMouseMoveHandler); } catch { /* workspace已dispose */ }
+        }
+        // 绑定新的
+        ws.addEventListener("mousemove", this.boundMouseMoveHandler);
+        this._boundWorkspace = ws;
+    }
 
     onIngoreUpdate(ingoreUpdate) {
         if (ingoreUpdate) {
@@ -65,6 +102,17 @@ export class RTCServer {
     }
 
     getState() { return { ...this.state }; }
+
+    isHost() { return this._isHost; }
+
+    kickMember(targetId) {
+        if (this._server && this._isHost) {
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.KICK,
+                targetId,
+            }));
+        }
+    }
 
     async login(mode = "reg", serverUrl = "localhost:1832", roomId = "") {
         await this._ensureSTUNList();
@@ -101,6 +149,14 @@ export class RTCServer {
         window.addEventListener("beforeunload", () => this.exit());
         window.addEventListener("pagehide", () => this.exit());
         this.workspace.addEventListener("mousemove", this.boundMouseMoveHandler);
+
+        // 聊天功能：Ctrl+T 打开输入框
+        this._boundKeyHandler = this._handleKeyDown.bind(this);
+        window.addEventListener("keydown", this._boundKeyHandler);
+
+        // 注册编辑锁定的事件监听（在 setBlockly 中实际执行）
+        this._editLockListenersReady = false;
+
         this._vm.runtime.on("PROJECT_CHANGED", () => {
             if (this._ingoreUpdate || this._remoteUpdateInProgress) return;
             if (this._updateTimer) clearTimeout(this._updateTimer);
@@ -208,7 +264,7 @@ export class RTCServer {
             const removedRootIds = Array.from(cacheKeys).filter(rid => !liveSet.has(rid));
 
             // Detect replacements: when a head block is replaced, its rootId changes
-            // but the stack is at the same position. Match by coordinates.
+            // but the stack is at the same position. Match by coordinates + opcode.
             const replacements = new Map(); // oldRootId -> newRootId
             const handledAdded = new Set();
             for (const oldRid of removedRootIds) {
@@ -216,6 +272,7 @@ export class RTCServer {
                 if (!oldXml) continue;
                 const oldX = parseFloat(oldXml.match(/x="([^"]+)"/)?.[1]);
                 const oldY = parseFloat(oldXml.match(/y="([^"]+)"/)?.[1]);
+                const oldOpcode = oldXml.match(/type="([^"]+)"/)?.[1];
                 if (!isFinite(oldX) || !isFinite(oldY)) continue;
 
                 for (const newRid of addedRootIds) {
@@ -225,7 +282,9 @@ export class RTCServer {
                         if (!newXml) continue;
                         const newX = parseFloat(newXml.match(/x="([^"]+)"/)?.[1]);
                         const newY = parseFloat(newXml.match(/y="([^"]+)"/)?.[1]);
-                        if (isFinite(newX) && isFinite(newY) && Math.abs(oldX - newX) < 5 && Math.abs(oldY - newY) < 5) {
+                        const newOpcode = newXml.match(/type="([^"]+)"/)?.[1];
+                        // 坐标接近且 opcode 一致才认为是 replacement
+                        if (isFinite(newX) && isFinite(newY) && Math.abs(oldX - newX) < 5 && Math.abs(oldY - newY) < 5 && oldOpcode === newOpcode) {
                             replacements.set(oldRid, { newRid, newXml });
                             handledAdded.add(newRid);
                             break;
@@ -254,26 +313,14 @@ export class RTCServer {
             }
 
             // Modified scripts: compare XML (same rootId)
-            // Performance: use lightweight fingerprint first, only serialize if fingerprint changed
             const commonIds = liveScripts.filter(rid => cacheKeys.has(rid) && !replacements.has(rid));
             for (const rid of commonIds) {
                 try {
-                    // Fast fingerprint: count blocks + top-level coords
-                    const rootBlock = target.blocks._blocks[rid];
-                    if (!rootBlock) continue;
-                    const blockCount = this._countBlocks(target.blocks, rid);
-                    const fp = `${blockCount}|${rootBlock.x}|${rootBlock.y}|${rootBlock.opcode}|${rootBlock.next}`;
-                    const cachedFp = this._scriptFingerprints?.get(`${targetId}:${rid}`);
-                    
-                    if (cachedFp && cachedFp === fp) continue; // No change detected by fingerprint
-
                     const curXml = target.blocks.blockToXML(rid, target.comments || {});
                     if (!curXml) continue;
                     const oldXml = cache.get(rid);
                     if (curXml === oldXml) continue;
-                    
-                    if (!this._scriptFingerprints) this._scriptFingerprints = new Map();
-                    this._scriptFingerprints.set(`${targetId}:${rid}`, fp);
+
                     cache.set(rid, curXml);
                     waitForBroadcast.push({ type: SERVER_OPCODE.BLOCK_UPDATE, targetIndex, rootId: rid, xml: curXml });
                 } catch (e) { this._console.error(`[协作] 比较脚本 ${rid} 失败:`, e); }
@@ -293,6 +340,7 @@ export class RTCServer {
             const liveComments = target.comments || {};
             const sortedKeys = Object.keys(liveComments).sort();
             const liveList = sortedKeys.map(k => ({
+                id: k,
                 text: liveComments[k].text,
                 x: liveComments[k].x,
                 y: liveComments[k].y,
@@ -443,9 +491,75 @@ export class RTCServer {
                 }
                 this._soundCache.set(targetId, soundSnapshot);
             }
+
+            // ── Variables/Lists: detect changes ──
+            const liveVariables = target.variables || {};
+            if (!this._variableCache.has(targetId)) {
+                // 初始化缓存
+                const varMap = new Map();
+                for (const [varId, varObj] of Object.entries(liveVariables)) {
+                    varMap.set(varId, { name: varObj.name, type: varObj.type });
+                }
+                this._variableCache.set(targetId, varMap);
+            }
+            const cachedVars = this._variableCache.get(targetId);
+            const liveVarIds = new Set(Object.keys(liveVariables));
+            const cachedVarIds = new Set(cachedVars.keys());
+
+            // 检测新增的变量
+            for (const varId of liveVarIds) {
+                if (!cachedVarIds.has(varId)) {
+                    const varObj = liveVariables[varId];
+                    waitForBroadcast.push({
+                        type: SERVER_OPCODE.VARIABLE_ADD,
+                        targetIndex,
+                        varId,
+                        name: varObj.name,
+                        type: varObj.type, // '' (scalar) or 'list'
+                        isCloud: varObj.isCloud || false,
+                    });
+                    this._console.log(`[协作-变量] ADD: ${varObj.name} (${varObj.type || 'scalar'})`);
+                }
+            }
+
+            // 检测删除的变量
+            for (const varId of cachedVarIds) {
+                if (!liveVarIds.has(varId)) {
+                    const cachedVar = cachedVars.get(varId);
+                    waitForBroadcast.push({
+                        type: SERVER_OPCODE.VARIABLE_DELETE,
+                        targetIndex,
+                        varId,
+                    });
+                    this._console.log(`[协作-变量] DELETE: ${cachedVar?.name || varId}`);
+                }
+            }
+
+            // 检测重命名的变量（ID相同但名称或类型变了）
+            for (const varId of liveVarIds) {
+                if (cachedVarIds.has(varId)) {
+                    const liveVar = liveVariables[varId];
+                    const cachedVar = cachedVars.get(varId);
+                    if (liveVar.name !== cachedVar.name || liveVar.type !== cachedVar.type) {
+                        waitForBroadcast.push({
+                            type: SERVER_OPCODE.VARIABLE_RENAME,
+                            targetIndex,
+                            varId,
+                            newName: liveVar.name,
+                            newType: liveVar.type,
+                        });
+                        this._console.log(`[协作-变量] RENAME: ${cachedVar.name} → ${liveVar.name}`);
+                    }
+                }
+            }
+
+            // 更新缓存
+            const newVarCache = new Map();
+            for (const [varId, varObj] of Object.entries(liveVariables)) {
+                newVarCache.set(varId, { name: varObj.name, type: varObj.type });
+            }
+            this._variableCache.set(targetId, newVarCache);
         }
-
-
 
         // Dedup: for same key, last write wins
         const opMap = new Map();
@@ -467,6 +581,8 @@ export class RTCServer {
                 key = `${item.targetIndex}:costume:${item.index}`;
             } else if (item.type === SERVER_OPCODE.SOUND_ADD || item.type === SERVER_OPCODE.SOUND_DELETE || item.type === SERVER_OPCODE.SOUND_UPDATE) {
                 key = `${item.targetIndex}:sound:${item.index}`;
+            } else if (item.type === SERVER_OPCODE.VARIABLE_ADD || item.type === SERVER_OPCODE.VARIABLE_DELETE || item.type === SERVER_OPCODE.VARIABLE_RENAME) {
+                key = `${item.targetIndex}:variable:${item.varId}`;
             } else continue;
             opMap.set(key, item);
         }
@@ -483,6 +599,7 @@ export class RTCServer {
                 if (m.type === SERVER_OPCODE.COMMENT_SYNC) return `${m.type}:comments`;
                 if (m.type === SERVER_OPCODE.COSTUME_ADD || m.type === SERVER_OPCODE.COSTUME_DELETE || m.type === SERVER_OPCODE.COSTUME_UPDATE) return `${m.type}:${m.name}`;
                 if (m.type === SERVER_OPCODE.SOUND_ADD || m.type === SERVER_OPCODE.SOUND_DELETE || m.type === SERVER_OPCODE.SOUND_UPDATE) return `${m.type}:${m.name}`;
+                if (m.type === SERVER_OPCODE.VARIABLE_ADD || m.type === SERVER_OPCODE.VARIABLE_DELETE || m.type === SERVER_OPCODE.VARIABLE_RENAME) return `${m.type}:${m.name || m.varId}`;
                 return `${m.type}:${m.rootId || m.id || '?'}`;
             }).join(', ');
             this._console.log(`[协作] broadcasting ${finalMessages.length} msgs: ${msgSummary}`);
@@ -500,26 +617,6 @@ export class RTCServer {
                 }
             }
         }
-    }
-
-    _countBlocks(blocks, rootId) {
-        let count = 0;
-        const visited = new Set();
-        const stack = [rootId];
-        while (stack.length > 0) {
-            const id = stack.pop();
-            if (!id || visited.has(id)) continue;
-            visited.add(id);
-            count++;
-            const b = blocks._blocks[id];
-            if (!b) continue;
-            if (b.next) stack.push(b.next);
-            for (const input of Object.values(b.inputs || {})) {
-                if (input.block) stack.push(input.block);
-                if (input.shadow) stack.push(input.shadow);
-            }
-        }
-        return count;
     }
 
     _serializeComment(comment) {
@@ -551,29 +648,34 @@ export class RTCServer {
                 if (fromIndex >= 0) {
                     this.broadcastToPeers(JSON.stringify({
                         type: SERVER_OPCODE.POINTER_LEAVE, id: this.state.clientId, fromIndex,
-                    }));
+                    }), true);
+                }
+                // 切换 sprite 时释放本地编辑锁定
+                if (this._localEditState) {
+                    this.broadcastToPeers(JSON.stringify({
+                        type: SERVER_OPCODE.EDIT_UNLOCK,
+                        userId: this.state.clientId,
+                        lockType: this._localEditState.type,
+                        lockId: this._localEditState.id,
+                    }), true);
+                    this._localEditState = null;
                 }
             } catch { this.editingTargetIndex = -1; }
         }, 30);
     }
 
-    mouseMoveHandler(e) { this.moveMouse(e, this.workspace); }
-
-    moveMouse(e, workspace) {
+    mouseMoveHandler(e) {
         if (this._pointerRaf) return;
         this._pointerRaf = requestAnimationFrame(() => {
             this._pointerRaf = null;
-            this._sendPointer(e, workspace);
+            this._sendPointer(e);
         });
     }
 
-    _sendPointer(e, workspace) {
-        // Skip pointer updates if any data channel buffer is backed up —
-        // pointers are visual-only and non-critical for sync correctness.
-        for (const ch of this._dataChannels.values()) {
-            if (ch.readyState === 'open' && ch.bufferedAmount > 64 * 1024) return;
-        }
+    _sendPointer(e) {
         if (!this._Blockly) return;
+        // workspace 切换时兜底重绑
+        this._bindPointerToCurrentWorkspace();
         const ws = this._Blockly.getMainWorkspace();
         if (!ws) return;
         const svg = ws.getParentSvg();
@@ -582,18 +684,408 @@ export class RTCServer {
         const svgPoint = svg.createSVGPoint();
         svgPoint.x = e.clientX; svgPoint.y = e.clientY;
         const svgCoord = svgPoint.matrixTransform(matrix);
-        const canvasMatrix = ws.getCanvas().getCTM().inverse();
+        const canvas = ws.getCanvas();
+        if (!canvas) return;
+        const canvasMatrix = canvas.getCTM().inverse();
         const canvasPoint = svg.createSVGPoint();
         canvasPoint.x = svgCoord.x; canvasPoint.y = svgCoord.y;
         const canvasCoord = canvasPoint.matrixTransform(canvasMatrix);
+        this._lastPointerPos = { x: canvasCoord.x, y: canvasCoord.y };
+        // 聊天输入框跟随光标
+        if (this._chatInputEl) this._positionChatInput(this._chatInputEl);
         this.broadcastToPeers(JSON.stringify({
-            type: "pointer", id: this.state.clientId, workspaceIndex: this.editingTargetIndex,
+            type: SERVER_OPCODE.POINTER, id: this.state.clientId, workspaceIndex: this.editingTargetIndex,
             name: this.getUserName(), position: { x: canvasCoord.x, y: canvasCoord.y },
-        }));
+            themeColor: getComputedStyle(document.documentElement).getPropertyValue('--looks-secondary').trim() || '#0099ff',
+        }), true);
+    }
+
+    // ── 聊天功能 ──────────────────────────────────────────────
+
+    _handleKeyDown(e) {
+        if (e.key === 't') {
+            e.preventDefault();
+            if (this._chatActive) {
+                this._hideChatInput();
+            } else {
+                this._showChatInput();
+            }
+            return;
+        }
+        // ESC 关闭输入框
+        if (e.key === 'Escape' && this._chatActive) {
+            e.preventDefault();
+            this._hideChatInput();
+        }
+    }
+
+    _showChatInput() {
+        if (this._chatActive || !this._Blockly) return;
+        this._chatActive = true;
+        this._chatText = '';
+
+        const ws = this._Blockly.getMainWorkspace();
+        if (!ws) return;
+
+        // 创建 HTML 输入框（悬浮在 Blockly 上方）
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 50;
+        input.placeholder = this._msg('enter_message_tip');
+        input.className = `${idHead}chat-input`;
+
+        // 样式：圆角矩形，半透明背景
+        Object.assign(input.style, {
+            position: 'absolute',
+            padding: '4px 10px',
+            borderRadius: '12px',
+            background: 'var(--looks-secondary)',
+            border: 'none',
+            color: '#e0e6ed',
+            fontSize: '15px',
+            fontFamily: 'sans-serif',
+            outline: 'none',
+            zIndex: '9999',
+            minWidth: '60px',
+            maxWidth: '250px',
+            boxSizing: 'border-box',
+        });
+
+        // 定位到光标右下角
+        this._positionChatInput(input);
+
+        // 实时输入监听
+        input.addEventListener('input', () => {
+            this._chatText = input.value;
+            // 自适应宽度
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = '13px sans-serif';
+            const textWidth = ctx.measureText(input.value || input.placeholder).width;
+            input.style.width = Math.max(60, Math.min(250, textWidth + 24)) + 'px';
+
+            // 实时广播
+            this._broadcastChatMessage(this._chatText);
+        });
+
+        // 失焦关闭
+        input.addEventListener('blur', () => {
+            // 延迟关闭，避免点击其他地方时立即关闭
+            setTimeout(() => {
+                if (document.activeElement !== input) {
+                    this._hideChatInput();
+                }
+            }, 150);
+        });
+
+        // 阻止事件冒泡到 Blockly
+        input.addEventListener('mousedown', e => e.stopPropagation());
+        input.addEventListener('keydown', e => e.stopPropagation());
+
+        document.body.appendChild(input);
+        this._chatInputEl = input;
+
+        // 聚焦输入框
+        requestAnimationFrame(() => input.focus());
+
+        // 发送空消息（表示开始聊天，远端显示空气泡）
+        this._broadcastChatMessage('');
+    }
+
+    _hideChatInput() {
+        this._chatActive = false;
+        this._chatText = '';
+
+        // 移除输入框
+        if (this._chatInputEl) {
+            this._chatInputEl.remove();
+            this._chatInputEl = null;
+        }
+
+        // 移除本地气泡
+        if (this._chatBubbleEl) {
+            this._chatBubbleEl.remove();
+            this._chatBubbleEl = null;
+        }
+
+        // 广播空消息（表示结束聊天）
+        this._broadcastChatMessage(null); // null 表示清除
+    }
+
+    _positionChatInput(input) {
+        const ws = this._Blockly.getMainWorkspace();
+        if (!ws) return;
+        const svg = ws.getParentSvg();
+        if (!svg) return;
+
+        // 将 workspace 坐标转换为屏幕坐标
+        const svgRect = svg.getBoundingClientRect();
+        const CTM = ws.getCanvas()?.getCTM();
+        if (!CTM) return;
+
+        const screenX = svgRect.left + this._lastPointerPos.x * CTM.a + CTM.e;
+        const screenY = svgRect.top + this._lastPointerPos.y * CTM.d + CTM.f;
+
+        input.style.left = (screenX + 15) + 'px';
+        input.style.top = (screenY + 20) + 'px';
+    }
+
+    _updateLocalChatBubble(x, y, text) {
+        if (!this._chatBubbleEl) return;
+
+        const g = this._chatBubbleEl;
+        const rect = g.querySelector('rect');
+        const textEl = g.querySelector('text');
+
+        // 计算文字宽度
+        const fontSize = 12;
+        const padding = 12;
+        const approxWidth = text.length * (fontSize * 0.6) + padding;
+        const width = Math.max(30, approxWidth);
+        const height = 24;
+
+        // 更新位置（光标右下角）
+        g.setAttribute('transform', `translate(${x + 18}, ${y + 22})`);
+
+        // 更新气泡大小
+        rect.setAttribute('width', width);
+        rect.setAttribute('height', height);
+
+        // 更新文字
+        textEl.textContent = text || '';
+        textEl.setAttribute('x', width / 2);
+        textEl.setAttribute('y', height / 2 + 4);
+        textEl.setAttribute('text-anchor', 'middle');
+    }
+
+    _broadcastChatMessage(text) {
+        this.broadcastToPeers(JSON.stringify({
+            type: SERVER_OPCODE.CHAT_MESSAGE,
+            id: this.state.clientId,
+            themeColor: getComputedStyle(document.documentElement).getPropertyValue('--looks-secondary').trim() || '#0099ff',
+            name: this.getUserName(),
+            position: { ...this._lastPointerPos },
+            text: text,          // string = 内容，null = 清除
+            workspaceIndex: this.editingTargetIndex,
+        }), true);
+
+        // 同时更新本地气泡
+        if (text !== null) {
+            this._updateLocalChatBubble(
+                this._lastPointerPos.x,
+                this._lastPointerPos.y,
+                text
+            );
+        }
+    }
+
+    // 在 _sendPointer 中记录光标位置（用于定位聊天输入框）
+
+    // 注册编辑锁定相关的事件监听器
+    _setupEditLockListeners() {
+        // 1. 监听 Blockly workspace 变更事件
+        const onBlocklyEvent = (event) => {
+            if (!event) return;
+            if (event.type === 'ui' && event.element === 'selected') {
+                this._detectAndBroadcastEditState();
+            }
+        };
+
+        // 2. 监听 WidgetDiv 的 DOM 变化（输入框打开/关闭）
+        const widgetDiv = this._Blockly?.WidgetDiv?.DIV;
+        let widgetObserver = null;
+        if (widgetDiv) {
+            widgetObserver = new MutationObserver(() => {
+                this._detectAndBroadcastEditState();
+            });
+            widgetObserver.observe(widgetDiv, { attributes: true, attributeFilter: ['style'] });
+        }
+
+        // 3. 监听 document focusin/focusout 事件：检测注释 textarea 获焦/失焦
+        const onFocusIn = (e) => {
+            // 取消待执行的解锁定时器（焦点在注释之间切换时）
+            if (this._pendingUnlockTimer) {
+                clearTimeout(this._pendingUnlockTimer);
+                this._pendingUnlockTimer = null;
+            }
+            if (e.target?.classList?.contains('scratchCommentTextarea')) {
+                this._detectAndBroadcastEditState();
+            }
+        };
+        const onFocusOut = (e) => {
+            if (e.target?.classList?.contains('scratchCommentTextarea')) {
+                // relatedTarget 是下一个获焦元素，如果不是注释 textarea 则延迟释放锁定
+                const goingToComment = e.relatedTarget?.classList?.contains('scratchCommentTextarea');
+                if (!goingToComment) {
+                    this._pendingUnlockTimer = setTimeout(() => {
+                        this._pendingUnlockTimer = null;
+                        this._detectAndBroadcastEditState();
+                    }, 100);
+                }
+            }
+        };
+        document.addEventListener('focusin', onFocusIn);
+        document.addEventListener('focusout', onFocusOut);
+
+        // 4. 监听 WidgetDiv show/hide（通过 monkey-patch）
+        const origWidgetHide = this._Blockly?.WidgetDiv?.hide;
+        const origWidgetShow = this._Blockly?.WidgetDiv?.show;
+        const self = this;
+        if (origWidgetHide) {
+            this._Blockly.WidgetDiv.hide = function(...args) {
+                origWidgetHide.apply(this, args);
+                self._detectAndBroadcastEditState();
+            };
+        }
+        if (origWidgetShow) {
+            this._Blockly.WidgetDiv.show = function(...args) {
+                origWidgetShow.apply(this, args);
+                self._detectAndBroadcastEditState();
+            };
+        }
+
+        // 保存监听器引用，退出时清理
+        this._editLockListeners = [
+            { type: 'blockly_event', handler: onBlocklyEvent },
+            { type: 'mutation_observer', observer: widgetObserver },
+            { type: 'document_event', event: 'focusin', handler: onFocusIn },
+            { type: 'document_event', event: 'focusout', handler: onFocusOut },
+            { type: 'widgetdiv_hide_patch', original: origWidgetHide },
+            { type: 'widgetdiv_show_patch', original: origWidgetShow },
+        ];
+
+        // 注册 Blockly workspace 变更监听
+        const ws = this._Blockly.getMainWorkspace();
+        if (ws) {
+            ws.addChangeListener(onBlocklyEvent);
+            this._console.log("[协作-锁定] 已注册 workspace.addChangeListener");
+        } else {
+            this._console.log("[协作-锁定] workspace 不存在，跳过 addChangeListener");
+        }
+    }
+
+    // 检测当前编辑状态并广播 lock/unlock
+    _detectAndBroadcastEditState() {
+        if (!this._Blockly) return;
+        let newState = null;
+
+        // 1. 积木字段编辑（文本/数字输入框）
+        if (this._Blockly.WidgetDiv.isVisible()) {
+            const field = this._Blockly.WidgetDiv.owner_;
+            if (field?.sourceBlock_) {
+                newState = { type: 'block', id: field.sourceBlock_.id };
+            }
+        }
+        // 2. 注释编辑：检查焦点是否在注释 textarea 上
+        const active = document.activeElement;
+        if (!newState && active && active.classList.contains('scratchCommentTextarea')) {
+            const vm = this._vm;
+            const target = vm?.runtime?.getEditingTarget();
+            const ws = this._Blockly?.getMainWorkspace();
+            if (target && target.comments && ws) {
+                const sortedKeys = Object.keys(target.comments).sort();
+                for (let i = 0; i < sortedKeys.length; i++) {
+                    const commentId = sortedKeys[i];
+                    const commentData = target.comments[commentId];
+                    if (commentData.blockId) {
+                        const block = ws.getBlockById(commentData.blockId);
+                        if (block?.comment?.textarea_ === active) {
+                            newState = { type: 'comment', index: i };
+                            break;
+                        }
+                    } else {
+                        const comment = ws.getCommentById(commentId);
+                        if (comment?.textarea_ === active) {
+                            newState = { type: 'comment', index: i };
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 检测状态变化
+        const oldKey = this._localEditState
+            ? `${this._localEditState.type}:${this._localEditState.type === 'comment' ? this._localEditState.index : this._localEditState.id}`
+            : null;
+        const newKey = newState
+            ? `${newState.type}:${newState.type === 'comment' ? newState.index : newState.id}`
+            : null;
+
+        if (oldKey === newKey) return; // 无变化
+
+        // 释放旧锁定
+        if (this._localEditState) {
+            const lockId = this._localEditState.type === 'comment'
+                ? String(this._localEditState.index)
+                : this._localEditState.id;
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.EDIT_UNLOCK,
+                userId: this.state.clientId,
+                lockType: this._localEditState.type,
+                lockId: lockId,
+            }), true);
+        }
+        // 发送新锁定
+        if (newState) {
+            const lockId = newState.type === 'comment'
+                ? String(newState.index)
+                : newState.id;
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.EDIT_LOCK,
+                userId: this.state.clientId,
+                userName: this.getUserName(),
+                lockType: newState.type,
+                lockId: lockId,
+            }), true);
+        }
+        this._localEditState = newState;
     }
 
     exit() {
         this.workspace.removeEventListener("mousemove", this.boundMouseMoveHandler);
+        // 通知 server 自己离开（让 server 广播 peer-left 并清理记录）
+        if (this._server && this._server.readyState === WebSocket.OPEN) {
+            try { this._server.send(JSON.stringify({ type: "exit" })); } catch { /* ignore */ }
+        }
+        // 清理编辑锁定的事件监听器
+        for (const listener of this._editLockListeners) {
+            if (listener.type === 'mutation_observer' && listener.observer) {
+                listener.observer.disconnect();
+            } else if (listener.type === 'document_event') {
+                document.removeEventListener(listener.event, listener.handler);
+            } else if (listener.type === 'widgetdiv_hide_patch' && listener.original) {
+                if (this._Blockly?.WidgetDiv) {
+                    this._Blockly.WidgetDiv.hide = listener.original;
+                }
+            } else if (listener.type === 'widgetdiv_show_patch' && listener.original) {
+                if (this._Blockly?.WidgetDiv) {
+                    this._Blockly.WidgetDiv.show = listener.original;
+                }
+            } else if (listener.type === 'blockly_event') {
+                const ws = this._Blockly?.getMainWorkspace?.();
+                if (ws) ws.removeChangeListener(listener.handler);
+            }
+        }
+        this._editLockListeners = [];
+        // 退出时释放所有锁定
+        if (this._localEditState) {
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.EDIT_UNLOCK,
+                userId: this.state.clientId,
+                lockType: this._localEditState.type,
+                lockId: this._localEditState.id,
+            }), true);
+            this._localEditState = null;
+        }
+        // 清理聊天输入框
+        if (this._boundKeyHandler) {
+            window.removeEventListener("keydown", this._boundKeyHandler);
+            this._boundKeyHandler = null;
+        }
+        this._hideChatInput();
+        // 清理工作区中的远端元素（指针、聊天气泡、锁定遮罩）
+        cleanupAllRemote();
         this._closeAllPeerConnections();
         if (this._server) {
             try { this._server.send(JSON.stringify({ type: "exit", clientId: this.state.clientId })); } catch (e) {}
@@ -605,14 +1097,20 @@ export class RTCServer {
 
     static CHUNK_SIZE = 15000;
 
-    sendToPeer(peerId, data) {
+    sendToPeer(peerId, data, dropIfBuffered) {
         const channel = this._dataChannels.get(peerId);
         if (!channel) return false;
         if (channel.readyState !== "open") {
+            // pointer 等纯视觉消息在通道未就绪时直接丢弃
+            if (dropIfBuffered) return false;
             if (!this._pendingMessages.has(peerId)) this._pendingMessages.set(peerId, []);
-            this._pendingMessages.get(peerId).push(data);
+            // 限制待发队列长度，防止内存泄漏
+            const pending = this._pendingMessages.get(peerId);
+            if (pending.length < 50) pending.push(data);
             return true;
         }
+        // pointer 等纯视觉消息在 buffer 积压时直接丢弃
+        if (dropIfBuffered && channel.bufferedAmount > 16 * 1024) return false;
         try {
             const raw = JSON.stringify(data);
             if (raw.length <= RTCServer.CHUNK_SIZE) {
@@ -629,8 +1127,10 @@ export class RTCServer {
             }
             return true;
         } catch (e) {
+            if (dropIfBuffered) return false;
             if (!this._pendingMessages.has(peerId)) this._pendingMessages.set(peerId, []);
-            this._pendingMessages.get(peerId).push(data);
+            const pending = this._pendingMessages.get(peerId);
+            if (pending.length < 50) pending.push(data);
             if (!this._retryTimer) this._retryTimer = setTimeout(() => this._retryPending(peerId), 100);
             return false;
         }
@@ -650,11 +1150,13 @@ export class RTCServer {
         }
     }
 
-    broadcastToPeers(data) {
-        if (this._ingoreUpdate || this._remoteUpdateInProgress) return 0;
+    broadcastToPeers(data, skipGuard) {
+        if (!skipGuard && (this._ingoreUpdate || this._remoteUpdateInProgress)) return 0;
+        // pointer/pointer-leave 是纯视觉消息，buffer 积压时可丢弃
+        const dropIfBuffered = skipGuard;
         let sent = 0;
         for (const peerId of this._dataChannels.keys())
-            if (this.sendToPeer(peerId, data)) sent++;
+            if (this.sendToPeer(peerId, data, dropIfBuffered)) sent++;
         return sent;
     }
 
@@ -705,6 +1207,7 @@ export class RTCServer {
         if (rtc) { try { rtc.close(); } catch (e) {} this._rtcConnections.delete(peerId); }
         this._pendingCandidates.delete(peerId);
         this._pendingMessages.delete(peerId);
+        if (this._onPeerLeft) this._onPeerLeft(peerId);
         this._console.log("[协作] 已关闭与 " + peerId + " 的P2P连接");
     }
 
