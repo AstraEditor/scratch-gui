@@ -1,6 +1,17 @@
+
+
+<div style="display:flex;
+justify-content:center">
+
 # AstraEditor-gui
 
+</div>
+<div style="display:flex;
+justify-content:center">
+
 [English](./README.md)
+
+</div>
 
 此 scratch-gui 是 [AstraEditor](https：//www.github.com/AstraEditor) 的修改版本
 
