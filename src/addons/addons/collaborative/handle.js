@@ -135,12 +135,12 @@ const _remoteLocks = new Map();
 function lockKey(lockType, lockId) { return `${lockType}:${lockId}`; }
 
 // 在积木/注释的 svgGroup_ 上添加遮罩，阻止交互
-function addLockOverlay(svgGroup, userName) {
+function addLockOverlay(svgGroup, userName, noLabel) {
     if (!svgGroup) return;
     // 移除旧遮罩（如果有）
     removeLockOverlay(svgGroup);
 
-    // 直接禁用注释 textarea（foreignObject 内的 HTML 元素可能不受 SVG pointer-events 拦截）
+    // 直接禁用注释 textarea
     const textarea = svgGroup.querySelector('textarea');
     if (textarea) {
         textarea.disabled = true;
@@ -152,37 +152,44 @@ function addLockOverlay(svgGroup, userName) {
     try {
         const bbox = svgGroup.getBBox();
         const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        overlay.setAttribute('x', bbox.x - 2);
-        overlay.setAttribute('y', bbox.y - 2);
-        overlay.setAttribute('width', bbox.width + 4);
-        overlay.setAttribute('height', bbox.height + 4);
-        overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
-        overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
-        overlay.setAttribute('stroke-width', '2');
+        overlay.setAttribute('x', bbox.x - 1);
+        overlay.setAttribute('y', bbox.y - 1);
+        overlay.setAttribute('width', bbox.width + 2);
+        overlay.setAttribute('height', bbox.height + 2);
         overlay.setAttribute('rx', '4');
         overlay.setAttribute('pointer-events', 'all');
         overlay.setAttribute('cursor', 'not-allowed');
         overlay.dataset.collabLockOverlay = 'true';
+
+        if (noLabel) {
+            overlay.setAttribute('fill', 'rgba(255, 80, 80, 0.12)');
+            overlay.setAttribute('stroke', 'rgba(255, 80, 80, 0.5)');
+            overlay.setAttribute('stroke-width', '1.5');
+            overlay.setAttribute('stroke-dasharray', '4 3');
+        } else {
+            overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
+            overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
+            overlay.setAttribute('stroke-width', '2');
+
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', bbox.x + bbox.width / 2);
+            label.setAttribute('y', bbox.y - 6);
+            label.setAttribute('text-anchor', 'middle');
+            label.setAttribute('font-size', '12');
+            label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
+            label.setAttribute('pointer-events', 'none');
+            label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
+            label.dataset.collabLockOverlay = 'true';
+            svgGroup.appendChild(label);
+        }
 
         const stop = e => { e.stopPropagation(); e.preventDefault(); };
         overlay.addEventListener('mousedown', stop, true);
         overlay.addEventListener('touchstart', stop, true);
         overlay.addEventListener('contextmenu', stop, true);
 
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', bbox.x + bbox.width / 2);
-        label.setAttribute('y', bbox.y - 6);
-        label.setAttribute('text-anchor', 'middle');
-        label.setAttribute('font-size', '12');
-        label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
-        label.setAttribute('pointer-events', 'none');
-        label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
-        label.dataset.collabLockOverlay = 'true';
-
         svgGroup.appendChild(overlay);
-        svgGroup.appendChild(label);
     } catch (e) {
-        // getBBox may fail if element not laid out; textarea already disabled so lock still effective
     }
 }
 
@@ -230,11 +237,11 @@ function findSvgElement(lockType, lockId) {
 }
 
 // 应用远端锁定：添加遮罩（找不到 SVG 时仍存储锁定，等元素出现后补加）
-function applyRemoteLock(lockType, lockId, userName, userId) {
+function applyRemoteLock(lockType, lockId, userName, userId, noLabel) {
     const key = lockKey(lockType, lockId);
-    _remoteLocks.set(key, { lockType, lockId, userName, userId });
+    _remoteLocks.set(key, { lockType, lockId, userName, userId, noLabel });
     const svgEl = findSvgElement(lockType, lockId);
-    if (svgEl) addLockOverlay(svgEl, userName);
+    if (svgEl) addLockOverlay(svgEl, userName, noLabel);
     // 关闭可能已打开的输入框
     if (_Blockly) {
         _Blockly.WidgetDiv.hide?.();
@@ -256,7 +263,7 @@ function reapplyRemoteLocks() {
         const svgEl = findSvgElement(lock.lockType, lock.lockId);
         if (svgEl) {
             removeLockOverlay(svgEl);
-            addLockOverlay(svgEl, lock.userName);
+            addLockOverlay(svgEl, lock.userName, lock.noLabel);
         }
     }
 }
@@ -281,9 +288,75 @@ function clearAllRemoteLocks() {
     _remoteLocks.clear();
 }
 
-// 清理单个用户的所有远端元素（指针、聊天气泡、锁定遮罩）
+// ── 拖动幽灵（实时显示远端用户正在拖动的积木簇） ──────────────
+
+const _dragGhosts = new Map();   // userId -> SVG group element
+const _dragOffsets = new Map();  // userId -> { x, y } 积木原点与鼠标的相对偏移
+
+function removeDragGhost(userId) {
+    const ghost = _dragGhosts.get(userId);
+    if (ghost) {
+        ghost.remove();
+        _dragGhosts.delete(userId);
+    }
+    _dragOffsets.delete(userId);
+}
+
+function updateDragGhostPosition(userId, x, y) {
+    const ghost = _dragGhosts.get(userId);
+    if (ghost) {
+        const off = _dragOffsets.get(userId) || { x: 0, y: 0 };
+        ghost.setAttribute('transform', `translate(${x + off.x},${y + off.y})`);
+    }
+}
+
+function showDragGhost(userId, xmlString, x, y, offsetX, offsetY) {
+    if (!_Blockly) return;
+    const ws = _Blockly.getMainWorkspace();
+    if (!ws) return;
+    removeDragGhost(userId);
+
+    const dom = _Blockly.Xml.textToDom(`<xml>${xmlString}</xml>`);
+    const rootEl = dom.querySelector('block');
+    if (!rootEl) return;
+
+    _Blockly.Events.disable();
+    try {
+        const rootBlock = _Blockly.Xml.domToBlock(rootEl, ws);
+        if (!rootBlock || !rootBlock.getSvgRoot()) { _Blockly.Events.enable(); return; }
+
+        // 深克隆整个 SVG 树
+        const ghostGroup = rootBlock.getSvgRoot().cloneNode(true);
+        // 清除克隆中的 id，避免与真实积木冲突
+        ghostGroup.removeAttribute('id');
+        ghostGroup.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        // 幽灵样式
+        ghostGroup.setAttribute('opacity', '0.5');
+        ghostGroup.setAttribute('pointer-events', 'none');
+        ghostGroup.setAttribute('filter', 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))');
+
+        // 销毁真实积木（SVG 已克隆，不受影响）
+        rootBlock.dispose(false);
+
+        // 放入画布
+        const canvas = ws.getCanvas();
+        if (canvas) {
+            _dragOffsets.set(userId, { x: offsetX || 0, y: offsetY || 0 });
+            ghostGroup.setAttribute('transform', `translate(${x + (offsetX || 0)},${y + (offsetY || 0)})`);
+            canvas.appendChild(ghostGroup);
+            _dragGhosts.set(userId, ghostGroup);
+        }
+    } catch (e) {
+        console.error('[协作] 创建拖动幽灵失败:', e);
+    } finally {
+        _Blockly.Events.enable();
+    }
+}
+
+// 清理单个用户的所有远端元素（指针、聊天气泡、锁定遮罩、拖动幽灵）
 export function cleanupRemoteByUser(userId) {
     clearLocksByUser(userId);
+    removeDragGhost(userId);
     const ws = getWS();
     if (ws) {
         const svg = ws.getParentSvg();
@@ -298,6 +371,9 @@ export function cleanupRemoteByUser(userId) {
 export function cleanupAllRemote() {
     clearAllRemoteLocks();
     _remoteChatBubbles.clear();
+    // 清除所有拖动幽灵
+    for (const [, ghost] of _dragGhosts) ghost.remove();
+    _dragGhosts.clear();
     // 移除所有指针容器
     const ws = getWS();
     if (ws) {
@@ -936,7 +1012,8 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 clearAllRemoteLocks();
                 try {
                     localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
-                    // 先加载 Host 已安装但项目数据中未包含的扩展，再 loadProject
+                    // 先加载 Host 已安装但项目数据未包含的扩展。
+                    // runtime.dispose() 不清除扩展，loadProject 的 _loadExtensions 会跳过已加载项。
                     if (data.extensions && data.extensions.length > 0) {
                         for (const ext of data.extensions) {
                             if (!vm.extensionManager.isExtensionLoaded(ext.id)) {
@@ -1143,11 +1220,24 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 break;
             case SERVER_OPCODE.EDIT_LOCK:
                 if (data.lockType && data.lockId && data.userId !== rtc.state.clientId)
-                    applyRemoteLock(data.lockType, data.lockId, data.userName || '?', data.userId);
+                    applyRemoteLock(data.lockType, data.lockId, data.userName || '?', data.userId, !!data.noLabel);
                 break;
             case SERVER_OPCODE.EDIT_UNLOCK:
                 if (data.lockType && data.lockId && data.userId !== rtc.state.clientId)
                     removeRemoteLock(data.lockType, data.lockId);
+                break;
+            case SERVER_OPCODE.BLOCK_DRAG_START:
+                if (data.targetIndex === rtc.editingTargetIndex && data.xml && data.userId) {
+                    showDragGhost(data.userId, data.xml, data.x, data.y, data.offsetX, data.offsetY);
+                }
+                break;
+            case SERVER_OPCODE.BLOCK_DRAG_MOVE:
+                if (data.targetIndex === rtc.editingTargetIndex && data.userId) {
+                    updateDragGhostPosition(data.userId, data.x, data.y);
+                }
+                break;
+            case SERVER_OPCODE.BLOCK_DRAG_END:
+                if (data.userId) removeDragGhost(data.userId);
                 break;
             case SERVER_OPCODE.PING: sendToPeer(peerId, { type: SERVER_OPCODE.PONG }); break;
             case SERVER_OPCODE.KICK:

@@ -33,6 +33,9 @@ export const SERVER_OPCODE = {
   CHAT_MESSAGE: "chat-message",             // 实时聊天消息
   EDIT_LOCK: "edit-lock",               // 锁定积木/注释（其他用户不可编辑）
   EDIT_UNLOCK: "edit-unlock",           // 解锁积木/注释
+  BLOCK_DRAG_START: "block-drag-start",   // 积木拖动开始（含完整 XML，让远端渲染幽灵）
+  BLOCK_DRAG_MOVE: "block-drag-move",     // 积木拖动中（仅坐标）
+  BLOCK_DRAG_END: "block-drag-end",       // 积木拖动结束（删除幽灵）
   PING: "ping",
   PONG: "pong",
   KICK: "kick",

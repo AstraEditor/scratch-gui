@@ -55,7 +55,14 @@ export class RTCServer {
         this._chatBubbleEl = null;     // 本地聊天气泡 SVG 元素
         this._chatText = '';           // 当前输入的文字
         this._lastPointerPos = { x: 0, y: 0 }; // 上次光标位置（用于定位输入框）
+        this._loggingIn = false;       // 防止重复 login
         this._chatActive = false;      // 输入框是否激活
+        this._dragActive = false;      // 是否正在拖动积木
+        this._dragRootId = null;       // 拖动中的积木 root ID
+        this._dragRootBlock = null;    // 拖动中的积木 root 引用（用于收集簇 ID）
+        this._dragOffsetX = 0;         // 积木原点与鼠标的 X 偏移
+        this._dragOffsetY = 0;         // 积木原点与鼠标的 Y 偏移
+        this._lastDragBroadcast = 0;   // 上次广播拖动坐标的时间戳
 
         this.workspace = document.querySelector("[class*=gui_blocks-wrapper]");
         this.editingTargetIndex = -1;
@@ -115,89 +122,99 @@ export class RTCServer {
     }
 
     async login(mode = "reg", serverUrl = "localhost:1832", roomId = "") {
-        await this._ensureSTUNList();
-        if (!window.RTCPeerConnection) {
-            this._updateTipText(this._msg("create_rtc_failed"), "error");
+        // 防止重复登录（网络延迟下多次点击加入/创建）
+        if (this._loggingIn || this.state.clientId) {
+            this._console.warn("[协作] 已有进行中的连接，忽略重复 login 请求");
             return;
         }
-        this._updateTipText(this._msg("linking_to_server"));
-        const spawnedRoomID = await this._spawnRoomID(mode, roomId, serverUrl);
-        if (mode === "join") {
-            if (!spawnedRoomID.isUsing) {
-                this._updateTipText(this._msg("join_failed"), "error");
+        this._loggingIn = true;
+        try {
+            await this._ensureSTUNList();
+            if (!window.RTCPeerConnection) {
+                this._updateTipText(this._msg("create_rtc_failed"), "error");
                 return;
             }
-            this._server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID.id}&name=${this.getUserName()}`);
-        } else {
-            this._server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID}&name=${this.getUserName()}`);
-        }
-        this._server.onmessage = (msgs) => {
-            try { this._handleServerMessage(JSON.parse(msgs.data)); }
-            catch (e) { this._console.error("[协作] 解析服务器消息失败:", e); }
-        };
-        this._server.onerror = () => this._updateTipText(this._msg("server_error"), "error");
-        this._server.onclose = () => {
-            this.exit();
-            this._closeAllPeerConnections();
-            this._updateTipText(this._msg("server_exit"), "error");
-            this._server = null;
-            this.state.clientId = null;
-            this.state.roomId = null;
-            this.state.allMembers = [];
-            this._emitState();
-        };
-        // 立即初始化工作区索引，防止 targetUpdate 在插件启动前已触发导致光标不出现
-        this.updateWorkspace();
-        window.addEventListener("beforeunload", () => this.exit());
-        window.addEventListener("pagehide", () => this.exit());
-        this.workspace.addEventListener("mousemove", this.boundMouseMoveHandler);
+            this._updateTipText(this._msg("linking_to_server"));
+            const spawnedRoomID = await this._spawnRoomID(mode, roomId, serverUrl);
+            if (mode === "join") {
+                if (!spawnedRoomID.isUsing) {
+                    this._updateTipText(this._msg("join_failed"), "error");
+                    return;
+                }
+                this._server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID.id}&name=${this.getUserName()}`);
+            } else {
+                this._server = new WebSocket(`ws://${serverUrl}?room=${spawnedRoomID}&name=${this.getUserName()}`);
+            }
+            this._server.onmessage = (msgs) => {
+                try { this._handleServerMessage(JSON.parse(msgs.data)); }
+                catch (e) { this._console.error("[协作] 解析服务器消息失败:", e); }
+            };
+            this._server.onerror = () => this._updateTipText(this._msg("server_error"), "error");
+            this._server.onclose = () => {
+                this.exit();
+                this._closeAllPeerConnections();
+                this._updateTipText(this._msg("server_exit"), "error");
+                this._server = null;
+                this.state.clientId = null;
+                this.state.roomId = null;
+                this.state.allMembers = [];
+                this._emitState();
+            };
+            // 立即初始化工作区索引，防止 targetUpdate 在插件启动前已触发导致光标不出现
+            this.updateWorkspace();
+            window.addEventListener("beforeunload", () => this.exit());
+            window.addEventListener("pagehide", () => this.exit());
+            this.workspace.addEventListener("mousemove", this.boundMouseMoveHandler);
 
-        // 聊天功能：Ctrl+T 打开输入框
-        this._boundKeyHandler = this._handleKeyDown.bind(this);
-        window.addEventListener("keydown", this._boundKeyHandler);
+            // 聊天功能：Ctrl+T 打开输入框
+            this._boundKeyHandler = this._handleKeyDown.bind(this);
+            window.addEventListener("keydown", this._boundKeyHandler);
 
-        // 注册编辑锁定的事件监听（在 setBlockly 中实际执行）
-        this._editLockListenersReady = false;
+            // 注册编辑锁定的事件监听（在 setBlockly 中实际执行）
+            this._editLockListenersReady = false;
 
-        this._vm.runtime.on("PROJECT_CHANGED", () => {
-            if (this._ingoreUpdate || this._remoteUpdateInProgress) return;
-            if (this._updateTimer) clearTimeout(this._updateTimer);
-            this._updateTimer = setTimeout(() => {
-                this._updateTimer = null;
-                if (this._Blockly && this._Blockly.Events && this._Blockly.Events.getGroup()) return;
-                this.updateProject();
-            }, 200);
-        });
+            this._vm.runtime.on("PROJECT_CHANGED", () => {
+                if (this._ingoreUpdate || this._remoteUpdateInProgress) return;
+                if (this._updateTimer) clearTimeout(this._updateTimer);
+                this._updateTimer = setTimeout(() => {
+                    this._updateTimer = null;
+                    if (this._Blockly && this._Blockly.Events && this._Blockly.Events.getGroup()) return;
+                    this.updateProject();
+                }, 200);
+            });
 
-        // Hook extension loading since it doesn't emit PROJECT_CHANGED
-        const origLoad = this._vm.extensionManager.loadExtensionURL.bind(this._vm.extensionManager);
-        this._vm.extensionManager.loadExtensionURL = (...args) => {
-            return origLoad(...args).then(result => {
+            // Hook extension loading since it doesn't emit PROJECT_CHANGED
+            const origLoad = this._vm.extensionManager.loadExtensionURL.bind(this._vm.extensionManager);
+            this._vm.extensionManager.loadExtensionURL = (...args) => {
+                return origLoad(...args).then(result => {
+                    if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
+                        this.updateProject();
+                    }
+                    return result;
+                });
+            };
+
+            // 拦截项目替换操作（新项目、加载项目等）：联机中直接退出
+            if (!this._vm._collabLoadProjectHooked) {
+                this._vm._collabLoadProjectHooked = true;
+                const origLoadProject = this._vm.loadProject.bind(this._vm);
+                this._vm.loadProject = async (...args) => {
+                    if (this.state.clientId && !this._ingoreUpdate) {
+                        this._console.log("[协作] 检测到项目替换操作，退出联机");
+                        this.exit();
+                    }
+                    return origLoadProject(...args);
+                };
+            }
+
+            this._vm.runtime.on("EXTENSION_REMOVED", () => {
                 if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
                     this.updateProject();
                 }
-                return result;
             });
-        };
-
-        // 拦截项目替换操作（新项目、加载项目等）：联机中直接退出
-        if (!this._vm._collabLoadProjectHooked) {
-            this._vm._collabLoadProjectHooked = true;
-            const origLoadProject = this._vm.loadProject.bind(this._vm);
-            this._vm.loadProject = async (...args) => {
-                if (this.state.clientId && !this._ingoreUpdate) {
-                    this._console.log("[协作] 检测到项目替换操作，退出联机");
-                    this.exit();
-                }
-                return origLoadProject(...args);
-            };
+        } finally {
+            this._loggingIn = false;
         }
-
-        this._vm.runtime.on("EXTENSION_REMOVED", () => {
-            if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
-                this.updateProject();
-            }
-        });
     }
 
     async updateProject() {
@@ -713,6 +730,97 @@ export class RTCServer {
             name: this.getUserName(), position: { x: canvasCoord.x, y: canvasCoord.y },
             themeColor: getComputedStyle(document.documentElement).getPropertyValue('--looks-secondary').trim() || '#0099ff',
         }), true);
+
+        // 拖动幽灵广播
+        this._handleDragBroadcast(ws, canvasCoord);
+    }
+
+    _getDraggedBlock() {
+        const ws = this._Blockly?.getMainWorkspace();
+        const gesture = ws?.currentGesture_;
+        return gesture?.targetBlock_ || null;
+    }
+
+    // 广播拖动积木的编辑锁定/解锁（仅锁根积木，避免多层遮罩叠加产生渐变色）
+    _broadcastDragLock(lock) {
+        if (!this._dragRootBlock) return;
+        const id = this._dragRootBlock.id;
+        this.broadcastToPeers(JSON.stringify({
+            type: lock ? SERVER_OPCODE.EDIT_LOCK : SERVER_OPCODE.EDIT_UNLOCK,
+            userId: this.state.clientId,
+            userName: this.getUserName(),
+            lockType: 'block',
+            lockId: id,
+            noLabel: true,
+        }), true);
+    }
+
+    _handleDragBroadcast(ws, coords) {
+        if (!this.state.clientId || !this._Blockly) return;
+        const isDragging = ws.isDragging();
+
+        if (isDragging) {
+            const draggedBlock = this._getDraggedBlock();
+            if (!draggedBlock) return;
+
+            const now = Date.now();
+            if (!this._dragActive) {
+                // 拖动开始：发送完整 XML + 相对偏移 + 锁定积木簇
+                this._dragActive = true;
+                this._dragRootId = draggedBlock.id;
+                this._dragRootBlock = draggedBlock;
+                this._lastDragBroadcast = 0;
+                this._broadcastDragLock(true);
+
+                // 计算积木原点与鼠标的偏移（积木相对于鼠标的位置差）
+                const blockXY = draggedBlock.getRelativeToSurfaceXY();
+                this._dragOffsetX = blockXY.x - coords.x;
+                this._dragOffsetY = blockXY.y - coords.y;
+
+                let xml;
+                try {
+                    const dom = this._Blockly.Xml.blockToDom(draggedBlock, true);
+                    xml = this._Blockly.Xml.domToText(dom);
+                } catch (e) {
+                    console.error("[协作-拖动] XML 序列化失败:", e);
+                    return;
+                }
+                this.broadcastToPeers(JSON.stringify({
+                    type: SERVER_OPCODE.BLOCK_DRAG_START,
+                    targetIndex: this.editingTargetIndex,
+                    userId: this.state.clientId,
+                    rootId: draggedBlock.id,
+                    xml,
+                    x: coords.x,
+                    y: coords.y,
+                    offsetX: this._dragOffsetX,
+                    offsetY: this._dragOffsetY,
+                }), true);
+            } else if (now - this._lastDragBroadcast > 50) {
+                // 拖动中：仅发坐标 (50ms 节流)
+                this._lastDragBroadcast = now;
+                this.broadcastToPeers(JSON.stringify({
+                    type: SERVER_OPCODE.BLOCK_DRAG_MOVE,
+                    targetIndex: this.editingTargetIndex,
+                    userId: this.state.clientId,
+                    rootId: draggedBlock.id,
+                    x: coords.x,
+                    y: coords.y,
+                }), true);
+            }
+        } else if (this._dragActive) {
+            // 拖动结束：解锁积木簇
+            this._broadcastDragLock(false);
+            this._dragActive = false;
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.BLOCK_DRAG_END,
+                targetIndex: this.editingTargetIndex,
+                userId: this.state.clientId,
+                rootId: this._dragRootId,
+            }), true);
+            this._dragRootId = null;
+            this._dragRootBlock = null;
+        }
     }
 
     // ── 聊天功能 ──────────────────────────────────────────────
@@ -1063,6 +1171,19 @@ export class RTCServer {
     exit() {
         // 清除 snapshot 等待超时
         if (this._snapshotTimeout) { clearTimeout(this._snapshotTimeout); this._snapshotTimeout = null; }
+        // 发送拖动结束 + 解锁（如果正在拖动）
+        if (this._dragActive && this.state.clientId) {
+            this._broadcastDragLock(false);
+            this.broadcastToPeers(JSON.stringify({
+                type: SERVER_OPCODE.BLOCK_DRAG_END,
+                targetIndex: this.editingTargetIndex,
+                userId: this.state.clientId,
+                rootId: this._dragRootId,
+            }), true);
+            this._dragActive = false;
+            this._dragRootId = null;
+            this._dragRootBlock = null;
+        }
         this.workspace.removeEventListener("mousemove", this.boundMouseMoveHandler);
         // 通知 server 自己离开（让 server 广播 peer-left 并清理记录）
         if (this._server && this._server.readyState === WebSocket.OPEN) {
