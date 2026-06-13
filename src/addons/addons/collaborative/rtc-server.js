@@ -146,6 +146,8 @@ export class RTCServer {
             this.state.allMembers = [];
             this._emitState();
         };
+        // 立即初始化工作区索引，防止 targetUpdate 在插件启动前已触发导致光标不出现
+        this.updateWorkspace();
         window.addEventListener("beforeunload", () => this.exit());
         window.addEventListener("pagehide", () => this.exit());
         this.workspace.addEventListener("mousemove", this.boundMouseMoveHandler);
@@ -914,20 +916,27 @@ export class RTCServer {
             widgetObserver.observe(widgetDiv, { attributes: true, attributeFilter: ['style'] });
         }
 
-        // 3. 监听 document focusin/focusout 事件：检测注释 textarea 获焦/失焦
+        // 3. 监听 document focusin/focusout：覆盖注释 textarea 和积木字段输入框
         const onFocusIn = (e) => {
-            // 取消待执行的解锁定时器（焦点在注释之间切换时）
             if (this._pendingUnlockTimer) {
                 clearTimeout(this._pendingUnlockTimer);
                 this._pendingUnlockTimer = null;
             }
-            if (e.target?.classList?.contains('scratchCommentTextarea')) {
+            const target = e.target;
+            // 注释 textarea
+            if (target?.classList?.contains('scratchCommentTextarea')) {
                 this._detectAndBroadcastEditState();
+                return;
+            }
+            // 积木字段输入框（WidgetDiv 内的 input/textarea）
+            if (target?.closest?.('.blocklyWidgetDiv')) {
+                // 等 WidgetDiv.owner_ 就位后再检测
+                setTimeout(() => this._detectAndBroadcastEditState(), 0);
             }
         };
         const onFocusOut = (e) => {
-            if (e.target?.classList?.contains('scratchCommentTextarea')) {
-                // relatedTarget 是下一个获焦元素，如果不是注释 textarea 则延迟释放锁定
+            const target = e.target;
+            if (target?.classList?.contains('scratchCommentTextarea')) {
                 const goingToComment = e.relatedTarget?.classList?.contains('scratchCommentTextarea');
                 if (!goingToComment) {
                     this._pendingUnlockTimer = setTimeout(() => {
@@ -935,27 +944,18 @@ export class RTCServer {
                         this._detectAndBroadcastEditState();
                     }, 100);
                 }
+                return;
+            }
+            // 积木字段输入框失去焦点
+            if (target?.closest?.('.blocklyWidgetDiv')) {
+                this._pendingUnlockTimer = setTimeout(() => {
+                    this._pendingUnlockTimer = null;
+                    this._detectAndBroadcastEditState();
+                }, 100);
             }
         };
         document.addEventListener('focusin', onFocusIn);
         document.addEventListener('focusout', onFocusOut);
-
-        // 4. 监听 WidgetDiv show/hide（通过 monkey-patch）
-        const origWidgetHide = this._Blockly?.WidgetDiv?.hide;
-        const origWidgetShow = this._Blockly?.WidgetDiv?.show;
-        const self = this;
-        if (origWidgetHide) {
-            this._Blockly.WidgetDiv.hide = function(...args) {
-                origWidgetHide.apply(this, args);
-                self._detectAndBroadcastEditState();
-            };
-        }
-        if (origWidgetShow) {
-            this._Blockly.WidgetDiv.show = function(...args) {
-                origWidgetShow.apply(this, args);
-                self._detectAndBroadcastEditState();
-            };
-        }
 
         // 保存监听器引用，退出时清理
         this._editLockListeners = [
@@ -963,17 +963,25 @@ export class RTCServer {
             { type: 'mutation_observer', observer: widgetObserver },
             { type: 'document_event', event: 'focusin', handler: onFocusIn },
             { type: 'document_event', event: 'focusout', handler: onFocusOut },
-            { type: 'widgetdiv_hide_patch', original: origWidgetHide },
-            { type: 'widgetdiv_show_patch', original: origWidgetShow },
         ];
+        // 4. WidgetDiv show/hide monkey-patch（作为 focus 事件之外的额外保障）
+        const wd = this._Blockly?.WidgetDiv;
+        if (wd && typeof wd.hide === 'function' && typeof wd.show === 'function') {
+            const origHide = wd.hide, origShow = wd.show;
+            const self = this;
+            wd.hide = function(...args) { origHide.apply(this, args); self._detectAndBroadcastEditState(); };
+            wd.show = function(...args) { origShow.apply(this, args); self._detectAndBroadcastEditState(); };
+            this._editLockListeners.push(
+                { type: 'widgetdiv_hide_patch', original: origHide, obj: wd, key: 'hide' },
+                { type: 'widgetdiv_show_patch', original: origShow, obj: wd, key: 'show' },
+            );
+        }
 
         // 注册 Blockly workspace 变更监听
         const ws = this._Blockly.getMainWorkspace();
         if (ws) {
             ws.addChangeListener(onBlocklyEvent);
-            this._console.log("[协作-锁定] 已注册 workspace.addChangeListener");
         } else {
-            this._console.log("[协作-锁定] workspace 不存在，跳过 addChangeListener");
         }
     }
 
@@ -989,30 +997,27 @@ export class RTCServer {
                 newState = { type: 'block', id: field.sourceBlock_.id };
             }
         }
-        // 2. 注释编辑：检查焦点是否在注释 textarea 上
+        // 2. 注释编辑：遍历 Blockly 注释对象，用 textarea_ 直接比对 (SVG 的 id attribute 在跨 namespace 时无法通过 DOM 遍历获取)
         const active = document.activeElement;
         if (!newState && active && active.classList.contains('scratchCommentTextarea')) {
-            const vm = this._vm;
-            const target = vm?.runtime?.getEditingTarget();
             const ws = this._Blockly?.getMainWorkspace();
-            if (target && target.comments && ws) {
-                const sortedKeys = Object.keys(target.comments).sort();
-                for (let i = 0; i < sortedKeys.length; i++) {
-                    const commentId = sortedKeys[i];
-                    const commentData = target.comments[commentId];
-                    if (commentData.blockId) {
-                        const block = ws.getBlockById(commentData.blockId);
-                        if (block?.comment?.textarea_ === active) {
-                            newState = { type: 'comment', index: i };
-                            break;
-                        }
-                    } else {
-                        const comment = ws.getCommentById(commentId);
-                        if (comment?.textarea_ === active) {
-                            newState = { type: 'comment', index: i };
-                            break;
-                        }
+            if (ws) {
+                const target = this._vm?.runtime?.getEditingTarget();
+                const sortedKeys = target?.comments ? Object.keys(target.comments).sort() : [];
+                let foundId = null;
+                // 工作区注释
+                for (const tc of ws.getTopComments(true) || []) {
+                    if (tc.textarea_ === active) { foundId = tc.id; break; }
+                }
+                // 积木注释
+                if (!foundId) {
+                    for (const block of ws.getAllBlocks(false) || []) {
+                        if (block.comment?.textarea_ === active) { foundId = block.comment.id; break; }
                     }
+                }
+                if (foundId) {
+                    const idx = sortedKeys.indexOf(foundId);
+                    if (idx >= 0) newState = { type: 'comment', index: idx };
                 }
             }
         }
@@ -1056,6 +1061,8 @@ export class RTCServer {
     }
 
     exit() {
+        // 清除 snapshot 等待超时
+        if (this._snapshotTimeout) { clearTimeout(this._snapshotTimeout); this._snapshotTimeout = null; }
         this.workspace.removeEventListener("mousemove", this.boundMouseMoveHandler);
         // 通知 server 自己离开（让 server 广播 peer-left 并清理记录）
         if (this._server && this._server.readyState === WebSocket.OPEN) {
@@ -1067,13 +1074,9 @@ export class RTCServer {
                 listener.observer.disconnect();
             } else if (listener.type === 'document_event') {
                 document.removeEventListener(listener.event, listener.handler);
-            } else if (listener.type === 'widgetdiv_hide_patch' && listener.original) {
-                if (this._Blockly?.WidgetDiv) {
-                    this._Blockly.WidgetDiv.hide = listener.original;
-                }
-            } else if (listener.type === 'widgetdiv_show_patch' && listener.original) {
-                if (this._Blockly?.WidgetDiv) {
-                    this._Blockly.WidgetDiv.show = listener.original;
+            } else if ((listener.type === 'widgetdiv_hide_patch' || listener.type === 'widgetdiv_show_patch') && listener.original) {
+                if (listener.obj && listener.key) {
+                    listener.obj[listener.key] = listener.original;
                 }
             } else if (listener.type === 'blockly_event') {
                 const ws = this._Blockly?.getMainWorkspace?.();

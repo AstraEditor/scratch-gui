@@ -76,21 +76,26 @@ export default async function ({ addon, console, msg }) {
      */
     const updateTipText = (text = null, mode = "normal") => {
         if (!tipBox || !text) return;
-        const tipMsg = document.createElement("div");
-        tipMsg.className = idHead + "tipMsgScreen";
-        tipMsg.style.background =
-            mode === "normal"
-                ? "#09f"
-                : mode === "error"
-                    ? "#f00"
-                    : mode === "warn" && "#ff0";
-        tipMsg.textContent = text;
+        const msg = document.createElement("div");
+        msg.className = idHead + "tipMsgScreen";
+        if (mode === "error") msg.classList.add("mode-error");
+        else if (mode === "warn") msg.classList.add("mode-warn");
+
+        const content = document.createElement("span");
+        content.className = idHead + "tipMsg-text";
+        content.textContent = text;
+
+        const progress = document.createElement("div");
+        progress.className = idHead + "tipMsg-progress";
+
+        msg.appendChild(content);
+        msg.appendChild(progress);
+        tipBox.appendChild(msg);
 
         setTimeout(() => {
-            tipMsg.className = `${tipMsg.className} end`;
-            setTimeout(() => tipMsg.remove(), 500);
-        }, 2000);
-        tipBox.appendChild(tipMsg);
+            msg.classList.add("end");
+            setTimeout(() => msg.remove(), 550);
+        }, 2500);
     };
 
     // ── 房间提示条 ─────────────────────────────────────────────
@@ -304,9 +309,17 @@ export default async function ({ addon, console, msg }) {
                 if (!rtc.isHost() && !_initialLoadShown) {
                     _initialLoadShown = true;
                     ReduxStore.dispatch(openLoadingProject());
+                    // 超时保护：若 20 秒内未收到 snapshot 则退出加载
+                    rtc._snapshotTimeout = setTimeout(() => {
+                        rtc._snapshotTimeout = null;
+                        ReduxStore.dispatch(closeLoadingProject());
+                        updateTipText(msg("snapshot_timeout_failed"), "error");
+                        rtc.exit();
+                    }, 20000);
                 }
             } else {
                 _initialLoadShown = false;
+                if (rtc._snapshotTimeout) { clearTimeout(rtc._snapshotTimeout); rtc._snapshotTimeout = null; }
                 refreshGUI();
             }
         },

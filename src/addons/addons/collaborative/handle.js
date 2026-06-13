@@ -10,6 +10,7 @@ import { setURLParamsFromSearchString } from "./utils.js";
 import { idHead, pointerSVG, SERVER_OPCODE } from "./constants.js";
 
 let _Blockly = null;
+let _vm = null;
 let scaleObserver = null, scaleUpdateRaf = null;
 
 function syncPointerScales() {
@@ -139,44 +140,63 @@ function addLockOverlay(svgGroup, userName) {
     // 移除旧遮罩（如果有）
     removeLockOverlay(svgGroup);
 
-    const bbox = svgGroup.getBBox();
-    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    overlay.setAttribute('x', bbox.x - 2);
-    overlay.setAttribute('y', bbox.y - 2);
-    overlay.setAttribute('width', bbox.width + 4);
-    overlay.setAttribute('height', bbox.height + 4);
-    overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
-    overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
-    overlay.setAttribute('stroke-width', '2');
-    overlay.setAttribute('rx', '4');
-    overlay.setAttribute('pointer-events', 'all');
-    overlay.setAttribute('cursor', 'not-allowed');
-    overlay.dataset.collabLockOverlay = 'true';
+    // 直接禁用注释 textarea（foreignObject 内的 HTML 元素可能不受 SVG pointer-events 拦截）
+    const textarea = svgGroup.querySelector('textarea');
+    if (textarea) {
+        textarea.disabled = true;
+        textarea.readOnly = true;
+        textarea.dataset.collabLocked = 'true';
+        textarea.style.cursor = 'not-allowed';
+    }
 
-    // 拦截所有鼠标/触摸事件，阻止冒泡到 Blockly
-    const stop = e => { e.stopPropagation(); e.preventDefault(); };
-    overlay.addEventListener('mousedown', stop, true);
-    overlay.addEventListener('touchstart', stop, true);
-    overlay.addEventListener('contextmenu', stop, true);
+    try {
+        const bbox = svgGroup.getBBox();
+        const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        overlay.setAttribute('x', bbox.x - 2);
+        overlay.setAttribute('y', bbox.y - 2);
+        overlay.setAttribute('width', bbox.width + 4);
+        overlay.setAttribute('height', bbox.height + 4);
+        overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
+        overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
+        overlay.setAttribute('stroke-width', '2');
+        overlay.setAttribute('rx', '4');
+        overlay.setAttribute('pointer-events', 'all');
+        overlay.setAttribute('cursor', 'not-allowed');
+        overlay.dataset.collabLockOverlay = 'true';
 
-    // 用户名标签
-    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('x', bbox.x + bbox.width / 2);
-    label.setAttribute('y', bbox.y - 6);
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('font-size', '12');
-    label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
-    label.setAttribute('pointer-events', 'none');
-    label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
-    label.dataset.collabLockOverlay = 'true';
+        const stop = e => { e.stopPropagation(); e.preventDefault(); };
+        overlay.addEventListener('mousedown', stop, true);
+        overlay.addEventListener('touchstart', stop, true);
+        overlay.addEventListener('contextmenu', stop, true);
 
-    svgGroup.appendChild(overlay);
-    svgGroup.appendChild(label);
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', bbox.x + bbox.width / 2);
+        label.setAttribute('y', bbox.y - 6);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('font-size', '12');
+        label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
+        label.setAttribute('pointer-events', 'none');
+        label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
+        label.dataset.collabLockOverlay = 'true';
+
+        svgGroup.appendChild(overlay);
+        svgGroup.appendChild(label);
+    } catch (e) {
+        // getBBox may fail if element not laid out; textarea already disabled so lock still effective
+    }
 }
 
 function removeLockOverlay(svgGroup) {
     if (!svgGroup) return;
     svgGroup.querySelectorAll('[data-collab-lock-overlay]').forEach(el => el.remove());
+    // 恢复被锁定的 textarea
+    const lockedTA = svgGroup.querySelector('textarea[data-collab-locked]');
+    if (lockedTA) {
+        lockedTA.disabled = false;
+        lockedTA.readOnly = false;
+        delete lockedTA.dataset.collabLocked;
+        lockedTA.style.cursor = '';
+    }
 }
 
 // 根据 lockType + lockId 查找对应的 SVG 元素
@@ -189,10 +209,7 @@ function findSvgElement(lockType, lockId) {
     } else if (lockType === 'comment') {
         // lockId 是注释在 target.comments 排序后的 index
         const idx = parseInt(lockId, 10);
-        if (isNaN(idx)) return null;
-        const vm = _Blockly?.getMainWorkspace()?.targetWorkspace?.vm || window.vm;
-        const target = vm?.runtime?.getEditingTarget();
-        if (!target || !target.comments) return null;
+        const target = _vm?.runtime?.getEditingTarget();
         const sortedKeys = Object.keys(target.comments).sort();
         if (idx < 0 || idx >= sortedKeys.length) return null;
         const commentId = sortedKeys[idx];
@@ -201,12 +218,13 @@ function findSvgElement(lockType, lockId) {
         // Block comment：锁定注释气泡
         if (commentData?.blockId) {
             const block = ws.getBlockById(commentData.blockId);
-            return block?.comment?.bubble_?.bubbleGroup_ || null;
+            const el = block?.comment?.bubble_?.bubbleGroup_ || null;
+            return el;
         }
         // Workspace comment：锁定注释本身
         const comment = ws.getCommentById(commentId);
-        if (comment) return comment.svgGroup_ || null;
-        return null;
+        const el = comment?.svgGroup_ || null;
+        return el;
     }
     return null;
 }
@@ -216,7 +234,6 @@ function applyRemoteLock(lockType, lockId, userName, userId) {
     const key = lockKey(lockType, lockId);
     _remoteLocks.set(key, { lockType, lockId, userName, userId });
     const svgEl = findSvgElement(lockType, lockId);
-    console.log("[协作-锁定] applyRemoteLock:", lockType, lockId, "svgEl:", svgEl?.tagName, svgEl?.classList);
     if (svgEl) addLockOverlay(svgEl, userName);
     // 关闭可能已打开的输入框
     if (_Blockly) {
@@ -897,12 +914,15 @@ async function flush(rtc) {
 
 export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
     _Blockly = Blockly;
-    const vm = addon.tab.traps.vm;
+    _vm = addon.tab.traps.vm;
+    const vm = _vm;
 
     return async function handlePeerMessage(peerId, msgs) {
         const data = JSON.parse(msgs);
         switch (data.type) {
             case SERVER_OPCODE.SNAPSHOT: {
+                // 清除加入房间时的超时定时器
+                if (rtc._snapshotTimeout) { clearTimeout(rtc._snapshotTimeout); rtc._snapshotTimeout = null; }
                 const bin = atob(data.data); const bytes = new Uint8Array(bin.length);
                 for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                 setURLParamsFromSearchString(data.config);
@@ -984,7 +1004,7 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
             case SERVER_OPCODE.POINTER: {
                 if (data.workspaceIndex !== rtc.editingTargetIndex) break;
                 const ws2 = _Blockly.getMainWorkspace(); if (!ws2) break;
-                const svg = ws2.getParentSvg();
+                const svg = ws2.getParentSvg(); if (!svg) break;
                 let pc = svg.querySelector(`.${idHead}pointer-container`);
                 if (!pc) {
                     pc = document.createElementNS("http://www.w3.org/2000/svg", "g");
