@@ -264,6 +264,19 @@ function clearAllRemoteLocks() {
     _remoteLocks.clear();
 }
 
+// 清理单个用户的所有远端元素（指针、聊天气泡、锁定遮罩）
+export function cleanupRemoteByUser(userId) {
+    clearLocksByUser(userId);
+    const ws = getWS();
+    if (ws) {
+        const svg = ws.getParentSvg();
+        if (svg) {
+            svg.querySelectorAll(`.${idHead}pointer[id="${userId}"]`).forEach(e => e.remove());
+        }
+    }
+    removeRemoteChatBubble(userId);
+}
+
 // 退出时清理所有远端元素（指针、聊天气泡、锁定遮罩）
 export function cleanupAllRemote() {
     clearAllRemoteLocks();
@@ -903,7 +916,24 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 clearAllRemoteLocks();
                 try {
                     localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
-                    await vm.loadProject(bytes.buffer); vm.renderer.draw(); ok = true;
+                    // 先加载 Host 已安装但项目数据中未包含的扩展，再 loadProject
+                    if (data.extensions && data.extensions.length > 0) {
+                        for (const ext of data.extensions) {
+                            if (!vm.extensionManager.isExtensionLoaded(ext.id)) {
+                                try {
+                                    if (ext.url) {
+                                        await vm.extensionManager.loadExtensionURL(ext.url, true);
+                                    } else {
+                                        vm.extensionManager.loadExtensionIdSync(ext.id);
+                                    }
+                                } catch (e) {
+                                    console.error("[协作] 加载快照中的扩展失败:", ext.id, e);
+                                }
+                            }
+                        }
+                    }
+                    await vm.loadProject(bytes.buffer);
+                    vm.renderer.draw(); ok = true;
                     document.title = `${data.projectName} - ${APP_NAME}`;
                 } finally {
                     const d = onLoadedProject(ls, false, ok); if (d) ReduxStore.dispatch(d);
@@ -1049,9 +1079,18 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 if (data.spriteData) {
                     rtc.onIngoreUpdate(true);
                     try {
+                        // 保存当前编辑目标，阻止 addSprite 自动切换工作区到新角色
+                        const prevEditingTarget = vm.runtime._editingTarget;
+                        const origEmitWorkspaceUpdate = vm.emitWorkspaceUpdate;
+                        vm.emitWorkspaceUpdate = () => {};
                         const b2 = atob(data.spriteData); const bytes2 = new Uint8Array(b2.length);
                         for (let i = 0; i < b2.length; i++) bytes2[i] = b2.charCodeAt(i);
                         await vm.addSprite(bytes2.buffer, false);
+                        vm.emitWorkspaceUpdate = origEmitWorkspaceUpdate;
+                        // 恢复 runtime 编辑目标，不影响 GUI 但保持内部状态一致
+                        if (prevEditingTarget) {
+                            vm.runtime.setEditingTarget(prevEditingTarget);
+                        }
                         if (rtc._spriteIdCache) rtc._spriteIdCache = new Set(rtc._vm.runtime.targets.map(t => t.id));
                         setTimeout(() => rtc.onIngoreUpdate(false), 200);
                     } catch (e) { console.error("[协作] 角色添加失败:", e); rtc.onIngoreUpdate(false); }

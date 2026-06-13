@@ -178,6 +178,19 @@ export class RTCServer {
             });
         };
 
+        // 拦截项目替换操作（新项目、加载项目等）：联机中直接退出
+        if (!this._vm._collabLoadProjectHooked) {
+            this._vm._collabLoadProjectHooked = true;
+            const origLoadProject = this._vm.loadProject.bind(this._vm);
+            this._vm.loadProject = async (...args) => {
+                if (this.state.clientId && !this._ingoreUpdate) {
+                    this._console.log("[协作] 检测到项目替换操作，退出联机");
+                    this.exit();
+                }
+                return origLoadProject(...args);
+            };
+        }
+
         this._vm.runtime.on("EXTENSION_REMOVED", () => {
             if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
                 this.updateProject();
@@ -1346,7 +1359,12 @@ export class RTCServer {
                 this._emitState();
                 this._createAndSendOffer(data.clientId);
                 if (this._isHost) {
-                    const sendProject = { type: SERVER_OPCODE.SNAPSHOT, data: await this._buildSnapshotWithAssets(), projectName: getAPPNAME(), config: window.location.search };
+                    const extensions = [];
+                    const extURLs = this._vm.extensionManager.getExtensionURLs ? this._vm.extensionManager.getExtensionURLs() : {};
+                    for (const id of this._vm.extensionManager._loadedExtensions.keys()) {
+                        extensions.push({ id, url: extURLs[id] || null });
+                    }
+                    const sendProject = { type: SERVER_OPCODE.SNAPSHOT, data: await this._buildSnapshotWithAssets(), projectName: getAPPNAME(), config: window.location.search, extensions };
                     this.broadcastToPeers(JSON.stringify(sendProject));
                 }
                 break;

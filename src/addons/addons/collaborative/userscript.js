@@ -6,7 +6,13 @@ import { join } from "path-browserify";
 import SideBar from "../../ui/side-bar/side-bar.js";
 import { RTCServer } from "./rtc-server.js";
 import { idHead } from "./constants.js";
-import { createHandler, clearLocksByUser } from "./handle.js";
+import { createHandler, cleanupRemoteByUser } from "./handle.js";
+import ReduxStore from "../../redux.js";
+import {
+    openLoadingProject, closeLoadingProject,
+} from "../../../reducers/modals";
+
+let _initialLoadShown = false;
 
 export default async function ({ addon, console, msg }) {
     const vm = addon.tab.traps.vm;
@@ -294,7 +300,13 @@ export default async function ({ addon, console, msg }) {
             if (newState.clientId) {
                 enterRoom(newState.roomId);
                 renderMemberList(newState, rtc); // 成员变化时刷新列表
+                // 非 Host 成员：仅在首次连接时进入加载界面，防止重复触发
+                if (!rtc.isHost() && !_initialLoadShown) {
+                    _initialLoadShown = true;
+                    ReduxStore.dispatch(openLoadingProject());
+                }
             } else {
+                _initialLoadShown = false;
                 refreshGUI();
             }
         },
@@ -302,7 +314,7 @@ export default async function ({ addon, console, msg }) {
             await handlePeerMessage(peerId, data);
         },
         onPeerLeft: (peerId) => {
-            clearLocksByUser(peerId);
+            cleanupRemoteByUser(peerId);
         },
     });
 
