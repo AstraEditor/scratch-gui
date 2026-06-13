@@ -70,10 +70,9 @@ function xmlDomToBlockObj(node, blocks, isTop, parentId) {
                     const gn = gc.tagName ? gc.tagName.toLowerCase() : '';
                     if (gn === 'block') cbn = gc; else if (gn === 'shadow') csn = gc;
                 }
-                if (!cbn && csn) cbn = csn;
                 let cb = null, cs = null;
                 if (cbn) { const co = xmlDomToBlockObj(cbn, blocks, false, id); if (co) { blocks[co.id] = co; cb = co.id; } }
-                if (csn && cbn !== csn) { const so = xmlDomToBlockObj(csn, blocks, false, id); if (so) { blocks[so.id] = so; cs = so.id; } }
+                if (csn) { const so = xmlDomToBlockObj(csn, blocks, false, id); if (so) { blocks[so.id] = so; cs = so.id; } }
                 b.inputs[iname] = { name: iname, block: cb, shadow: cs }; break;
             }
             case 'next': {
@@ -103,7 +102,7 @@ function parseXml(xmlString) {
     const p = new DOMParser().parseFromString(xmlString, 'text/xml');
     const blocks = {};
     const rn = p.documentElement, tn = rn.tagName ? rn.tagName.toLowerCase() : '';
-    if (tn === 'block' || tn === 'shadow') { const o = xmlDomToBlockObj(rn, blocks, true, null); if (o) blocks[o.id] = o; }
+    if (tn === 'block') { const o = xmlDomToBlockObj(rn, blocks, true, null); if (o) blocks[o.id] = o; }
     return Object.values(blocks);
 }
 
@@ -469,7 +468,7 @@ function replaceTree(target, xmlString, _rootId, isEditingTarget, oldRootId) {
                 if (b) b.dispose(false);
             }
             const dom = _Blockly.Xml.textToDom(`<xml>${xmlString}</xml>`);
-            const bn = dom.querySelector('block, shadow');
+            const bn = dom.querySelector('block');
             if (bn) {
                 const px = parseFloat(bn.getAttribute('x')), py = parseFloat(bn.getAttribute('y'));
                 const newBlock = _Blockly.Xml.domToBlock(bn, ws);
@@ -1037,10 +1036,15 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                     rtc._vm.extensionManager.unloadExtension(data.id);
                 }
                 break;
-            case SERVER_OPCODE.SPRITE_DELETE:
-                rtc._vm.deleteSprite(rtc._vm.runtime.targets[data.targetIndex].id);
-                if (rtc._spriteIdCache) rtc._spriteIdCache.delete(rtc._vm.runtime.targets[data.targetIndex]?.id);
+            case SERVER_OPCODE.SPRITE_DELETE: {
+                const target = rtc._vm.runtime.targets[data.targetIndex];
+                if (target) {
+                    const spriteId = target.id;
+                    rtc._vm.deleteSprite(spriteId);
+                    if (rtc._spriteIdCache) rtc._spriteIdCache.delete(spriteId);
+                }
                 break;
+            }
             case SERVER_OPCODE.SPRITE_ADD:
                 if (data.spriteData) {
                     rtc.onIngoreUpdate(true);
