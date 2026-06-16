@@ -17,3 +17,10 @@ onlyBuiltDependencies:
   - scratch-blocks
   - scratch-extension-editor
   - scratch-vm
+
+blockExoticSubdeps: false
+
+allowBuilds:
+  chromedriver: true
+  core-js: true
+  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/5f85db91abc2bf06599b60dfd31eefc98cebaa70: true
