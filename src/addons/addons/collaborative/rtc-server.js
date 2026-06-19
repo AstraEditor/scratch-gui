@@ -39,11 +39,10 @@ export class RTCServer {
         this._isHost = false;
         this._chunkBuffers = new Map();
         this._pendingMessages = new Map();
-        this._ingoreUpdate = false;
-        this._remoteOperationCount = 0;
+        this._ignoreQueue = new Map(); // operationId → true
         this._remoteUpdateInProgress = false;
         this.state = { clientId: null, roomId: null, allMembers: [] };
-
+        this.members = []; // 由 host 统一管理：[{cid, userName, editingIndex}]
         this._Blockly = null; // Set via setBlockly() after construction
 
         // 编辑锁定状态：记录当前用户正在编辑的对象
@@ -94,13 +93,44 @@ export class RTCServer {
         this._boundWorkspace = ws;
     }
 
+    // 开始忽略更新，返回操作ID
+    startIgnoreUpdate(operationId) {
+        if (!operationId) {
+            operationId = `op_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        }
+        this._ignoreQueue.set(operationId, true);
+        return operationId;
+    }
+
+    // 结束忽略更新
+    endIgnoreUpdate(operationId) {
+        if (this._ignoreQueue.has(operationId)) {
+            this._ignoreQueue.delete(operationId);
+
+            // 队列清空后，主动触发一次 updateProject 来同步 ignore 期间积累的本地变更
+            if (this._ignoreQueue.size === 0 && !this._remoteUpdateInProgress) {
+                if (this._updateTimer) clearTimeout(this._updateTimer);
+                this._updateTimer = setTimeout(() => {
+                    this._updateTimer = null;
+                    this.updateProject();
+                }, 50);
+            }
+        }
+    }
+
+    // 检查是否应该忽略更新
+    shouldIgnoreUpdate() {
+        return this._ignoreQueue.size > 0 || this._remoteUpdateInProgress;
+    }
+
+    // 兼容旧API（已废弃，但保留以支持可能的旧调用）
     onIngoreUpdate(ingoreUpdate) {
         if (ingoreUpdate) {
-            this._remoteOperationCount++;
-            this._ingoreUpdate = true;
+            this.startIgnoreUpdate();
         } else {
-            this._remoteOperationCount = Math.max(0, this._remoteOperationCount - 1);
-            if (this._remoteOperationCount === 0) this._ingoreUpdate = false;
+            // 移除第一个操作（FIFO）
+            const firstKey = this._ignoreQueue.keys().next().value;
+            if (firstKey) this.endIgnoreUpdate(firstKey);
         }
     }
 
@@ -174,7 +204,7 @@ export class RTCServer {
             this._editLockListenersReady = false;
 
             this._vm.runtime.on("PROJECT_CHANGED", () => {
-                if (this._ingoreUpdate || this._remoteUpdateInProgress) return;
+                if (this.shouldIgnoreUpdate()) return;
                 if (this._updateTimer) clearTimeout(this._updateTimer);
                 this._updateTimer = setTimeout(() => {
                     this._updateTimer = null;
@@ -187,7 +217,7 @@ export class RTCServer {
             const origLoad = this._vm.extensionManager.loadExtensionURL.bind(this._vm.extensionManager);
             this._vm.extensionManager.loadExtensionURL = (...args) => {
                 return origLoad(...args).then(result => {
-                    if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
+                    if (!this.shouldIgnoreUpdate()) {
                         this.updateProject();
                     }
                     return result;
@@ -199,7 +229,7 @@ export class RTCServer {
                 this._vm._collabLoadProjectHooked = true;
                 const origLoadProject = this._vm.loadProject.bind(this._vm);
                 this._vm.loadProject = async (...args) => {
-                    if (this.state.clientId && !this._ingoreUpdate) {
+                    if (this.state.clientId && !this.shouldIgnoreUpdate()) {
                         this._console.log("[协作] 检测到项目替换操作，退出联机");
                         this.exit();
                     }
@@ -208,17 +238,53 @@ export class RTCServer {
             }
 
             this._vm.runtime.on("EXTENSION_REMOVED", () => {
-                if (!this._ingoreUpdate && !this._remoteUpdateInProgress) {
+                if (!this.shouldIgnoreUpdate()) {
                     this.updateProject();
                 }
             });
+            this._vm.on('targetsUpdate', this.switchTarget.bind(this));
         } finally {
             this._loggingIn = false;
         }
     }
 
+    nowEditingIndex() {
+        return this._vm.runtime.targets.findIndex(t => t.id === this._vm.runtime._editingTarget.id);
+    }
+
+    switchTarget() {
+        if (this.shouldIgnoreUpdate()) return;
+
+        const index = this.nowEditingIndex();
+        if (index >= 0) {
+            // 乐观更新自己的 members 条目，避免等 Host 回传导致落后一次
+            const me = this.members.find(m => m.cid === this.state.clientId);
+            if (me) me.editingIndex = index;
+
+            if (this._isHost) {
+                this._broadcastMembersSync();
+            } else {
+                this.broadcastToPeers(JSON.stringify({
+                    type: SERVER_OPCODE.SWITCH_TARGET,
+                    id: this.state.clientId,
+                    index
+                }));
+            }
+        }
+    }
+
+    // Host 广播完整成员列表给所有人
+    _broadcastMembersSync() {
+        if (!this._isHost) return;
+        this._console.log("[协作] 广播成员列表:", JSON.stringify(this.members));
+        this.broadcastToPeers(JSON.stringify({
+            type: SERVER_OPCODE.MEMBERS_SYNC,
+            members: this.members
+        }));
+    }
+
     async updateProject() {
-        if (this._ingoreUpdate || this._remoteUpdateInProgress) return;
+        if (this.shouldIgnoreUpdate()) return;
 
         const liveTargets = this._vm.runtime.targets;
         const liveIds = liveTargets.map(t => t.id);
@@ -273,7 +339,7 @@ export class RTCServer {
                 const nc = new Map(); this._scriptBlockCache.set(target.id, nc);
                 if (target.blocks && target.blocks._scripts) {
                     for (const rid of target.blocks._scripts) {
-                        try { nc.set(rid, target.blocks.blockToXML(rid, target.comments || {})); } catch (e) {}
+                        try { nc.set(rid, target.blocks.blockToXML(rid, target.comments || {})); } catch (e) { }
                     }
                 }
             }
@@ -321,7 +387,7 @@ export class RTCServer {
                             handledAdded.add(newRid);
                             break;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
 
@@ -406,7 +472,7 @@ export class RTCServer {
             }));
             if (!this._costumeCache.has(targetId)) {
                 this._costumeCache.set(targetId, costumeSnapshot);
-                this._console.log(`[协作-造型] 初始化缓存 target=${targetId} count=${costumes.length} assetIds=[${costumes.map(c=>c.assetId).join(',')}]`);
+                this._console.log(`[协作-造型] 初始化缓存 target=${targetId} count=${costumes.length} assetIds=[${costumes.map(c => c.assetId).join(',')}]`);
             }
             const cachedCostumes = this._costumeCache.get(targetId);
             // 基于索引位置逐位比较
@@ -471,7 +537,7 @@ export class RTCServer {
             }));
             if (!this._soundCache.has(targetId)) {
                 this._soundCache.set(targetId, soundSnapshot);
-                this._console.log(`[协作-音频] 初始化缓存 target=${targetId} count=${sounds.length} assetIds=[${sounds.map(s=>s.assetId).join(',')}]`);
+                this._console.log(`[协作-音频] 初始化缓存 target=${targetId} count=${sounds.length} assetIds=[${sounds.map(s => s.assetId).join(',')}]`);
             }
             const cachedSounds = this._soundCache.get(targetId);
             if (JSON.stringify(soundSnapshot) !== JSON.stringify(cachedSounds)) {
@@ -1025,14 +1091,18 @@ export class RTCServer {
         }
 
         // 3. 监听 document focusin/focusout：覆盖注释 textarea 和积木字段输入框
+        const isCommentTextarea = (el) => {
+            return el?.classList?.contains('scratchCommentTextarea') ||
+                el?.classList?.contains('blocklyCommentTextarea');
+        };
         const onFocusIn = (e) => {
             if (this._pendingUnlockTimer) {
                 clearTimeout(this._pendingUnlockTimer);
                 this._pendingUnlockTimer = null;
             }
             const target = e.target;
-            // 注释 textarea
-            if (target?.classList?.contains('scratchCommentTextarea')) {
+            // 注释 textarea（工作区注释或积木注释）
+            if (isCommentTextarea(target)) {
                 this._detectAndBroadcastEditState();
                 return;
             }
@@ -1044,8 +1114,8 @@ export class RTCServer {
         };
         const onFocusOut = (e) => {
             const target = e.target;
-            if (target?.classList?.contains('scratchCommentTextarea')) {
-                const goingToComment = e.relatedTarget?.classList?.contains('scratchCommentTextarea');
+            if (isCommentTextarea(target)) {
+                const goingToComment = isCommentTextarea(e.relatedTarget);
                 if (!goingToComment) {
                     this._pendingUnlockTimer = setTimeout(() => {
                         this._pendingUnlockTimer = null;
@@ -1077,8 +1147,8 @@ export class RTCServer {
         if (wd && typeof wd.hide === 'function' && typeof wd.show === 'function') {
             const origHide = wd.hide, origShow = wd.show;
             const self = this;
-            wd.hide = function(...args) { origHide.apply(this, args); self._detectAndBroadcastEditState(); };
-            wd.show = function(...args) { origShow.apply(this, args); self._detectAndBroadcastEditState(); };
+            wd.hide = function (...args) { origHide.apply(this, args); self._detectAndBroadcastEditState(); };
+            wd.show = function (...args) { origShow.apply(this, args); self._detectAndBroadcastEditState(); };
             this._editLockListeners.push(
                 { type: 'widgetdiv_hide_patch', original: origHide, obj: wd, key: 'hide' },
                 { type: 'widgetdiv_show_patch', original: origShow, obj: wd, key: 'show' },
@@ -1106,8 +1176,13 @@ export class RTCServer {
             }
         }
         // 2. 注释编辑：遍历 Blockly 注释对象，用 textarea_ 直接比对 (SVG 的 id attribute 在跨 namespace 时无法通过 DOM 遍历获取)
+        // 工作区注释使用 scratchCommentTextarea，积木注释使用 blocklyCommentTextarea
         const active = document.activeElement;
-        if (!newState && active && active.classList.contains('scratchCommentTextarea')) {
+        const isAnyCommentTextarea = active && (
+            active.classList.contains('scratchCommentTextarea') ||
+            active.classList.contains('blocklyCommentTextarea')
+        );
+        if (!newState && isAnyCommentTextarea) {
             const ws = this._Blockly?.getMainWorkspace();
             if (ws) {
                 const target = this._vm?.runtime?.getEditingTarget();
@@ -1125,7 +1200,16 @@ export class RTCServer {
                 }
                 if (foundId) {
                     const idx = sortedKeys.indexOf(foundId);
-                    if (idx >= 0) newState = { type: 'comment', index: idx };
+                    if (idx >= 0) {
+                        newState = { type: 'comment', index: idx };
+                    } else {
+                        // VM 还没同步这个 comment，延迟重试
+                        if (this._commentRetryTimer) clearTimeout(this._commentRetryTimer);
+                        this._commentRetryTimer = setTimeout(() => {
+                            this._commentRetryTimer = null;
+                            this._detectAndBroadcastEditState();
+                        }, 100);
+                    }
                 }
             }
         }
@@ -1225,8 +1309,8 @@ export class RTCServer {
         cleanupAllRemote();
         this._closeAllPeerConnections();
         if (this._server) {
-            try { this._server.send(JSON.stringify({ type: "exit", clientId: this.state.clientId })); } catch (e) {}
-            try { this._server.close(); } catch (e) {}
+            try { this._server.send(JSON.stringify({ type: "exit", clientId: this.state.clientId })); } catch (e) { }
+            try { this._server.close(); } catch (e) { }
             this._server = null;
         }
         this.state.clientId = null; this.state.roomId = null; this.state.allMembers = [];
@@ -1249,15 +1333,15 @@ export class RTCServer {
         // pointer 等纯视觉消息在 buffer 积压时直接丢弃
         if (dropIfBuffered && channel.bufferedAmount > 16 * 1024) return false;
         try {
-            const raw = JSON.stringify(data);
-            if (raw.length <= RTCServer.CHUNK_SIZE) {
-                channel.send(raw);
+            // data 已经是 JSON 字符串（调用方已做 JSON.stringify），不要再序列化
+            if (data.length <= RTCServer.CHUNK_SIZE) {
+                channel.send(data);
             } else {
                 const id = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
                 let offset = 0, idx = 0;
-                const total = Math.ceil(raw.length / RTCServer.CHUNK_SIZE);
-                while (offset < raw.length) {
-                    const chunk = raw.slice(offset, offset + RTCServer.CHUNK_SIZE);
+                const total = Math.ceil(data.length / RTCServer.CHUNK_SIZE);
+                while (offset < data.length) {
+                    const chunk = data.slice(offset, offset + RTCServer.CHUNK_SIZE);
                     channel.send(JSON.stringify({ type: "_chunk", id, idx: idx++, total, data: chunk }));
                     offset += RTCServer.CHUNK_SIZE;
                 }
@@ -1288,7 +1372,7 @@ export class RTCServer {
     }
 
     broadcastToPeers(data, skipGuard) {
-        if (!skipGuard && (this._ingoreUpdate || this._remoteUpdateInProgress)) return 0;
+        if (!skipGuard && this.shouldIgnoreUpdate()) return 0;
         // pointer/pointer-leave 是纯视觉消息，buffer 积压时可丢弃
         const dropIfBuffered = skipGuard;
         let sent = 0;
@@ -1310,9 +1394,9 @@ export class RTCServer {
     async _ensureSTUNList() {
         if (this._allSTUN_URLs) return;
         this._updateTipText(this._msg("loading_available_stun"));
-        try { const r = await fetchWithTimeout("https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt", 5000); if (r) this._allSTUN_URLs = await r.text(); } catch (e) {}
+        try { const r = await fetchWithTimeout("https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt", 5000); if (r) this._allSTUN_URLs = await r.text(); } catch (e) { }
         if (!this._allSTUN_URLs) {
-            try { const r = await fetchWithTimeout("https://ghproxy.net/https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt", 5000); if (r) this._allSTUN_URLs = await r.text(); } catch (e) {}
+            try { const r = await fetchWithTimeout("https://ghproxy.net/https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt", 5000); if (r) this._allSTUN_URLs = await r.text(); } catch (e) { }
         }
         if (!this._allSTUN_URLs) this._allSTUN_URLs = DEFAULT_STUN_URLS;
     }
@@ -1328,7 +1412,7 @@ export class RTCServer {
                 const d = await r.json();
                 if (isJoin) return { id: checkID, isUsing: !d.isFree };
                 if (d.isFree) return qid;
-            } catch (e) {}
+            } catch (e) { }
         }
         return isJoin ? { id: checkID, isUsing: false } : `room_${Date.now()}`;
     }
@@ -1339,9 +1423,9 @@ export class RTCServer {
 
     _closePeerConnection(peerId) {
         const ch = this._dataChannels.get(peerId);
-        if (ch) { try { ch.close(); } catch (e) {} this._dataChannels.delete(peerId); }
+        if (ch) { try { ch.close(); } catch (e) { } this._dataChannels.delete(peerId); }
         const rtc = this._rtcConnections.get(peerId);
-        if (rtc) { try { rtc.close(); } catch (e) {} this._rtcConnections.delete(peerId); }
+        if (rtc) { try { rtc.close(); } catch (e) { } this._rtcConnections.delete(peerId); }
         this._pendingCandidates.delete(peerId);
         this._pendingMessages.delete(peerId);
         if (this._onPeerLeft) this._onPeerLeft(peerId);
@@ -1375,12 +1459,13 @@ export class RTCServer {
                     const received = buf.chunks.filter((c) => c !== undefined).length;
                     if (received === buf.total) {
                         this._chunkBuffers.delete(msg.id);
-                        const full = JSON.parse(buf.chunks.join(""));
-                        await this._onPeerMessage(peerId, full);
+                        // 直接传原始字符串，由 handlePeerMessage 统一 JSON.parse
+                        await this._onPeerMessage(peerId, buf.chunks.join(""));
                     }
                     return;
                 }
-                await this._onPeerMessage(peerId, msg);
+                // 直接传原始字符串，由 handlePeerMessage 统一 JSON.parse
+                await this._onPeerMessage(peerId, event.data);
             } catch (e) { this._console.error("[协作] 无效的P2P消息:", e); }
         };
     }
@@ -1436,7 +1521,7 @@ export class RTCServer {
             if (this._server?.readyState === WebSocket.OPEN)
                 this._server.send(JSON.stringify({ type: "answer", targetId: senderId, sdp: rtc.localDescription }));
             if (this._pendingCandidates.has(senderId)) {
-                for (const c of this._pendingCandidates.get(senderId)) try { await rtc.addIceCandidate(c); } catch (e) {}
+                for (const c of this._pendingCandidates.get(senderId)) try { await rtc.addIceCandidate(c); } catch (e) { }
                 this._pendingCandidates.delete(senderId);
             }
         } catch (e) {
@@ -1474,6 +1559,14 @@ export class RTCServer {
                 this.state.allMembers = data.existingPeers || [];
                 this._isHost = false;
                 data.existingPeers.forEach((peer) => { if (peer.cid === this.state.clientId && peer.owner) this._isHost = true; });
+                // Host 初始化 members（包含自己）
+                if (this._isHost) {
+                    this.members = this.state.allMembers.map(m => ({
+                        cid: m.cid,
+                        userName: m.userName,
+                        editingIndex: m.cid === this.state.clientId ? this.nowEditingIndex() : 0
+                    }));
+                }
                 this._updateTipText(this._msg("connected"));
                 this._emitState();
                 break;
@@ -1483,6 +1576,17 @@ export class RTCServer {
                 this._emitState();
                 this._createAndSendOffer(data.clientId);
                 if (this._isHost) {
+                    // Host：将新成员加入 members 并广播完整列表
+                    const newPeer = this.state.allMembers.find(m => m.cid === data.clientId);
+                    if (newPeer) {
+                        this.members.push({
+                            cid: newPeer.cid,
+                            userName: newPeer.userName,
+                            editingIndex: 0
+                        });
+                    }
+                    this._broadcastMembersSync();
+                    // 发送快照
                     const extensions = [];
                     const extURLs = this._vm.extensionManager.getExtensionURLs ? this._vm.extensionManager.getExtensionURLs() : {};
                     for (const id of this._vm.extensionManager._loadedExtensions.keys()) {
@@ -1494,6 +1598,11 @@ export class RTCServer {
                 break;
             case "peer-left":
                 this.state.allMembers = data.existingPeers || [];
+                // Host：移除断线成员并广播
+                if (this._isHost) {
+                    this.members = this.members.filter(m => m.cid !== data.clientId);
+                    this._broadcastMembersSync();
+                }
                 this._updateTipText(this._msg("peer_left"));
                 this._emitState();
                 this._closePeerConnection(data.clientId);

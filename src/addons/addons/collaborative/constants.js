@@ -39,6 +39,8 @@ export const SERVER_OPCODE = {
   PING: "ping",
   PONG: "pong",
   KICK: "kick",
+  SWITCH_TARGET: 'switch_target',
+  MEMBERS_SYNC: 'members_sync'
 }
 
 export const idHead = "sa-addon-collaborative-";

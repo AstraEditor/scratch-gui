@@ -11,6 +11,7 @@ import { idHead, pointerSVG, SERVER_OPCODE } from "./constants.js";
 
 let _Blockly = null;
 let _vm = null;
+let _rtc = null;
 let scaleObserver = null, scaleUpdateRaf = null;
 
 function syncPointerScales() {
@@ -149,6 +150,9 @@ function addLockOverlay(svgGroup, userName, noLabel) {
         textarea.style.cursor = 'not-allowed';
     }
 
+    // 获取主题色
+    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--looks-secondary').trim() || '#855cd6';
+
     try {
         const bbox = svgGroup.getBBox();
         const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -162,23 +166,26 @@ function addLockOverlay(svgGroup, userName, noLabel) {
         overlay.dataset.collabLockOverlay = 'true';
 
         if (noLabel) {
-            overlay.setAttribute('fill', 'rgba(255, 80, 80, 0.12)');
-            overlay.setAttribute('stroke', 'rgba(255, 80, 80, 0.5)');
+            overlay.setAttribute('fill', `${themeColor}20`); // 12% 透明度
+            overlay.setAttribute('stroke', `${themeColor}80`); // 50% 透明度
             overlay.setAttribute('stroke-width', '1.5');
             overlay.setAttribute('stroke-dasharray', '4 3');
         } else {
-            overlay.setAttribute('fill', 'rgba(255, 100, 100, 0.12)');
-            overlay.setAttribute('stroke', 'rgba(255, 60, 60, 0.5)');
+            overlay.setAttribute('fill', `${themeColor}30`); // 19% 透明度，更醒目
+            overlay.setAttribute('stroke', `${themeColor}CC`); // 80% 透明度
             overlay.setAttribute('stroke-width', '2');
 
             const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             label.setAttribute('x', bbox.x + bbox.width / 2);
-            label.setAttribute('y', bbox.y - 6);
+            label.setAttribute('y', bbox.y - 8);
             label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('font-size', '12');
-            label.setAttribute('fill', 'rgba(255, 60, 60, 0.8)');
+            label.setAttribute('font-size', '14'); // 增大字体
+            label.setAttribute('font-weight', '500');
+            label.setAttribute('fill', themeColor);
             label.setAttribute('pointer-events', 'none');
-            label.textContent = `${userName} \u6B63\u5728\u7F16\u8F91`;
+            // 使用国际化文本
+            const msg = _rtc?._msg || ((key) => key);
+            label.textContent = msg('user_editing', { user: userName });
             label.dataset.collabLockOverlay = 'true';
             svgGroup.appendChild(label);
         }
@@ -617,7 +624,7 @@ function applyFieldChange(target, op) {
     for (const fc of op.fields) {
         const isVar = fc.name === 'VARIABLE' || fc.name === 'LIST' || fc.name === 'BROADCAST_OPTION';
         target.blocks.changeBlock({ id: fc.blockId, element: 'field', name: fc.name, value: isVar ? (fc.id || fc.value) : fc.value });
-        if (ws) { const blk = ws.getBlockById(fc.blockId); if (blk) { try { blk.setFieldValue(fc.value, fc.name); } catch (e) {} } }
+        if (ws) { const blk = ws.getBlockById(fc.blockId); if (blk) { try { blk.setFieldValue(fc.value, fc.name); } catch (e) { } } }
     }
 }
 
@@ -904,7 +911,7 @@ async function flush(rtc) {
     // Flush local debounce before applying remote
     if (rtc._updateTimer) { clearTimeout(rtc._updateTimer); rtc._updateTimer = null; rtc.updateProject(); }
 
-    rtc.onIngoreUpdate(true);
+    const opId = rtc.startIgnoreUpdate('flush');
     try {
         const byTarget = new Map();
         for (const op of ops) { if (!byTarget.has(op.targetIndex)) byTarget.set(op.targetIndex, []); byTarget.get(op.targetIndex).push(op); }
@@ -951,16 +958,16 @@ async function flush(rtc) {
                             try {
                                 const xml = target.blocks.blockToXML(op.rootId, target.comments || {});
                                 if (xml) cache.set(op.rootId, xml);
-                            } catch (e) {}
+                            } catch (e) { }
                         }
                 }
             }
 
-            // Sync comment cache (full JSON string for simple comparison)
+            // Sync comment cache (must match updateProject's format exactly)
             const sortedKeys = Object.keys(target.comments).sort();
             const liveList = sortedKeys.map(k => {
                 const c = target.comments[k];
-                return { text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
+                return { id: k, text: c.text, x: c.x, y: c.y, width: c.width, height: c.height, minimized: c.minimized, blockId: c.blockId };
             });
             rtc._commentCache.set(target.id, JSON.stringify(liveList));
 
@@ -983,7 +990,37 @@ async function flush(rtc) {
                 })));
             }
         }
-    } finally { rtc.onIngoreUpdate(false); }
+    } finally { rtc.endIgnoreUpdate(opId); }
+}
+
+function renderSpriteList(rtc) {
+    if (!rtc.state.clientId || !rtc.members || rtc.members.length === 0) return;
+
+    const itemsWrapper = document.querySelector('[class*="sprite-selector_items-wrapper"]');
+    if (!itemsWrapper) return;
+
+    // 清理旧的成员照片
+    document.querySelectorAll(`[class*="${idHead}member-photo"]`).forEach(ele => ele.remove());
+
+    // editingIndex: 0 = 背景（stage），1+ = sprite（targets 数组索引）
+    // items-wrapper 不含背景，第 0 个子节点对应 targets[1]
+    const childNodes = Array.from(itemsWrapper.children).filter(
+        el => el.className && el.className.includes('sprite-wrapper')
+    );
+
+    childNodes.forEach((spriteEl, idx) => {
+        const editingIndex = idx + 1; // items-wrapper 不含背景，0 = 背景，1+ = sprite
+        const members = rtc.members.filter(mem => mem.editingIndex === editingIndex);
+        members.forEach(mem => {
+            if (mem.cid === rtc.state.clientId) return; // 不显示自己
+            spriteEl.style.position = 'relative';
+            const memberPhoto = document.createElement('div');
+            memberPhoto.className = `${idHead}member-photo`;
+            memberPhoto.dataset.cid = mem.cid;
+            memberPhoto.textContent = mem.userName;
+            spriteEl.appendChild(memberPhoto);
+        });
+    });
 }
 
 // ── Message router ───────────────────────────────────────────────
@@ -991,7 +1028,16 @@ async function flush(rtc) {
 export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
     _Blockly = Blockly;
     _vm = addon.tab.traps.vm;
+    _rtc = rtc;
     const vm = _vm;
+
+    // 监听 targetsUpdate：React 重建 sprite 列表 DOM 后重新渲染成员照片
+    _vm.on('targetsUpdate', () => {
+        // setTimeout(0) 确保 React 渲染完成后再操作 DOM
+        setTimeout(() => {
+            if (_rtc) renderSpriteList(_rtc);
+        }, 0);
+    });
 
     return async function handlePeerMessage(peerId, msgs) {
         const data = JSON.parse(msgs);
@@ -1008,7 +1054,7 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 const ua = requestProjectUpload(oldSt); if (ua) ReduxStore.dispatch(ua);
                 const ls = ReduxStore.state.scratchGui.projectState.loadingState;
                 let ok = false;
-                rtc.onIngoreUpdate(true);
+                const snapshotOpId = rtc.startIgnoreUpdate('snapshot');
                 clearAllRemoteLocks();
                 try {
                     localStorage.setItem("IM_SURE_IT_WONT_BREAK_MY_PROJECT", true);
@@ -1043,7 +1089,7 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                         if (target.blocks && target.blocks._scripts) {
                             const nc = new Map();
                             for (const rid of target.blocks._scripts) {
-                                try { nc.set(rid, target.blocks.blockToXML(rid, target.comments || {})); } catch (e) {}
+                                try { nc.set(rid, target.blocks.blockToXML(rid, target.comments || {})); } catch (e) { }
                             }
                             rtc._scriptBlockCache.set(target.id, nc);
                         }
@@ -1074,7 +1120,13 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                     rtc._spriteIdCache = new Set(vm.runtime.targets.map(t => t.id));
                     // 重建 extension 缓存
                     rtc._extensionCache = new Set(vm.extensionManager._loadedExtensions.keys());
-                    rtc.onIngoreUpdate(false);
+                    rtc.endIgnoreUpdate(snapshotOpId);
+                    // Member 加载完 snapshot 后发送自己的 editingIndex 给 Host
+                    // （snapshot 加载期间 switchTarget 被 ignore 跳过了）
+                    if (!rtc._isHost) {
+                        rtc.switchTarget();
+                    }
+                    renderSpriteList(rtc);
                 }, 200);
                 return;
             }
@@ -1147,7 +1199,7 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                 break;
             case SERVER_OPCODE.EXTENSION_ADD:
                 if (data.id) {
-                    rtc.onIngoreUpdate(true);
+                    const extOpId = rtc.startIgnoreUpdate(`ext_add:${data.id}`);
                     const loadPromise = data.url
                         ? rtc._vm.extensionManager.loadExtensionURL(data.url, true)
                         : rtc._vm.extensionManager.loadExtensionIdSync(data.id);
@@ -1155,7 +1207,7 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                         console.log(`[协作] extension loaded: ${data.id}`);
                     }).catch(e => {
                         console.error("[协作] 加载扩展失败:", e);
-                    }).finally(() => rtc.onIngoreUpdate(false));
+                    }).finally(() => rtc.endIgnoreUpdate(extOpId));
                 }
                 break;
             case SERVER_OPCODE.EXTENSION_REMOVE:
@@ -1166,20 +1218,30 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
             case SERVER_OPCODE.SPRITE_DELETE: {
                 const target = rtc._vm.runtime.targets[data.targetIndex];
                 if (target) {
-                    const spriteId = target.id;
-                    rtc._vm.deleteSprite(spriteId);
-                    if (rtc._spriteIdCache) rtc._spriteIdCache.delete(spriteId);
+                    const spriteOpId = rtc.startIgnoreUpdate(`sprite_delete:${data.targetIndex}`);
+                    try {
+                        const spriteId = target.id;
+                        rtc._vm.deleteSprite(spriteId);
+                        // 立即更新 sprite ID 缓存
+                        if (rtc._spriteIdCache) {
+                            rtc._spriteIdCache.delete(spriteId);
+                        }
+                        rtc.endIgnoreUpdate(spriteOpId);
+                    } catch (e) {
+                        console.error("[协作] 角色删除失败:", e);
+                        rtc.endIgnoreUpdate(spriteOpId);
+                    }
                 }
                 break;
             }
             case SERVER_OPCODE.SPRITE_ADD:
                 if (data.spriteData) {
-                    rtc.onIngoreUpdate(true);
+                    const spriteOpId = rtc.startIgnoreUpdate(`sprite_add:${data.targetIndex}`);
                     try {
                         // 保存当前编辑目标，阻止 addSprite 自动切换工作区到新角色
                         const prevEditingTarget = vm.runtime._editingTarget;
                         const origEmitWorkspaceUpdate = vm.emitWorkspaceUpdate;
-                        vm.emitWorkspaceUpdate = () => {};
+                        vm.emitWorkspaceUpdate = () => { };
                         const b2 = atob(data.spriteData); const bytes2 = new Uint8Array(b2.length);
                         for (let i = 0; i < b2.length; i++) bytes2[i] = b2.charCodeAt(i);
                         await vm.addSprite(bytes2.buffer, false);
@@ -1188,9 +1250,16 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
                         if (prevEditingTarget) {
                             vm.runtime.setEditingTarget(prevEditingTarget);
                         }
-                        if (rtc._spriteIdCache) rtc._spriteIdCache = new Set(rtc._vm.runtime.targets.map(t => t.id));
-                        setTimeout(() => rtc.onIngoreUpdate(false), 200);
-                    } catch (e) { console.error("[协作] 角色添加失败:", e); rtc.onIngoreUpdate(false); }
+                        // 立即更新 sprite ID 缓存，确保 updateProject 不会检测到差异
+                        if (rtc._spriteIdCache) {
+                            rtc._spriteIdCache = new Set(rtc._vm.runtime.targets.map(t => t.id));
+                        }
+                        // 立即结束忽略，不再使用 setTimeout
+                        rtc.endIgnoreUpdate(spriteOpId);
+                    } catch (e) {
+                        console.error("[协作] 角色添加失败:", e);
+                        rtc.endIgnoreUpdate(spriteOpId);
+                    }
                     return;
                 }
                 break;
@@ -1242,7 +1311,25 @@ export function createHandler({ addon, console, sendToPeer, rtc, Blockly }) {
             case SERVER_OPCODE.PING: sendToPeer(peerId, { type: SERVER_OPCODE.PONG }); break;
             case SERVER_OPCODE.KICK:
                 if (data.targetId === rtc.state.clientId) {
-                    rtc.exit();
+                    rtc.exit(rtc);
+                }
+                break;
+            case SERVER_OPCODE.SWITCH_TARGET:
+                // 只有 Host 会收到 SWITCH_TARGET（非 Host 发出的）
+                if (rtc._isHost) {
+                    const member = rtc.members.find(m => m.cid === data.id);
+                    if (member) {
+                        member.editingIndex = data.index;
+                        rtc._broadcastMembersSync();
+                        renderSpriteList(rtc);
+                    }
+                }
+                break;
+            case SERVER_OPCODE.MEMBERS_SYNC:
+                // 非 Host 接收 Host 广播的完整成员列表
+                if (!rtc._isHost && Array.isArray(data.members)) {
+                    rtc.members = data.members;
+                    renderSpriteList(rtc);
                 }
                 break;
         }
