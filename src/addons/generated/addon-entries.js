@@ -94,5 +94,5 @@ export default {
   "sprite-folders": () => import(/* webpackChunkName: "addon-entry-sprite-folders" */ "../addons/sprite-folders/_runtime_entry.js"),
   "background": () => import(/* webpackChunkName: "addon-entry-background" */"../addons/background/_runtime_entry.js"),
   "todo": () => import(/* webpackChunkName: "addon-entry-todo" */"../addons/todo/_runtime_entry.js"),
-  "collaborative-editing": () => import(/* webpackChunkName: "addon-entry-collaborative-editing" */"../addons/collaborative/_runtime_entry.js")
+  // "collaborative-editing": () => import(/* webpackChunkName: "addon-entry-collaborative-editing" */"../addons/collaborative/_runtime_entry.js")
 };

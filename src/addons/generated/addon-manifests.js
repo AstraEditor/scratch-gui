@@ -190,5 +190,5 @@ export default {
   "sprite-folders": _sprite_folders,
   "background": _background,
   "todo": _todo,
-  "collaborative-editing": _collaborative_editing
+  // "collaborative-editing": _collaborative_editing
 };
