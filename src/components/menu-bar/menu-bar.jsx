@@ -576,66 +576,6 @@ class MenuBar extends React.Component {
             </MenuLabel>
         );
     }
-    buildControlBar(
-        onClickMinimize,
-        onClickMaximize,
-        onClickClose,
-        isMaximized,
-        onMaximizeClick,
-    ) {
-        if (!onClickMinimize && !onClickMaximize && !onClickClose) {
-            return (
-                <div className={styles.controlBarInner}>
-                    <div className={styles.accountInfoGroup}>
-                        <TWSaveStatus
-                            showSaveFilePicker={this.props.showSaveFilePicker}
-                        />
-                    </div>
-                </div>
-            );
-        }
-        return (
-            <div className={styles.controlBarInner}>
-                <div className={styles.accountInfoGroup}>
-                    <TWSaveStatus
-                        showSaveFilePicker={this.props.showSaveFilePicker}
-                    />
-                </div>
-                {onClickMinimize && (
-                    <div
-                        className={styles.controlButton}
-                        onClick={onClickMinimize}
-                    >
-                        <img src={minimize} alt="─" />
-                    </div>
-                )}
-                {onClickMaximize && (
-                    <div
-                        className={styles.controlButton}
-                        onClick={onMaximizeClick}
-                    >
-                        {!isMaximized ? (
-                            <img src={maximize} alt="□" />
-                        ) : (
-                            <img
-                                src={restore}
-                                style={{ width: "10px", height: "10px" }}
-                                alt="□"
-                            />
-                        )}
-                    </div>
-                )}
-                {onClickClose && (
-                    <div
-                        className={styles.controlButton}
-                        onClick={onClickClose}
-                    >
-                        <img src={close} alt="✕" />
-                    </div>
-                )}
-            </div>
-        );
-    }
     wrapAboutMenuCallback(callback) {
         return () => {
             callback();
@@ -683,13 +623,6 @@ class MenuBar extends React.Component {
         );
         // Show the About button only if we have a handler for it (like in the desktop app)
         const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
-        const controlBar = this.buildControlBar(
-            this.props.onClickMinimize,
-            this.props.onClickMaximize,
-            this.props.onClickClose,
-            this.state.isMaximized,
-            this.handleMaximizeClick,
-        );
         const menuBar = (
             <Box className={classNames(this.props.className, styles.menuBar)}>
                 <div className={styles.mainMenu}>
@@ -1523,7 +1456,13 @@ class MenuBar extends React.Component {
                         </div>
                     </div>
                 </div>
-                <div className={styles.controlBar}>{controlBar}</div>
+                <div className={styles.controlBarInner}>
+                    <div className={styles.accountInfoGroup}>
+                        <TWSaveStatus
+                            showSaveFilePicker={this.props.showSaveFilePicker}
+                        />
+                    </div>
+                </div>
             </Box>
         );
 
@@ -1636,6 +1575,7 @@ MenuBar.propTypes = {
     onShare: PropTypes.func,
     onStartSelectingFileUpload: PropTypes.func,
     onToggleLoginOpen: PropTypes.func,
+    setWindowControlsStyle: PropTypes.func,
     projectId: PropTypes.string,
     projectTitle: PropTypes.string,
     renderLogin: PropTypes.func,

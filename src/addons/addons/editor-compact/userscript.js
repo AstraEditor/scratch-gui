@@ -7,6 +7,19 @@ export default async function ({ addon, global, console }) {
   // whenever the addon modifies or stops modifying UI elements
   resizeWorkspace();
 
+  // 更新桌面端金刚键高度
+  const updateWindowControlsHeight = () => {
+    try {
+      if (window.EditorPreload?.setWindowControlsStyle) {
+        const height = addon.self.disabled ? 48 : 32;
+        window.EditorPreload.setWindowControlsStyle({ height });
+      }
+    } catch {}
+  };
+  if(addon.settings.get("compactMenubar")) updateWindowControlsHeight();
+  addon.self.addEventListener("disabled", updateWindowControlsHeight);
+  addon.self.addEventListener("reenabled", updateWindowControlsHeight);
+
   let resizeObserver = new ResizeObserver(resizeWorkspace);
   (async () => {
     while (true) {

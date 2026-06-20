@@ -1,5 +1,6 @@
 import {Theme} from '.';
 import AddonHooks from '../../addons/hooks';
+import { toHex } from '../switchToHEX';
 import './global-styles.css';
 
 const BLOCK_COLOR_NAMES = [
@@ -71,6 +72,13 @@ const applyGuiColors = theme => {
     window.Recolor = {
         primary: guiColors['looks-secondary']
     };
+    try{
+        requestAnimationFrame(() => {
+            window.EditorPreload.setWindowControlsStyle({
+                symbolColor: toHex('var(--menu-bar-foreground)')
+            });
+        });
+    } catch {}
     AddonHooks.recolorCallbacks.forEach(i => i());
 };
 
