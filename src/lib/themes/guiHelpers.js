@@ -72,9 +72,15 @@ const applyGuiColors = theme => {
     window.Recolor = {
         primary: guiColors['looks-secondary']
     };
+    // macOS uses native traffic lights, no titleBarOverlay
+    if (window.EditorPreload?.platform === 'darwin') {
+        AddonHooks.recolorCallbacks.forEach(i => i());
+        return;
+    }
     try{
         requestAnimationFrame(() => {
             window.EditorPreload.setWindowControlsStyle({
+                color: toHex('var(--menu-bar-background)'),
                 symbolColor: toHex('var(--menu-bar-foreground)')
             });
         });

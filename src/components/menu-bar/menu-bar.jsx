@@ -252,6 +252,7 @@ class MenuBar extends React.Component {
             "updateMaximizedState",
             "handleResize",
         ]);
+        this.overlay = navigator?.windowControlsOverlay || {};
     }
     componentDidMount() {
         document.addEventListener("keydown", this.handleKeyPress);
@@ -297,6 +298,7 @@ class MenuBar extends React.Component {
     handleResize() {
         // 窗口大小变化时更新最大化状态
         this.updateMaximizedState();
+        this.overlay = navigator?.windowControlsOverlay || {};
     }
     async updateMaximizedState() {
         if (this.props.isMaximize) {
@@ -623,8 +625,15 @@ class MenuBar extends React.Component {
         );
         // Show the About button only if we have a handler for it (like in the desktop app)
         const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
+        const isMac = window.EditorPreload?.platform === 'darwin';
         const menuBar = (
-            <Box className={classNames(this.props.className, styles.menuBar)}>
+            <Box className={classNames(this.props.className, styles.menuBar, {[styles.macos]: isMac})} style={
+                this.overlay.visible ? {
+                    width: `${this.overlay.getTitlebarAreaRect().width}px`,
+                    // 如果是阿拉伯那种从右往左的，改一下位置
+                    marginRight: `${this.props.isRtl ? window.innerWidth - this.overlay.getTitlebarAreaRect().width : '0'}px`
+                }
+                : {}}>
                 <div className={styles.mainMenu}>
                     <div className={styles.menuGroup}>
                         {!aboutButton ? (

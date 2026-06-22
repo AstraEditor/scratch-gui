@@ -7,9 +7,10 @@ export default async function ({ addon, global, console }) {
   // whenever the addon modifies or stops modifying UI elements
   resizeWorkspace();
 
-  // 更新桌面端金刚键高度
+  // 更新桌面端金刚键高度（macOS 使用原生 traffic lights，不需要设置）
   const updateWindowControlsHeight = () => {
     try {
+      if (window.EditorPreload?.platform === 'darwin') return;
       if (window.EditorPreload?.setWindowControlsStyle) {
         const height = addon.self.disabled ? 48 : 32;
         window.EditorPreload.setWindowControlsStyle({ height });
