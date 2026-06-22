@@ -587,3 +587,77 @@ body:not(.sa-columns-enabled) [class*="gui_tab-panel"] [class*="gui_extension-bu
 [class*=react-tabs_react-tabs__tab-list_]:not([class*=gui_vscode]) img{
     display: none;
 }
+
+/* Background addon */
+.sa-background-section-header {
+    margin: 0.125rem 0 0 0;
+    font-size: 0.875rem;
+}
+
+.sa-background-content-wrapper {
+    gap: 0.5rem;
+}
+
+.sa-background-panel,
+.sa-background-rotation-wrapper,
+.sa-background-rotation-all {
+    gap: 0.5rem;
+}
+
+.sa-background-blur-wrapper {
+    gap: 0.5rem;
+}
+
+.sa-background-preview {
+    min-height: 6rem;
+    max-height: 8rem;
+}
+
+.sa-background-preview-image {
+    max-height: 8rem;
+}
+
+.sa-background-preview-empty {
+    min-height: 6rem;
+}
+
+.sa-background-control-row {
+    gap: 0.375rem;
+}
+
+.sa-background-form-grid {
+    gap: 0.375rem;
+}
+
+.sa-background-content,
+.sa-background-list-content {
+    padding: 0.5rem;
+}
+
+.sa-background-list-content {
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.sa-background-wallpaper-list {
+    padding: 0.375rem;
+    min-height: 8rem;
+}
+
+.sa-background-actions {
+    gap: 0.375rem;
+}
+
+.sa-background-add {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.sa-background-current-badge {
+    padding: 1px 8px;
+    font-size: 10px;
+}
+
+.sa-background-range-control {
+    gap: 0.375rem;
+}

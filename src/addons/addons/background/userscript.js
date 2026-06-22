@@ -438,10 +438,9 @@ async function getActiveWorkspaceWallpaper() {
         if (!syncedSelection) return null;
         return await bgDB.getWallpaper(syncedSelection.wallpaperId);
     }
-    const wallpaperId = settings.currentWallpaperId || 'WorkSpaceBG';
-    const wallpaper = await bgDB.getWallpaper(wallpaperId);
-    if (wallpaper || !settings.currentWallpaperId) {
-        return wallpaper;
+    if (settings.currentWallpaperId) {
+        const wallpaper = await bgDB.getWallpaper(settings.currentWallpaperId);
+        if (wallpaper) return wallpaper;
     }
     const syncedSelection = await syncWallpaperSelection({ settings });
     if (!syncedSelection) return null;
@@ -522,7 +521,7 @@ function showBgModal(addon, msg) {
     container.classList.add('sa-background-popup');
     content.classList.add('sa-background-content');
 
-    addContext(content, msg).then(() => {
+    addContext(content, addon, msg).then(() => {
         addModalBackground();
     });
 
@@ -530,7 +529,7 @@ function showBgModal(addon, msg) {
     closeButton.addEventListener("click", remove);
 }
 
-async function addContext(modal, msg) {
+async function addContext(modal, addon, msg) {
     const modalConfig = await getModalBackgroundConfig();
     const modalSettings = {
         enabled: modalConfig !== null,
@@ -549,7 +548,7 @@ async function addContext(modal, msg) {
     // Add BG
     const workspaceAddButton = document.createElement("button");
     workspaceAddButton.className = "sa-background-add";
-    workspaceAddButton.textContent = msg("add");
+    workspaceAddButton.textContent = (await getSetting('WallpaperRotationEnabled')) ? msg("add") : msg("replace");
     workspaceAddButton.addEventListener('click', () => {
         workspaceAddPicInput.click();
         document.documentElement.style.setProperty('--enable-workspace-background', 'transparent');
@@ -572,11 +571,14 @@ async function addContext(modal, msg) {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
+        const isRotationEnabled = await getSetting('WallpaperRotationEnabled');
+        const currentId = isRotationEnabled ? null : await getSetting('currentWallpaperId');
+
         const savedIds = await Promise.all(files.map((file, index) => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async (loadEvent) => {
                 try {
-                    const wallpaperId = files.length === 1 ? 'WorkSpaceBG' : `WorkSpaceBG-${Date.now()}-${index}`;
+                    const wallpaperId = isRotationEnabled ? `WorkSpaceBG-${Date.now()}-${index}` : (currentId || `WorkSpaceBG-${Date.now()}-${index}`);
                     await bgDB.saveWallpaper({
                         id: wallpaperId,
                         name: file.name,
@@ -779,6 +781,7 @@ async function addContext(modal, msg) {
     workspaceOffsetX.step = '1';
     workspaceOffsetX.value = await getSetting('WorkSpaceBGOffsetX') || 0;
     workspaceOffsetX.className = 'sa-background-offset';
+    workspaceOffsetX.classList.add(addon.tab.scratchClass("input_input-form"));
     workspaceOffsetX.addEventListener('input', async () => {
         applySettings('WorkSpaceBGOffsetX', Number(workspaceOffsetX.value));
         await refreshWorkSpaceBackground();
@@ -794,6 +797,7 @@ async function addContext(modal, msg) {
     workspaceOffsetY.step = '1';
     workspaceOffsetY.value = await getSetting('WorkSpaceBGOffsetY') || 0;
     workspaceOffsetY.className = 'sa-background-offset';
+    workspaceOffsetY.classList.add(addon.tab.scratchClass("input_input-form"));
     workspaceOffsetY.addEventListener('input', async () => {
         applySettings('WorkSpaceBGOffsetY', Number(workspaceOffsetY.value));
         await refreshWorkSpaceBackground();
@@ -904,6 +908,7 @@ async function addContext(modal, msg) {
     modalOffsetX.step = '1';
     modalOffsetX.value = modalSettings.offsetX;
     modalOffsetX.className = 'sa-background-offset';
+    modalOffsetX.classList.add(addon.tab.scratchClass("input_input-form"));
     modalOffsetX.addEventListener('input', async () => {
         modalSettings.offsetX = Number(modalOffsetX.value) || 0;
         await applySettings('ModalBGOffsetX', modalSettings.offsetX);
@@ -917,6 +922,7 @@ async function addContext(modal, msg) {
     modalOffsetY.step = '1';
     modalOffsetY.value = modalSettings.offsetY;
     modalOffsetY.className = 'sa-background-offset';
+    modalOffsetY.classList.add(addon.tab.scratchClass("input_input-form"));
     modalOffsetY.addEventListener('input', async () => {
         modalSettings.offsetY = Number(modalOffsetY.value) || 0;
         await applySettings('ModalBGOffsetY', modalSettings.offsetY);
@@ -930,6 +936,7 @@ async function addContext(modal, msg) {
     modalSize.step = '1';
     modalSize.value = modalSettings.modalSize;
     modalSize.className = 'sa-background-size';
+    modalSize.classList.add(addon.tab.scratchClass("input_input-form"));
     modalSize.addEventListener('input', async () => {
         const value = Number(modalSize.value);
         modalSettings.modalSize = Number.isFinite(value) ? value : 100;
@@ -1029,7 +1036,8 @@ async function addContext(modal, msg) {
     rotationToggle.type = 'checkbox';
     rotationToggle.checked = await getSetting('WallpaperRotationEnabled') || false;
     rotationToggle.addEventListener('change', async () => {
-        document.querySelector('.sa-background-rotation-all').style.display = rotationToggle.checked ? 'block' : 'none';
+        document.querySelector('.sa-background-rotation-all').style.display = rotationToggle.checked ? '' : 'none';
+        workspaceAddButton.textContent = rotationToggle.checked ? msg("add") : msg("replace");
         await applySettings('WallpaperRotationEnabled', rotationToggle.checked);
         await syncWallpaperSelection();
         await initializeWallpaperRotation();
@@ -1046,6 +1054,7 @@ async function addContext(modal, msg) {
     intervalInput.min = '1';
     intervalInput.value = await getSetting('WallpaperRotationIntervalMinutes') || 5;
     intervalInput.className = 'sa-background-rotation-interval';
+    intervalInput.classList.add(addon.tab.scratchClass("input_input-form"));
     intervalInput.addEventListener('change', async () => {
         await applySettings('WallpaperRotationIntervalMinutes', Number(intervalInput.value) || 5);
         await initializeWallpaperRotation();
@@ -1093,23 +1102,13 @@ async function addContext(modal, msg) {
         const wallpapers = await bgDB.listWallpapers();
         wallpaperListContainer.innerHTML = '';
         wallpapers.forEach((wallpaper, index) => {
+            const isCurrent = wallpaper.id === currentWallpaperId;
             const right = document.createElement('div');
             right.className = 'sa-background-wallpaper-item';
 
             const title = document.createElement('span');
             title.textContent = wallpaper.name || wallpaper.id;
             title.className = wallpaper.enabled ? 'sa-background-wallpaper-title' : 'sa-background-wallpaper-title disabled';
-
-            const selectButton = document.createElement('button');
-            if (wallpaper.id === currentWallpaperId) selectButton.className = 'sa-background-wallpaper-active';
-            else selectButton.className = 'sa-background-wallpaper-not-active';
-            selectButton.textContent = msg('active');
-            selectButton.disabled = wallpaper.id === currentWallpaperId && isBackgroundVisible;
-            selectButton.addEventListener('click', async () => {
-                await setCurrentWallpaperId(wallpaper.id);
-                await refreshWallpaperList();
-            });
-
 
             const enabledLabel = document.createElement('label');
             enabledLabel.className = 'sa-background-wallpaper-enabled-label';
@@ -1131,9 +1130,17 @@ async function addContext(modal, msg) {
             });
 
             const left = document.createElement('div');
-            left.className = 'sa-background-left'
-
-            left.appendChild(selectButton);
+            left.className = 'sa-background-left';
+            if (isCurrent) {
+                left.classList.add('sa-background-wallpaper-current');
+            }
+            if (!(isCurrent && isBackgroundVisible)) {
+                left.classList.add('sa-background-wallpaper-selectable');
+                left.addEventListener('click', async () => {
+                    await setCurrentWallpaperId(wallpaper.id);
+                    await refreshWallpaperList();
+                });
+            }
 
             left.appendChild(enabledLabel);
             left.appendChild(title);
@@ -1141,9 +1148,12 @@ async function addContext(modal, msg) {
 
             const content = document.createElement('div');
             content.className = 'sa-background-list-content';
+            if (isCurrent) {
+                content.classList.add('sa-background-list-content-current');
+            }
             content.style.animationDelay = `${index * 100}ms`;
             content.style.opacity = 0;
-            content.appendChild(left)
+            content.appendChild(left);
             content.appendChild(right);
 
             wallpaperListContainer.appendChild(content)
@@ -1188,6 +1198,7 @@ async function addContext(modal, msg) {
     rotationForm.appendChild(createFullRow(rotationToggleLabel));
     const rotationAllDiv = document.createElement('div');
     rotationAllDiv.className = 'sa-background-rotation-all';
+    rotationAllDiv.style.display = rotationToggle.checked ? '' : 'none';
     rotationAllDiv.appendChild(createControlRow(animationDurationText, animationDurationControl.element));
     rotationAllDiv.appendChild(createControlRow(intervalLabel, intervalInput));
     rotationAllDiv.appendChild(createFullRow(rotateNowButton));
@@ -1346,9 +1357,9 @@ async function refreshWorkSpaceBackground() {
         );
         clearWallpaperTransitionTimeout();
         const wallpaper = await getActiveWorkspaceWallpaper();
-        const existingBackgrounds = Array.from(document.querySelectorAll('.sa-background-image'));
-        const existingBg = existingBackgrounds[0] || null;
-        existingBackgrounds.slice(1).forEach((backgroundImage) => backgroundImage.remove());
+        const existingClips = Array.from(document.querySelectorAll('.sa-background-clip'));
+        const existingBg = existingClips[0] ? existingClips[0].querySelector('.sa-background-image') : null;
+        existingClips.slice(1).forEach((clip) => clip.remove());
 
         if (!wallpaper || !wallpaper.link) {
             if (existingBg) {
@@ -1356,7 +1367,7 @@ async function refreshWorkSpaceBackground() {
                 existingBg.style.opacity = '0';
                 wallpaperTransitionTimeout = window.setTimeout(() => {
                     if (refreshToken !== wallpaperRefreshToken) return;
-                    existingBg.remove();
+                    existingBg.closest('.sa-background-clip').remove();
                     wallpaperTransitionTimeout = null;
                     isRefreshingBG = false;
                 }, animationDuration);
@@ -1386,7 +1397,7 @@ async function refreshWorkSpaceBackground() {
             existingBg.style.opacity = '0';
             wallpaperTransitionTimeout = window.setTimeout(async () => {
                 if (refreshToken !== wallpaperRefreshToken) return;
-                existingBg.remove();
+                existingBg.closest('.sa-background-clip').remove();
                 await createNewBackground(wallpaper, workspace, animationDuration);
                 wallpaperTransitionTimeout = null;
                 isRefreshingBG = false;
@@ -1403,19 +1414,20 @@ async function refreshWorkSpaceBackground() {
 
 async function createNewBackground(wallpaper, workspace, animationDuration) {
     clearWallpaperTransitionTimeout();
-    workspace.querySelectorAll('.sa-background-image').forEach((backgroundImage) => backgroundImage.remove());
+    workspace.querySelectorAll('.sa-background-clip').forEach((clip) => clip.remove());
+    const clip = document.createElement('div');
+    clip.className = 'sa-background-clip';
     const background = document.createElement('img');
     background.className = 'sa-background-image';
     background.dataset.wallpaperId = wallpaper.id || '';
     background.src = wallpaper.link;
     background.style.filter = `blur(${await getSetting('WorkSpaceBGBlur') || 0}px)`;
-    background.style.clipPath = 'inset(0)';
     background.style.opacity = '0'; // Start invisible
-    background.style.position = 'absolute';
     background.draggable = false;
     background.style.transition = `opacity ${animationDuration}ms ease-in`; // Add transition for fade in
 
-    workspace.prepend(background);
+    clip.appendChild(background);
+    workspace.prepend(clip);
     await resizeWorkspaceBackground();
 
     // Trigger fade in

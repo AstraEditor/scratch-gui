@@ -483,6 +483,7 @@
     "background/background-preview-empty": "未选择壁纸",
     "background/background-rotate": "轮换",
     "background/disable": "禁用",
+    "background/replace": "替换背景图片",
     "todo/title": "{project} 的待办",
     "todo/add": "添加",
     "todo/edit": "编辑",

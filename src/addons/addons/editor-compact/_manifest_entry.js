@@ -68,19 +68,22 @@ const manifest = {
       "id": "hideLabels",
       "type": "boolean",
       "name": "Hide button labels in costume and sound editor",
-      "default": true
+      "default": true,
+      "dynamic": true
     },
     {
       "id": "compactMenubar",
       "type": "boolean",
       "name": "Compact Menu bar",
-      "default": true
+      "default": true,
+      "dynamic": true
     },
     {
       "id": "compactGUI",
       "type": "boolean",
       "name": "Compact GUI (Expect Menu bar)",
-      "default": true
+      "default": true,
+      "dynamic": true
     }
   ],
   "dynamicDisable": true,

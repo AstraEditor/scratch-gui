@@ -21,6 +21,11 @@ export default async function ({ addon, global, console }) {
   addon.self.addEventListener("disabled", updateWindowControlsHeight);
   addon.self.addEventListener("reenabled", updateWindowControlsHeight);
 
+  addon.settings.addEventListener("change", () => {
+    resizeWorkspace();
+    updateWindowControlsHeight();
+  });
+
   let resizeObserver = new ResizeObserver(resizeWorkspace);
   (async () => {
     while (true) {
