@@ -42,7 +42,9 @@ const useCssModules = resourcePath => {
     if (globalCssFiles.has(path.basename(resourcePath))) {
         return false;
     }
-    if (resourcePath.includes('monaco-editor')) {
+    // 赛博猫猫忘记了我们要用cssModules！
+    // 不知道这个插件是干什么的，总之不应该也把这里的UI层也排除了
+    if (resourcePath.includes('node_modules') && resourcePath.includes('monaco-editor')) {
         return false;
     }
     return true;

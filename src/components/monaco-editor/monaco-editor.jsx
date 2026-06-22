@@ -9,7 +9,7 @@ import { manuallyTrustExtension } from '../../containers/tw-security-manager.jsx
 import Modal from '../../containers/modal.jsx';
 import Box from '../box/box.jsx';
 import classNames from 'classnames';
-import './monaco-editor.css';
+import styles from './monaco-editor.css';
 
 let monaco = null;
 
@@ -1313,8 +1313,8 @@ class MonacoEditorComponent extends React.Component {
     render() {
         if (this.state.isLoading) {
             return (
-                <div className="editor-wrapper">
-                    <div className="loading">
+                <div className={styles.editorWrapper}>
+                    <div className={styles.loading}>
                         <FormattedMessage
                             defaultMessage="Loading editor..."
                             description="Loading message for Monaco Editor"
@@ -1327,8 +1327,8 @@ class MonacoEditorComponent extends React.Component {
 
         if (this.state.error) {
             return (
-                <div className="editor-wrapper">
-                    <div className="error">
+                <div className={styles.editorWrapper}>
+                    <div className={styles.error}>
                         <FormattedMessage
                             defaultMessage="Failed to load editor: {error}"
                             description="Error message for Monaco Editor"
@@ -1346,10 +1346,10 @@ class MonacoEditorComponent extends React.Component {
 
         return (
             <React.Fragment>
-            <div className="editor-wrapper">
-                <div className="sidebar">
-                    <div className="sidebar-header">
-                        <span className="sidebar-title">
+            <div className={styles.editorWrapper}>
+                <div className={styles.sidebar}>
+                    <div className={styles.sidebarHeader}>
+                        <span className={styles.sidebarTitle}>
                             <FormattedMessage
                                 defaultMessage="FILES"
                                 description="Header for file panel"
@@ -1357,7 +1357,7 @@ class MonacoEditorComponent extends React.Component {
                             />
                         </span>
                     </div>
-                    <div className="file-list">
+                    <div className={styles.fileList}>
                         {this.state.files.map(file => {
                             const extension = getFileExtension(file.name);
                             const typeInfo = getFileTypeInfo(extension);
@@ -1368,11 +1368,11 @@ class MonacoEditorComponent extends React.Component {
                             return (
                                 <div
                                     key={file.id}
-                                    className={classNames('file-item', { 'active': isActive })}
+                                    className={classNames(styles.fileItem, { [styles.active]: isActive })}
                                     onClick={() => !isEditing && this.selectFile(file.id)}
                                 >
                                     <div
-                                        className={classNames('file-icon', { 'light-text': isLightIcon })}
+                                        className={classNames(styles.fileIcon, { [styles.lightText]: isLightIcon })}
                                         style={{ backgroundColor: typeInfo.color }}
                                     >
                                         {extension.toUpperCase().slice(0, 2)}
@@ -1388,15 +1388,15 @@ class MonacoEditorComponent extends React.Component {
                                             }}
                                             onBlur={this.handleRenameSubmit}
                                             autoFocus
-                                            className={classNames('new-file-input', 'rename-input')}
+                                            className={classNames(styles.newFileInput, styles.renameInput)}
                                         />
                                     ) : (
-                                        <span className="file-name">{file.name}</span>
+                                        <span className={styles.fileName}>{file.name}</span>
                                     )}
                                     {!isEditing && (
-                                        <div className="file-actions">
+                                        <div className={styles.fileActions}>
                                             <button
-                                                className="file-action-btn"
+                                                className={styles.fileActionBtn}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     this.startRenameFile(file.id);
@@ -1406,7 +1406,7 @@ class MonacoEditorComponent extends React.Component {
                                                 ✎
                                             </button>
                                             <button
-                                                className="file-action-btn"
+                                                className={styles.fileActionBtn}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     this.deleteFile(file.id);
@@ -1422,7 +1422,7 @@ class MonacoEditorComponent extends React.Component {
                         })}
                     </div>
                     {this.state.showNewFileInput ? (
-                        <div className="new-file-section">
+                        <div className={styles.newFileSection}>
                             <input
                                 type="text"
                                 placeholder={this.props.intl.formatMessage({
@@ -1436,12 +1436,12 @@ class MonacoEditorComponent extends React.Component {
                                     if (e.key === 'Escape') this.handleNewFileCancel();
                                 }}
                                 autoFocus
-                                className="new-file-input"
+                                className={styles.newFileInput}
                             />
-                            <div className="new-file-actions">
+                            <div className={styles.newFileActions}>
                                 <button
                                     onClick={this.handleNewFileSubmit}
-                                    className="new-file-btn-create"
+                                    className={styles.newFileBtnCreate}
                                 >
                                     <FormattedMessage
                                         defaultMessage="Create"
@@ -1451,7 +1451,7 @@ class MonacoEditorComponent extends React.Component {
                                 </button>
                                 <button
                                     onClick={this.handleNewFileCancel}
-                                    className="new-file-btn-cancel"
+                                    className={styles.newFileBtnCancel}
                                 >
                                     <FormattedMessage
                                         defaultMessage="Cancel"
@@ -1463,10 +1463,10 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     ) : (
                         <div
-                            className="new-file-trigger"
+                            className={styles.newFileTrigger}
                             onClick={this.createNewFile}
                         >
-                            <span className="new-file-icon">+</span>
+                            <span className={styles.newFileIcon}>+</span>
                             <FormattedMessage
                                 defaultMessage="New File"
                                 description="New file button"
@@ -1475,40 +1475,40 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                 </div>
-                <div className="editor-area">
+                <div className={styles.editorArea}>
                     {activeFile && (
-                        <div className="editor-header">
-                            <div className="editor-header-left">
+                        <div className={styles.editorHeader}>
+                            <div className={styles.editorHeaderLeft}>
                                 <div
-                                    className={classNames('file-icon', { 'light-text': getFileTypeInfo(activeExtension).color === '#f7df1e' || getFileTypeInfo(activeExtension).color === '#cbcb41' })}
+                                    className={classNames(styles.fileIcon, { [styles.lightText]: getFileTypeInfo(activeExtension).color === '#f7df1e' || getFileTypeInfo(activeExtension).color === '#cbcb41' })}
                                     style={{ backgroundColor: getFileTypeInfo(activeExtension).color }}
                                 >
                                     {activeExtension.toUpperCase().slice(0, 2)}
                                 </div>
-                                <span className="editor-filename">{activeFile.name}</span>
+                                <span className={styles.editorFilename}>{activeFile.name}</span>
                             </div>
-                            <div className="editor-header-right">
-                                <div className="zoom-control">
+                            <div className={styles.editorHeaderRight}>
+                                <div className={styles.zoomControl}>
                                     <button
                                         onClick={this.zoomOut}
-                                        className="zoom-btn"
+                                        className={styles.zoomBtn}
                                         title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomOut' })}
                                     >
                                         −
                                     </button>
-                                    <span className="zoom-value">
+                                    <span className={styles.zoomValue}>
                                         {this.state.fontSize}px
                                     </span>
                                     <button
                                         onClick={this.zoomIn}
-                                        className="zoom-btn"
+                                        className={styles.zoomBtn}
                                         title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.zoomIn' })}
                                     >
                                         +
                                     </button>
                                 </div>
                                 <button
-                                    className="generate-btn"
+                                    className={styles.generateBtn}
                                     onClick={this.openFileSelectionModal}
                                     title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.generateBlocksTooltip' })}
                                 >
@@ -1522,13 +1522,13 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                     {!activeFile && this.state.files.length === 0 && (
-                        <div className="empty-state">
+                        <div className={styles.emptyState}>
                             <FormattedMessage
                                 defaultMessage="No files yet"
                                 description="Empty state message"
                                 id="gui.monacoEditor.noFiles"
                             />
-                            <span className="empty-state-hint">
+                            <span className={styles.emptyStateHint}>
                                 <FormattedMessage
                                     defaultMessage="Click 'New File' to create one"
                                     description="Empty state hint"
@@ -1538,14 +1538,14 @@ class MonacoEditorComponent extends React.Component {
                         </div>
                     )}
                     {this.state.blockGenerationStatus && (
-                        <div className={classNames('status-message', this.state.blockGenerationStatus.type)}>
+                        <div className={classNames(styles.statusMessage, styles[this.state.blockGenerationStatus.type])}>
                             {this.state.blockGenerationStatus.message}
                         </div>
                     )}
                     {(activeFile || this.state.files.length > 0) && (
                         <div
                             ref={this.containerRef}
-                            className="editor-content"
+                            className={styles.editorContent}
                         />
                     )}
                 </div>
@@ -1574,16 +1574,16 @@ class MonacoEditorComponent extends React.Component {
                 onRequestClose={this.closeFileSelectionModal}
                 id="fileSelectionModal"
             >
-                <Box className="modal-box">
-                    <div className="modal-header">
-                        <span className="modal-title">
+                <Box className={styles.modalBox}>
+                    <div className={styles.modalHeader}>
+                        <span className={styles.modalTitle}>
                             <FormattedMessage
                                 defaultMessage="Select Python files to generate blocks"
                                 id="gui.monacoEditor.selectFiles"
                             />
                         </span>
                         <button
-                            className={classNames('select-all-btn', { 'selected': allSelected })}
+                            className={classNames(styles.selectAllBtn, { [styles.selected]: allSelected })}
                             onClick={selectAllPythonFiles}
                         >
                             {allSelected ? (
@@ -1599,7 +1599,7 @@ class MonacoEditorComponent extends React.Component {
                             )}
                         </button>
                     </div>
-                    <div className="modal-body">
+                    <div className={styles.modalBody}>
                         {pythonFiles.map(file => {
                             const isSelected = this.state.selectedFileIds.includes(file.id);
                             const validationResult = validatePythonCode(file.content);
@@ -1608,17 +1608,17 @@ class MonacoEditorComponent extends React.Component {
                             return (
                                 <div
                                     key={file.id}
-                                    className={classNames('modal-file-item', { 'selected': isSelected })}
+                                    className={classNames(styles.modalFileItem, { [styles.selected]: isSelected })}
                                     onClick={() => this.toggleFileSelection(file.id)}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={isSelected}
                                         onChange={() => this.toggleFileSelection(file.id)}
-                                        className="modal-checkbox"
+                                        className={styles.modalCheckbox}
                                     />
-                                    <span className="modal-file-name">{file.name}</span>
-                                    <span className="modal-func-count">
+                                    <span className={styles.modalFileName}>{file.name}</span>
+                                    <span className={styles.modalFunctionCount}>
                                         {funcCount > 0 ? (
                                             <FormattedMessage
                                                 defaultMessage="{count} functions"
@@ -1636,7 +1636,7 @@ class MonacoEditorComponent extends React.Component {
                             );
                         })}
                         {pythonFiles.length === 0 && (
-                            <p className="modal-empty-text">
+                            <p className={styles.modalEmptyText}>
                                 <FormattedMessage
                                     defaultMessage="No Python files"
                                     id="gui.monacoEditor.noPythonFiles"
@@ -1644,8 +1644,8 @@ class MonacoEditorComponent extends React.Component {
                             </p>
                         )}
                     </div>
-                    <div className="modal-buttons">
-                        <button className="modal-cancel-btn" onClick={this.closeFileSelectionModal}>
+                    <div className={styles.modalButtons}>
+                        <button className={styles.modalCancelBtn} onClick={this.closeFileSelectionModal}>
                             <FormattedMessage
                                 defaultMessage="Cancel"
                                 description="Cancel button"
@@ -1653,7 +1653,7 @@ class MonacoEditorComponent extends React.Component {
                             />
                         </button>
                         <button
-                            className={classNames('modal-confirm-btn', { 'disabled': this.state.selectedFileIds.length === 0 })}
+                            className={classNames(styles.modalConfirmBtn, { [styles.disabled]: this.state.selectedFileIds.length === 0 })}
                             onClick={this.state.selectedFileIds.length > 0 ? this.confirmFileSelectionAndGenerate : undefined}
                             disabled={this.state.selectedFileIds.length === 0}
                         >
