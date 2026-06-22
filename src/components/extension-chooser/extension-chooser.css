@@ -60,7 +60,7 @@
     justify-content: flex-start;
     align-items: center;
     overflow-y: auto;
-    max-height: calc(100vh - 115px);   
+    max-height: calc(100vh - 115px - var(--stage-fullscreen-top));   
     width: 100%;
 }
 

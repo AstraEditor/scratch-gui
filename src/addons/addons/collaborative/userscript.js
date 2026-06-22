@@ -4,27 +4,71 @@ import icon from "!../../../lib/tw-recolor/build!./icon.svg";
 import copyImg from "./copy.svg";
 import { join } from "path-browserify";
 import SideBar from "../../ui/side-bar/side-bar.js";
-import { createRTCServer } from "./rtc-server.js";
-import { createHandler } from "./handle.js";
+import { RTCServer } from "./rtc-server.js";
+import { idHead } from "./constants.js";
+import { createHandler, cleanupRemoteByUser } from "./handle.js";
+import ReduxStore from "../../redux.js";
+import {
+    openLoadingProject, closeLoadingProject,
+} from "../../../reducers/modals";
+
+let _initialLoadShown = false;
 
 export default async function ({ addon, console, msg }) {
     const vm = addon.tab.traps.vm;
     if (!vm) return;
 
-    const idHead = "sa-addon-collaborative-";
     const tabID = idHead + "tab";
 
-    // ── UI 可变状态 ─────────────────────────────────────────────
 
-    let url = "localhost:1832";
+    let url = "154.9.252.181:1832";
     let id = "";
     const isVSCLayout = getSetting("EnableVSCodeLayout");
 
-    // ── UI 提示 ─────────────────────────────────────────────────
 
     const tipBox = document.createElement("div");
     tipBox.className = idHead + "tipBoxScreen";
     document.body.appendChild(tipBox);
+
+    let roomMembersEl = null; // 模块级引用，用于实时更新成员列表
+
+    // 渲染/更新成员列表（含 Host 标识和踢出按钮）
+    const renderMemberList = (rtcState, rtc) => {
+        if (!roomMembersEl) return;
+        roomMembersEl.innerHTML = '';
+        const isHost = rtc._isHost;
+
+        rtcState.allMembers.forEach((member) => {
+            const item = document.createElement("span");
+            item.className = idHead + "roomMember";
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = member.userName;
+
+            if (member.cid === rtcState.clientId) {
+                nameSpan.textContent += " (你)";
+            }
+            if (member.owner) {
+                nameSpan.textContent += ` [${msg('host')}]`;
+                nameSpan.style.fontWeight = "bold";
+            }
+
+            item.appendChild(nameSpan);
+
+            // Host 可以踢出其他成员
+            if (isHost && member.cid !== rtcState.clientId) {
+                const kickBtn = document.createElement("button");
+                kickBtn.textContent = msg('kick');
+                kickBtn.className = idHead + "kickBtn";
+                kickBtn.onclick = () => {
+                    rtc.kickMember(member.cid);
+                };
+                item.appendChild(kickBtn);
+            }
+
+            roomMembersEl.appendChild(item);
+        });
+    };
 
     /**
      * @param {string} text
@@ -32,21 +76,26 @@ export default async function ({ addon, console, msg }) {
      */
     const updateTipText = (text = null, mode = "normal") => {
         if (!tipBox || !text) return;
-        const tipMsg = document.createElement("div");
-        tipMsg.className = idHead + "tipMsgScreen";
-        tipMsg.style.background =
-            mode === "normal"
-                ? "#09f"
-                : mode === "error"
-                  ? "#f00"
-                  : mode === "warn" && "#ff0";
-        tipMsg.textContent = text;
+        const msg = document.createElement("div");
+        msg.className = idHead + "tipMsgScreen";
+        if (mode === "error") msg.classList.add("mode-error");
+        else if (mode === "warn") msg.classList.add("mode-warn");
+
+        const content = document.createElement("span");
+        content.className = idHead + "tipMsg-text";
+        content.textContent = text;
+
+        const progress = document.createElement("div");
+        progress.className = idHead + "tipMsg-progress";
+
+        msg.appendChild(content);
+        msg.appendChild(progress);
+        tipBox.appendChild(msg);
 
         setTimeout(() => {
-            tipMsg.className = `${tipMsg.className} end`;
-            setTimeout(() => tipMsg.remove(), 500);
-        }, 2000);
-        tipBox.appendChild(tipMsg);
+            msg.classList.add("end");
+            setTimeout(() => msg.remove(), 550);
+        }, 2500);
     };
 
     // ── 房间提示条 ─────────────────────────────────────────────
@@ -111,6 +160,7 @@ export default async function ({ addon, console, msg }) {
          * @param {String} config.defaultValue
          * @param {'text' | 'number'} config.type
          * @param {String} config.label
+         * @param {String} config.tip
          * @param {Function} config.onChange
          * @param {String} text
          */
@@ -122,6 +172,7 @@ export default async function ({ addon, console, msg }) {
             const input = document.createElement("input");
             input.type = config.type;
             input.value = text;
+            input.placeholder = config.tip || "";
             input.onchange = (e) => {
                 config.onChange(e.target.value);
             };
@@ -132,7 +183,7 @@ export default async function ({ addon, console, msg }) {
 
         const Container = document.createElement("div");
         Container.className = idHead + "container";
-        const Title = document.createElement("h2");
+        const Title = document.createElement("h1");
         Title.textContent = msg("title");
         Title.className = idHead + "title";
 
@@ -157,19 +208,19 @@ export default async function ({ addon, console, msg }) {
 
             if (isVSCLayout) Container.appendChild(Title);
             Container.appendChild(tipBox("tip", msg("alpha_warn")));
-            Container.appendChild(
-                inputBox(
-                    {
-                        type: "string",
-                        label: msg("url"),
-                        value: url,
-                        onChange: (value) => {
-                            url = value;
-                        },
-                    },
-                    url.toString(),
-                ),
-            );
+            // Container.appendChild(
+            //     inputBox(
+            //         {
+            //             type: "string",
+            //             label: msg("url"),
+            //             value: url,
+            //             onChange: (value) => {
+            //                 url = value;
+            //             },
+            //         },
+            //         url.toString(),
+            //     ),
+            // );
             Container.appendChild(createButton);
 
             Container.appendChild(
@@ -178,6 +229,7 @@ export default async function ({ addon, console, msg }) {
                         type: "string",
                         label: msg("id"),
                         value: id,
+                        tip: "赛博玩AE",
                         onChange: (value) => {
                             id = value;
                         },
@@ -208,19 +260,32 @@ export default async function ({ addon, console, msg }) {
             roomTitle.textContent = rtcState.roomId;
             roomTitle.className = idHead + "roomTitle";
             const roomMembers = document.createElement("div");
-            roomMembers.className = idHead + "roomMembers"
-            rtcState.allMembers.forEach((member) => {
-                const roomMember = document.createElement("span");
-                roomMember.textContent = member.cid;
-                roomMembers.appendChild(roomMember);
-            });
+            roomMembers.className = idHead + "roomMembers";
+            roomMembersEl = roomMembers; // 保存引用供 renderMemberList 使用
+            renderMemberList(rtcState, rtc); // 初始渲染
+
+            const exitRoomButton = document.createElement('button');
+            exitRoomButton.textContent = msg('exitRoomButton')
+            exitRoomButton.onclick = () => {
+                rtc.exit()
+            }
 
             roomTitleDiv.appendChild(roomTitleCopyButton);
             roomTitleDiv.appendChild(roomTitle);
             Container.appendChild(roomTitleDiv);
             Container.appendChild(roomMembers);
+            Container.appendChild(exitRoomButton);
         }
 
+
+        const testButton = document.createElement("button");
+        testButton.textContent = "Test Button";
+        testButton.onclick = async () => {
+            const sb3 = await vm.saveProjectSb3("arraybuffer");
+            console.log("sb3 size:", sb3.byteLength);
+        };
+
+        // Container.appendChild(testButton)
         return Container;
     };
 
@@ -230,26 +295,51 @@ export default async function ({ addon, console, msg }) {
 
     // ── 网络层初始化 ────────────────────────────────────────────
 
-    const rtc = createRTCServer({
+    const rtc = new RTCServer({
         msg,
         console,
         updateTipText,
+        vm,
         onStateChange: (newState) => {
             // 首次连接成功时显示房间提示条
-            if (newState.clientId) enterRoom(newState.roomId);
-            else refreshGUI();
+            if (newState.clientId) {
+                enterRoom(newState.roomId);
+                renderMemberList(newState, rtc); // 成员变化时刷新列表
+                // 非 Host 成员：仅在首次连接时进入加载界面，防止重复触发
+                if (!rtc.isHost() && !_initialLoadShown) {
+                    _initialLoadShown = true;
+                    ReduxStore.dispatch(openLoadingProject());
+                    // 超时保护：若 20 秒内未收到 snapshot 则退出加载
+                    rtc._snapshotTimeout = setTimeout(() => {
+                        rtc._snapshotTimeout = null;
+                        ReduxStore.dispatch(closeLoadingProject());
+                        updateTipText(msg("snapshot_timeout_failed"), "error");
+                        rtc.exit();
+                    }, 20000);
+                }
+            } else {
+                _initialLoadShown = false;
+                if (rtc._snapshotTimeout) { clearTimeout(rtc._snapshotTimeout); rtc._snapshotTimeout = null; }
+                refreshGUI();
+            }
         },
-        onPeerMessage: (peerId, data) => {
-            handlePeerMessage(peerId, data);
+        onPeerMessage: async (peerId, data) => {
+            await handlePeerMessage(peerId, data);
+        },
+        onPeerLeft: (peerId) => {
+            cleanupRemoteByUser(peerId);
         },
     });
 
+    const Blockly = await addon.tab.traps.getBlockly();
+    rtc.setBlockly(Blockly);
+
     handlePeerMessage = createHandler({
         addon,
-        msg,
         console,
         sendToPeer: rtc.sendToPeer,
-        broadcastToPeers: rtc.broadcastToPeers,
+        rtc,
+        Blockly,
     });
 
     // ── 注册菜单栏 ─────────────────────────────────────────────
@@ -259,6 +349,6 @@ export default async function ({ addon, console, msg }) {
         icon: icon,
         name: msg("title"),
         getContent: createElements,
-        onClick: () => {},
+        onClick: () => { },
     });
 }

@@ -1,3 +1,4 @@
+process.noDeprecation = true; // 禁用过时警告
 // 这是用于进行信令服务器的文件
 // 直接`node local-server.js`执行
 
@@ -54,25 +55,41 @@ class SignalingServer {
             const clientId = this.generateClientId();
             const queryParams = url.parse(req.url, true).query;
             const roomId = queryParams.room;
+            const userName = queryParams.name;
 
             if (!roomId) {
-                ws.close(4000, "Room ID is required");
+                ws.close(4000, "房间ID不能为空");
                 return;
             }
             this.clients.set(clientId, {
                 ws,
                 roomId,
+                userName,
                 connectedAt: Date.now(),
             });
 
-            console.log(`客户端 ${clientId} 连接到了 ${roomId} 房间`);
+            console.log(`客户端 ${userName}(${clientId}) 连接到了 ${roomId} 房间`);
+
+            let hostCid = null;
+            let earliestConnect = Infinity;
+            this.clients.forEach((client, cid) => {
+                if (client.roomId === roomId && client.connectedAt < earliestConnect) {
+                    earliestConnect = client.connectedAt;
+                    hostCid = cid;
+                }
+            });
+
+            if (clientId && (hostCid === null || Date.now() < earliestConnect)) {
+                hostCid = clientId;
+            }
 
             const existingPeers = [];
             this.clients.forEach((client, cid) => {
                 if (client.roomId === roomId) {
                     existingPeers.push({
                         cid,
-                        owner: cid === clientId
+                        userName: client.userName,
+                        owner: cid === hostCid,
                     });
                 }
             });
@@ -101,7 +118,7 @@ class SignalingServer {
                     const data = JSON.parse(message.toString());
                     this.handleMessage(clientId, data);
                 } catch (error) {
-                    console.error("Invalid message format:", error);
+                    console.error(`客户端 ${userName}(${clientId}) 发送了无效的消息格式:`, error);
                 }
             });
 
@@ -109,15 +126,37 @@ class SignalingServer {
                 const client = this.clients.get(clientId);
                 if (client) {
                     console.log(
-                        `客户端 ${clientId} 断开了 ${client.roomId} 房间的连接`,
+                        `客户端 ${userName}(${clientId}) 断开了 ${client.roomId} 房间的连接`,
                     );
+
+                    // 重新计算当前在线成员（含房主标识）
+                    const currentPeers = [];
+                    let hostCid = null;
+                    let earliestConnect = Infinity;
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId && cid !== clientId) {
+                            if (c.connectedAt < earliestConnect) {
+                                earliestConnect = c.connectedAt;
+                                hostCid = cid;
+                            }
+                        }
+                    });
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId && cid !== clientId) {
+                            currentPeers.push({
+                                cid,
+                                userName: c.userName,
+                                owner: cid === hostCid,
+                            });
+                        }
+                    });
 
                     this.broadcastToRoom(
                         client.roomId,
                         {
                             type: "peer-left",
                             clientId,
-                            existingPeers,
+                            existingPeers: currentPeers,
                             timestamp: Date.now(),
                         },
                         clientId,
@@ -128,13 +167,13 @@ class SignalingServer {
             });
 
             ws.on("error", (error) => {
-                console.error(`Client ${clientId} error:`, error);
+                console.error(`客户端 ${userName}(${clientId}) 发生错误:`, error);
             });
         });
 
         this.server.listen(this.port, () => {
-            console.log(`Server running on ws://localhost:${this.port}`);
-            console.log(`Server stats: http://localhost:${this.port}/stats`);
+            console.log(`服务器运行在 ws://localhost:${this.port}`);
+            console.log(`服务器统计信息: http://localhost:${this.port}/stats`);
         });
     }
 
@@ -155,18 +194,35 @@ class SignalingServer {
                 }
                 break;
 
-            case "chat-message":
-                // 广播聊天消息到房间
+            case "exit":
+                // 广播退出消息到房间
                 this.broadcastToRoom(client.roomId, {
-                    type: "chat-message",
-                    senderId: clientId,
-                    message: data.message,
+                    type: "exit",
+                    clientId,
+                    userName: client.userName,
                     timestamp: Date.now(),
                 });
                 break;
 
+            case "kick":
+                if (data.targetId && data.targetId !== clientId) {
+                    const roomClients = [];
+                    this.clients.forEach((c, cid) => {
+                        if (c.roomId === client.roomId) roomClients.push(cid);
+                    });
+                    if (roomClients[0] === clientId) {
+                        const target = this.clients.get(data.targetId);
+                        if (target) {
+                            this.sendToClient(target.ws, { type: "kicked", reason: data.reason || "" });
+                            target.ws.close(4001, "被房主踢出");
+                            console.log(`房主 ${client.userName} 踢出了 ${target.userName}(${data.targetId})`);
+                        }
+                    }
+                }
+                break;
+
             default:
-                console.warn(`Unknown message type: ${data.type}`);
+                console.warn(`客户端 ${clientId} 发送了未知的消息类型: ${data.type}`);
         }
     }
 

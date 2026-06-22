@@ -10,7 +10,8 @@ import {APP_NAME} from '../../lib/brand';
 
 const InvalidEmbed = () => (
     <div className={styles.container}>
-        <h1>{`Invalid ${APP_NAME} Embed :(`}</h1>
+        <span className={styles.unhappy}>:(</span>
+        <h1>{`Invalid ${APP_NAME} Embed`}</h1>
         <p>
             {'See '}
             <a

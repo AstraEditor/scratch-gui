@@ -34,7 +34,7 @@
 }
 
 .dropdownCaret {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
 }
 
 .main-menu {
@@ -271,7 +271,7 @@
 }
 
 .controlBarInner {
-    position: fixed;
+    /* position: fixed; */
     top: 0;
     right: 0;
     display: flex;
@@ -296,7 +296,7 @@
 }
 
 .Icon {
-    filter: $menu-bar-icon-style;
+    filter: $icon-style;
     width: 20px;
     height: auto;
 }
@@ -315,4 +315,9 @@
 }
 .controlButton:hover {
     background-color: #ffffff20;
+}
+
+/* macOS: traffic lights on left, push main-menu right */
+.macos .main-menu {
+    padding-left: 78px;
 }

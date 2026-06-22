@@ -61,7 +61,7 @@ const GuiThemeMenu = ({ isOpen, onOpen, onChangeTheme, theme, isRtl }) => (
                 width={24}
                 height={24}
                 style={{
-                    filter: "var(--menu-bar-icon-style)",
+                    filter: "var(--icon-style)",
                 }}
             />
             <span className={styles.submenuLabel}>

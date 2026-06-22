@@ -915,9 +915,26 @@ export default async function ({ addon, console, msg }) {
         }
       }
 
+      // 针对无限循环时的connection会因为不存在报错
+      let savedNextBlockXml = null;
+      if(opcodeData.opcode === 'control_forever'){
+        const nextElement = xml.querySelector('next');
+        if(nextElement) {
+          savedNextBlockXml = nextElement.firstElementChild;
+          savedNextBlockXml.setAttribute('x', Number(xml.getAttribute('x')) + 50);
+          savedNextBlockXml.setAttribute('y', Number(xml.getAttribute('y')) + 10);
+          nextElement.remove();
+        }
+      }
+      
+
       // Remove the old block and insert the new one.
       block.dispose();
       const newBlock = pasteBlockXML(workspace, xml);
+
+      if (savedNextBlockXml) {
+        pasteBlockXML(workspace, savedNextBlockXml);
+      }
 
       if (parentConnection) {
         // Search for the same type of connection on the new block as on the old block.

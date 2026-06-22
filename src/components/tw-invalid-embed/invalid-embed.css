@@ -10,7 +10,7 @@
 
     /* this is an error, so we want it to stand out and always be readable regardless of what the site */
     /* embedding us looks like */
-    background-color: #ff4c4c;
+    background-color: #0099ff;
     color: white;
 
     box-sizing: border-box;
@@ -21,9 +21,16 @@
     gap: 12px;
 }
 
+.unhappy {
+    font-size: 128px;
+    font-weight: light;
+    padding-bottom: 5px;
+}
+
 .code {
     font-family: monospace;
 }
+
 .emphasis {
     text-decoration: underline;
     font-weight: bold;

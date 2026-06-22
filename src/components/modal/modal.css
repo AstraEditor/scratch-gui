@@ -18,9 +18,9 @@
     box-sizing: border-box;
 }
 
-.modal-content {
+/* .modal-content {
     background-color: $ui-secondary;
-}
+} */
 
 .modal-content {
     margin: 100px auto;
@@ -139,9 +139,11 @@ $sides: 20rem;
 }
 
 .back-button {
+    filter: $icon-style;
     font-weight: normal;
     padding-right: 0;
     padding-left: 0;
+    -webkit-filter: $icon-style;
 }
 
 [dir="rtl"] .back-button img {
@@ -151,6 +153,7 @@ $sides: 20rem;
 .header-item-help {
     padding: 0;
     z-index: 1;
+    -webkit-filter:;
 }
 
 [dir="ltr"] .header-item-help {
@@ -162,6 +165,7 @@ $sides: 20rem;
 }
 
 .help-button {
+    filter: $icon-style;
     font-weight: normal;
     font-size: 0.75rem;
 }
@@ -172,4 +176,9 @@ $sides: 20rem;
 
 [dir="rtl"] .help-button {
     padding-left: 0;
+}
+
+:global(.file-selection-modal) {
+    width: 320px !important;
+    max-width: 320px !important;
 }

@@ -9,6 +9,7 @@ import code from './code.svg';
 import Modal from '../../containers/modal.jsx';
 import Box from '../box/box.jsx';
 import AddonHooks from '../../addons/hooks';
+import extensionTags from '../../lib/libraries/tw-extension-tags';
 
 import styles from './extension-chooser.css';
 
@@ -124,21 +125,20 @@ const ExtensionChooser = props => {
     }
     useEffect(() => {
         const fetchGallery = async () => {
-            const extensionsLibs = [
-                { id: "tw", url: "https://extensions.turbowarp.org/" },
-                { id: "ae", url: "https://editors.astras.top/extensions" },
-            ]
             try {
-                const getExtLists = extensionsLibs.map(async (item) => {
+                const getExtLists = extensionTags.map(async (item) => {
+                    if (item.tag === 'scratch') {
+                        return { id: item.tag, data: {extensions: []}, error: false };
+                    }
                     try {
                         const res = await fetch(`${item.url}/generated-metadata/extensions-v0.json`);
                         if (!res.ok) {
-                            return { id: item.id, error: true };
+                            return { id: item.tag, error: true };
                         }
                         const data = await res.json();
-                        return { id: item.id, data, error: false };
+                        return { id: item.tag, data, error: false };
                     } catch (e) {
-                        return { id: item.id, error: true };
+                        return { id: item.tag, error: true };
                     }
                 });
                 const results = await Promise.all(getExtLists);
@@ -151,7 +151,7 @@ const ExtensionChooser = props => {
                     }
 
                     result.data.extensions.forEach(extension => {
-                        const sourceURL = extensionsLibs[index].url;
+                        const sourceURL = extensionTags[index].url;
                         metadataMap[extension.id] = {
                             imageURL: toResolvedAssetURL(sourceURL, extension.image),
                             iconURL: toResolvedAssetURL(sourceURL, extension.iconURL),

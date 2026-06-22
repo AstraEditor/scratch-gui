@@ -333,6 +333,15 @@
     min-height: 0;
 }
 
+.monaco-editor-wrapper {
+    flex-grow: 1;
+    position: relative;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .stage-and-target-wrapper {
     /*
         Makes rows for children:
@@ -478,4 +487,9 @@ $fade-out-distance: 15px;
     height: 100%;
     /* overridden by JS; this will be used if the browser can't understand that color */
     background-color: white;
+}
+
+.stageAndTargetWrapper{
+    flex-direction: column;
+    display: flex;
 }

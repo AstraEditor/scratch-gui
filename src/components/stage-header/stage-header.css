@@ -21,6 +21,8 @@
     left: 0;
     right: 0;
     z-index: $z-index-stage-header;
+    display: flex;
+    width: 100%;
 }
 .stage-header-wrapper-overlay.embedded {
     background-color: transparent;
@@ -34,6 +36,7 @@
     align-items: center;
     height: $stage-menu-height;
     padding: $space;
+    flex: 1
 }
 
 .stage-size-row {

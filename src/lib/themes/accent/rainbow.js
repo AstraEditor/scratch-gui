@@ -5,7 +5,7 @@ const guiColors = {
 
     "menu-bar-background": "var(--looks-secondary)",
     "menu-bar-background-image": "none",
-    "menu-bar-icon-style": "brightness(1)",
+    "icon-style": "brightness(1)",
     "menu-bar-feedback": "white",
     "menu-bar-foreground": "#ffffff",
 

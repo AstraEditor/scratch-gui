@@ -29,7 +29,7 @@ jobs:
         version: 9
 
     - name: Install Dependencies
-      run: pnpm install --ignore-scripts
+      run: pnpm install --ignore-scripts --no-frozen-lockfile
 
     - name: Run prepublish script
       run: node scripts/prepublish.mjs

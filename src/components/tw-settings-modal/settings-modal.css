@@ -22,14 +22,17 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: $ui-modal-header-background
+    background: $ui-modal-background;
+    filter: brightness(0.8);
+    -webkit-filter: brightness(0.8);
 }
 .Modaltab{
     position: relative;
     height: 35px;
 }
 .tab-button-enable {
-    background: $ui-modal-background;
+    filter: brightness(1);
+    -webkit-filter: brightness(1);
 }
 .Modaltab::after {
     content: "";
@@ -51,10 +54,14 @@
     width: 100% !important;
     left: 0 !important;
 }
-.tab-button-enable:hover,
+
 .tab-button-unable:hover {
-    filter: brightness(1.2);
-    -webkit-filter: brightness(1.2);
+    filter: brightness(0.9);
+    -webkit-filter: brightness(0.9);
+}
+.tab-button-enable:hover {
+    filter: brightness(1.1);
+    -webkit-filter: brightness(1.1);
 }
 
 .tab-button-enable:active,

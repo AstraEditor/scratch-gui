@@ -476,8 +476,21 @@ class Blocks extends React.Component {
             this.onWorkspaceMetricsChange();
         }
 
+        // emit耗时过长，因此进行抑制 #8
+        if (this.props.vm.editingTarget) {
+            this.props.vm.editingTarget.blocks.suppressProjectChanged();
+        }
+
         // Remove and reattach the workspace listener (but allow flyout events)
         this.workspace.removeChangeListener(this.props.vm.blockListener);
+
+        // 隐藏SVG容器避免clear期间频繁触发浏览器回流
+        const svgGroup = this.workspace.svgGroup_;
+        const previousDisplay = svgGroup ? svgGroup.style.display : '';
+        if (svgGroup) {
+            svgGroup.style.display = 'none';
+        }
+
         const dom = this.ScratchBlocks.Xml.textToDom(data.xml);
         try {
             this.ScratchBlocks.Xml.clearWorkspaceAndLoadFromXml(dom, this.workspace);
@@ -495,8 +508,19 @@ class Blocks extends React.Component {
                 error.message = `Workspace Update Error: ${error.message}`;
             }
             log.error(error);
+        } finally {
+            // 恢复SVG显示
+            if (svgGroup) {
+                svgGroup.style.display = previousDisplay || '';
+            }
         }
+
         this.workspace.addChangeListener(this.props.vm.blockListener);
+
+        // 恢复emit
+        if (this.props.vm.editingTarget) {
+            this.props.vm.editingTarget.blocks.resumeProjectChanged();
+        }
 
         if (this.props.vm.editingTarget && this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id]) {
             const {scrollX, scrollY, scale} = this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id];

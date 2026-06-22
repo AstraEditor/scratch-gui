@@ -1,11 +1,10 @@
 import React from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
-import log from '../lib/log';
+import {getIsError} from '../reducers/project-state';
 
 const ENDPOINT = 'https://windchimes.turbowarp.org/api/chime';
 const OPT_OUT_KEY = 'tw:windchime_opt_out';
-const submittedThisSession = new Set();
 
 const isOptedOut = () => {
     if (!process.env.ENABLE_WINDCHIMES) {
@@ -27,41 +26,42 @@ const isOptedOut = () => {
     return navigator.globalPrivacyControl || navigator.doNotTrack === '1';
 };
 
-class TWWindchimeSubmitter extends React.Component {
-    componentDidUpdate (prevProps) {
-        if (
-            (this.props.isStarted && !prevProps.isStarted) &&
-            this.props.projectId !== '0'
-        ) {
-            this.submit();
-        }
+const submitChime = async (resource, event) => {
+    if (isOptedOut()) {
+        return;
     }
 
-    submit () {
-        if (isOptedOut() || submittedThisSession.has(this.props.projectId)) {
-            return;
-        }
-
-        submittedThisSession.add(this.props.projectId);
-
-        fetch(ENDPOINT, {
+    try {
+        await fetch(ENDPOINT, {
             method: 'PUT',
             body: JSON.stringify({
-                resource: `scratch/${this.props.projectId}`,
-                event: this.props.isEmbedded ? 'view/embed' : 'view/index'
+                resource,
+                event
             }),
             headers: {
                 'content-type': 'application/json'
             }
-        })
-            .then(res => {
-                if (!res.ok) {
-                    log.error('Windchime request got status', res.status);
-                }
-            })
-            .catch(err => {
-                log.error('Windchime request failed', err);
-            });
+        });
+        // safe to not check response - we don't do anything with it
+    } catch (e) {
+        // safe to just ignore - windchimes are not critical
+    }
+};
+
+class TWWindchimeSubmitter extends React.Component {
+    componentDidUpdate (prevProps) {
+        if (this.props.projectId === '0' && this.props.projectId !== null) {
+            // Only projects from an ID are eligible for windchimes.
+            return;
+        }
+
+        if (this.props.isStarted && !prevProps.isStarted) {
+            submitChime(`scratch/${this.props.projectId}`, this.props.isEmbedded ? 'view/embed' : 'view/index');
+        }
+
+        if (this.props.isError && !prevProps.isError) {
+            submitChime(`scratch/${this.props.projectId}`, 'error/loading');
+        }
     }
 
     render () {
@@ -72,12 +72,15 @@ class TWWindchimeSubmitter extends React.Component {
 
 TWWindchimeSubmitter.propTypes = {
     isEmbedded: PropTypes.bool.isRequired,
+    isError: PropTypes.bool.isRequired,
     isStarted: PropTypes.bool.isRequired,
     projectId: PropTypes.string
 };
 
 const mapStateToProps = state => ({
+    isEmbedded: state.scratchGui.mode.isEmbedded,
     isStarted: state.scratchGui.vmStatus.running,
+    isError: getIsError(state.scratchGui.projectState.loadingState),
     projectId: state.scratchGui.projectState.projectId
 });
 

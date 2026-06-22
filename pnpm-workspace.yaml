@@ -1,6 +1,14 @@
 packages:
   - '.'
 
+blockExoticSubdeps: false
+shamefullyHoist: true
+allowBuilds:
+  chromedriver: false
+  core-js: false
+  scratch-blocks: true
+  scratch-blocks@https://codeload.github.com/AstraEditor/scratch-blocks/tar.gz/5f85db91abc2bf06599b60dfd31eefc98cebaa70: true
+
 ignoredBuiltDependencies:
   - chromedriver
   - core-js

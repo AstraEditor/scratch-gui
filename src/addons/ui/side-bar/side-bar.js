@@ -654,11 +654,31 @@ class SideBarInternal {
     }
 
     open() {
+        if (!document.contains(this.element)) {
+            const sidebar = getSideBar();
+            if (sidebar) sidebar.prepend(this.element);
+            this._reobserveTabPanel();
+        }
         this.element.style.display = "flex";
         if (this.extensionButton) {
             this.extensionButton.style.marginLeft = this.currentWidth + "px";
         }
         window.dispatchEvent(new Event("resize"));
+    }
+
+    _reobserveTabPanel() {
+        if (this._tabObserver) {
+            this._tabObserver.disconnect();
+        } else {
+            this._tabObserver = new MutationObserver(() => this._boundHandleTabChange());
+        }
+        const tabPanel = document.querySelector("[class*=gui_tab-panel]");
+        if (tabPanel) {
+            this._tabObserver.observe(tabPanel, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
     }
 
     close() {

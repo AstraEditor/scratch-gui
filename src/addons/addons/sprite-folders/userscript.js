@@ -779,9 +779,14 @@ export default async ({ addon, console, msg }) => {
         }, 100);
     });
 
+    let projectChangedTimeout = null;
     vm.on('PROJECT_CHANGED', () => {
-        renderFileList();
-        updateSelection();
+        if (projectChangedTimeout) clearTimeout(projectChangedTimeout);
+        projectChangedTimeout = setTimeout(() => {
+            renderFileList();
+            updateSelection();
+            projectChangedTimeout = null;
+        }, 50);
     });
 
     // Listen for sprite addition (VM event when new sprite is created)

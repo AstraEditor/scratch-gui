@@ -16,7 +16,7 @@ const LoadExtensionModal = props => (
                     description="Part of modal asking for permission to load multiple extensions"
                     id="tw.loadExtension.multiple"
                 />
-                <ul>
+                <ul className={styles.extensionsIDs}>
                     {Object.entries(props.extensions).map(([id, url]) => (
                         <li key={id}>
                             <strong>{id}</strong>

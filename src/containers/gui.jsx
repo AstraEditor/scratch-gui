@@ -15,7 +15,8 @@ import {
     activateTab,
     BLOCKS_TAB_INDEX,
     COSTUMES_TAB_INDEX,
-    SOUNDS_TAB_INDEX
+    SOUNDS_TAB_INDEX,
+    MONACO_EDITOR_TAB_INDEX
 } from '../reducers/editor-tab';
 
 import {
@@ -185,6 +186,7 @@ const mapStateToProps = state => {
         loadingStateVisible: state.scratchGui.modals.loadingProject,
         projectId: state.scratchGui.projectState.projectId,
         soundsTabVisible: state.scratchGui.editorTab.activeTabIndex === SOUNDS_TAB_INDEX,
+        monacoEditorTabVisible: state.scratchGui.editorTab.activeTabIndex === MONACO_EDITOR_TAB_INDEX,
         targetIsStage: (
             state.scratchGui.targets.stage &&
             state.scratchGui.targets.stage.id === state.scratchGui.targets.editingTarget

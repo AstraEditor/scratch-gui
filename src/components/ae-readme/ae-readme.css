@@ -23,6 +23,7 @@
 }
 
 .body {
+    background: $ui-modal-background;
     padding: 0.5rem;
     min-height: 200px;
     max-height: calc(100vh - 250px);
@@ -47,52 +48,47 @@
 .tab-button-enable,
 .tab-button-unable {
     border: none;
-    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
+    transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
     height: 30px;
     line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: $ui-modal-header-background
-}
-.Modaltab{
-    position: relative;
-    height: 35px;
-}
-.tab-button-enable {
-    background: $ui-modal-background;
-}
-.Modaltab::after {
-    content: "";
-    position: absolute;
-    width: 50%;
-    left: 0;
-    bottom: 0;
-    height: 2px;
-    background-color: $looks-secondary;
-    transition: all 0.15s cubic-bezier(0,0.7,0.3,0.99);
-}
-.Modaltab:has(button:nth-child(1).tab-button-enable)::after {
-    left: 0;
-}
-.Modaltab:has(button:nth-child(2).tab-button-enable)::after {
-    left: 50%;
-}
-.Modaltab:has(button:active)::after {
-    width: 100% !important;
-    left: 0 !important;
-}
-.tab-button-enable:hover,
-.tab-button-unable:hover {
-    filter: brightness(1.2);
-    -webkit-filter: brightness(1.2);
+    border-bottom: inset transparent;
+    -webkit-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -moz-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -ms-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+    -o-transition: all 0.3s cubic-bezier(0, 0.7, 0.3, 0.99);
+        background: $ui-modal-background;
+    filter: brightness(0.8);
+    -webkit-filter: brightness(0.8);
 }
 
+.tab-button-enable:active,
+.tab-button-unable:active {
+    border-bottom: inset $looks-secondary;
+}
+
+.tab-button-enable {
+    /* filter: brightness(0.8) disable */
+    filter: brightness(1);
+    background: $ui-modal-background;
+}
+
+.tab-button-unable:hover {
+    filter: brightness(0.9);
+    -webkit-filter: brightness(0.9);
+}
+.tab-button-enable:hover {
+    filter: brightness(1.1);
+    -webkit-filter: brightness(1.1);
+}
 .tab-button-enable:active,
 .tab-button-unable:active {
     filter: brightness(0.9);
     background: $ui-modal-background;
 }
+
 .content {
     flex-grow: 1;
 }
