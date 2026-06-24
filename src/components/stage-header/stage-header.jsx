@@ -79,7 +79,8 @@ const StageHeaderComponent = function (props) {
         isEmbedded,
         stageSize,
         stageSizeMode,
-        vm
+        vm,
+        Settings
     } = props;
 
     let header = null;
@@ -197,7 +198,10 @@ const StageHeaderComponent = function (props) {
                 // + 2 px because the stage will have 2 pixels of border around it
                 style={{minWidth: `${stageDimensions.width + 2}px`}}
             >
-                <Box className={styles.stageMenuWrapper}>
+                <Box className={classNames(styles.stageMenuWrapper, {
+                    [styles.VSC]: Settings.get('EnableVSCodeLayout'),
+                    [styles.NOVSC]: !Settings.get('EnableVSCodeLayout')
+                })}>
                     <Controls
                         vm={vm}
                         isSmall={stageSizeMode === STAGE_SIZE_MODES.small}

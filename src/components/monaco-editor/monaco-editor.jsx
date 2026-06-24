@@ -471,7 +471,17 @@ class MonacoEditorComponent extends React.Component {
             pyodideReady: false,
             selectedFileIds: [],
             showFileSelectionModal: false,
+            showSettingsModal: false,
             fontSize: 14,
+            editorSettings: {
+                tabSize: 4,
+                wordWrap: 'on',
+                matchBrackets: 'always',
+                minimapEnabled: true,
+                lineNumbers: 'on',
+                smoothScrolling: true,
+                folding: true
+            },
             projectLoaded: false
         };
     }
@@ -1192,6 +1202,198 @@ class MonacoEditorComponent extends React.Component {
         await this.generateBlocks();
     };
 
+    openSettingsModal = () => {
+        this.setState({ showSettingsModal: true });
+    };
+
+    closeSettingsModal = () => {
+        this.setState({ showSettingsModal: false });
+    };
+
+    updateEditorOption = (option, value) => {
+        if (option === 'fontSize') {
+            this.setState({ fontSize: value });
+            if (this.editor) {
+                this.editor.updateOptions({ fontSize: value });
+            }
+        } else if (option === 'minimapEnabled') {
+            this.setState(prevState => ({
+                editorSettings: { ...prevState.editorSettings, minimapEnabled: value }
+            }));
+            if (this.editor) {
+                this.editor.updateOptions({ minimap: { enabled: value } });
+            }
+        } else {
+            this.setState(prevState => ({
+                editorSettings: { ...prevState.editorSettings, [option]: value }
+            }));
+            if (this.editor) {
+                this.editor.updateOptions({ [option]: value });
+            }
+        }
+    };
+
+    renderSettingsModal = () => {
+        const { editorSettings, fontSize } = this.state;
+
+        return (
+            <Modal
+                className="settings-modal"
+                contentLabel={this.props.intl.formatMessage({ id: 'gui.monacoEditor.settings' })}
+                onRequestClose={this.closeSettingsModal}
+                id="monacoSettingsModal"
+            >
+                <Box className={styles.settingsModalContent}>
+                    <div className={styles.settingsSection}>
+                        <span className={styles.settingsSectionTitle}>
+                            <FormattedMessage
+                                defaultMessage="Editor"
+                                id="gui.monacoEditor.settingsEditor"
+                            />
+                        </span>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Font Size"
+                                id="gui.monacoEditor.settingsFontSize"
+                            />
+                            </label>
+                            <input
+                                type="number"
+                                className={styles.settingsNumber}
+                                min={8}
+                                max={32}
+                                step={2}
+                                value={fontSize}
+                                onChange={e => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (val >= 8 && val <= 32) {
+                                        this.updateEditorOption('fontSize', val);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Tab Size"
+                                id="gui.monacoEditor.settingsTabSize"
+                            />
+                            </label>
+                            <select
+                                className={styles.settingsSelect}
+                                value={editorSettings.tabSize}
+                                onChange={e => this.updateEditorOption('tabSize', parseInt(e.target.value, 10))}
+                            >
+                                <option value={2}>2</option>
+                                <option value={4}>4</option>
+                                <option value={8}>8</option>
+                            </select>
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Word Wrap"
+                                id="gui.monacoEditor.settingsWordWrap"
+                            />
+                            </label>
+                            <input
+                                type="checkbox"
+                                className={styles.settingsCheckbox}
+                                checked={editorSettings.wordWrap === 'on'}
+                                onChange={e => this.updateEditorOption('wordWrap', e.target.checked ? 'on' : 'off')}
+                            />
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Bracket Matching"
+                                id="gui.monacoEditor.settingsBracketMatching"
+                            />
+                            </label>
+                            <select
+                                className={styles.settingsSelect}
+                                value={editorSettings.matchBrackets}
+                                onChange={e => this.updateEditorOption('matchBrackets', e.target.value)}
+                            >
+                                <option value="always">Always</option>
+                                <option value="near">Near</option>
+                                <option value="never">Never</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className={styles.settingsSection}>
+                        <span className={styles.settingsSectionTitle}>
+                            <FormattedMessage
+                                defaultMessage="View"
+                                id="gui.monacoEditor.settingsView"
+                            />
+                        </span>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Minimap"
+                                id="gui.monacoEditor.settingsMinimap"
+                            />
+                            </label>
+                            <input
+                                type="checkbox"
+                                className={styles.settingsCheckbox}
+                                checked={editorSettings.minimapEnabled}
+                                onChange={e => this.updateEditorOption('minimapEnabled', e.target.checked)}
+                            />
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Line Numbers"
+                                id="gui.monacoEditor.settingsLineNumbers"
+                            />
+                            </label>
+                            <select
+                                className={styles.settingsSelect}
+                                value={editorSettings.lineNumbers}
+                                onChange={e => this.updateEditorOption('lineNumbers', e.target.value)}
+                            >
+                                <option value="on">On</option>
+                                <option value="off">Off</option>
+                                <option value="relative">Relative</option>
+                            </select>
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Smooth Scrolling"
+                                id="gui.monacoEditor.settingsSmoothScrolling"
+                            />
+                            </label>
+                            <input
+                                type="checkbox"
+                                className={styles.settingsCheckbox}
+                                checked={editorSettings.smoothScrolling}
+                                onChange={e => this.updateEditorOption('smoothScrolling', e.target.checked)}
+                            />
+                        </div>
+                        <div className={styles.settingsRow}>
+                            <label className={styles.settingsLabel}>
+                            <FormattedMessage
+                                defaultMessage="Folding"
+                                id="gui.monacoEditor.settingsFolding"
+                            />
+                            </label>
+                            <input
+                                type="checkbox"
+                                className={styles.settingsCheckbox}
+                                checked={editorSettings.folding}
+                                onChange={e => this.updateEditorOption('folding', e.target.checked)}
+                            />
+                        </div>
+                    </div>
+                </Box>
+            </Modal>
+        );
+    };
+
     generateBlocks = async () => {
         const selectedFiles = this.state.files.filter(f => this.state.selectedFileIds.includes(f.id));
         
@@ -1508,6 +1710,13 @@ class MonacoEditorComponent extends React.Component {
                                     </button>
                                 </div>
                                 <button
+                                    className={styles.settingsBtn}
+                                    onClick={this.openSettingsModal}
+                                    title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.settings' })}
+                                >
+                                    &#9881;
+                                </button>
+                                <button
                                     className={styles.generateBtn}
                                     onClick={this.openFileSelectionModal}
                                     title={this.props.intl.formatMessage({ id: 'gui.monacoEditor.generateBlocksTooltip' })}
@@ -1551,6 +1760,7 @@ class MonacoEditorComponent extends React.Component {
                 </div>
             </div>
             {this.state.showFileSelectionModal && this.renderFileSelectionModal()}
+            {this.state.showSettingsModal && this.renderSettingsModal()}
             </React.Fragment>
         );
     }

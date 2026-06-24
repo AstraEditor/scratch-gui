@@ -637,6 +637,7 @@ const GUIComponent = props => {
                                 isRtl={isRtl}
                                 stageSize={stageSize}
                                 vm={vm}
+                                Settings={Settings}
                             />
                             <Box className={styles.targetWrapper}>
                                 <TargetPane

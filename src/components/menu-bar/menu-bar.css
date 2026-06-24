@@ -60,6 +60,15 @@
     align-items: center;
     gap: 0.5rem;
     -webkit-app-region: no-drag;
+    transition: opacity 0.3s ease;
+}
+/* 长按拖拽模式：整体半透明、可拖拽窗口 */
+.menuGroup.drag-mode {
+    opacity: 0.5;
+    -webkit-app-region: drag;
+}
+.menuGroup.drag-mode .menu-bar-item {
+    -webkit-app-region: drag;
 }
 .inactive {
     opacity: 0;

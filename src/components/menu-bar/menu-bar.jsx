@@ -251,8 +251,20 @@ class MenuBar extends React.Component {
             "handleMaximizeClick",
             "updateMaximizedState",
             "handleResize",
+            "clickMainMenu",
+            "overClickMainMenu",
+            "enterDragMode",
+            "exitDragMode",
+            "handleDocumentMouseDown",
+            "handleDocumentMouseUp",
+            "handleMenubarClickSuppress",
         ]);
         this.overlay = navigator?.windowControlsOverlay || {};
+        this.menubar = React.createRef();
+        this._menubarPressing = false;
+        this._menubarDragMode = false;
+        this._menubarDragActivated = false;
+        this._menubarDragTimer = null;
     }
     componentDidMount() {
         document.addEventListener("keydown", this.handleKeyPress);
@@ -288,6 +300,8 @@ class MenuBar extends React.Component {
     componentWillUnmount() {
         document.removeEventListener("keydown", this.handleKeyPress);
         window.removeEventListener("resize", this.handleResize);
+        clearTimeout(this._menubarDragTimer);
+        this.exitDragMode();
         if (this.props.setWindowMaximizeStateHandler) {
             this.props.setWindowMaximizeStateHandler(null);
         }
@@ -584,6 +598,74 @@ class MenuBar extends React.Component {
             this.props.onRequestCloseAbout();
         };
     }
+    clickMainMenu(e) {
+        // 非桌面端不启用拖拽
+        if (!window.EditorPreload) return;
+        // 已处于拖拽模式时不再重新计时，交给 Electron 处理拖拽
+        if (this._menubarDragMode) return;
+        // 仅检测 menubar 顶部条：忽略输入框与多级下拉菜单内的长按
+        if (e.target.closest(`input, textarea, [contenteditable], .${styles.menuBarMenu}`)) return;
+        this._menubarPressing = true;
+        clearTimeout(this._menubarDragTimer);
+        this._menubarDragTimer = setTimeout(() => {
+            if (this._menubarPressing && !this._menubarDragMode) {
+                this.enterDragMode();
+            }
+        }, 600);
+    }
+    overClickMainMenu() {
+        this._menubarPressing = false;
+        clearTimeout(this._menubarDragTimer);
+    }
+    enterDragMode() {
+        this._menubarDragMode = true;
+        // 标记此次为长按激活，等待用户松开后再按下才会真正拖拽
+        this._menubarDragActivated = true;
+        const bar = this.menubar.current;
+        if (bar) {
+            bar.classList.add(styles.dragMode);
+            // 拖拽模式下吞掉 menubar 内的点击，避免触发按钮行为
+            bar.addEventListener("click", this.handleMenubarClickSuppress, true);
+        }
+        document.addEventListener("mousedown", this.handleDocumentMouseDown, true);
+        document.addEventListener("mouseup", this.handleDocumentMouseUp, true);
+    }
+    exitDragMode() {
+        if (!this._menubarDragMode) return;
+        this._menubarDragMode = false;
+        this._menubarDragActivated = false;
+        this._menubarPressing = false;
+        clearTimeout(this._menubarDragTimer);
+        const bar = this.menubar.current;
+        if (bar) {
+            bar.classList.remove(styles.dragMode);
+            bar.removeEventListener("click", this.handleMenubarClickSuppress, true);
+        }
+        document.removeEventListener("mousedown", this.handleDocumentMouseDown, true);
+        document.removeEventListener("mouseup", this.handleDocumentMouseUp, true);
+    }
+    handleDocumentMouseDown(e) {
+        if (!this._menubarDragMode) return;
+        const bar = this.menubar.current;
+        // 按下时未碰到 menubar：退出拖拽模式；碰到了则交给 Electron 拖拽
+        if (bar && !bar.contains(e.target)) {
+            this.exitDragMode();
+        }
+    }
+    handleDocumentMouseUp() {
+        if (!this._menubarDragMode) return;
+        if (this._menubarDragActivated) {
+            // 长按激活后的首次松开：保持拖拽模式，等待用户再次按下拖拽
+            this._menubarDragActivated = false;
+            return;
+        }
+        // 拖拽结束（松开鼠标）：恢复 menubar
+        this.exitDragMode();
+    }
+    handleMenubarClickSuppress(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
     render() {
         const saveNowMessage = (
             <FormattedMessage
@@ -627,15 +709,20 @@ class MenuBar extends React.Component {
         const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
         const isMac = window.EditorPreload?.platform === 'darwin';
         const menuBar = (
-            <Box className={classNames(this.props.className, styles.menuBar, {[styles.macos]: isMac})} style={
+            <Box className={classNames(this.props.className, styles.menuBar, { [styles.macos]: isMac })} style={
                 this.overlay.visible ? {
                     width: `${this.overlay.getTitlebarAreaRect().width}px`,
                     // 如果是阿拉伯那种从右往左的，改一下位置
                     marginRight: `${this.props.isRtl ? window.innerWidth - this.overlay.getTitlebarAreaRect().width : '0'}px`
                 }
-                : {}}>
+                    : {}}>
                 <div className={styles.mainMenu}>
-                    <div className={styles.menuGroup}>
+                    <div
+                        className={styles.menuGroup}
+                        ref={this.menubar}
+                        onMouseDown={this.clickMainMenu}
+                        onMouseUp={this.overClickMainMenu}
+                    >
                         {!aboutButton ? (
                             <img
                                 src={aeLogo}
@@ -722,37 +809,37 @@ class MenuBar extends React.Component {
                             )}
                             {(this.props.canChangeTheme ||
                                 this.props.canChangeLanguage) && (
-                                <SettingsMenu
-                                    dataMenu="settings"
-                                    canChangeLanguage={
-                                        this.props.canChangeLanguage
-                                    }
-                                    canChangeTheme={this.props.canChangeTheme}
-                                    isRtl={this.props.isRtl}
-                                    onClickDesktopSettings={
-                                        this.props.onClickDesktopSettings &&
-                                        this.handleClickDesktopSettings
-                                    }
-                                    // eslint-disable-next-line react/jsx-no-bind
-                                    onOpenCustomSettings={
-                                        this.props.onClickAddonSettings &&
-                                        this.props.onClickAddonSettings.bind(
-                                            null,
-                                            "editor-theme3",
-                                        )
-                                    }
-                                    onRequestClose={
-                                        this.props.onRequestCloseSettings
-                                    }
-                                    onRequestOpen={this.props.onClickSettings}
-                                    settingsMenuOpen={
-                                        this.props.settingsMenuOpen
-                                    }
-                                    openAESettings={
-                                        this.props.onOpenAstraEditorSettings
-                                    }
-                                />
-                            )}
+                                    <SettingsMenu
+                                        dataMenu="settings"
+                                        canChangeLanguage={
+                                            this.props.canChangeLanguage
+                                        }
+                                        canChangeTheme={this.props.canChangeTheme}
+                                        isRtl={this.props.isRtl}
+                                        onClickDesktopSettings={
+                                            this.props.onClickDesktopSettings &&
+                                            this.handleClickDesktopSettings
+                                        }
+                                        // eslint-disable-next-line react/jsx-no-bind
+                                        onOpenCustomSettings={
+                                            this.props.onClickAddonSettings &&
+                                            this.props.onClickAddonSettings.bind(
+                                                null,
+                                                "editor-theme3",
+                                            )
+                                        }
+                                        onRequestClose={
+                                            this.props.onRequestCloseSettings
+                                        }
+                                        onRequestOpen={this.props.onClickSettings}
+                                        settingsMenuOpen={
+                                            this.props.settingsMenuOpen
+                                        }
+                                        openAESettings={
+                                            this.props.onOpenAstraEditorSettings
+                                        }
+                                    />
+                                )}
                             {this.props.canManageFiles && (
                                 <MenuLabel
                                     dataMenu="file"
@@ -812,38 +899,38 @@ class MenuBar extends React.Component {
                                         {(this.props.canSave ||
                                             this.props.canCreateCopy ||
                                             this.props.canRemix) && (
-                                            <MenuSection>
-                                                {this.props.canSave && (
-                                                    <MenuItem
-                                                        onClick={
-                                                            this.handleClickSave
-                                                        }
-                                                    >
-                                                        {saveNowMessage}
-                                                    </MenuItem>
-                                                )}
-                                                {this.props.canCreateCopy && (
-                                                    <MenuItem
-                                                        onClick={
-                                                            this
-                                                                .handleClickSaveAsCopy
-                                                        }
-                                                    >
-                                                        {createCopyMessage}
-                                                    </MenuItem>
-                                                )}
-                                                {this.props.canRemix && (
-                                                    <MenuItem
-                                                        onClick={
-                                                            this
-                                                                .handleClickRemix
-                                                        }
-                                                    >
-                                                        {remixMessage}
-                                                    </MenuItem>
-                                                )}
-                                            </MenuSection>
-                                        )}
+                                                <MenuSection>
+                                                    {this.props.canSave && (
+                                                        <MenuItem
+                                                            onClick={
+                                                                this.handleClickSave
+                                                            }
+                                                        >
+                                                            {saveNowMessage}
+                                                        </MenuItem>
+                                                    )}
+                                                    {this.props.canCreateCopy && (
+                                                        <MenuItem
+                                                            onClick={
+                                                                this
+                                                                    .handleClickSaveAsCopy
+                                                            }
+                                                        >
+                                                            {createCopyMessage}
+                                                        </MenuItem>
+                                                    )}
+                                                    {this.props.canRemix && (
+                                                        <MenuItem
+                                                            onClick={
+                                                                this
+                                                                    .handleClickRemix
+                                                            }
+                                                        >
+                                                            {remixMessage}
+                                                        </MenuItem>
+                                                    )}
+                                                </MenuSection>
+                                            )}
                                         <MenuSection>
                                             <MenuItem
                                                 onClick={
@@ -871,23 +958,23 @@ class MenuBar extends React.Component {
                                                             <React.Fragment>
                                                                 {extended.name !==
                                                                     null && (
-                                                                    // eslint-disable-next-line max-len
-                                                                    <MenuItem
-                                                                        onClick={this.getSaveToComputerHandler(
-                                                                            extended.saveToLastFile,
-                                                                        )}
-                                                                    >
-                                                                        <FormattedMessage
-                                                                            defaultMessage="Save to {file}"
-                                                                            // eslint-disable-next-line max-len
-                                                                            description="Menu bar item to save project to an existing file on the user's computer"
-                                                                            id="tw.saveTo"
-                                                                            values={{
-                                                                                file: extended.name,
-                                                                            }}
-                                                                        />
-                                                                    </MenuItem>
-                                                                )}
+                                                                        // eslint-disable-next-line max-len
+                                                                        <MenuItem
+                                                                            onClick={this.getSaveToComputerHandler(
+                                                                                extended.saveToLastFile,
+                                                                            )}
+                                                                        >
+                                                                            <FormattedMessage
+                                                                                defaultMessage="Save to {file}"
+                                                                                // eslint-disable-next-line max-len
+                                                                                description="Menu bar item to save project to an existing file on the user's computer"
+                                                                                id="tw.saveTo"
+                                                                                values={{
+                                                                                    file: extended.name,
+                                                                                }}
+                                                                            />
+                                                                        </MenuItem>
+                                                                    )}
                                                                 {/* eslint-disable-next-line max-len */}
                                                                 <MenuItem
                                                                     onClick={this.getSaveToComputerHandler(
@@ -1348,7 +1435,7 @@ class MenuBar extends React.Component {
                                 </MenuBarItemTooltip>
                             </div>
                         ) : this.props.authorUsername &&
-                          this.props.authorUsername !== this.props.username ? (
+                            this.props.authorUsername !== this.props.username ? (
                             <AuthorInfo
                                 className={styles.authorInfo}
                                 imageUrl={this.props.authorThumbnailUrl}
@@ -1377,7 +1464,7 @@ class MenuBar extends React.Component {
                                                         waitForUpdate,
                                                     );
                                                 }}
-                                                /* eslint-enable react/jsx-no-bind */
+                                            /* eslint-enable react/jsx-no-bind */
                                             />
                                         )}
                                     </ProjectWatcher>
@@ -1421,7 +1508,7 @@ class MenuBar extends React.Component {
                                                         waitForUpdate,
                                                     );
                                                 }}
-                                                /* eslint-enable react/jsx-no-bind */
+                                            /* eslint-enable react/jsx-no-bind */
                                             />
                                         )}
                                     </ProjectWatcher>
@@ -1600,7 +1687,7 @@ MenuBar.propTypes = {
 };
 
 MenuBar.defaultProps = {
-    onShare: () => {},
+    onShare: () => { },
 };
 
 const mapStateToProps = (state, ownProps) => {

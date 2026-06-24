@@ -8,18 +8,21 @@ export default async function ({ addon, global, console }) {
   resizeWorkspace();
 
   // 更新桌面端金刚键高度（macOS 使用原生 traffic lights，不需要设置）
-  const updateWindowControlsHeight = () => {
+  const updateWindowControlsHeight = async () => {
     try {
       if (window.EditorPreload?.platform === 'darwin') return;
       if (window.EditorPreload?.setWindowControlsStyle) {
-        const height = addon.self.disabled ? 48 : 32;
-        window.EditorPreload.setWindowControlsStyle({ height });
+        const baseHeight = addon.self.disabled ? 48 : 32;
+        const height = Math.round(baseHeight * window.devicePixelRatio);
+        window.__windowControlsManagedByAddon = !addon.self.disabled;
+        await window.EditorPreload.setWindowControlsStyle({ height })
       }
-    } catch {}
+    } catch { }
   };
-  if(addon.settings.get("compactMenubar")) updateWindowControlsHeight();
+  if (addon.settings.get("compactMenubar")) updateWindowControlsHeight();
   addon.self.addEventListener("disabled", updateWindowControlsHeight);
   addon.self.addEventListener("reenabled", updateWindowControlsHeight);
+  window.addEventListener('resize', updateWindowControlsHeight);
 
   addon.settings.addEventListener("change", () => {
     resizeWorkspace();
