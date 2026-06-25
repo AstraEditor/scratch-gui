@@ -1,66 +1,65 @@
+const STORAGE_KEY = 'AESettings';
 
-export class AESettings {
-        constructor() {
-                this.storageKey = "AESettings";
-                this.init();
-                this.initset = {
-                        enableREADMEAutoDisplay: true,
-                        enableHTMLSupportInREADME: false,
-                        skipExtWarn: false,
-                        EnableExtensionPreview: false,
-                        EnableVSCodeLayout: true,
-                        EnableMobileLayout: false
-                };
-        }
+const DEFAULTS = {
+    enableREADMEAutoDisplay: true,
+    enableHTMLSupportInREADME: false,
+    skipExtWarn: false,
+    EnableExtensionPreview: false,
+    EnableVSCodeLayout: true,
+    EnableMobileLayout: false,
+};
 
-        init() {
-                if (!localStorage.getItem(this.storageKey)) {
-                        const defaultSettings = this.initset
-                        this.save(defaultSettings);
-                } else {
-                        const stored = localStorage.getItem(this.storageKey);
-                        if (!stored || stored === 'undefined' || stored === 'null') {
-                                return
-                        }
-                        localStorage.setItem(this.storageKey, JSON.stringify({
-                                ...JSON.parse(stored),
-                                EnableMobileLayout: false,
-                                EnableExtensionPreview: false
-                        }))
-                }
-        }
+const readAll = () => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored || stored === 'undefined' || stored === 'null') {
+        return {};
+    }
+    try {
+        return JSON.parse(stored);
+    } catch (e) {
+        console.warn('Failed to parse settings from localStorage:', e);
+        return {};
+    }
+};
 
-        getAll() {
-                const stored = localStorage.getItem(this.storageKey);
-                if (!stored || stored === 'undefined' || stored === 'null') {
-                        return {};
-                }
-                try {
-                        return JSON.parse(stored);
-                } catch (e) {
-                        console.warn('Failed to parse settings from localStorage:', e);
-                        // If parsing fails, return default settings
-                        return {};
-                }
-        }
+const writeAll = settings => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+};
 
-        get(id) {
+const init = () => {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+        writeAll(DEFAULTS);
+    } else {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored || stored === 'undefined' || stored === 'null') {
+            return;
+        }
+        writeAll({
+            ...JSON.parse(stored),
+            EnableMobileLayout: false,
+            EnableExtensionPreview: false,
+        });
+    }
+};
 
-                const settings = this.getAll();
-                return settings[id];
-        }
+init();
 
-        set(id, value) {
-                const settings = this.getAll();
-                settings[id] = value;
-                this.save(settings);
-                return settings;
-        }
+const get = id => {
+    const settings = readAll();
+    return settings[id];
+};
 
-        save(settings) {
-                localStorage.setItem(this.storageKey, JSON.stringify(settings));
-        }
-        reset() {
-                this.save(this.initset);
-        }
-}
+const set = (id, value) => {
+    const settings = readAll();
+    settings[id] = value;
+    writeAll(settings);
+    return settings;
+};
+
+const getAll = () => readAll();
+
+const save = settings => writeAll(settings);
+
+const reset = () => writeAll(DEFAULTS);
+
+export { get, set, getAll, save, reset, STORAGE_KEY };

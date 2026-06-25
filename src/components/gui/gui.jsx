@@ -66,14 +66,13 @@ import monacoIcon from '!../../lib/tw-recolor/build!./icon--monaco.svg';
 import readmeIcon from '!../../lib/tw-recolor/build!./readme.svg'
 import { openReadme } from '../../reducers/modals.js';
 
-import { AESettings } from '../../lib/settings.js'
-const Settings = new AESettings();
+import { get, reset, STORAGE_KEY } from '../../lib/settings.js'
 /* 检测设置 */
 
-if (localStorage.getItem('AESettings') === "undefined" || localStorage.getItem('AESettings') === undefined) {
-    Settings.reset()
+if (localStorage.getItem(STORAGE_KEY) === 'undefined' || localStorage.getItem(STORAGE_KEY) === undefined) {
+    reset()
 }
-const storedSettings = localStorage.getItem('AESettings');
+const storedSettings = localStorage.getItem(STORAGE_KEY);
 let vscodeLayoutRef = false;
 try {
     vscodeLayoutRef = JSON.parse(storedSettings).EnableVSCodeLayout;
@@ -223,7 +222,7 @@ const GUIComponent = props => {
             setCanShowReadme(updateCanShowReadme)
         };
         const showReadmeDefault = (e) => {
-            if (!Settings.get('enableREADMEAutoDisplay')) return
+            if (!get('enableREADMEAutoDisplay')) return
             for (const target of vm.runtime.targets) {
                 if (target.sprite.name == "README") {
                     loadData(target.comments);
@@ -480,7 +479,7 @@ const GUIComponent = props => {
                     onOpenExtensionEditor={onOpenExtensionEditor}
                 />
                 <Box className={styles.bodyWrapper}>
-                    <Box className={styles.flexWrapper} style={Settings.get('EnableMobileLayout') ? {
+                    <Box className={styles.flexWrapper} style={get('EnableMobileLayout') ? {
                         flexDirection: 'column-reverse'
                     } : {
                         flexDirection: 'row'
@@ -637,7 +636,6 @@ const GUIComponent = props => {
                                 isRtl={isRtl}
                                 stageSize={stageSize}
                                 vm={vm}
-                                Settings={Settings}
                             />
                             <Box className={styles.targetWrapper}>
                                 <TargetPane
