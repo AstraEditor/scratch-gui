@@ -35,8 +35,14 @@
     flex-shrink: 0;
     align-items: center;
     height: $stage-menu-height;
-    padding: $space;
     flex: 1
+}
+.stage-menu-wrapper.VSC{
+    padding: $space;
+}
+.stage-menu-wrapper.NOVSC{
+    padding-top: $space;
+    padding-bottom: $space;
 }
 
 .stage-size-row {

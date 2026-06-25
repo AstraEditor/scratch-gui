@@ -1,4 +1,4 @@
-import {Theme} from '.';
+import { Theme } from '.';
 import AddonHooks from '../../addons/hooks';
 import { toHex } from '../switchToHEX';
 import './global-styles.css';
@@ -77,14 +77,14 @@ const applyGuiColors = theme => {
         AddonHooks.recolorCallbacks.forEach(i => i());
         return;
     }
-    try{
-        requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        try {
             window.EditorPreload.setWindowControlsStyle({
                 color: toHex('var(--menu-bar-background)'),
                 symbolColor: toHex('var(--menu-bar-foreground)')
             });
-        });
-    } catch {}
+        } catch { }
+    });
     AddonHooks.recolorCallbacks.forEach(i => i());
 };
 

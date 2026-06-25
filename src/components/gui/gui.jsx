@@ -626,24 +626,25 @@ const GUIComponent = props => {
                             ) : null}
                         </Box>
 
-                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
-                            {activeTabIndex !== MONACO_EDITOR_TAB_INDEX && (
-                                <StageWrapper
-                                    isFullScreen={isFullScreen}
-                                    isRendererSupported={isRendererSupported()}
-                                    isRtl={isRtl}
+                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
+                            style={activeTabIndex === MONACO_EDITOR_TAB_INDEX ? {
+                                display: 'none'
+                            } : {}}
+                        >
+                            <StageWrapper
+                                isFullScreen={isFullScreen}
+                                isRendererSupported={isRendererSupported()}
+                                isRtl={isRtl}
+                                stageSize={stageSize}
+                                vm={vm}
+                                Settings={Settings}
+                            />
+                            <Box className={styles.targetWrapper}>
+                                <TargetPane
                                     stageSize={stageSize}
                                     vm={vm}
                                 />
-                            )}
-                            {activeTabIndex !== MONACO_EDITOR_TAB_INDEX && (
-                                <Box className={styles.targetWrapper}>
-                                    <TargetPane
-                                        stageSize={stageSize}
-                                        vm={vm}
-                                    />
-                                </Box>
-                            )}
+                            </Box>
                         </Box>
 
 

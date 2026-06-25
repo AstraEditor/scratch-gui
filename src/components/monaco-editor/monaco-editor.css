@@ -578,6 +578,133 @@
     flex: 1;
 }
 
+/* ========== 设置按钮 ========== */
+
+.settings-btn {
+    background: none;
+    border: 1px solid $ui-tertiary;
+    border-radius: 3px;
+    color: $text-primary;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-btn:hover {
+    background-color: $badge-border;
+    border-color: $looks-secondary;
+}
+
+/* ========== 设置模态框 ========== */
+
+:global(.settings-modal) {
+    width: 360px !important;
+    max-width: 360px !important;
+}
+
+.settings-modal-content {
+    padding: 16px;
+}
+
+.settings-section {
+    margin-bottom: 16px;
+}
+
+.settings-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: $looks-secondary;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid $ui-tertiary;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-label {
+    font-size: 13px;
+    color: $text-primary;
+}
+
+.settings-number {
+    width: 60px;
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid $ui-tertiary;
+    border-radius: 3px;
+    background-color: $ui-primary;
+    color: $text-primary;
+    text-align: center;
+    outline: none;
+    font-family: inherit;
+}
+
+.settings-number:focus {
+    border-color: $looks-secondary;
+}
+
+.settings-select {
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid $ui-tertiary;
+    border-radius: 3px;
+    background-color: $ui-primary;
+    color: $text-primary;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 100px;
+}
+
+.settings-select:focus {
+    border-color: $looks-secondary;
+}
+
+.settings-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: $looks-secondary;
+}
+
+.settings-buttons {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 12px;
+    border-top: 1px solid $ui-tertiary;
+}
+
+.settings-close-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    background: $looks-secondary;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.settings-close-btn:hover {
+    filter: brightness(1.1);
+}
+
 /* ========== Monaco 内部变量强制覆盖（防止外部红色污染） ========== */
 
 .editor-wrapper {
@@ -611,46 +738,46 @@
 }
 
 /* 防止任何 outline/border 继承到红色 - 仅限编辑器内部 */
-.editor-wrapper .monaco-editor * {
+.editor-wrapper :global(.monaco-editor) * {
     outline-color: inherit !important;
     border-color: inherit !important;
 }
 
 /* view-line 确保无边框 */
-.editor-wrapper .view-line {
+.editor-wrapper :global(.view-line) {
     border-color: transparent !important;
     outline: none !important;
 }
 
 /* scroll decoration / scrollbar 边框 */
-.editor-wrapper .scroll-decoration,
-.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider {
+.editor-wrapper :global(.scroll-decoration),
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) > :global(.slider) {
     border-color: transparent !important;
     box-shadow: none !important;
 }
 
 /* 滚动条轨道/底板 */
-.editor-wrapper .monaco-scrollable-element > .scrollbar {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) {
     background-color: $ui-secondary !important;
     border-color: transparent !important;
     box-shadow: none !important;
 }
-.editor-wrapper .monaco-scrollable-element > .scrollbar.vertical,
-.editor-wrapper .monaco-scrollable-element > .scrollbar.horizontal {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar.vertical),
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar.horizontal) {
     border: none !important;
 }
-.editor-wrapper .monaco-scrollable-element > .scrollbar > .arrow {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) > :global(.arrow) {
     border-color: transparent !important;
     background-color: $ui-tertiary !important;
 }
 
 /* 滚动条滑块 */
-.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) > :global(.slider) {
     background-color: $ui-tertiary !important;
 }
-.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider:hover {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) > :global(.slider):hover {
     background-color: $text-primary !important;
 }
-.editor-wrapper .monaco-scrollable-element > .scrollbar > .slider.active {
+.editor-wrapper :global(.monaco-scrollable-element) > :global(.scrollbar) > :global(.slider.active) {
     background-color: $looks-secondary !important;
 }

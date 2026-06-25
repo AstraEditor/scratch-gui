@@ -5234,7 +5234,19 @@
         "gui.monacoEditor.noExports": "无导出",
         "gui.monacoEditor.noPythonFiles": "没有 Python 文件",
         "gui.monacoEditor.generateCount": "生成 ({count})",
-        "gui.monacoEditor.createFile": "创建"
+        "gui.monacoEditor.createFile": "创建",
+        "gui.monacoEditor.settings": "编辑器设置",
+        "gui.monacoEditor.settingsEditor": "编辑器",
+        "gui.monacoEditor.settingsFontSize": "字体大小",
+        "gui.monacoEditor.settingsTabSize": "Tab 大小",
+        "gui.monacoEditor.settingsWordWrap": "自动换行",
+        "gui.monacoEditor.settingsBracketMatching": "括号匹配",
+        "gui.monacoEditor.settingsView": "视图",
+        "gui.monacoEditor.settingsMinimap": "小地图",
+        "gui.monacoEditor.settingsLineNumbers": "行号",
+        "gui.monacoEditor.settingsSmoothScrolling": "平滑滚动",
+        "gui.monacoEditor.settingsFolding": "折叠",
+        "gui.gui.monacoEditorTab": "编辑器"
     },
     "zh-tw": {
         "tw.alerts.lostPeripheralConnection": "與{extensionName}的連線中斷了。",
@@ -5420,6 +5432,17 @@
         "gui.monacoEditor.noExports": "無導出",
         "gui.monacoEditor.noPythonFiles": "沒有 Python 檔案",
         "gui.monacoEditor.generateCount": "生成 ({count})",
-        "gui.monacoEditor.createFile": "建立"
+        "gui.monacoEditor.createFile": "建立",
+        "gui.monacoEditor.settings": "編輯器設定",
+        "gui.monacoEditor.settingsEditor": "編輯器",
+        "gui.monacoEditor.settingsFontSize": "字型大小",
+        "gui.monacoEditor.settingsTabSize": "Tab 大小",
+        "gui.monacoEditor.settingsWordWrap": "自動換行",
+        "gui.monacoEditor.settingsBracketMatching": "括號匹配",
+        "gui.monacoEditor.settingsView": "檢視",
+        "gui.monacoEditor.settingsMinimap": "迷你地圖",
+        "gui.monacoEditor.settingsLineNumbers": "行號",
+        "gui.monacoEditor.settingsSmoothScrolling": "平滑捲動",
+        "gui.monacoEditor.settingsFolding": "摺疊"
     }
 }

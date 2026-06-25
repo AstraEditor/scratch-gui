@@ -19,7 +19,8 @@ const StageWrapperComponent = function (props) {
         isRendererSupported,
         loading,
         stageSize,
-        vm
+        vm,
+        Settings
     } = props;
 
     return (
@@ -39,6 +40,7 @@ const StageWrapperComponent = function (props) {
                 <StageHeader
                     stageSize={stageSize}
                     vm={vm}
+                    Settings={Settings}
                 />
             </Box>
             <Box className={classNames(styles.stageCanvasWrapper, {
