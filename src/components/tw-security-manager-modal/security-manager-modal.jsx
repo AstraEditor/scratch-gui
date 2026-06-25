@@ -17,9 +17,7 @@ import Embed from './embed.jsx';
 import Download from './download.jsx';
 import DelayedMountPropertyHOC from './delayed-mount-property-hoc.jsx';
 import styles from './security-manager-modal.css';
-import { AESettings } from '../../lib/settings.js'
-
-const settings = new AESettings();
+import { get } from '../../lib/settings.js'
 const messages = defineMessages({
     title: {
         defaultMessage: 'Extension Security',
@@ -40,7 +38,7 @@ const SecurityManagerModalComponent = props => (
     >
         <Box className={styles.body}>
             {props.type === SecurityModals.LoadExtension ? (
-                <LoadExtensionModal {...props.data} onSkip={() => settings.get('skipExtWarn')} />
+                <LoadExtensionModal {...props.data} onSkip={() => get('skipExtWarn')} />
             ) : props.type === SecurityModals.Fetch ? (
                 <FetchModal {...props.data} />
             ) : props.type === SecurityModals.OpenWindow ? (
@@ -77,11 +75,11 @@ const SecurityManagerModalComponent = props => (
                 </button>
                 <button
                     className={styles.allowButton}
-                    onClick={settings.get('skipExtWarn') ?
+                    onClick={get('skipExtWarn') ?
                         props.skip : props.onAllowed}
                     disabled={!props.enableButtons}
                 >
-                    {settings.get('skipExtWarn') ?
+                    {get('skipExtWarn') ?
                         <FormattedMessage
                             defaultMessage="Allow All"
                             description="Button in modal asking user for permission to load extension, access file, etc."

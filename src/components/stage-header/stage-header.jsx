@@ -22,6 +22,7 @@ import settingsIcon from './icon--settings.svg';
 import styles from './stage-header.css';
 
 import FullscreenAPI from '../../lib/tw-fullscreen-api';
+import {get} from '../../lib/settings.js';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -80,7 +81,6 @@ const StageHeaderComponent = function (props) {
         stageSize,
         stageSizeMode,
         vm,
-        Settings
     } = props;
 
     let header = null;
@@ -199,8 +199,8 @@ const StageHeaderComponent = function (props) {
                 style={{minWidth: `${stageDimensions.width + 2}px`}}
             >
                 <Box className={classNames(styles.stageMenuWrapper, {
-                    [styles.VSC]: Settings.get('EnableVSCodeLayout'),
-                    [styles.NOVSC]: !Settings.get('EnableVSCodeLayout')
+                    [styles.VSC]: get('EnableVSCodeLayout'),
+                    [styles.NOVSC]: !get('EnableVSCodeLayout')
                 })}>
                     <Controls
                         vm={vm}

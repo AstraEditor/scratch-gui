@@ -6,12 +6,11 @@ import PropTypes from 'prop-types';
 import Box from '../box/box.jsx';
 import styles from './ae-readme.css';
 import ReactMarkdown from 'react-markdown/with-html';
-import { AESettings } from '../../lib/settings.js';
+import { get } from '../../lib/settings.js';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialLight, materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 
-const settings = new AESettings();
 const README_ALERT_TYPES = {
     NOTE: {
         label: 'Note',
@@ -226,7 +225,7 @@ const CustomModalComponent = (props) => {
             data = null;
             props.onClose();
         };
-        const escapeHtml = settings.get('enableHTMLSupportInREADME') ? false : true;
+        const escapeHtml = get('enableHTMLSupportInREADME') ? false : true;
         return (
             <Modal
                 className={styles.modalContent}

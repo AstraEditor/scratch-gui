@@ -6,7 +6,7 @@ import bindAll from 'lodash.bindall';
 import SecurityManagerModal from '../components/tw-security-manager-modal/security-manager-modal.jsx';
 import SecurityModals from '../lib/tw-security-manager-constants';
 import { getPersistedUnsandboxed, setPersistedUnsandboxed } from '../lib/tw-persisted-unsandboxed.js';
-import { AESettings } from '../lib/settings.js'
+import { get } from '../lib/settings.js'
 
 /* eslint-disable require-atomic-updates */
 
@@ -309,7 +309,7 @@ class TWSecurityManagerComponent extends React.Component {
         const { showModal } = await this.acquireModalLock();
 
         // 检查是否启用了跳过警告
-        const skipExtWarn = new AESettings().get('skipExtWarn');
+        const skipExtWarn = get('skipExtWarn');
 
         if (skipExtWarn && !this.hasShownExtensionsList) {
             // 等待一小段时间让所有扩展都被收集
@@ -399,7 +399,7 @@ class TWSecurityManagerComponent extends React.Component {
         const { showModal } = await this.acquireModalLock();
 
         // 检查是否启用了跳过警告
-        const skipExtWarn = new AESettings().get('skipExtWarn');
+        const skipExtWarn = get('skipExtWarn');
 
         if (skipExtWarn) {
             // 启用了跳过警告，一次性显示所有扩展
