@@ -292,6 +292,7 @@ module.exports = [
             ])
         },
         optimization: {
+            concatenateModules: false,
             splitChunks: {
                 chunks: 'all',
                 minChunks: 2,
@@ -392,6 +393,18 @@ module.exports = [
                 chunkFilename: 'js/[name].js',
                 path: path.resolve('dist'),
                 publicPath: `${STATIC_PATH}/`
+            },
+            optimization: {
+                concatenateModules: false,
+                minimizer: [
+                    new (require('terser-webpack-plugin'))({
+                        terserOptions: {
+                            compress: {
+                                reduce_vars: false
+                            }
+                        }
+                    })
+                ]
             },
             externals: {
                 'react': 'react',
