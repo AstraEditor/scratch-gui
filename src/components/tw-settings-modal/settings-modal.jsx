@@ -12,7 +12,7 @@ import DocumentationLink from '../tw-documentation-link/documentation-link.jsx';
 import styles from './settings-modal.css';
 import helpIcon from './help-icon.svg';
 import { APP_NAME } from '../../lib/brand.js';
-import { AESettings } from '../../lib/settings.js'
+import { get, set } from '../../lib/settings.js'
 
 /* eslint-disable react/no-multi-comp */
 
@@ -520,7 +520,6 @@ const EnableVSCodeLayout = props => (
         }
     />
 );
-const AEsettings = new AESettings();
 const WarningTip = props => {
     return (
         <div className={styles.warning}>
@@ -647,12 +646,12 @@ const SettingsModalComponent = props => {
                             README
                         </Header>
                         <AutoDisplayREADME
-                            value={AEsettings.get('enableREADMEAutoDisplay')}
-                            onChange={(e) => { AEsettings.set("enableREADMEAutoDisplay", e.target.checked); update() }}
+                            value={get('enableREADMEAutoDisplay')}
+                            onChange={(e) => { set("enableREADMEAutoDisplay", e.target.checked); update() }}
                         />
                         <EnableHTMLSupportREADME
-                            value={AEsettings.get('enableHTMLSupportInREADME')}
-                            onChange={(e) => { AEsettings.set("enableHTMLSupportInREADME", e.target.checked); update() }}
+                            value={get('enableHTMLSupportInREADME')}
+                            onChange={(e) => { set("enableHTMLSupportInREADME", e.target.checked); update() }}
                         />
                         <Header>
                             <FormattedMessage
@@ -662,8 +661,8 @@ const SettingsModalComponent = props => {
                             />
                         </Header>
                         <SkipCustomExtWarn
-                            value={AEsettings.get('skipExtWarn')}
-                            onChange={(e) => { AEsettings.set("skipExtWarn", e.target.checked); update() }}
+                            value={get('skipExtWarn')}
+                            onChange={(e) => { set("skipExtWarn", e.target.checked); update() }}
                         />
                         <Header>
                             <FormattedMessage
@@ -673,8 +672,8 @@ const SettingsModalComponent = props => {
                             />
                         </Header>
                         <EnableVSCodeLayout
-                            value={AEsettings.get('EnableVSCodeLayout')}
-                            onChange={(e) => { AEsettings.set("EnableVSCodeLayout", e.target.checked); location.reload(); update() }}
+                            value={get('EnableVSCodeLayout')}
+                            onChange={(e) => { set("EnableVSCodeLayout", e.target.checked); location.reload(); update() }}
                         />
                     </>}
 

@@ -9,7 +9,7 @@ import { setPreviewExtData } from '../reducers/ae-preview-ext-data';
 import { manuallyTrustExtension, isTrustedExtension } from './tw-security-manager.jsx';
 import { getPersistedUnsandboxed, setPersistedUnsandboxed } from '../lib/tw-persisted-unsandboxed.js';
 import AddonHooks from '../addons/hooks';
-import { AESettings } from '../lib/settings.js'
+import { get } from '../lib/settings.js'
 /**
  * @param {Blob} blob Blob
  * @returns {Promise<string>} data: uri
@@ -20,7 +20,7 @@ const readAsDataURL = blob => new Promise((resolve, reject) => {
     reader.onerror = () => reject(new Error(`Could not read extension as data URL: ${reader.error}`));
     reader.readAsDataURL(blob);
 });
-const AEsettings = new AESettings();
+
 
 class CustomExtensionModal extends React.Component {
     constructor(props) {
@@ -276,7 +276,7 @@ class CustomExtensionModal extends React.Component {
     }
 
     async updatePreview() {
-        if (!AEsettings.get('showPreview')) return
+        if (!get('showPreview')) return
         if (!this.hasValidInput()) {
             this.setState({ svgList: [] });
             return;
@@ -378,7 +378,7 @@ class CustomExtensionModal extends React.Component {
                 dispatch={this.props.dispatch}
                 onClose={this.handleClose}
                 svgList={this.state.svgList}
-                showPreview={AEsettings.get('EnableExtensionPreview')}
+                showPreview={get('EnableExtensionPreview')}
             />
         );
     }

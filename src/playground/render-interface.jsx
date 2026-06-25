@@ -44,6 +44,7 @@ import runAddons from '../addons/entry';
 import InvalidEmbed from '../components/tw-invalid-embed/invalid-embed.jsx';
 import {APP_NAME} from '../lib/brand.js';
 
+
 import styles from './interface.css';
 
 const isInvalidEmbed = window.parent !== window;
