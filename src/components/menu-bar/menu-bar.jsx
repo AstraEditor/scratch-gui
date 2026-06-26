@@ -277,6 +277,10 @@ class MenuBar extends React.Component {
         this.updateMaximizedState();
         // 监听窗口大小变化
         window.addEventListener("resize", this.handleResize);
+        // 监听 title bar overlay 区域变化（Window Controls Overlay API）
+        if (navigator?.windowControlsOverlay) {
+            navigator.windowControlsOverlay.addEventListener("geometrychange", this.handleResize);
+        }
     }
     componentDidUpdate(prevProps) {
         // 当 isMaximize 首次可用时更新状态
@@ -300,6 +304,9 @@ class MenuBar extends React.Component {
     componentWillUnmount() {
         document.removeEventListener("keydown", this.handleKeyPress);
         window.removeEventListener("resize", this.handleResize);
+        if (navigator?.windowControlsOverlay) {
+            navigator.windowControlsOverlay.removeEventListener("geometrychange", this.handleResize);
+        }
         clearTimeout(this._menubarDragTimer);
         this.exitDragMode();
         if (this.props.setWindowMaximizeStateHandler) {
@@ -711,7 +718,7 @@ class MenuBar extends React.Component {
         const menuBar = (
             <Box className={classNames(this.props.className, styles.menuBar, { [styles.macos]: isMac })} style={
                 this.overlay.visible ? {
-                    width: `${this.overlay.getTitlebarAreaRect().width}px`,
+                    width: `${Math.max(this.overlay.getTitlebarAreaRect().width, window.innerWidth)}px`,
                     // 如果是阿拉伯那种从右往左的，改一下位置
                     marginRight: `${this.props.isRtl ? window.innerWidth - this.overlay.getTitlebarAreaRect().width : '0'}px`
                 }

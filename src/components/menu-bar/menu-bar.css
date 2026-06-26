@@ -23,8 +23,8 @@
     /*
         @todo: This adds ~20px in Chrome, when scrolling to the right,
         but fixes [FFx + Safari] [resize window down + scroll to the right] bug.
-        width: 100%;
     */
+    width: 100%;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: $menu-bar-standard-font-size;
     font-weight: bold;
