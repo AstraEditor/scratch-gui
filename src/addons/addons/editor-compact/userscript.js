@@ -12,14 +12,15 @@ export default async function ({ addon, global, console }) {
     try {
       if (window.EditorPreload?.platform === 'darwin') return;
       if (window.EditorPreload?.setWindowControlsStyle) {
-        const baseHeight = addon.self.disabled ? 48 : 32;
+        const compact = !addon.self.disabled && addon.settings.get("compactMenubar");
+        const baseHeight = compact ? 32 : 48;
         const height = Math.round(baseHeight * window.devicePixelRatio);
-        window.__windowControlsManagedByAddon = !addon.self.disabled;
+        window.__windowControlsManagedByAddon = compact;
         await window.EditorPreload.setWindowControlsStyle({ height })
       }
     } catch { }
   };
-  if (addon.settings.get("compactMenubar")) updateWindowControlsHeight();
+  updateWindowControlsHeight();
   addon.self.addEventListener("disabled", updateWindowControlsHeight);
   addon.self.addEventListener("reenabled", updateWindowControlsHeight);
   window.addEventListener('resize', updateWindowControlsHeight);
