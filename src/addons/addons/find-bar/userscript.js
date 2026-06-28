@@ -36,11 +36,12 @@ export default async function ({ addon, msg, console }) {
       return Blockly.getMainWorkspace();
     }
 
-    createDom(root) {
+    createDom() {
       this.findBarOuter = document.createElement("div");
       this.findBarOuter.className = "sa-find-bar";
       addon.tab.displayNoneWhileDisabled(this.findBarOuter, { display: "flex" });
-      root.insertAdjacentElement('afterend', this.findBarOuter);
+      // 通过共享空间机制注入，order=5（位于变量TAB(4)之后、插件按钮API(6)之前）
+      addon.tab.appendToSharedSpace({ space: "afterTabs", element: this.findBarOuter, order: 5 });
 
       this.findWrapper = this.findBarOuter.appendChild(document.createElement("span"));
       this.findWrapper.className = "sa-find-wrapper";
@@ -1058,8 +1059,6 @@ export default async function ({ addon, msg, console }) {
       reduxEvents: ["scratch-gui/mode/SET_PLAYER", "fontsLoaded/SET_FONTS_LOADED", "scratch-gui/locales/SELECT_LOCALE"],
       reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
-    let tab = document.querySelectorAll('li[class*=react-tabs_react-tabs__tab][id*=react-tabs]');
-    tab = tab[tab.length - 1];
-    findBar.createDom(tab);
+    findBar.createDom();
   }
 }

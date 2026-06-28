@@ -48,6 +48,8 @@
   right: 0.5rem;
   height: 2.75rem;
   align-items: center;
+  /* 高于 .tab-list (z-index: 25)，避免按钮被 tablist 遮挡 */
+  z-index: 43;
 }
 
 [dir="rtl"] .sa-stage-hidden [class*="stage-header_stage-size-row"] {

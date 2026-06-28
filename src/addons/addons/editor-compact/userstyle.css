@@ -28,6 +28,11 @@
   height: 2rem;
 }
 
+/* 桌面端金刚键跟随紧凑菜单栏高度 */
+#window-controls {
+  height: 2rem;
+}
+
 [class*="menu-bar_file-group_"] [class*="menu-bar_menu-bar-item_"],
 [class*="menu-bar_account-info-group_"] [class*="menu-bar_menu-bar-item_"] {
   margin: 0;

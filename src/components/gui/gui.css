@@ -352,7 +352,8 @@
         goes to full vertical height of the window
     */
     display: flex;
-    /* flex-direction: column; Move to JSX*/
+    flex-direction: column;
+    min-height: 0;
     /* pad entire wrapper to the left and right; allow children to fill width */
     padding-left: 0 !important;
     padding-right: 0 !important;
@@ -489,7 +490,3 @@ $fade-out-distance: 15px;
     background-color: white;
 }
 
-.stageAndTargetWrapper{
-    flex-direction: column;
-    display: flex;
-}

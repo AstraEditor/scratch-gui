@@ -325,8 +325,3 @@
 .controlButton:hover {
     background-color: #ffffff20;
 }
-
-/* macOS: traffic lights on left, push main-menu right */
-.macos .main-menu {
-    padding-left: 78px;
-}
