@@ -184,14 +184,19 @@ export default async function AddToBar(addon, config) {
             reduxEvents: ['scratch-gui/mode/SET_PLAYER', 'fontsLoaded/SET_FONTS_LOADED', 'scratch-gui/locales/SELECT_LOCALE'],
             reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
         });
-        let tab = document.querySelector(`.${tabAddonListSelector}`);
-        if (!tab) {
-            tab = document.createElement('div');
-            tab.className = tabAddonListSelector;
-            tab.appendChild(button);
-            if (tabs) tabs.appendChild(tab);
+        let container = document.querySelector(`.${tabAddonListSelector}`);
+        if (!container) {
+            // VSCode 布局：容器用 <li>（与 react-tabs Tab 一致）
+            // 非 VSCode：容器用 <div>
+            container = vscode
+                ? document.createElement('li')
+                : document.createElement('div');
+            container.className = tabAddonListSelector;
+            container.appendChild(button);
+            // 通过共享空间机制注入，order=6（位于搜索框(5)之后、README 之前）
+            if (tabs) addon.tab.appendToSharedSpace({ space: 'afterTabs', element: container, order: 6 });
         } else {
-            tab.appendChild(button);
+            container.appendChild(button);
         }
     }
 }

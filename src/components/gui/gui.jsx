@@ -563,6 +563,7 @@ const GUIComponent = props => {
                                     {canShowReadme &&
                                         <button
                                             className={styles.readmeButton}
+                                            data-sa-readme-tab
                                             onClick={onOpenReadme}
                                         >
                                             {vscodeLayoutRef ? (

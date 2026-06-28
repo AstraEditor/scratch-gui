@@ -259,7 +259,6 @@ class MenuBar extends React.Component {
             "handleDocumentMouseUp",
             "handleMenubarClickSuppress",
         ]);
-        this.overlay = navigator?.windowControlsOverlay || {};
         this.menubar = React.createRef();
         this._menubarPressing = false;
         this._menubarDragMode = false;
@@ -277,10 +276,6 @@ class MenuBar extends React.Component {
         this.updateMaximizedState();
         // 监听窗口大小变化
         window.addEventListener("resize", this.handleResize);
-        // 监听 title bar overlay 区域变化（Window Controls Overlay API）
-        if (navigator?.windowControlsOverlay) {
-            navigator.windowControlsOverlay.addEventListener("geometrychange", this.handleResize);
-        }
     }
     componentDidUpdate(prevProps) {
         // 当 isMaximize 首次可用时更新状态
@@ -304,14 +299,11 @@ class MenuBar extends React.Component {
     componentWillUnmount() {
         document.removeEventListener("keydown", this.handleKeyPress);
         window.removeEventListener("resize", this.handleResize);
-        if (navigator?.windowControlsOverlay) {
-            navigator.windowControlsOverlay.removeEventListener("geometrychange", this.handleResize);
-        }
-        clearTimeout(this._menubarDragTimer);
-        this.exitDragMode();
         if (this.props.setWindowMaximizeStateHandler) {
             this.props.setWindowMaximizeStateHandler(null);
         }
+        clearTimeout(this._menubarDragTimer);
+        this.exitDragMode();
     }
     handleWindowMaximizeStateChange(isMaximized) {
         this.setState({ isMaximized: Boolean(isMaximized) });
@@ -319,7 +311,6 @@ class MenuBar extends React.Component {
     handleResize() {
         // 窗口大小变化时更新最大化状态
         this.updateMaximizedState();
-        this.overlay = navigator?.windowControlsOverlay || {};
     }
     async updateMaximizedState() {
         if (this.props.isMaximize) {
@@ -331,6 +322,63 @@ class MenuBar extends React.Component {
         this.props.onClickMaximize();
         // 延迟更新状态，等待 Electron 完成窗口状态变化
         setTimeout(() => this.updateMaximizedState(), 100);
+    }
+    clickMainMenu(e) {
+        if (this._menubarDragMode) return;
+        clearTimeout(this._menubarDragTimer);
+        this._menubarPressing = true;
+        this._menubarDragTimer = setTimeout(() => {
+            if (this._menubarPressing && !this._menubarDragMode) {
+                this.enterDragMode();
+            }
+        }, 600);
+    }
+    overClickMainMenu() {
+        clearTimeout(this._menubarDragTimer);
+        this._menubarPressing = false;
+    }
+    enterDragMode() {
+        this._menubarDragMode = true;
+        this._menubarDragActivated = true;
+        const bar = this.menubar.current;
+        if (bar) {
+            bar.classList.add(styles.dragMode);
+            bar.addEventListener("click", this.handleMenubarClickSuppress, true);
+        }
+        document.addEventListener("mousedown", this.handleDocumentMouseDown, true);
+        document.addEventListener("mouseup", this.handleDocumentMouseUp, true);
+    }
+    exitDragMode() {
+        if (!this._menubarDragMode) return;
+        this._menubarDragMode = false;
+        this._menubarDragActivated = false;
+        clearTimeout(this._menubarDragTimer);
+        const bar = this.menubar.current;
+        if (bar) {
+            bar.classList.remove(styles.dragMode);
+            bar.removeEventListener("click", this.handleMenubarClickSuppress, true);
+        }
+        document.removeEventListener("mousedown", this.handleDocumentMouseDown, true);
+        document.removeEventListener("mouseup", this.handleDocumentMouseUp, true);
+    }
+    handleDocumentMouseDown(e) {
+        if (!this._menubarDragMode) return;
+        const bar = this.menubar.current;
+        if (!bar || !bar.contains(e.target)) {
+            this.exitDragMode();
+        }
+    }
+    handleDocumentMouseUp() {
+        if (!this._menubarDragMode) return;
+        if (this._menubarDragActivated) {
+            this._menubarDragActivated = false;
+            return;
+        }
+        this.exitDragMode();
+    }
+    handleMenubarClickSuppress(e) {
+        e.stopPropagation();
+        e.preventDefault();
     }
     handleClickNew() {
         // if the project is dirty, and user owns the project, we will autosave.
@@ -605,74 +653,6 @@ class MenuBar extends React.Component {
             this.props.onRequestCloseAbout();
         };
     }
-    clickMainMenu(e) {
-        // 非桌面端不启用拖拽
-        if (!window.EditorPreload) return;
-        // 已处于拖拽模式时不再重新计时，交给 Electron 处理拖拽
-        if (this._menubarDragMode) return;
-        // 仅检测 menubar 顶部条：忽略输入框与多级下拉菜单内的长按
-        if (e.target.closest(`input, textarea, [contenteditable], .${styles.menuBarMenu}`)) return;
-        this._menubarPressing = true;
-        clearTimeout(this._menubarDragTimer);
-        this._menubarDragTimer = setTimeout(() => {
-            if (this._menubarPressing && !this._menubarDragMode) {
-                this.enterDragMode();
-            }
-        }, 600);
-    }
-    overClickMainMenu() {
-        this._menubarPressing = false;
-        clearTimeout(this._menubarDragTimer);
-    }
-    enterDragMode() {
-        this._menubarDragMode = true;
-        // 标记此次为长按激活，等待用户松开后再按下才会真正拖拽
-        this._menubarDragActivated = true;
-        const bar = this.menubar.current;
-        if (bar) {
-            bar.classList.add(styles.dragMode);
-            // 拖拽模式下吞掉 menubar 内的点击，避免触发按钮行为
-            bar.addEventListener("click", this.handleMenubarClickSuppress, true);
-        }
-        document.addEventListener("mousedown", this.handleDocumentMouseDown, true);
-        document.addEventListener("mouseup", this.handleDocumentMouseUp, true);
-    }
-    exitDragMode() {
-        if (!this._menubarDragMode) return;
-        this._menubarDragMode = false;
-        this._menubarDragActivated = false;
-        this._menubarPressing = false;
-        clearTimeout(this._menubarDragTimer);
-        const bar = this.menubar.current;
-        if (bar) {
-            bar.classList.remove(styles.dragMode);
-            bar.removeEventListener("click", this.handleMenubarClickSuppress, true);
-        }
-        document.removeEventListener("mousedown", this.handleDocumentMouseDown, true);
-        document.removeEventListener("mouseup", this.handleDocumentMouseUp, true);
-    }
-    handleDocumentMouseDown(e) {
-        if (!this._menubarDragMode) return;
-        const bar = this.menubar.current;
-        // 按下时未碰到 menubar：退出拖拽模式；碰到了则交给 Electron 拖拽
-        if (bar && !bar.contains(e.target)) {
-            this.exitDragMode();
-        }
-    }
-    handleDocumentMouseUp() {
-        if (!this._menubarDragMode) return;
-        if (this._menubarDragActivated) {
-            // 长按激活后的首次松开：保持拖拽模式，等待用户再次按下拖拽
-            this._menubarDragActivated = false;
-            return;
-        }
-        // 拖拽结束（松开鼠标）：恢复 menubar
-        this.exitDragMode();
-    }
-    handleMenubarClickSuppress(e) {
-        e.stopPropagation();
-        e.preventDefault();
-    }
     render() {
         const saveNowMessage = (
             <FormattedMessage
@@ -714,15 +694,8 @@ class MenuBar extends React.Component {
         );
         // Show the About button only if we have a handler for it (like in the desktop app)
         const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
-        const isMac = window.EditorPreload?.platform === 'darwin';
         const menuBar = (
-            <Box className={classNames(this.props.className, styles.menuBar, { [styles.macos]: isMac })} style={
-                this.overlay.visible ? {
-                    width: `${Math.max(this.overlay.getTitlebarAreaRect().width, window.innerWidth)}px`,
-                    // 如果是阿拉伯那种从右往左的，改一下位置
-                    marginRight: `${this.props.isRtl ? window.innerWidth - this.overlay.getTitlebarAreaRect().width : '0'}px`
-                }
-                    : {}}>
+            <Box className={classNames(this.props.className, styles.menuBar)}>
                 <div className={styles.mainMenu}>
                     <div
                         className={styles.menuGroup}
@@ -1678,7 +1651,6 @@ MenuBar.propTypes = {
     onShare: PropTypes.func,
     onStartSelectingFileUpload: PropTypes.func,
     onToggleLoginOpen: PropTypes.func,
-    setWindowControlsStyle: PropTypes.func,
     projectId: PropTypes.string,
     projectTitle: PropTypes.string,
     renderLogin: PropTypes.func,

@@ -342,7 +342,9 @@ class Tab extends EventTargetShim {
             afterTabs: {
                 element: () => q("[class^='react-tabs_react-tabs__tab-list']"),
                 from: () => [q("[class^='react-tabs_react-tabs__tab-list']").children[0]],
-                until: () => [q('.sa-find-bar')]
+                // until 锚点为 README 按钮（始终在 addon 元素之后）；
+                // 若 README 未渲染，则 until 为 [null]，addon 元素会按 order 排序后追加到末尾
+                until: () => [q('[data-sa-readme-tab]')]
             },
             assetContextMenuAfterExport: {
                 element: () => scope,
