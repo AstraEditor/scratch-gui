@@ -37,6 +37,12 @@ pnpm start
 ## 许可证
 
 AstraEditor对TurboWarp的修改是根据GNU通用公共许可证v3.0授权的。
+TurboWarp:
+```
+https://github.com/TurboWarp
+https://turbowarp.org
+```
+*感谢turbowarp及其他开发者的劳动*
 
 有关详细信息，请参阅LICENSE或 https://www.gnu.org/licenses/ 。
 
