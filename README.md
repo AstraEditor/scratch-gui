@@ -34,7 +34,11 @@ Learn more from https://editors.astras.top/document/development/getting-started 
 
 ## License
 
-AstraEditor's modifications to TurboWarp are licensed under the GNU General Public License v3.0. 
+AstraEditor's modifications to TurboWarp are licensed under the GNU General Public License v3.0.
+TurboWarp官方：
+```
+https://github.com/turbowarp
+```
 
 See LICENSE or https://www.gnu.org/licenses/ for details.
 
