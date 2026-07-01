@@ -35,10 +35,12 @@ Learn more from https://editors.astras.top/document/development/getting-started 
 ## License
 
 AstraEditor's modifications to TurboWarp are licensed under the GNU General Public License v3.0.
-TurboWarp：
+TurboWarp:
 ```
-https://github.com/turbowarp
+https://github.com/TurboWarp
+https://turbowarp.org
 ```
+*Credit goes to TurboWarp and other developers for their work.*
 
 See LICENSE or https://www.gnu.org/licenses/ for details.
 
