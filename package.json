@@ -10,6 +10,7 @@
         "url": "https://github.com/LLK/scratch-gui.git"
     },
     "main": "./dist/scratch-gui.js",
+    "packageManager": "pnpm@11.9.0",
     "scripts": {
         "build": "pnpm run clean && webpack --bail",
         "clean": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist",
@@ -114,7 +115,7 @@
         "@babel/plugin-proposal-optional-chaining": "^7.21.0",
         "@babel/plugin-syntax-dynamic-import": "7.2.0",
         "@babel/plugin-transform-async-to-generator": "7.14.5",
-        "@babel/preset-env": "latest",
+        "@babel/preset-env": "^7.29.7",
         "@babel/preset-react": "7.14.5",
         "babel-core": "7.0.0-bridge.0",
         "babel-eslint": "10.1.0",
