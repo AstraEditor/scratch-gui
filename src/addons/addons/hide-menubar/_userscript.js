@@ -16,18 +16,6 @@ export default async function ({ addon, msg, Window }) {
             reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
         },
     );
-    const topBarControl = await addon.tab.waitForElement(
-        "[class^='menu-bar_controlBarInner']",
-        {
-            markAsSeen: true,
-            reduxEvents: [
-                "scratch-gui/mode/SET_PLAYER",
-                "fontsLoaded/SET_FONTS_LOADED",
-                "scratch-gui/locales/SELECT_LOCALE",
-            ],
-            reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
-        },
-    );
     const gui = await addon.tab.waitForElement("[class^='gui_page-wrapper']", {
         markAsSeen: true,
         reduxEvents: [
@@ -37,7 +25,7 @@ export default async function ({ addon, msg, Window }) {
         ],
         reduxCondition: (state) => !state.scratchGui.mode.isPlayerOnly,
     });
-    const menuElements = [topBar, topBarControl];
+    const menuElements = [topBar];
     let aeSettings = {};
     try {
         aeSettings = JSON.parse(localStorage.getItem("AESettings") || "{}");
