@@ -43,6 +43,7 @@ function injectStyles() {
   align-items: center;
   margin: auto 0;
   gap: 5px;
+  margin-left: 1em;
 }
 
 /* ── VSCode layout: container (column, fits the 41px sidebar) ── */

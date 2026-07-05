@@ -287,3 +287,8 @@
     border-color: rgba(255, 255, 255, 0.2);
   }
 }
+
+/*启用后不需要分割*/
+.ae-addons-list {
+  margin-left: 0 !important;
+}
