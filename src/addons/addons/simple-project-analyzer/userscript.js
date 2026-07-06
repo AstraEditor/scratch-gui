@@ -2872,13 +2872,14 @@ export default function ({ addon, msg, console }) {
     const analyzer = new SimpleProjectAnalyzer();
 
     // Listen for project changes (auto-refresh analysis in sidebar)
-    let clean;
-    vm.runtime.on("PROJECT_CHANGED", () => {
-        if (clean) clearTimeout(clean);
-        clean = setTimeout(() => {
-            analyzer.analyzeProjectForSidebar();
-        }, 100);
-    });
+    // 如果扣式咯你知道这个东西会多卡你还会加这个吗
+    // let clean;
+    // vm.runtime.on("PROJECT_CHANGED", () => {
+    //     if (clean) clearTimeout(clean);
+    //     clean = setTimeout(() => {
+    //         analyzer.analyzeProjectForSidebar();
+    //     }, 100);
+    // });
 
     // Button injection via AddToBar (handles both VSCode and non-VSCode layouts)
     AddToBar(addon, {
