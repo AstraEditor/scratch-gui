@@ -128,6 +128,14 @@ const renderMarkdownBlock = (text, escapeHtml, key) => (
                         </pre>
                     );
                 }
+                // 必须得返回些啥，不然就爆炸了
+                if(!value) return (
+                    <pre>
+                        <code style={{
+                            color: 'red'
+                        }}>Error Markdown!</code>
+                    </pre>
+                )
 
                 return (
                     <SyntaxHighlighter
@@ -180,7 +188,6 @@ const CustomModalComponent = (props) => {
         let comments = {};
         if (data != null) { comments = Object.values(data); }
         else { comments = Object.values(props.vm.editingTarget.comments) }
-        console.log(comments)
         const readMe = [];
         comments.forEach(comment => {
             if (comment.text.slice(0, 7) == "#README") {
