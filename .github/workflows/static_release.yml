@@ -12,18 +12,19 @@ jobs:
       - name: Checkout scratch-gui
         uses: actions/checkout@v4
 
+      - name: Force Git to use HTTPS instead of SSH
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
+      - name: Enable pnpm
+        run: corepack enable pnpm
 
       - name: Install dependencies
-        run: |
-          rm -f pnpm-lock.yaml
-          pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Generate files
         run: npm run prepublish
