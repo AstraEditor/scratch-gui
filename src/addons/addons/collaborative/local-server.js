@@ -6,6 +6,10 @@ const WebSocket = require("ws");
 const http = require("http");
 const url = require("url");
 
+// 限制常量
+const MAX_CLIENTS = 200;
+const MAX_CLIENTS_PER_ROOM = 20;
+
 class SignalingServer {
     constructor(port = 3000) {
         this.port = port;
@@ -57,8 +61,25 @@ class SignalingServer {
             const roomId = queryParams.room;
             const userName = queryParams.name;
 
-            if (!roomId) {
-                ws.close(4000, "房间ID不能为空");
+            // 输入校验：roomId 和 userName 不能为空，长度限制
+            if (!roomId || typeof roomId !== 'string' || roomId.length > 64) {
+                ws.close(4000, "房间ID无效");
+                return;
+            }
+            if (!userName || typeof userName !== 'string' || userName.length > 32) {
+                ws.close(4000, "用户名无效");
+                return;
+            }
+            // 客户端总数限制
+            if (this.clients.size >= MAX_CLIENTS) {
+                ws.close(4029, "服务器已满");
+                return;
+            }
+            // 单房间客户端数限制
+            let roomCount = 0;
+            this.clients.forEach((c) => { if (c.roomId === roomId) roomCount++; });
+            if (roomCount >= MAX_CLIENTS_PER_ROOM) {
+                ws.close(4029, "房间已满");
                 return;
             }
             this.clients.set(clientId, {
@@ -79,9 +100,7 @@ class SignalingServer {
                 }
             });
 
-            if (clientId && (hostCid === null || Date.now() < earliestConnect)) {
-                hostCid = clientId;
-            }
+            if (hostCid === null) hostCid = clientId;
 
             const existingPeers = [];
             this.clients.forEach((client, cid) => {
@@ -124,7 +143,8 @@ class SignalingServer {
 
             ws.on("close", () => {
                 const client = this.clients.get(clientId);
-                if (client) {
+                if (!client) return;
+                try {
                     console.log(
                         `客户端 ${userName}(${clientId}) 断开了 ${client.roomId} 房间的连接`,
                     );
@@ -161,7 +181,8 @@ class SignalingServer {
                         },
                         clientId,
                     );
-
+                } finally {
+                    // 确保客户端被删除，即使广播异常也不会导致幽灵客户端
                     this.clients.delete(clientId);
                 }
             });
@@ -206,11 +227,16 @@ class SignalingServer {
 
             case "kick":
                 if (data.targetId && data.targetId !== clientId) {
-                    const roomClients = [];
+                    // 鉴权：用 connectedAt 最早判定 host，而非 Map 迭代顺序
+                    let hostCid = null;
+                    let earliestConnect = Infinity;
                     this.clients.forEach((c, cid) => {
-                        if (c.roomId === client.roomId) roomClients.push(cid);
+                        if (c.roomId === client.roomId && c.connectedAt < earliestConnect) {
+                            earliestConnect = c.connectedAt;
+                            hostCid = cid;
+                        }
                     });
-                    if (roomClients[0] === clientId) {
+                    if (hostCid === clientId) {
                         const target = this.clients.get(data.targetId);
                         if (target) {
                             this.sendToClient(target.ws, { type: "kicked", reason: data.reason || "" });
@@ -241,7 +267,7 @@ class SignalingServer {
     }
 
     generateClientId() {
-        return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return `client_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     }
 
     getStats() {
@@ -270,6 +296,11 @@ class SignalingServer {
     }
 
     stop() {
+        // 先关闭所有已连接的客户端
+        this.clients.forEach((client) => {
+            try { client.ws.close(1001, "服务器关闭"); } catch (e) { }
+        });
+        this.clients.clear();
         if (this.wss) {
             this.wss.close();
         }

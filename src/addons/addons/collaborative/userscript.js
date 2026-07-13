@@ -12,8 +12,6 @@ import {
     openLoadingProject, closeLoadingProject,
 } from "../../../reducers/modals";
 
-let _initialLoadShown = false;
-
 export default async function ({ addon, console, msg }) {
     const vm = addon.tab.traps.vm;
     if (!vm) return;
@@ -106,6 +104,9 @@ export default async function ({ addon, console, msg }) {
         );
         if (oldRoomIdText) oldRoomIdText.remove();
 
+        const menuGroup = document.querySelector("[class*=menu-bar_menuGroup]");
+        if (!menuGroup) return;
+
         const container = document.createElement("div");
         container.className = idHead + "roomTip-container";
 
@@ -114,9 +115,7 @@ export default async function ({ addon, console, msg }) {
 
         container.appendChild(roomIdText);
 
-        document
-            .querySelector("[class*=menu-bar_menuGroup]")
-            .appendChild(container);
+        menuGroup.appendChild(container);
 
         refreshGUI();
     };
@@ -131,7 +130,8 @@ export default async function ({ addon, console, msg }) {
             const content = document.querySelector(
                 "[class*='sa-todo-modal-content']",
             );
-            content.childNodes.forEach((ele) => ele.remove());
+            if (!content) return;
+            while (content.firstChild) content.removeChild(content.firstChild);
             content.appendChild(createElements());
         }
     };
@@ -194,11 +194,17 @@ export default async function ({ addon, console, msg }) {
             const joinButton = document.createElement("button");
             joinButton.textContent = msg("join");
             joinButton.onclick = () => {
-                rtc.login("join", url, id);
+                if (!id || !id.trim()) {
+                    updateTipText(msg("id_empty") || "请输入房间号", "error");
+                    return;
+                }
+                if (!url || !url.trim()) return;
+                rtc.login("join", url, id.trim());
             };
             const createButton = document.createElement("button");
             createButton.textContent = msg("create");
             createButton.onclick = () => {
+                if (!url || !url.trim()) return;
                 rtc.login("reg", url);
             };
 
@@ -270,22 +276,11 @@ export default async function ({ addon, console, msg }) {
                 rtc.exit()
             }
 
-            roomTitleDiv.appendChild(roomTitleCopyButton);
-            roomTitleDiv.appendChild(roomTitle);
             Container.appendChild(roomTitleDiv);
             Container.appendChild(roomMembers);
             Container.appendChild(exitRoomButton);
         }
 
-
-        const testButton = document.createElement("button");
-        testButton.textContent = "Test Button";
-        testButton.onclick = async () => {
-            const sb3 = await vm.saveProjectSb3("arraybuffer");
-            console.log("sb3 size:", sb3.byteLength);
-        };
-
-        // Container.appendChild(testButton)
         return Container;
     };
 
@@ -304,22 +299,13 @@ export default async function ({ addon, console, msg }) {
             // 首次连接成功时显示房间提示条
             if (newState.clientId) {
                 enterRoom(newState.roomId);
-                renderMemberList(newState, rtc); // 成员变化时刷新列表
-                // 非 Host 成员：仅在首次连接时进入加载界面，防止重复触发
-                if (!rtc.isHost() && !_initialLoadShown) {
-                    _initialLoadShown = true;
-                    ReduxStore.dispatch(openLoadingProject());
-                    // 超时保护：若 20 秒内未收到 snapshot 则退出加载
-                    rtc._snapshotTimeout = setTimeout(() => {
-                        rtc._snapshotTimeout = null;
-                        ReduxStore.dispatch(closeLoadingProject());
-                        updateTipText(msg("snapshot_timeout_failed"), "error");
-                        rtc.exit();
-                    }, 20000);
-                }
+                renderMemberList(newState, rtc);
             } else {
-                _initialLoadShown = false;
                 if (rtc._snapshotTimeout) { clearTimeout(rtc._snapshotTimeout); rtc._snapshotTimeout = null; }
+                // 移除菜单栏房间提示条
+                const roomTip = document.querySelector(`.${idHead}roomTip-container`);
+                if (roomTip) roomTip.remove();
+                roomMembersEl = null;
                 refreshGUI();
             }
         },
@@ -332,22 +318,22 @@ export default async function ({ addon, console, msg }) {
     });
 
     const Blockly = await addon.tab.traps.getBlockly();
-    rtc.setBlockly(Blockly);
 
     handlePeerMessage = createHandler({
         addon,
         console,
-        sendToPeer: rtc.sendToPeer,
+        sendToPeer: (peerId, data, dropIfBuffered) => rtc.sendToPeer(peerId, data, dropIfBuffered),
         rtc,
         Blockly,
     });
+    rtc.setBlockly(Blockly);
 
     // ── 注册菜单栏 ─────────────────────────────────────────────
 
     addToBar(addon, {
         id: tabID,
         icon: icon,
-        name: msg("title"),
+        text: msg("title"),
         getContent: createElements,
         onClick: () => { },
     });

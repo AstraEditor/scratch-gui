@@ -221,7 +221,10 @@ export default async function ({ addon, msg, console }) {
         }
       }
 
-      this.utils.offsetX = this.sidebarDropdownOut.getBoundingClientRect().width + 32;
+      // VSCode 布局下，sidebar 作为 flex 项占据布局空间，工作区度量已排除该区域，
+      // dropdown 位于 sidebar 内部不会覆盖工作区，因此 offsetX 只需少量边距，
+      // 不能使用 dropdown 宽度（否则会把积木推出到舞台区域被遮挡）
+      this.utils.offsetX = 32;
       this.utils.offsetY = 32;
     }
 
@@ -377,6 +380,32 @@ export default async function ({ addon, msg, console }) {
           e.cancelBubble = true;
           e.preventDefault();
           return true;
+        }
+      }
+    }
+
+    // 根据 current layout mode 聚焦对应的输入框并显示下拉列表
+    focusAndShow(focusID, instanceBlock) {
+      // 重新检测布局模式
+      VSCodeLayout = isVSCodeLayoutEnabled();
+
+      if (VSCodeLayout) {
+        // VSCode 布局下，使用 sidebar 输入框
+        if (SideBar.getActivePlugin() !== 'find-bar') {
+          SideBar.register('find-bar', this.getSidebarContent(), {});
+          SideBar.switchTo('find-bar');
+          SideBar.open();
+        }
+        if (this.sidebarFindInput) {
+          this.sidebarFindInput.focus();
+          this.showDropDownSidebar(focusID, instanceBlock);
+        }
+      } else {
+        // 非 VSCode 布局下，使用浮动搜索栏
+        if (this.findInput) {
+          this.findBarOuter.style.display = "flex";
+          this.findInput.focus();
+          this.showDropDown(focusID, instanceBlock);
         }
       }
     }
@@ -1004,8 +1033,7 @@ export default async function ({ addon, msg, console }) {
         if (block.type === "procedures_definition" || (!this.jumpToDef && block.type === "procedures_call")) {
           let id = block.id ? block.id : block.getId ? block.getId() : null;
 
-          findBar.findInput.focus();
-          findBar.showDropDown(id);
+          findBar.focusAndShow(id);
 
           return;
         }
@@ -1017,8 +1045,7 @@ export default async function ({ addon, msg, console }) {
         ) {
           let id = block.getVars()[0];
 
-          findBar.findInput.focus();
-          findBar.showDropDown(id, block);
+          findBar.focusAndShow(id, block);
 
           findBar.selVarID = id;
 
@@ -1033,8 +1060,7 @@ export default async function ({ addon, msg, console }) {
           // todo: actually index the broadcasts...!
           let id = block.id;
 
-          findBar.findInput.focus();
-          findBar.showDropDown(id, block);
+          findBar.focusAndShow(id, block);
 
           findBar.selVarID = id;
 

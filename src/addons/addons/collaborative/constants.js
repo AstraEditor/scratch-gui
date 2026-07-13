@@ -9,6 +9,7 @@ export const SERVER_OPCODE = {
   POINTER_LEAVE: "pointer-leave",
   POINTER: "pointer",
   SNAPSHOT: "snapshot",
+  SNAPSHOT_ERROR: "snapshot-error",
   SPRITE_ADD: "sprite-add",
   SPRITE_DELETE: "sprite-delete",
   BLOCK_CREATE: "block-create",           // 新增积木（完整 XML）
@@ -17,7 +18,6 @@ export const SERVER_OPCODE = {
   BLOCK_UPDATE: "block-update",           // 修改字段/连接（完整 XML）
   BLOCK_FIELD_CHANGE: "block-field-change",     // 字段值变更（增量）
   BLOCK_MUTATION_CHANGE: "block-mutation-change", // mutation 变更（增量）
-  BLOCK_INPUT_CHANGE: "block-input-change",     // 输入连接变更（增量）
   COMMENT_SYNC: "comment-sync",           // 注释全量同步（简单可靠）
   EXTENSION_ADD: "extension-add",         // 添加扩展
   EXTENSION_REMOVE: "extension-remove",   // 移除扩展
@@ -62,11 +62,18 @@ function darkenHex(hex, percent = 20) {
     return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
+// XML 实体转义，防止用户名破坏 SVG 结构
+function escapeXmlText(s) {
+    return String(s).replace(/[<>&'"]/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', '\'': '&apos;', '"': '&quot;'
+    }[c]));
+}
+
 export const pointerSVG = (color, name = '') => `
   <path d="M5.41971 103.396L5.33334 5.34406L75.0169 74.3253L38.6685 74.8766C37.9902 74.8871 37.3196 74.9616 36.6557 75.0998C35.9917 75.2383 35.3464 75.4379 34.7207 75.6992C34.0951 75.9606 33.4996 76.2793 32.9343 76.6542C32.3694 77.0293 31.845 77.4539 31.3608 77.9291L5.41971 103.396Z" stroke="${darkenHex(color)}" stroke-width="10.666666666666666" stroke-linejoin="round" stroke-linecap="round" fill="${color}"/>
   <g transform="translate(15,90)">
     <rect class="${'sa-collab-name-bg'}" x="15" y="0" height="80" rx="4" fill="${color}"></rect>
-    <text class="${'sa-collab-name-text'}" x="25" y="60" fill="white" font-size="48">${name}</text>
+    <text class="${'sa-collab-name-text'}" x="25" y="60" fill="white" font-size="48">${escapeXmlText(name)}</text>
   </g>
 `;
 

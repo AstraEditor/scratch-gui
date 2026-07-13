@@ -10,7 +10,7 @@
         "url": "https://github.com/LLK/scratch-gui.git"
     },
     "main": "./dist/scratch-gui.js",
-    "packageManager": "pnpm@11.9.0",
+    "packageManager": "pnpm@11.12.0",
     "scripts": {
         "build": "pnpm run clean && webpack --bail",
         "clean": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist",
