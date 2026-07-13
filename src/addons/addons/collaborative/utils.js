@@ -63,8 +63,8 @@ export function setURLParamsFromSearchString(searchString) {
         currentUrl.search = formattedSearch;
     }
 
-    // 更新URL（使用pushState添加历史记录，或使用replaceState替换）
-    window.history.pushState({}, "", currentUrl);
+    // 更新URL（使用 replaceState 替换当前历史记录，避免污染浏览器后退）
+    window.history.replaceState({}, "", currentUrl);
 
     return true;
 }

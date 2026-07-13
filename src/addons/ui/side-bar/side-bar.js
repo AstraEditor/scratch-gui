@@ -1,8 +1,8 @@
 import reduxInstance from '../../redux.js';
 import './side-bar.css';
 
-const getSideBar = () => {
-    return document.querySelectorAll("[class*=gui_tab-panel]")[0];
+const getTabList = () => {
+    return document.querySelector("[class*=gui_tab-list]");
 }
 
 // 全局单例实例
@@ -203,25 +203,25 @@ class SideBarInternal {
             left: 0;
             width: ${this.currentWidth}px;
             flex: 0 0 auto;
+            height: 100%;
             background-color: var(--ui-white);
             z-index: 489;
             display: none;
-            flex-direction: column;
             overflow: hidden;
-            min-height: 0;
-            height: 100%;
         `;
 
         this.contentContainer = document.createElement("div");
         this.contentContainer.style.cssText = `
-            flex: 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             overflow-y: auto;
             overflow-x: hidden;
-            position: relative;
             background: var(--ui-white);
-            min-height: 0;
-            max-height: 100%;
             display: flex;
+            flex-direction: column;
         `;
         this.element.appendChild(this.contentContainer);
 
@@ -275,9 +275,6 @@ class SideBarInternal {
                     Math.min(this.MAX_WIDTH, this.currentWidth + deltaX)
                 );
                 this.element.style.width = `${this.currentWidth}px`;
-                if (this.extensionButton) {
-                    this.extensionButton.style.marginLeft = this.currentWidth + "px";
-                }
             }
         };
 
@@ -289,37 +286,10 @@ class SideBarInternal {
         this._cornerStartWidth = 0;
         this._cornerStartHeight = 0;
 
-        // 监听标签页切换
-        this._boundHandleTabChange = () => {
-            if (this.isOpen() && this.isCostumeTabOpen()) {
-                this.close();
-                this.wasOpenBefore = true;
-            } else if (!this.isOpen() && this.wasOpenBefore && !this.isCostumeTabOpen()) {
-                this.wasOpenBefore = false;
-                this.open();
-            }
-        };
-
-        // 使用MutationObserver监听tab-panel的class变化
-        this._tabObserver = new MutationObserver(() => {
-            this._boundHandleTabChange();
-        });
-
-        setTimeout(() => {
-            const tabPanel = document.querySelector("[class*=gui_tab-panel]");
-            if (tabPanel) {
-                this._tabObserver.observe(tabPanel, {
-                    attributes: true,
-                    attributeFilter: ['class']
-                });
-            }
-        }, 1000);
-
-        this.wasOpenBefore = false;
-
-        this.extensionButton = document.querySelector("[class*=gui_extension-button-container]");
-
-        if (getSideBar()) getSideBar().prepend(this.element);
+        if (getTabList()) {
+            const tabList = getTabList();
+            tabList.parentNode.insertBefore(this.element, tabList.nextSibling);
+        }
 
         // 使用防抖函数处理频繁的布局更新请求
         this._debounceTimer = null;
@@ -401,16 +371,17 @@ class SideBarInternal {
      * 由于使用 height: 100%，主要确保内容容器正确处理滚动
      */
     updateHeight() {
-        // 只在 Sidebar 打开时更新
         if (!this.isOpen()) return;
 
-        // 确保内容容器的样式正确
-        this.contentContainer.style.flex = '1';
-        this.contentContainer.style.minHeight = '0';
+        this.contentContainer.style.top = '0';
+        this.contentContainer.style.bottom = '0';
+        this.contentContainer.style.left = '0';
+        this.contentContainer.style.right = '0';
         this.contentContainer.style.overflowY = 'auto';
         this.contentContainer.style.overflowX = 'hidden';
+        this.contentContainer.style.display = 'flex';
+        this.contentContainer.style.flexDirection = 'column';
 
-        // 触发一次重排，让浏览器重新计算布局
         void this.element.offsetHeight;
     }
 
@@ -475,11 +446,7 @@ class SideBarInternal {
             Math.min(this.MAX_WIDTH, this._cornerStartWidth + deltaX)
         );
         this.element.style.width = `${this.currentWidth}px`;
-        if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = this.currentWidth + "px";
-        }
 
-        // 调整 BottomPanel 高度
         const bottomPanel = window.aeResizeHandles?.bottomPanel?.instance;
         if (bottomPanel) {
             bottomPanel.currentHeight = Math.max(
@@ -515,21 +482,6 @@ class SideBarInternal {
     }
 
     /**
-     * 检测CostumeTab是否打开
-     */
-    isCostumeTabOpen() {
-        // 检查是否在costume标签页
-        const costumeTab = document.querySelector("[class*='costume-tab']");
-        if (costumeTab) {
-            const style = window.getComputedStyle(costumeTab);
-            if (style.display !== 'none') {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * 设置侧边栏内容
      * @param {Element} content - 要显示的内容元素
      */
@@ -556,54 +508,35 @@ class SideBarInternal {
      * 销毁侧边栏实例
      */
     destroy() {
-        // 移除事件监听器
         this.resizeHandle.removeEventListener("mouseenter", this._boundHandleMouseEnter);
         this.resizeHandle.removeEventListener("mouseleave", this._boundHandleMouseLeave);
         this.resizeHandle.removeEventListener("mousedown", this._boundStartResize);
         document.removeEventListener("mousemove", this._boundDoResize);
         document.removeEventListener("mouseup", this._boundEndResize);
 
-        // 移除全局角落检测监听器
         document.removeEventListener("mousemove", this._boundGlobalMouseMove);
         document.removeEventListener("mousedown", this._boundGlobalMouseDown);
         document.removeEventListener("mouseup", this._boundGlobalMouseUp);
 
-        // 从全局对象中移除 Sidebar 的引用
         if (window.aeResizeHandles && window.aeResizeHandles.sideBar) {
             delete window.aeResizeHandles.sideBar;
         }
 
-        // 停止 MutationObserver
-        if (this._tabObserver) {
-            this._tabObserver.disconnect();
-            this._tabObserver = null;
-        }
-
-        // 清除防抖定时器
         if (this._debounceTimer) {
             clearTimeout(this._debounceTimer);
             this._debounceTimer = null;
         }
 
-        // 移除 bottomPanel 自定义事件监听器
         window.removeEventListener('bottomPanelResized', this._boundHandleBottomPanelEvent);
         window.removeEventListener('bottomPanelOpened', this._boundHandleBottomPanelEvent);
         window.removeEventListener('bottomPanelClosed', this._boundHandleBottomPanelEvent);
         this._boundHandleBottomPanelEvent = null;
 
-        // 移除 Redux 事件监听器
         if (this._boundHandleProjectLoad) {
             reduxInstance.removeEventListener('statechanged', this._boundHandleProjectLoad);
             this._boundHandleProjectLoad = null;
         }
 
-        // 重置 extensionButton
-        if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = "0px";
-            this.extensionButton.style.left = "0px";
-        }
-
-        // 移除 DOM 元素
         if (this.element && this.element.parentNode) {
             this.element.parentNode.removeChild(this.element);
         }
@@ -619,7 +552,6 @@ class SideBarInternal {
     }
 
     doResize(e) {
-        // 如果正在角落拖拽，交给 cornerResize 处理
         if (this._cornerResizing) {
             this.doCornerResize(e);
             return;
@@ -633,9 +565,6 @@ class SideBarInternal {
             Math.min(this.MAX_WIDTH, this.startWidth + deltaX)
         );
         this.element.style.width = `${this.currentWidth}px`;
-        if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = this.currentWidth + "px";
-        }
     }
 
     endResize() {
@@ -655,37 +584,17 @@ class SideBarInternal {
 
     open() {
         if (!document.contains(this.element)) {
-            const sidebar = getSideBar();
-            if (sidebar) sidebar.prepend(this.element);
-            this._reobserveTabPanel();
+            const tabList = getTabList();
+            if (tabList && tabList.parentNode) {
+                tabList.parentNode.insertBefore(this.element, tabList.nextSibling);
+            }
         }
         this.element.style.display = "flex";
-        if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = this.currentWidth + "px";
-        }
         window.dispatchEvent(new Event("resize"));
-    }
-
-    _reobserveTabPanel() {
-        if (this._tabObserver) {
-            this._tabObserver.disconnect();
-        } else {
-            this._tabObserver = new MutationObserver(() => this._boundHandleTabChange());
-        }
-        const tabPanel = document.querySelector("[class*=gui_tab-panel]");
-        if (tabPanel) {
-            this._tabObserver.observe(tabPanel, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
-        }
     }
 
     close() {
         this.element.style.display = "none";
-        if (this.extensionButton) {
-            this.extensionButton.style.marginLeft = "0px";
-        }
         window.dispatchEvent(new Event("resize"));
     }
 

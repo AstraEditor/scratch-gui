@@ -2,23 +2,3 @@
 .addons-side-bar {
   background-color: var(--ui-white);
 }
-
-/* Side Bar 内容容器 */
-.addons-side-bar .content-container {
-  flex: 1;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--ui-white);
-}
-
-/* 调整手柄 */
-.addons-side-bar .resize-handle {
-  cursor: ew-resize;
-  background: transparent;
-  transition: background 0.2s;
-}
-
-.addons-side-bar .resize-handle:hover {
-  background: var(--looks-secondary);
-}

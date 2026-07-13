@@ -258,6 +258,10 @@ ${JSON.stringify(content)}
                     preview_steps_remove.className = 'sa-todo-modal-preview-steps-step-remove';
                     preview_steps_remove.style.backgroundColor = config.color;
                     preview_steps_remove.style.color = 'white';
+                    preview_steps_remove.onclick = () => {
+                        config.task.steps.splice(index, 1);
+                        refresh();
+                    }
 
                     preview_steps_step.appendChild(preview_steps_remove);
                     preview_steps_step.appendChild(preview_steps_step_text);
