@@ -17,15 +17,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      - name: Enable pnpm
+        run: corepack enable pnpm
 
       - name: Install dependencies
-        run: |
-          rm -f pnpm-lock.yaml
-          pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Generate files
         run: npm run prepublish
